@@ -4,27 +4,38 @@ from __future__ import annotations
 
 import warnings
 from abc import abstractmethod
-from typing import Any, Generic, Optional, Tuple, TypeVar
+from typing import Any, Generic, Tuple, TypeVar
 
 import numpy as np
-from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
-from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
-from ..._utils import RandomStateLike, _check_compatible_fdata
-from ...misc.metrics import Metric, PairwiseMetric, l2_distance
+from ..._utils._sklearn_adapter import (
+    BaseEstimator,
+    ClusterMixin,
+    TransformerMixin,
+)
+from ...misc.metrics import PairwiseMetric, l2_distance
+from ...misc.validation import (
+    check_fdata_same_dimensions,
+    validate_random_state,
+)
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayAny, NDArrayFloat, NDArrayInt
+from ...typing._base import RandomState, RandomStateLike
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
-SelfType = TypeVar("SelfType", bound="BaseKMeans[Any]")
+SelfType = TypeVar("SelfType", bound="BaseKMeans[Any, Any]")
 MembershipType = TypeVar("MembershipType", bound=NDArrayAny)
+
+# TODO: Generalize to FData and NDArray, without losing performance
+Input = TypeVar("Input", bound=FDataGrid)
 
 
 class BaseKMeans(
-    BaseEstimator,  # type: ignore
-    ClusterMixin,  # type: ignore
-    TransformerMixin,  # type: ignore
-    Generic[MembershipType],
+    BaseEstimator,
+    ClusterMixin[Input],
+    TransformerMixin[Input, NDArrayFloat, object],
+    Generic[Input, MembershipType],
 ):
     """Base class to implement K-Means clustering algorithms.
 
@@ -38,8 +49,8 @@ class BaseKMeans(
         self,
         *,
         n_clusters: int = 2,
-        init: Optional[FDataGrid] = None,
-        metric: Metric[FDataGrid] = l2_distance,
+        init: Input | None = None,
+        metric: Metric[Input] = l2_distance,
         n_init: int = 1,
         max_iter: int = 100,
         tol: float = 1e-4,
@@ -80,7 +91,7 @@ class BaseKMeans(
         self.tol = tol
         self.random_state = random_state
 
-    def _check_clustering(self, fdata: FDataGrid) -> FDataGrid:
+    def _check_clustering(self, fdata: Input) -> Input:
         """Check the arguments used in fit.
 
         Args:
@@ -91,12 +102,7 @@ class BaseKMeans(
             Validated input.
 
         """
-        if fdata.dim_domain > 1:
-            raise NotImplementedError(
-                "Only support 1 dimension on the domain.",
-            )
-
-        if fdata.n_samples < 2:
+        if len(fdata) < 2:
             raise ValueError(
                 "The number of observations must be greater than 1.",
             )
@@ -140,17 +146,17 @@ class BaseKMeans(
 
         return fdata
 
-    def _tolerance(self, fdata: FDataGrid) -> float:
+    def _tolerance(self, fdata: Input) -> float:
         variance = fdata.var()
         mean_variance = np.mean(variance[0].data_matrix)
 
-        return mean_variance * self.tol
+        return float(mean_variance * self.tol)
 
     def _init_centroids(
         self,
-        fdatagrid: FDataGrid,
-        random_state: np.random.RandomState,
-    ) -> FDataGrid:
+        fdatagrid: Input,
+        random_state: RandomState,
+    ) -> Input:
         """
         Compute the initial centroids.
 
@@ -197,18 +203,18 @@ class BaseKMeans(
     @abstractmethod
     def _update(
         self,
-        fdata: FDataGrid,
+        fdata: Input,
         membership_matrix: MembershipType,
         distances_to_centroids: NDArrayFloat,
-        centroids: FDataGrid,
+        centroids: Input,
     ) -> None:
         pass
 
     def _algorithm(
         self,
-        fdata: FDataGrid,
-        random_state: np.random.RandomState,
-    ) -> Tuple[NDArrayFloat, FDataGrid, NDArrayFloat, int]:
+        fdata: Input,
+        random_state: RandomState,
+    ) -> Tuple[NDArrayFloat, Input, NDArrayFloat, int]:
         """
         Fuzzy K-Means algorithm.
 
@@ -281,15 +287,15 @@ class BaseKMeans(
     def _compute_inertia(
         self,
         membership: MembershipType,
-        centroids: FDataGrid,
+        centroids: Input,
         distances_to_centroids: NDArrayFloat,
     ) -> float:
         pass
 
     def fit(
         self: SelfType,
-        X: FDataGrid,
-        y: None = None,
+        X: Input,
+        y: object = None,
         sample_weight: None = None,
     ) -> SelfType:
         """
@@ -307,7 +313,7 @@ class BaseKMeans(
 
         """
         fdata = self._check_clustering(X)
-        random_state = check_random_state(self.random_state)
+        random_state = validate_random_state(self.random_state)
 
         self._check_params()
 
@@ -350,7 +356,7 @@ class BaseKMeans(
 
     def _predict_membership(
         self,
-        X: FDataGrid,
+        X: Input,
         sample_weight: None = None,
     ) -> MembershipType:
         """Predict the closest cluster each sample in X belongs to.
@@ -364,7 +370,7 @@ class BaseKMeans(
 
         """
         check_is_fitted(self)
-        _check_compatible_fdata(self.cluster_centers_, X)
+        check_fdata_same_dimensions(self.cluster_centers_, X)
 
         membership_matrix = self._create_membership(X.n_samples)
         centroids = self.cluster_centers_.copy()
@@ -391,7 +397,7 @@ class BaseKMeans(
 
     def predict(
         self,
-        X: FDataGrid,
+        X: Input,
         sample_weight: None = None,
     ) -> NDArrayInt:
         """Predict the closest cluster each sample in X belongs to.
@@ -408,7 +414,7 @@ class BaseKMeans(
             self._predict_membership(X, sample_weight),
         )
 
-    def transform(self, X: FDataGrid) -> NDArrayFloat:
+    def transform(self, X: Input) -> NDArrayFloat:
         """Transform X to a cluster-distance space.
 
         Args:
@@ -421,13 +427,13 @@ class BaseKMeans(
 
         """
         check_is_fitted(self)
-        _check_compatible_fdata(self.cluster_centers_, X)
+        check_fdata_same_dimensions(self.cluster_centers_, X)
         return self._distances_to_centers
 
     def fit_transform(
         self,
-        X: FDataGrid,
-        y: None = None,
+        X: Input,
+        y: object = None,
         sample_weight: None = None,
     ) -> NDArrayFloat:
         """Compute clustering and transform X to cluster-distance space.
@@ -446,8 +452,8 @@ class BaseKMeans(
 
     def score(
         self,
-        X: FDataGrid,
-        y: None = None,
+        X: Input,
+        y: object = None,
         sample_weight: None = None,
     ) -> float:
         """Opposite of the value of X on the K-means objective.
@@ -464,11 +470,11 @@ class BaseKMeans(
 
         """
         check_is_fitted(self)
-        _check_compatible_fdata(self.cluster_centers_, X)
+        check_fdata_same_dimensions(self.cluster_centers_, X)
         return -self.inertia_
 
 
-class KMeans(BaseKMeans[NDArrayInt]):
+class KMeans(BaseKMeans[Input, NDArrayInt]):
     r"""K-Means algorithm for functional data.
 
     Let :math:`\mathbf{X = \left\{ x_{1}, x_{2}, ..., x_{n}\right\}}` be a
@@ -584,7 +590,7 @@ class KMeans(BaseKMeans[NDArrayInt]):
     def _compute_inertia(
         self,
         membership: NDArrayInt,
-        centroids: FDataGrid,
+        centroids: Input,
         distances_to_centroids: NDArrayFloat,
     ) -> float:
         distances_to_their_center = np.choose(
@@ -592,7 +598,7 @@ class KMeans(BaseKMeans[NDArrayInt]):
             distances_to_centroids.T,
         )
 
-        return np.sum(distances_to_their_center**2)
+        return float(np.sum(distances_to_their_center**2))
 
     def _create_membership(self, n_samples: int) -> NDArrayInt:
         return np.empty(n_samples, dtype=int)
@@ -605,10 +611,10 @@ class KMeans(BaseKMeans[NDArrayInt]):
 
     def _update(
         self,
-        fdata: FDataGrid,
+        fdata: Input,
         membership_matrix: NDArrayInt,
         distances_to_centroids: NDArrayFloat,
-        centroids: FDataGrid,
+        centroids: Input,
     ) -> None:
 
         membership_matrix[:] = np.argmin(distances_to_centroids, axis=1)
@@ -624,7 +630,7 @@ class KMeans(BaseKMeans[NDArrayInt]):
                 )
 
 
-class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
+class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
     r"""
     Fuzzy c-Means clustering for functional data.
 
@@ -752,8 +758,8 @@ class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
         self,
         *,
         n_clusters: int = 2,
-        init: Optional[FDataGrid] = None,
-        metric: Metric[FDataGrid] = l2_distance,
+        init: Input | None = None,
+        metric: Metric[Input] = l2_distance,
         n_init: int = 1,
         max_iter: int = 100,
         tol: float = 1e-4,
@@ -783,11 +789,13 @@ class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
     def _compute_inertia(
         self,
         membership: NDArrayFloat,
-        centroids: FDataGrid,
+        centroids: Input,
         distances_to_centroids: NDArrayFloat,
     ) -> float:
-        return np.sum(
-            membership**self.fuzzifier * distances_to_centroids**2,
+        return float(
+            np.sum(
+                membership**self.fuzzifier * distances_to_centroids**2,
+            )
         )
 
     def _create_membership(self, n_samples: int) -> NDArrayFloat:
@@ -797,14 +805,17 @@ class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
         self,
         membership_matrix: NDArrayFloat,
     ) -> NDArrayInt:
-        return np.argmax(membership_matrix, axis=1)
+        return np.argmax(  # type: ignore[no-any-return]
+            membership_matrix,
+            axis=1,
+        )
 
     def _update(
         self,
-        fdata: FDataGrid,
+        fdata: Input,
         membership_matrix: NDArrayFloat,
         distances_to_centroids: NDArrayFloat,
-        centroids: FDataGrid,
+        centroids: Input,
     ) -> None:
         # Divisions by zero allowed
         with np.errstate(divide='ignore'):
@@ -845,7 +856,7 @@ class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
 
     def predict_proba(
         self,
-        X: FDataGrid,
+        X: Input,
         sample_weight: None = None,
     ) -> NDArrayFloat:
         """Predict the probability of belonging to each cluster.

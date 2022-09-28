@@ -76,7 +76,7 @@ fpca.components_.plot()
 FPCAPlot(
     basis_fd.mean(),
     fpca.components_,
-    30,
+    factor=30,
     fig=plt.figure(figsize=(6, 2 * 4)),
     n_rows=2,
 ).plot()

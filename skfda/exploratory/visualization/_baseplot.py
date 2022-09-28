@@ -4,12 +4,12 @@ This module contains the abstract class of which inherit all
 the visualization modules, containing the basic functionality
 common to all of them.
 """
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import LocationEvent, MouseEvent
@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 
 from ...representation import FData
-from ...representation._typing import NDArrayInt
+from ...typing._numpy import NDArrayInt, NDArrayObject
 from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
 
@@ -38,18 +38,18 @@ class BasePlot(ABC):
     @abstractmethod
     def __init__(
         self,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-        c: Optional[NDArrayInt] = None,
+        fig: Figure | None = None,
+        axes: Axes | Sequence[Axes] | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
+        c: NDArrayInt | None = None,
         cmap_bold: ListedColormap = None,
-        x_label: Optional[str] = None,
-        y_label: Optional[str] = None,
+        x_label: str | None = None,
+        y_label: str | None = None,
     ) -> None:
-        self.artists: Optional[np.ndarray] = None
+        self.artists: NDArrayObject | None = None
         self.chart = chart
         self.fig = fig
         self.axes = axes
@@ -78,8 +78,8 @@ class BasePlot(ABC):
             Figure: figure object in which the displays and
                 widgets will be plotted.
         """
-        fig = getattr(self, "fig_", None)
-        axes = getattr(self, "axes_", None)
+        fig: Figure | None = getattr(self, "fig_", None)
+        axes: Sequence[Axes] | None = getattr(self, "axes_", None)
 
         if fig is None:
             fig, axes = self._set_figure_and_axes(
@@ -87,6 +87,9 @@ class BasePlot(ABC):
                 fig=self.fig,
                 axes=self.axes,
             )
+
+        assert axes is not None
+
         if self.x_label is not None:
             axes[0].set_xlabel(self.x_label)
         if self.y_label is not None:
@@ -112,16 +115,16 @@ class BasePlot(ABC):
         return 1
 
     @property
-    def n_samples(self) -> Optional[int]:
+    def n_samples(self) -> int | None:
         """Get the number of instances that will be used for interactivity."""
         return None
 
     def _set_figure_and_axes(
         self,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
+        fig: Figure | None = None,
+        axes: Axes | Sequence[Axes] | None = None,
     ) -> Tuple[Figure, Sequence[Axes]]:
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout(
@@ -173,7 +176,7 @@ class BasePlot(ABC):
         *,
         axes: Axes,
         sample_number: int,
-        fdata: Optional[FData],
+        fdata: FData | None,
         position: Tuple[float, float],
     ) -> None:
         """
@@ -226,7 +229,7 @@ class BasePlot(ABC):
     def _sample_artist_from_event(
         self,
         event: LocationEvent,
-    ) -> Optional[Tuple[int, Optional[FData], Artist]]:
+    ) -> Tuple[int, FData | None, Artist] | None:
         """Get the number, fdata and artist under a location event."""
         if self.artists is None:
             return None

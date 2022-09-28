@@ -41,4 +41,7 @@ The following statistics can be used to estimate additional properties of the da
    :toctree: autosummary
 
    skfda.exploratory.stats.modified_epigraph_index
+   skfda.exploratory.stats.local_averages
+   skfda.exploratory.stats.occupation_measure
+   skfda.exploratory.stats.number_crossings
 

@@ -1,8 +1,10 @@
 import itertools
+import math
 from typing import Any, Iterable, Tuple
 
 import numpy as np
 
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 
@@ -73,14 +75,14 @@ class Tensor(Basis):
 
         super().__init__(
             domain_range=[b.domain_range[0] for b in basis_list],
-            n_basis=np.prod([b.n_basis for b in basis_list]),
+            n_basis=math.prod([b.n_basis for b in basis_list]),
         )
 
     @property
     def basis_list(self) -> Tuple[Basis, ...]:
         return self._basis_list
 
-    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
+    def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
 
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))
 
@@ -95,7 +97,7 @@ class Tensor(Basis):
 
         return matrix
 
-    def _gram_matrix(self) -> np.ndarray:
+    def _gram_matrix(self) -> NDArrayFloat:
 
         gram_matrices = [b.gram_matrix() for b in self.basis_list]
 

@@ -11,14 +11,16 @@ The following functions are used to retrieve specific functional datasets:
 .. autosummary::
    :toctree: autosummary
 
+   skfda.datasets.fetch_aemet
+   skfda.datasets.fetch_gait
    skfda.datasets.fetch_growth
+   skfda.datasets.fetch_mco
+   skfda.datasets.fetch_medflies
+   skfda.datasets.fetch_nox
+   skfda.datasets.fetch_octane
    skfda.datasets.fetch_phoneme
    skfda.datasets.fetch_tecator
-   skfda.datasets.fetch_medflies
    skfda.datasets.fetch_weather
-   skfda.datasets.fetch_aemet
-   skfda.datasets.fetch_octane
-   skfda.datasets.fetch_gait
 
 Those functions return a dictionary with at least a "data" field containing the
 instance data, and a "target" field containing the class labels or regression values,

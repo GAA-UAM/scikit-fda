@@ -10,12 +10,10 @@ This example shows the composition of multidimensional FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import skfda
-
+import numpy as np
 from mpl_toolkits.mplot3d import axes3d
 
-import numpy as np
-
+import skfda
 
 ##############################################################################
 # Function composition can be applied to our data once is in functional
@@ -42,10 +40,6 @@ grid_points = [X[0, :], Y[:, 0]]
 
 g = skfda.FDataGrid(data_matrix, grid_points)
 
-# Sets cubic interpolation
-g.interpolation = skfda.representation.interpolation.SplineInterpolation(
-    interpolation_order=3)
-
 # Plots the surface
 g.plot()
 
@@ -55,7 +49,7 @@ g.plot()
 # :math:`g \circ f:\mathbb{R} \rightarrow \mathbb{R}` will be another
 # functional object with the values of :math:`g` along the path given by
 # :math:`f`.
-#
+
 
 # Creation of circunference in parametric form
 t = np.linspace(0, 2 * np.pi, 100)
@@ -71,10 +65,9 @@ gof.plot()
 ##############################################################################
 # In the following chart it is plotted the curve
 # :math:`(10 \, \cos(t), 10 \, sin(t), g \circ f (t))` and the surface.
-#
 
 # Plots surface
-fig = g.plot(alpha=.8)
+fig = g.plot(alpha=0.8)
 
 # Plots path along the surface
 path = f(t)[0]
@@ -85,4 +78,3 @@ fig
 ##############################################################################
 # [1] Function composition `https://en.wikipedia.org/wiki/Function_composition
 # <https://en.wikipedia.org/wiki/Function_composition>`_.
-#

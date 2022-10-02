@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import TypeVar
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -10,6 +11,8 @@ from ...misc.regularization import L2Regularization
 from ...preprocessing.dim_reduction import FPCA
 from ...representation import FData
 from ...representation.basis import Basis
+
+FPCARegressionSelf = TypeVar("FPCARegressionSelf", bound="FPCARegression")
 
 
 class FPCARegression(
@@ -77,7 +80,7 @@ class FPCARegression(
         self,
         X: FData,
         y: np.ndarray,
-    ) -> "FPCARegression":
+    ) -> FPCARegressionSelf:
         """Fit the model according to the given training data.
 
         Args:

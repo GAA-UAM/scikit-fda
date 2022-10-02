@@ -392,7 +392,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             sample_names=(None,) * self.n_components,
         )
 
-        self.explained_variance_ratio = (
+        self.explained_variance_ratio_ = (
             pca.explained_variance_ratio_
         )
         self.explained_variance_ = pca.explained_variance_

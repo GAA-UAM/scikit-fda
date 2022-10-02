@@ -12,6 +12,17 @@ from skfda.preprocessing.dim_reduction import FPCA
 from skfda.representation.basis import Basis, BSpline, Fourier
 
 
+def assert_all_close_normalized(actual, desired, rtol=1e-7):
+    """
+    Assert that two arrays are close.
+
+    The arrays are compared element-wise, and the maximum difference
+    allowed is ``rtol *`` the average absolute value of ``desired``
+    """
+    absolute_average = np.mean(np.abs(desired))
+    np.testing.assert_allclose(actual, desired, atol=absolute_average * rtol)
+
+
 class FPCATestCase(unittest.TestCase):
     """Tests for principal component analysis."""
 
@@ -100,10 +111,10 @@ class FPCATestCase(unittest.TestCase):
             * np.sign(results[:, 0])
         )[:, np.newaxis]
 
-        np.testing.assert_allclose(
+        assert_all_close_normalized(
             fpca.components_.coefficients,
             results,
-            atol=1e-7,
+            rtol=1e-6,
         )
 
     def test_basis_fpca_transform_result(self) -> None:
@@ -167,7 +178,11 @@ class FPCATestCase(unittest.TestCase):
         ])
 
         # Compare results
-        np.testing.assert_allclose(scores, results, atol=1e-7)
+        assert_all_close_normalized(
+            scores,
+            results,
+            rtol=1e-7,
+        )
 
     def test_basis_fpca_noregularization_fit_result(self) -> None:
         """
@@ -234,10 +249,10 @@ class FPCATestCase(unittest.TestCase):
             * np.sign(results[:, 0])
         )[:, np.newaxis]
 
-        np.testing.assert_allclose(
+        assert_all_close_normalized(
             fpca.components_.coefficients,
             results,
-            atol=0.008,
+            rtol=0.05,
         )
 
         np.testing.assert_allclose(
@@ -388,10 +403,10 @@ class FPCATestCase(unittest.TestCase):
             * np.sign(results[0])
         )
 
-        np.testing.assert_allclose(
+        assert_all_close_normalized(
             fpca.components_.data_matrix.ravel(),
             results,
-            rtol=1e-6,
+            rtol=1e-7,
         )
 
         np.testing.assert_allclose(
@@ -427,7 +442,11 @@ class FPCATestCase(unittest.TestCase):
             216.43002289, 233.53770292, 344.18479151,
         ])
 
-        np.testing.assert_allclose(scores.ravel(), results, rtol=0.25)
+        assert_all_close_normalized(
+            scores.ravel(),
+            results,
+            rtol=0.05,
+        )
 
     def test_grid_fpca_regularization_fit_result(self) -> None:
         """Compare the components in grid against the fda.usc package."""
@@ -530,10 +549,10 @@ class FPCATestCase(unittest.TestCase):
             * np.sign(results[0])
         )
 
-        np.testing.assert_allclose(
+        assert_all_close_normalized(
             fpca.components_.data_matrix.ravel(),
             results,
-            rtol=1e-2,
+            rtol=6e-3,
         )
 
     def draw_one_random_fun(

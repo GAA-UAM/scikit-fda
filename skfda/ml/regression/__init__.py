@@ -1,9 +1,9 @@
 """Regression."""
-from ._fpca_regression import FPCARegression
-
 from typing import TYPE_CHECKING
 
 import lazy_loader as lazy
+
+from ._fpca_regression import FPCARegression
 
 __getattr__, __dir__, __all__ = lazy.attach(
     __name__,

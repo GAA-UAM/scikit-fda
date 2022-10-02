@@ -481,7 +481,7 @@ class LinearRegression(
     ) -> ConcatenateInterceptResultType:
         new_x = np.ones((len(y), 1))
         if self.functional_response:
-            X_new = np.insert(X, 0, new_x.T, axis=1)
+            X_new = np.insert(X, 0, new_x, axis=1)
         else:
             X_new = [new_x] + X
 

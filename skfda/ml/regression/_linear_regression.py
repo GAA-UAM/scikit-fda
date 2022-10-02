@@ -335,7 +335,7 @@ class LinearRegression(
             J_phi_theta = self.y_basis.inner_product_matrix(self.coef_basis[0])
             J_theta = self.coef_basis[0].inner_product_matrix()
 
-            X_col_gram_mat = X_new.T @ X_new
+            X_col_gram_mat = np.einsum('ijk,ilk->jl', X_new, X_new)
             J_theta_kron_X_col_gram_mat = np.kron(J_theta, X_col_gram_mat)
 
             if penalty_matrix is not None:
@@ -414,6 +414,7 @@ class LinearRegression(
         X = self._argcheck_X(X)
 
         if self.functional_response:
+            X = [x.flatten() for x in X]
             result_list = np.dot(X, self.basis_coefs)
             result = [
                 coef_info.convert_from_constant_coefs(arr)

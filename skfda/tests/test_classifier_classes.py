@@ -7,14 +7,18 @@ from sklearn.model_selection import train_test_split
 
 from skfda._utils._utils import _classifier_get_classes
 from skfda.datasets import fetch_growth
+from skfda.exploratory.stats.covariance import ParametricGaussianCovariance
+from skfda.misc.covariances import Gaussian
 from skfda.misc.metrics import l2_distance
 from skfda.ml.classification import (
     DDClassifier,
     DDGClassifier,
     DTMClassifier,
     KNeighborsClassifier,
+    LogisticRegression,
     MaximumDepthClassifier,
     NearestCentroid,
+    QuadraticDiscriminantAnalysis,
     RadiusNeighborsClassifier,
 )
 from skfda.ml.classification._depth_classifiers import _ArgMaxClassifier
@@ -90,6 +94,21 @@ class TestClassifierClasses(unittest.TestCase):
     def test_classes_argmax(self) -> None:
         """Check classes attribute of _ArgMaxClassifier."""
         clf: _ArgMaxClassifier = _ArgMaxClassifier()
+        clf.fit(self._X_train, self._y_train)
+        np.testing.assert_array_equal(clf.classes_, self.classes)
+
+    def test_classes_logistic_regression(self) -> None:
+        """Check classes attribute of LogisticRegression."""
+        clf: LogisticRegression = LogisticRegression(max_iter=1000)
+        clf.fit(self._X_train, self._y_train)
+        np.testing.assert_array_equal(clf.classes_, self.classes)
+
+    def test_classes_quadratic_discriminant_analysis(self) -> None:
+        """Check classes attribute of QuadraticDiscriminantAnalysis."""
+        rbf = Gaussian(variance=6, length_scale=1)
+        clf: QuadraticDiscriminantAnalysis = QuadraticDiscriminantAnalysis(
+            cov_estimator=ParametricGaussianCovariance(rbf),
+        )
         clf.fit(self._X_train, self._y_train)
         np.testing.assert_array_equal(clf.classes_, self.classes)
 

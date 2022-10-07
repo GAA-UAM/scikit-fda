@@ -16,8 +16,8 @@ from skfda.misc.scoring import (
     mean_squared_log_error,
     r2_score,
 )
-from skfda.representation._typing import NDArrayFloat
 from skfda.representation.basis import BSpline, Fourier, Monomial
+from skfda.typing._numpy import NDArrayFloat
 
 
 def _create_data_grid(n: int) -> Tuple[FDataGrid, FDataGrid]:

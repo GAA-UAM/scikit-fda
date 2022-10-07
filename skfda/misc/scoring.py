@@ -1,21 +1,27 @@
 """Scoring methods for FData."""
+import math
 import warnings
 from functools import singledispatch
 from typing import Optional, TypeVar, Union, overload
 
 import numpy as np
-import scipy.integrate
-import sklearn
+import sklearn.metrics
 from typing_extensions import Literal, Protocol
 
-from .. import FData
-from ..exploratory.stats import mean, var
-from ..representation import FDataBasis, FDataGrid
+from .._utils import nquad_vec
+from ..exploratory.stats._stats import mean, var
+from ..representation import FData, FDataBasis, FDataGrid
 from ..representation._functional_data import EvalPointsType
-from ..representation._typing import NDArrayFloat
+from ..typing._numpy import NDArrayFloat
 
 DataType = TypeVar('DataType', FDataGrid, FDataBasis, NDArrayFloat)
 DataTypeRawValues = TypeVar('DataTypeRawValues', FDataGrid, NDArrayFloat)
+
+MultiOutputType = Literal['uniform_average', 'raw_values']
+
+
+class InfiniteErrorException(Exception):
+    pass
 
 
 class ScoreFunction(Protocol):
@@ -26,10 +32,9 @@ class ScoreFunction(Protocol):
         y_true: Union[FData, NDArrayFloat],
         y_pred: Union[FData, NDArrayFloat],
         sample_weight: Optional[NDArrayFloat] = None,
-        multioutput: Literal['uniform_average', 'raw_values']
-        = 'uniform_average',
+        multioutput: MultiOutputType = 'uniform_average',
     ) -> Union[NDArrayFloat, FDataGrid, float]:
-        ...  # noqa: WPS428
+        pass  # noqa: WPS428
 
 
 def _domain_measure(fd: FData) -> float:
@@ -46,7 +51,7 @@ def _var(
     if weights is None:
         return var(x)
 
-    return mean(
+    return mean(  # type: ignore[no-any-return]
         np.power(x - mean(x, weights=weights), 2),
         weights=weights,
     )
@@ -60,7 +65,7 @@ def explained_variance_score(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average'] = 'uniform_average',
 ) -> float:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @overload
@@ -71,7 +76,7 @@ def explained_variance_score(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['raw_values'],
 ) -> DataTypeRawValues:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @singledispatch
@@ -150,15 +155,17 @@ def explained_variance_score(
         multioutput = 'raw_values', ndarray.
 
     """
-    return sklearn.metrics.explained_variance_score(
-        y_true,
-        y_pred,
-        sample_weight=sample_weight,
-        multioutput=multioutput,
+    return (  # type: ignore [no-any-return]
+        sklearn.metrics.explained_variance_score(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+        )
     )
 
 
-@explained_variance_score.register
+@explained_variance_score.register  # type: ignore[attr-defined, misc]
 def _explained_variance_score_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
@@ -183,18 +190,16 @@ def _explained_variance_score_fdatagrid(
     # Score only contains 1 function
     # If the dimension of the codomain is > 1,
     # the mean of the scores is taken
-    return np.mean(score.integrate()[0]) / _domain_measure(score)
+    return float(np.mean(score.integrate()[0]) / _domain_measure(score))
 
 
-@explained_variance_score.register
+@explained_variance_score.register  # type: ignore[attr-defined, misc]
 def _explained_variance_score_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
     sample_weight: Optional[NDArrayFloat] = None,
 ) -> float:
-
-    start, end = y_true.domain_range[0]
 
     def _ev_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
         num = np.average(
@@ -219,31 +224,32 @@ def _explained_variance_score_fdatabasis(
             axis=0,
         )
 
+        # Divisions by zero allowed
+        with np.errstate(divide='ignore', invalid='ignore'):
+            score = 1 - num / den
+
         # 0/0 case, the score is 1.
-        if num == 0 and den == 0:
-            return 1
+        score[np.isnan(score)] = 1
 
         # r/0 case, r!= 0. Return -inf outside this function
-        if num != 0 and den == 0:
-            raise ValueError
+        if np.any(np.isinf(score)):
+            raise InfiniteErrorException
 
-        score = 1 - num / den
-
-        # Score only contains 1 function
-        return score[0]
+        # Score only contains 1 input point
+        assert score.shape[0] == 1
+        return score[0]  # type: ignore [no-any-return]
 
     try:
-        integral = scipy.integrate.quad_vec(
+        integral = nquad_vec(
             _ev_func,
-            start,
-            end,
+            y_true.domain_range,
         )
-    except ValueError:
-        return float('-inf')
+    except InfiniteErrorException:
+        return -math.inf
 
     # If the dimension of the codomain is > 1,
     # the mean of the scores is taken
-    return np.mean(integral[0]) / (end - start)
+    return float(np.mean(integral[0]) / _domain_measure(y_true))
 
 
 @overload
@@ -254,7 +260,7 @@ def mean_absolute_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average'] = 'uniform_average',
 ) -> float:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @overload
@@ -265,7 +271,7 @@ def mean_absolute_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['raw_values'],
 ) -> DataTypeRawValues:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @singledispatch
@@ -331,7 +337,7 @@ def mean_absolute_error(
         multioutput = 'raw_values', ndarray.
 
     """
-    return sklearn.metrics.mean_absolute_error(
+    return sklearn.metrics.mean_absolute_error(  # type: ignore [no-any-return]
         y_true,
         y_pred,
         sample_weight=sample_weight,
@@ -339,7 +345,7 @@ def mean_absolute_error(
     )
 
 
-@mean_absolute_error.register
+@mean_absolute_error.register  # type: ignore[attr-defined, misc]
 def _mean_absolute_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
@@ -348,7 +354,7 @@ def _mean_absolute_error_fdatagrid(
     multioutput: Literal['uniform_average', 'raw_values'] = 'uniform_average',
 ) -> Union[float, FDataGrid]:
 
-    error = mean(np.abs(y_true - y_pred), weights=sample_weight)
+    error: FDataGrid = mean(np.abs(y_true - y_pred), weights=sample_weight)
 
     if multioutput == 'raw_values':
         return error
@@ -356,18 +362,16 @@ def _mean_absolute_error_fdatagrid(
     # Error only contains 1 function
     # If the dimension of the codomain is > 1,
     # the mean of the errors is taken
-    return np.mean(error.integrate()[0]) / _domain_measure(error)
+    return float(np.mean(error.integrate()[0]) / _domain_measure(error))
 
 
-@mean_absolute_error.register
+@mean_absolute_error.register  # type: ignore[attr-defined, misc]
 def _mean_absolute_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
     sample_weight: Optional[NDArrayFloat] = None,
 ) -> float:
-
-    start, end = y_true.domain_range[0]
 
     def _mae_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
         error = np.average(
@@ -376,18 +380,18 @@ def _mean_absolute_error_fdatabasis(
             axis=0,
         )
 
-        # Error only contains 1 function
-        return error[0]
+        # Error only contains 1 input point
+        assert error.shape[0] == 1
+        return error[0]  # type: ignore [no-any-return]
 
-    integral = scipy.integrate.quad_vec(
+    integral = nquad_vec(
         _mae_func,
-        start,
-        end,
+        y_true.domain_range,
     )
 
     # If the dimension of the codomain is > 1,
     # the mean of the errors is taken
-    return np.mean(integral[0]) / (end - start)
+    return float(np.mean(integral[0]) / _domain_measure(y_true))
 
 
 @overload
@@ -398,7 +402,7 @@ def mean_absolute_percentage_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average'] = 'uniform_average',
 ) -> float:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @overload
@@ -409,7 +413,7 @@ def mean_absolute_percentage_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['raw_values'],
 ) -> DataTypeRawValues:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @singledispatch
@@ -419,7 +423,7 @@ def mean_absolute_percentage_error(
     *,
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average', 'raw_values'] = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> Union[float, NDArrayFloat, FDataGrid]:
     r"""Mean Absolute Percentage Error for :class:`~skfda.representation.FData`.
 
     With :math:`y\_true = (X_1, X_2, ..., X_n)` being the real values,
@@ -478,15 +482,17 @@ def mean_absolute_percentage_error(
         multioutput = 'raw_values', ndarray.
 
     """
-    return sklearn.metrics.mean_absolute_percentage_error(
-        y_true,
-        y_pred,
-        sample_weight=sample_weight,
-        multioutput=multioutput,
+    return (  # type: ignore [no-any-return]
+        sklearn.metrics.mean_absolute_percentage_error(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+        )
     )
 
 
-@mean_absolute_percentage_error.register
+@mean_absolute_percentage_error.register  # type: ignore[attr-defined, misc]
 def _mean_absolute_percentage_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
@@ -502,7 +508,7 @@ def _mean_absolute_percentage_error_fdatagrid(
 
     mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
 
-    error = mean(mape, weights=sample_weight)
+    error: FDataGrid = mean(mape, weights=sample_weight)
 
     if multioutput == 'raw_values':
         return error
@@ -510,10 +516,10 @@ def _mean_absolute_percentage_error_fdatagrid(
     # Error only contains 1 function
     # If the dimension of the codomain is > 1,
     # the mean of the errors is taken
-    return np.mean(error.integrate()[0]) / _domain_measure(error)
+    return float(np.mean(error.integrate()[0]) / _domain_measure(error))
 
 
-@mean_absolute_percentage_error.register
+@mean_absolute_percentage_error.register  # type: ignore[attr-defined, misc]
 def _mean_absolute_percentage_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
@@ -536,19 +542,18 @@ def _mean_absolute_percentage_error_fdatabasis(
             axis=0,
         )
 
-        # Error only contains 1 function
-        return error[0]
+        # Error only contains 1 input point
+        assert error.shape[0] == 1
+        return error[0]  # type: ignore [no-any-return]
 
-    start, end = y_true.domain_range[0]
-    integral = scipy.integrate.quad_vec(
+    integral = nquad_vec(
         _mape_func,
-        start,
-        end,
+        y_true.domain_range,
     )
 
     # If the dimension of the codomain is > 1,
     # the mean of the errors is taken
-    return np.mean(integral[0]) / (end - start)
+    return float(np.mean(integral[0]) / _domain_measure(y_true))
 
 
 @overload
@@ -560,7 +565,7 @@ def mean_squared_error(
     multioutput: Literal['uniform_average'] = 'uniform_average',
     squared: bool = True,
 ) -> float:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @overload
@@ -572,7 +577,7 @@ def mean_squared_error(
     multioutput: Literal['raw_values'],
     squared: bool = True,
 ) -> DataTypeRawValues:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @singledispatch
@@ -583,7 +588,7 @@ def mean_squared_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average', 'raw_values'] = 'uniform_average',
     squared: bool = True,
-) -> Union[float, FDataGrid]:
+) -> Union[float, NDArrayFloat, FDataGrid]:
     r"""Mean Squared Error for :class:`~skfda.representation.FData`.
 
     With :math:`y\_true = (X_1, X_2, ..., X_n)` being the real values,
@@ -640,7 +645,7 @@ def mean_squared_error(
         multioutput = 'raw_values', ndarray.
 
     """
-    return mean_squared_error(
+    return sklearn.metrics.mean_squared_error(  # type: ignore [no-any-return]
         y_true,
         y_pred,
         sample_weight=sample_weight,
@@ -649,7 +654,7 @@ def mean_squared_error(
     )
 
 
-@mean_squared_error.register
+@mean_squared_error.register  # type: ignore[attr-defined, misc]
 def _mean_squared_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
@@ -659,7 +664,7 @@ def _mean_squared_error_fdatagrid(
     squared: bool = True,
 ) -> Union[float, FDataGrid]:
 
-    error = mean(
+    error: FDataGrid = mean(
         np.power(y_true - y_pred, 2),
         weights=sample_weight,
     )
@@ -673,10 +678,10 @@ def _mean_squared_error_fdatagrid(
     # Error only contains 1 function
     # If the dimension of the codomain is > 1,
     # the mean of the errors is taken
-    return np.mean(error.integrate()[0]) / _domain_measure(error)
+    return float(np.mean(error.integrate()[0]) / _domain_measure(error))
 
 
-@mean_squared_error.register
+@mean_squared_error.register  # type: ignore[attr-defined, misc]
 def _mean_squared_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
@@ -685,11 +690,9 @@ def _mean_squared_error_fdatabasis(
     squared: bool = True,
 ) -> float:
 
-    start, end = y_true.domain_range[0]
-
     def _mse_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
 
-        error = np.average(
+        error: NDArrayFloat = np.average(
             (y_true(x) - y_pred(x)) ** 2,
             weights=sample_weight,
             axis=0,
@@ -698,18 +701,18 @@ def _mean_squared_error_fdatabasis(
         if not squared:
             return np.sqrt(error)
 
-        # Error only contains 1 function
-        return error[0]
+        # Error only contains 1 input point
+        assert error.shape[0] == 1
+        return error[0]  # type: ignore [no-any-return]
 
-    integral = scipy.integrate.quad_vec(
+    integral = nquad_vec(
         _mse_func,
-        start,
-        end,
+        y_true.domain_range,
     )
 
     # If the dimension of the codomain is > 1,
     # the mean of the errors is taken
-    return np.mean(integral[0]) / (end - start)
+    return float(np.mean(integral[0]) / _domain_measure(y_true))
 
 
 @overload
@@ -721,7 +724,7 @@ def mean_squared_log_error(
     multioutput: Literal['uniform_average'] = 'uniform_average',
     squared: bool = True,
 ) -> float:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @overload
@@ -733,7 +736,7 @@ def mean_squared_log_error(
     multioutput: Literal['raw_values'],
     squared: bool = True,
 ) -> DataTypeRawValues:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @singledispatch
@@ -744,7 +747,7 @@ def mean_squared_log_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average', 'raw_values'] = 'uniform_average',
     squared: bool = True,
-) -> Union[float, FDataGrid]:
+) -> Union[float, NDArrayFloat, FDataGrid]:
     r"""Mean Squared Log Error for :class:`~skfda.representation.FData`.
 
     With :math:`y\_true = (X_1, X_2, ..., X_n)` being the real values,
@@ -806,16 +809,18 @@ def mean_squared_log_error(
         multioutput = 'raw_values', ndarray.
 
     """
-    return sklearn.metrics.mean_squared_log_error(
-        y_true,
-        y_pred,
-        sample_weight=sample_weight,
-        multioutput=multioutput,
-        squared=squared,
+    return (  # type: ignore [no-any-return]
+        sklearn.metrics.mean_squared_log_error(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+            squared=squared,
+        )
     )
 
 
-@mean_squared_log_error.register
+@mean_squared_log_error.register  # type: ignore[attr-defined, misc]
 def _mean_squared_log_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
@@ -840,7 +845,7 @@ def _mean_squared_log_error_fdatagrid(
     )
 
 
-@mean_squared_log_error.register
+@mean_squared_log_error.register  # type: ignore[attr-defined, misc]
 def _mean_squared_log_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
@@ -849,18 +854,19 @@ def _mean_squared_log_error_fdatabasis(
     squared: bool = True,
 ) -> float:
 
-    start, end = y_true.domain_range[0]
-
     def _msle_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
 
-        if np.any(y_true(x) < 0) or np.any(y_pred(x) < 0):
+        y_true_eval = y_true(x)
+        y_pred_eval = y_pred(x)
+
+        if np.any(y_true_eval < 0) or np.any(y_pred_eval < 0):
             raise ValueError(
                 "Mean Squared Logarithmic Error cannot be used when "
                 "targets functions have negative values.",
             )
 
-        error = np.average(
-            (np.log1p(y_true(x)) - np.log1p(y_pred(x))) ** 2,
+        error: NDArrayFloat = np.average(
+            (np.log1p(y_true_eval) - np.log1p(y_pred_eval)) ** 2,
             weights=sample_weight,
             axis=0,
         )
@@ -868,18 +874,18 @@ def _mean_squared_log_error_fdatabasis(
         if not squared:
             return np.sqrt(error)
 
-        # Error only contains 1 function
-        return error[0]
+        # Error only contains 1 input point
+        assert error.shape[0] == 1
+        return error[0]  # type: ignore [no-any-return]
 
-    integral = scipy.integrate.quad_vec(
+    integral = nquad_vec(
         _msle_func,
-        start,
-        end,
+        y_true.domain_range,
     )
 
     # If the dimension of the codomain is > 1,
     # the mean of the errors is taken
-    return np.mean(integral[0]) / (end - start)
+    return float(np.mean(integral) / _domain_measure(y_true))
 
 
 @overload
@@ -890,7 +896,7 @@ def r2_score(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average'] = 'uniform_average',
 ) -> float:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @overload
@@ -901,7 +907,7 @@ def r2_score(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['raw_values'],
 ) -> DataTypeRawValues:
-    ...  # noqa: WPS428
+    pass  # noqa: WPS428
 
 
 @singledispatch
@@ -911,7 +917,7 @@ def r2_score(
     *,
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average', 'raw_values'] = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> Union[float, NDArrayFloat, FDataGrid]:
     r"""R^2 score for :class:`~skfda.representation.FData`.
 
     With :math:`y\_true = (X_1, X_2, ..., X_n)` being the real values,
@@ -970,7 +976,7 @@ def r2_score(
         multioutput = 'raw_values', ndarray.
 
     """
-    return sklearn.metrics.r2_score(
+    return sklearn.metrics.r2_score(  # type: ignore [no-any-return]
         y_true,
         y_pred,
         sample_weight=sample_weight,
@@ -978,7 +984,7 @@ def r2_score(
     )
 
 
-@r2_score.register
+@r2_score.register  # type: ignore[attr-defined, misc]
 def _r2_score_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
@@ -1001,7 +1007,7 @@ def _r2_score_fdatagrid(
 
     # Divisions by zero allowed
     with np.errstate(divide='ignore', invalid='ignore'):
-        score = 1 - ss_res / ss_tot
+        score: FDataGrid = 1 - ss_res / ss_tot
 
     # 0 / 0 divisions should be 0 in this context and the score, 1
     score.data_matrix[np.isnan(score.data_matrix)] = 1
@@ -1012,10 +1018,10 @@ def _r2_score_fdatagrid(
     # Score only contains 1 function
     # If the dimension of the codomain is > 1,
     # the mean of the scores is taken
-    return np.mean(score.integrate()[0]) / _domain_measure(score)
+    return float(np.mean(score.integrate()[0]) / _domain_measure(score))
 
 
-@r2_score.register
+@r2_score.register  # type: ignore[attr-defined, misc]
 def _r2_score_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
@@ -1023,14 +1029,12 @@ def _r2_score_fdatabasis(
     sample_weight: Optional[NDArrayFloat] = None,
 ) -> float:
 
-    start, end = y_true.domain_range[0]
-
     if y_pred.n_samples < 2:
         raise ValueError(
             'R^2 score is not well-defined with less than two samples.',
         )
 
-    def _r2_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
+    def _r2_func(x: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         ss_res = np.average(
             (y_true(x) - y_pred(x)) ** 2,
             weights=sample_weight,
@@ -1046,29 +1050,29 @@ def _r2_score_fdatabasis(
             axis=0,
         )
 
+        # Divisions by zero allowed
+        with np.errstate(divide='ignore', invalid='ignore'):
+            score = 1 - ss_res / ss_tot
+
         # 0/0 case, the score is 1.
-        if ss_res == 0 and ss_tot == 0:
-            return 1
+        score[np.isnan(score)] = 1
 
         # r/0 case, r!= 0. Return -inf outside this function
-        if ss_res != 0 and ss_tot == 0:
-            raise ValueError
+        if np.any(np.isinf(score)):
+            raise InfiniteErrorException
 
-        score = 1 - ss_res / ss_tot
-
-        # Score only contains 1 function
-        return score[0]
+        # Score only had 1 input point
+        assert score.shape[0] == 1
+        return score[0]  # type: ignore [no-any-return]
 
     try:
-        integral = scipy.integrate.quad_vec(
+        integral = nquad_vec(
             _r2_func,
-            start,
-            end,
+            y_true.domain_range,
         )
-
-    except ValueError:
-        return float('-inf')
+    except InfiniteErrorException:
+        return -math.inf
 
     # If the dimension of the codomain is > 1,
     # the mean of the scores is taken
-    return np.mean(integral[0]) / (end - start)
+    return float(np.mean(integral) / _domain_measure(y_true))

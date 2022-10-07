@@ -20,7 +20,7 @@ T = TypeVar('T', bound=Union[NDArrayFloat, FData])
 
 def mean(
     X: F,
-    weights: Optional[NDArrayFloat] = None,
+    weights: NDArrayFloat | None = None,
 ) -> F:
     """
     Compute the mean of all the samples in a FData object.

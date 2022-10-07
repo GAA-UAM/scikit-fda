@@ -1,7 +1,7 @@
 """Test for scoring module."""
 import math
 import unittest
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Sequence, Tuple
 
 import numpy as np
 import sklearn.metrics
@@ -18,6 +18,15 @@ from skfda.misc.scoring import (
 )
 from skfda.representation.basis import BSpline, Fourier, Monomial
 from skfda.typing._numpy import NDArrayFloat
+
+score_functions: Sequence[ScoreFunction] = (
+    explained_variance_score,
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    mean_squared_error,
+    mean_squared_log_error,
+    r2_score,
+)
 
 
 def _create_data_basis() -> Tuple[FDataBasis, FDataBasis]:
@@ -57,7 +66,6 @@ class TestScoreFunctionsGrid(unittest.TestCase):
     def _test_generic_grid(
         self,
         function: ScoreFunction,
-        sklearn_function: ScoreFunction,
         weight: Optional[NDArrayFloat] = None,
         **kwargs: Any,
     ) -> None:
@@ -71,7 +79,7 @@ class TestScoreFunctionsGrid(unittest.TestCase):
             **kwargs,
         )
 
-        score_sklearn = sklearn_function(
+        score_sklearn = function(
             y_true.data_matrix.squeeze(),
             y_pred.data_matrix.squeeze(),
             multioutput='raw_values',
@@ -84,95 +92,25 @@ class TestScoreFunctionsGrid(unittest.TestCase):
             score_sklearn,
         )
 
-    def test_explained_variance_score_grid(self) -> None:
-        """Test Explained Variance Score for FDataGrid."""
-        self._test_generic_grid(
-            explained_variance_score,
-            sklearn.metrics.explained_variance_score,
-        )
+    def test_all(self) -> None:
+        """Test all score functions."""
+        for score_function in score_functions:
+            with self.subTest(function=score_function):
 
-        self._test_generic_grid(
-            explained_variance_score,
-            sklearn.metrics.explained_variance_score,
-            weight=np.array([3, 1]),
-        )
+                self._test_generic_grid(score_function)
 
-    def test_mean_absolute_error_grid(self) -> None:
-        """Test Mean Absolute Error for FDataGrid."""
-        self._test_generic_grid(
-            mean_absolute_error,
-            sklearn.metrics.mean_absolute_error,
-        )
+                try:
+                    self._test_generic_grid(
+                        score_function,
+                        squared=False,
+                    )
+                except TypeError:
+                    pass
 
-        self._test_generic_grid(
-            mean_absolute_error,
-            sklearn.metrics.mean_absolute_error,
-            weight=np.array([3, 1]),
-        )
-
-    def test_mean_absolute_percentage_error_grid(self) -> None:
-        """Test Mean Absolute Percentage Error for FDataGrid."""
-        self._test_generic_grid(
-            mean_absolute_percentage_error,
-            sklearn.metrics.mean_absolute_percentage_error,
-        )
-
-        self._test_generic_grid(
-            mean_absolute_percentage_error,
-            sklearn.metrics.mean_absolute_percentage_error,
-            weight=np.array([3, 1]),
-        )
-
-    def test_mean_squared_error_grid(self) -> None:
-        """Test Mean Squared Error for FDataGrid."""
-        self._test_generic_grid(
-            mean_squared_error,
-            sklearn.metrics.mean_squared_error,
-        )
-
-        self._test_generic_grid(
-            mean_squared_error,
-            sklearn.metrics.mean_squared_error,
-            squared=False,
-        )
-
-        self._test_generic_grid(
-            mean_squared_error,
-            sklearn.metrics.mean_squared_error,
-            weight=np.array([3, 1]),
-        )
-
-    def test_mean_squared_log_error_grid(self) -> None:
-        """Test Mean Squared Log Error for FDataGrid."""
-        self._test_generic_grid(
-            mean_squared_log_error,
-            sklearn.metrics.mean_squared_log_error,
-        )
-
-        self._test_generic_grid(
-            mean_squared_log_error,
-            sklearn.metrics.mean_squared_log_error,
-            squared=False,
-        )
-
-        self._test_generic_grid(
-            mean_squared_log_error,
-            sklearn.metrics.mean_squared_log_error,
-            weight=np.array([3, 1]),
-        )
-
-    def test_r2_score_grid(self) -> None:
-        """Test R2 Score for FDataGrid."""
-        self._test_generic_grid(
-            r2_score,
-            sklearn.metrics.r2_score,
-        )
-
-        self._test_generic_grid(
-            r2_score,
-            sklearn.metrics.r2_score,
-            weight=np.array([3, 1]),
-        )
+                self._test_generic_grid(
+                    score_function,
+                    weight=np.array([3, 1]),
+                )
 
 
 class TestScoreFunctionGridBasis(unittest.TestCase):
@@ -208,55 +146,25 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
 
         self.assertAlmostEqual(score_basis, score_grid, places=precision)
 
-    def test_explained_variance_score(self) -> None:
-        """Explained variance score for FDataGrid and FDataBasis."""
-        self._test_grid_basis_generic(explained_variance_score)
-        self._test_grid_basis_generic(
-            explained_variance_score,
-            weight=np.array([3, 1]),
-        )
+    def test_all(self) -> None:
+        """Test all score functions."""
+        for score_function in score_functions:
+            with self.subTest(function=score_function):
 
-    def test_mean_absolute_error(self) -> None:
-        """Mean Absolute Error for FDataGrid and FDataBasis."""
-        self._test_grid_basis_generic(mean_absolute_error)
-        self._test_grid_basis_generic(
-            mean_absolute_error,
-            weight=np.array([3, 1]),
-        )
+                self._test_grid_basis_generic(score_function)
 
-    def test_mean_absolute_percentage_error(self) -> None:
-        """Mean Absolute Percentage Error for FDataGrid and FDataBasis."""
-        self._test_grid_basis_generic(mean_absolute_percentage_error)
-        self._test_grid_basis_generic(
-            mean_absolute_percentage_error,
-            weight=np.array([3, 1]),
-        )
+                try:
+                    self._test_grid_basis_generic(
+                        score_function,
+                        squared=False,
+                    )
+                except TypeError:
+                    pass
 
-    def test_mean_squared_error(self) -> None:
-        """Mean Squared Error for FDataGrid and FDataBasis."""
-        self._test_grid_basis_generic(mean_squared_error)
-        self._test_grid_basis_generic(
-            mean_squared_error,
-            weight=np.array([3, 1]),
-        )
-        self._test_grid_basis_generic(mean_squared_error, squared=False)
-
-    def test_mean_squared_log_error(self) -> None:
-        """Mean Squared Log Error for FDataGrid and FDataBasis."""
-        self._test_grid_basis_generic(mean_squared_log_error)
-        self._test_grid_basis_generic(
-            mean_squared_log_error,
-            weight=np.array([3, 1]),
-        )
-        self._test_grid_basis_generic(mean_squared_log_error, squared=False)
-
-    def test_r2_score(self) -> None:
-        """R2 Score for FDataGrid and FDataBasis."""
-        self._test_grid_basis_generic(r2_score)
-        self._test_grid_basis_generic(
-            r2_score,
-            weight=np.array([3, 1]),
-        )
+                self._test_grid_basis_generic(
+                    score_function,
+                    weight=np.array([3, 1]),
+                )
 
 
 class TestScoreFunctionsBasis(unittest.TestCase):

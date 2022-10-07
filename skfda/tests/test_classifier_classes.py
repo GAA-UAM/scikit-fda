@@ -1,28 +1,12 @@
 """Tests classes attribute of classifiers."""
 
 import unittest
+from typing import List
 
 import numpy as np
-from sklearn.model_selection import train_test_split
 
 from skfda._utils._sklearn_adapter import ClassifierMixin
-from skfda._utils._utils import _classifier_get_classes
-from skfda.datasets import fetch_growth
-from skfda.exploratory.stats.covariance import ParametricGaussianCovariance
-from skfda.misc.covariances import Gaussian
-from skfda.misc.metrics import l2_distance
-from skfda.ml.classification import (
-    DDClassifier,
-    DDGClassifier,
-    DTMClassifier,
-    KNeighborsClassifier,
-    LogisticRegression,
-    MaximumDepthClassifier,
-    NearestCentroid,
-    QuadraticDiscriminantAnalysis,
-    RadiusNeighborsClassifier,
-)
-from skfda.ml.classification._depth_classifiers import _ArgMaxClassifier
+from skfda.datasets import make_multimodal_samples
 from skfda.representation import FData
 
 from ..typing._numpy import NDArrayAny
@@ -33,43 +17,39 @@ class TestClassifierClasses(unittest.TestCase):
 
     def setUp(self) -> None:
         """Establish train and test data sets."""
-        X, y = fetch_growth(return_X_y=True)
-        X_train, X_test, y_train, _ = train_test_split(
-            X,
-            y,
-            test_size=0.25,
-            stratify=y,
-            random_state=0,
-        )
-        self._X_train = X_train
-        self._X_test = X_test
-        self._y_train = y_train
+        # List of classes to test
+        # Adding new classes to this list will test the classifiers with them
+        self.classes_list: List[NDArrayAny] = [
+            np.array([0, 1, 2]),
+            np.array(["class_a", "class_b", "class_c"]),
+        ]
 
-        self.classes = _classifier_get_classes(self._y_train)[0]
-        self.tested_classifiers: list[ClassifierMixin[FData, NDArrayAny]] = [
-            KNeighborsClassifier(),
-            RadiusNeighborsClassifier(),
-            NearestCentroid(),
-            DDGClassifier(multivariate_classifier=KNeighborsClassifier()),
-            DDClassifier(degree=2),
-            DTMClassifier(proportiontocut=0, metric=l2_distance),
-            MaximumDepthClassifier(),
-            _ArgMaxClassifier(),
-            LogisticRegression(max_iter=1000),
-            QuadraticDiscriminantAnalysis(
-                cov_estimator=ParametricGaussianCovariance(
-                    Gaussian(variance=6, length_scale=1),
-                ),
-            ),
+        # Create one target y data of length n_samples from each class set
+        n_samples = 30
+        self.y_list = [
+            np.resize(classes, n_samples)
+            for classes in self.classes_list
+        ]
+        self.X = make_multimodal_samples(
+            n_samples=n_samples,
+        )
+
+        self.tested_classifiers: List[ClassifierMixin[FData, NDArrayAny]] = [
         ]
 
     def test_classes(self) -> None:
         """Check classes attribute."""
         # Iterate over all classifiers with index
-        for i, clf in enumerate(self.tested_classifiers):
-            with self.subTest(i=i):
-                clf.fit(self._X_train, self._y_train)
-                np.testing.assert_array_equal(clf.classes_, self.classes)
+        for clf in self.tested_classifiers:
+            # Iterate over all class sets to test different types of classes
+            for classes, y in zip(self.classes_list, self.y_list):
+                message = (
+                    f'Testing classifier {clf.__class__.__name__} '
+                    f'with classes {classes}'
+                )
+                with self.subTest(msg=message):
+                    clf.fit(self.X, y)
+                    np.testing.assert_array_equal(clf.classes_, classes)
 
 
 if __name__ == "__main__":

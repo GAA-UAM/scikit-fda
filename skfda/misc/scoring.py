@@ -14,23 +14,49 @@ from ..representation import FData, FDataBasis, FDataGrid
 from ..representation._functional_data import EvalPointsType
 from ..typing._numpy import NDArrayFloat
 
-DataType = TypeVar('DataType', FDataGrid, FDataBasis, NDArrayFloat)
-DataTypeRawValues = TypeVar('DataTypeRawValues', FDataGrid, NDArrayFloat)
+DataType = TypeVar('DataType', bound=Union[FData, NDArrayFloat])
+DataTypeRawValues = TypeVar(
+    'DataTypeRawValues',
+    bound=Union[FDataGrid, NDArrayFloat],
+)
 
 MultiOutputType = Literal['uniform_average', 'raw_values']
 
 
 class InfiniteErrorException(Exception):
-    pass
+    pass  # noqa: WPS428
 
 
 class ScoreFunction(Protocol):
     """Type definition for score functions."""
 
+    @overload
+    def __call__(
+        self,
+        y_true: DataType,
+        y_pred: DataType,
+        *,
+        sample_weight: Optional[NDArrayFloat] = None,
+        multioutput: Literal['uniform_average'] = 'uniform_average',
+    ) -> float:
+        pass  # noqa: WPS428
+
+    @overload
+    def __call__(   # noqa: D102
+        self,
+        y_true: DataTypeRawValues,
+        y_pred: DataTypeRawValues,
+        *,
+        sample_weight: Optional[NDArrayFloat] = None,
+        multioutput: Literal['raw_values'],
+    ) -> DataTypeRawValues:
+        pass  # noqa: WPS428
+
     def __call__(   # noqa: D102
         self,
         y_true: Union[FData, NDArrayFloat],
         y_pred: Union[FData, NDArrayFloat],
+        *,
         sample_weight: Optional[NDArrayFloat] = None,
         multioutput: MultiOutputType = 'uniform_average',
     ) -> Union[NDArrayFloat, FDataGrid, float]:

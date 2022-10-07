@@ -1,12 +1,12 @@
 """Test for scoring module."""
+import math
 import unittest
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import numpy as np
-import sklearn
+import sklearn.metrics
 
 from skfda import FDataBasis, FDataGrid
-from skfda.datasets import fetch_tecator
 from skfda.misc.scoring import (
     ScoreFunction,
     explained_variance_score,
@@ -20,16 +20,6 @@ from skfda.representation.basis import BSpline, Fourier, Monomial
 from skfda.typing._numpy import NDArrayFloat
 
 
-def _create_data_grid(n: int) -> Tuple[FDataGrid, FDataGrid]:
-    X, y = fetch_tecator(return_X_y=True, as_frame=True)
-    fd = X.iloc[:, 0].values
-
-    y_true = fd[:n]
-    y_pred = fd[n:2 * n]
-
-    return y_true, y_pred
-
-
 def _create_data_basis() -> Tuple[FDataBasis, FDataBasis]:
     coef_true = [[1, 2, 3], [4, 5, 6]]
     coef_pred = [[1, 2, 3], [4, 6, 5]]
@@ -41,7 +31,7 @@ def _create_data_basis() -> Tuple[FDataBasis, FDataBasis]:
         coefficients=coef_true,
     )
 
-    # y_true: 1) 1 + 2x + 3x^2
+    # y_pred: 1) 1 + 2x + 3x^2
     #         2) 4 + 6x + 5x^2
     y_pred = FDataBasis(
         basis=Monomial(domain_range=((0, 3),), n_basis=3),
@@ -53,50 +43,41 @@ def _create_data_basis() -> Tuple[FDataBasis, FDataBasis]:
     return y_true, y_pred
 
 
+def _create_data_grid() -> Tuple[FDataGrid, FDataGrid]:
+
+    y_true, y_pred = _create_data_basis()
+    grid = np.linspace(*y_true.domain_range[0], 100)
+
+    return y_true.to_grid(grid), y_pred.to_grid(grid)
+
+
 class TestScoreFunctionsGrid(unittest.TestCase):
     """Tests for score functions with FDataGrid representation."""
-
-    n = 10
 
     def _test_generic_grid(
         self,
         function: ScoreFunction,
         sklearn_function: ScoreFunction,
         weight: Optional[NDArrayFloat] = None,
-        squared: bool = True,
+        **kwargs: Any,
     ) -> None:
-        y_true, y_pred = _create_data_grid(self.n)
+        y_true, y_pred = _create_data_grid()
 
-        if squared:
-            score = function(
-                y_true,
-                y_pred,
-                multioutput='raw_values',
-                sample_weight=weight,
-            )
+        score = function(
+            y_true,
+            y_pred,
+            multioutput='raw_values',
+            sample_weight=weight,
+            **kwargs,
+        )
 
-            score_sklearn = sklearn_function(
-                y_true.data_matrix.squeeze(),
-                y_pred.data_matrix.squeeze(),
-                multioutput='raw_values',
-                sample_weight=weight,
-            )
-        else:
-            score = function(
-                y_true,
-                y_pred,
-                multioutput='raw_values',
-                sample_weight=weight,
-                squared=False,
-            )
-
-            score_sklearn = sklearn_function(
-                y_true.data_matrix.squeeze(),
-                y_pred.data_matrix.squeeze(),
-                multioutput='raw_values',
-                sample_weight=weight,
-                squared=False,
-            )
+        score_sklearn = sklearn_function(
+            y_true.data_matrix.squeeze(),
+            y_pred.data_matrix.squeeze(),
+            multioutput='raw_values',
+            sample_weight=weight,
+            **kwargs,
+        )
 
         np.testing.assert_allclose(
             score.data_matrix.squeeze(),
@@ -113,7 +94,7 @@ class TestScoreFunctionsGrid(unittest.TestCase):
         self._test_generic_grid(
             explained_variance_score,
             sklearn.metrics.explained_variance_score,
-            np.random.random_sample(self.n),
+            weight=np.array([3, 1]),
         )
 
     def test_mean_absolute_error_grid(self) -> None:
@@ -126,7 +107,7 @@ class TestScoreFunctionsGrid(unittest.TestCase):
         self._test_generic_grid(
             mean_absolute_error,
             sklearn.metrics.mean_absolute_error,
-            np.random.random_sample(self.n),
+            weight=np.array([3, 1]),
         )
 
     def test_mean_absolute_percentage_error_grid(self) -> None:
@@ -139,7 +120,7 @@ class TestScoreFunctionsGrid(unittest.TestCase):
         self._test_generic_grid(
             mean_absolute_percentage_error,
             sklearn.metrics.mean_absolute_percentage_error,
-            np.random.random_sample(self.n),
+            weight=np.array([3, 1]),
         )
 
     def test_mean_squared_error_grid(self) -> None:
@@ -158,7 +139,7 @@ class TestScoreFunctionsGrid(unittest.TestCase):
         self._test_generic_grid(
             mean_squared_error,
             sklearn.metrics.mean_squared_error,
-            np.random.random_sample(self.n),
+            weight=np.array([3, 1]),
         )
 
     def test_mean_squared_log_error_grid(self) -> None:
@@ -177,7 +158,7 @@ class TestScoreFunctionsGrid(unittest.TestCase):
         self._test_generic_grid(
             mean_squared_log_error,
             sklearn.metrics.mean_squared_log_error,
-            np.random.random_sample(self.n),
+            weight=np.array([3, 1]),
         )
 
     def test_r2_score_grid(self) -> None:
@@ -190,22 +171,20 @@ class TestScoreFunctionsGrid(unittest.TestCase):
         self._test_generic_grid(
             r2_score,
             sklearn.metrics.r2_score,
-            np.random.random_sample(self.n),
+            weight=np.array([3, 1]),
         )
 
 
 class TestScoreFunctionGridBasis(unittest.TestCase):
     """Compare the results obtained for FDataGrid and FDataBasis."""
 
-    n = 10
-
     def _test_grid_basis_generic(
         self,
         score_function: ScoreFunction,
-        sample_weight: Optional[NDArrayFloat] = None,
-        squared: bool = True,
+        weight: Optional[NDArrayFloat] = None,
+        **kwargs: Any,
     ) -> None:
-        y_true_grid, y_pred_grid = _create_data_grid(self.n)
+        y_true_grid, y_pred_grid = _create_data_grid()
 
         y_true_basis = y_true_grid.to_basis(basis=BSpline(n_basis=10))
         y_pred_basis = y_pred_grid.to_basis(basis=BSpline(n_basis=10))
@@ -214,30 +193,18 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
         # do not give same functions.
         precision = 2
 
-        if squared:
-            score_grid = score_function(
-                y_true_grid,
-                y_pred_grid,
-                sample_weight=sample_weight,
-            )
-            score_basis = score_function(
-                y_true_basis,
-                y_pred_basis,
-                sample_weight=sample_weight,
-            )
-        else:
-            score_grid = score_function(
-                y_true_grid,
-                y_pred_grid,
-                sample_weight=sample_weight,
-                squared=False,
-            )
-            score_basis = score_function(
-                y_true_basis,
-                y_pred_basis,
-                sample_weight=sample_weight,
-                squared=False,
-            )
+        score_grid = score_function(
+            y_true_grid,
+            y_pred_grid,
+            sample_weight=weight,
+            **kwargs,
+        )
+        score_basis = score_function(
+            y_true_basis,
+            y_pred_basis,
+            sample_weight=weight,
+            **kwargs,
+        )
 
         self.assertAlmostEqual(score_basis, score_grid, places=precision)
 
@@ -246,7 +213,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
         self._test_grid_basis_generic(explained_variance_score)
         self._test_grid_basis_generic(
             explained_variance_score,
-            np.random.random_sample((self.n,)),
+            weight=np.array([3, 1]),
         )
 
     def test_mean_absolute_error(self) -> None:
@@ -254,7 +221,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
         self._test_grid_basis_generic(mean_absolute_error)
         self._test_grid_basis_generic(
             mean_absolute_error,
-            np.random.random_sample((self.n,)),
+            weight=np.array([3, 1]),
         )
 
     def test_mean_absolute_percentage_error(self) -> None:
@@ -262,7 +229,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
         self._test_grid_basis_generic(mean_absolute_percentage_error)
         self._test_grid_basis_generic(
             mean_absolute_percentage_error,
-            np.random.random_sample((self.n,)),
+            weight=np.array([3, 1]),
         )
 
     def test_mean_squared_error(self) -> None:
@@ -270,7 +237,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
         self._test_grid_basis_generic(mean_squared_error)
         self._test_grid_basis_generic(
             mean_squared_error,
-            np.random.random_sample((self.n,)),
+            weight=np.array([3, 1]),
         )
         self._test_grid_basis_generic(mean_squared_error, squared=False)
 
@@ -279,7 +246,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
         self._test_grid_basis_generic(mean_squared_log_error)
         self._test_grid_basis_generic(
             mean_squared_log_error,
-            np.random.random_sample((self.n,)),
+            weight=np.array([3, 1]),
         )
         self._test_grid_basis_generic(mean_squared_log_error, squared=False)
 
@@ -288,7 +255,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
         self._test_grid_basis_generic(r2_score)
         self._test_grid_basis_generic(
             r2_score,
-            np.random.random_sample((self.n,)),
+            weight=np.array([3, 1]),
         )
 
 
@@ -418,7 +385,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_pred_grid,
                 multioutput='raw_values',
             ).evaluate(1),
-            [[[float('-inf')]]],
+            [[[-math.inf]]],
         )
 
         # r/0 for FDataBasis (r != 0)
@@ -427,7 +394,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_true_basis,
                 y_pred_basis,
             ),
-            float('-inf'),
+            -math.inf,
         )
 
     def test_zero_ev(self) -> None:
@@ -489,7 +456,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_pred_grid,
                 multioutput='raw_values',
             ).evaluate(1),
-            [[[float('-inf')]]],
+            [[[-math.inf]]],
         )
 
         # r/0 for FDataBasis (r != 0)
@@ -498,13 +465,13 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_true_basis,
                 y_pred_basis,
             ),
-            float('-inf'),
+            -math.inf,
         )
 
     def test_zero_mape(self) -> None:
         """Test Mean Absolute Percentage Error when y_true can be zero."""
-        basis_coef_true = [[3, 0, 0], [0, 0, 1]]
-        basis_coef_pred = [[1, 0, 0], [1, 0, 1]]
+        basis_coef_true = [[3, 0, 0, 0, 0], [0, 0, 1, 0, 0]]
+        basis_coef_pred = [[1, 0, 0, 0, 0], [0, 0, 1, 1, 0]]
 
         # Fourier basis defined in (0, 2) with 3 elements
         # The functions are
@@ -512,25 +479,21 @@ class TestScoreZeroDenominator(unittest.TestCase):
         #             2) 1/sqrt(2) * cos(pi t)
         #
         # y_pred(t) = 1) 1/sqrt(2)
-        #             2) 1/sqrt(2) + 1/sqrt(2) * cos(pi t)
+        #             2) 1/sqrt(2) * cos(pi t) + 1/sqrt(2) * sin(2 pi t)
         # The second function in y_true should be zero at t = 0.5 and t = 1.5
 
         y_true_basis = FDataBasis(
-            basis=Fourier(domain_range=((0, 2),), n_basis=3),
+            basis=Fourier(domain_range=((0, 2),), n_basis=5),
             coefficients=basis_coef_true,
         )
 
         y_pred_basis = FDataBasis(
-            basis=Fourier(domain_range=((0, 2),), n_basis=3),
+            basis=Fourier(domain_range=((0, 2),), n_basis=5),
             coefficients=basis_coef_pred,
         )
 
-        self.assertWarns(
-            RuntimeWarning,
-            mean_absolute_percentage_error,
-            y_true_basis,
-            y_pred_basis,
-        )
+        with self.assertWarns(RuntimeWarning):
+            mean_absolute_percentage_error(y_true_basis, y_pred_basis)
 
         grid_points = np.linspace(0, 2, 9)
 
@@ -539,12 +502,8 @@ class TestScoreZeroDenominator(unittest.TestCase):
         y_true_grid = y_true_basis.to_grid(grid_points=grid_points)
         y_pred_grid = y_pred_basis.to_grid(grid_points=grid_points)
 
-        self.assertWarns(
-            RuntimeWarning,
-            mean_absolute_percentage_error,
-            y_true_grid,
-            y_pred_grid,
-        )
+        with self.assertWarns(RuntimeWarning):
+            mean_absolute_percentage_error(y_true_grid, y_pred_grid)
 
     def test_negative_msle(self) -> None:
         """Test Mean Squared Log Error when there are negative data."""

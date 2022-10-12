@@ -251,7 +251,7 @@ class FPCATestCase(unittest.TestCase):
 
         fd_data = fetch_weather()['data'].coordinates[0]
 
-        fpca = FPCA(n_components=n_components, weights=[1] * 365)
+        fpca = FPCA(n_components=n_components, _weights=[1] * 365)
         fpca.fit(fd_data)
 
         pca = PCA(n_components=n_components)
@@ -297,7 +297,7 @@ class FPCATestCase(unittest.TestCase):
 
         fd_data = fetch_weather()['data'].coordinates[0]
 
-        fpca = FPCA(n_components=n_components, weights=[1] * 365)
+        fpca = FPCA(n_components=n_components, _weights=[1] * 365)
         fpca.fit(fd_data)
 
         # Results obtained using fda.usc for the first component
@@ -410,7 +410,7 @@ class FPCATestCase(unittest.TestCase):
 
         fd_data = fetch_weather()['data'].coordinates[0]
 
-        fpca = FPCA(n_components=n_components, weights=[1] * 365)
+        fpca = FPCA(n_components=n_components, _weights=[1] * 365)
         fpca.fit(fd_data)
         scores = fpca.transform(fd_data)
 
@@ -437,7 +437,7 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(
             n_components=n_components,
-            weights=[1] * 365,
+            _weights=[1] * 365,
             regularization=L2Regularization(
                 LinearDifferentialOperator(2),
             ),

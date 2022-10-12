@@ -24,8 +24,8 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
 
     def __init__(
         self,
-        basis,
-        y_basis=None,
+        basis: CovariateType,
+        y_basis: CovariateType = None,
     ) -> None:
         self.basis = basis
         self.y_basis = y_basis

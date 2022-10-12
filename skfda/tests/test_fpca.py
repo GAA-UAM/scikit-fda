@@ -2,10 +2,12 @@
 import unittest
 
 import numpy as np
+import scipy
 from sklearn.decomposition import PCA
 
 from skfda import FDataBasis, FDataGrid
 from skfda.datasets import fetch_weather
+from skfda.misc.metrics import l2_norm
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
 from skfda.preprocessing.dim_reduction import FPCA
@@ -412,6 +414,14 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(n_components=n_components, weights=[1] * 365)
         fpca.fit(fd_data)
+
+        # Ramsay uses a different inner product to calculate the scores
+        # so we need to use the same inner product to compare the results
+        fpca.weights = scipy.integrate.simps(
+            np.eye(len(fd_data.grid_points[0])),
+            fd_data.grid_points[0],
+        )
+
         scores = fpca.transform(fd_data)
 
         # results obtained
@@ -427,7 +437,20 @@ class FPCATestCase(unittest.TestCase):
             216.43002289, 233.53770292, 344.18479151,
         ])
 
-        np.testing.assert_allclose(scores.ravel(), results, rtol=0.25)
+        untransformed_scores = fpca.inverse_transform(scores)
+        untransformed_results = fpca.inverse_transform(results.reshape(-1, 1))
+        differences = l2_norm(untransformed_scores - untransformed_results)
+
+        # Take into account the length of the interval:
+        differences /= (
+            fd_data.domain_range[0][1] - fd_data.domain_range[0][0]
+        )
+        
+        np.testing.assert_allclose(
+            differences,
+            [0] * results.shape[0],
+            atol=0.001,
+        )
 
     def test_grid_fpca_regularization_fit_result(self) -> None:
         """Compare the components in grid against the fda.usc package."""

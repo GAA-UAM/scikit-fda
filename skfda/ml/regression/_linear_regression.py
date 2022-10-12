@@ -124,18 +124,8 @@ class LinearRegression(
             numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
             defaults to 2. Only used if penalty_matrix is
             ``None``.
-        y_regularization (int, iterable or :class:`Regularization`): If it is
-            not a :class:`Regularization` object, linear differential
-            operator regularization is assumed. If it
-            is an integer, it indicates the order of the
-            derivative used in the computing of the penalty matrix. For
-            instance 2 means that the differential operator is
-            :math:`f''(x)`. If it is an iterable, it consists on coefficients
-            representing the differential operator used in the computing of
-            the penalty matrix. For instance the tuple (1, 0,
-            numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
-            defaults to 2. Only used if y_penalty_matrix is
-            ``None``.
+        y_regularization (:class:`Regularization`): Regularization for
+            the response when it is functional.
 
     Attributes:
         coef\_: A list containing the weight coefficient for each

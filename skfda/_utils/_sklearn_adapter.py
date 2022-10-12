@@ -184,8 +184,10 @@ class RegressorMixin(  # noqa: D101
         y: TargetPrediction,
         sample_weight: NDArrayFloat | None = None,
     ) -> float:
-        return super().score(  # type: ignore[no-any-return]
-            X,
+        from ..misc.scoring import r2_score
+        y_pred = self.predict(X)
+        return r2_score(
             y,
+            y_pred,
             sample_weight=sample_weight,
         )

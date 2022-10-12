@@ -29,8 +29,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     Principal component analysis.
 
     Class that implements functional principal component analysis for both
-    basis and grid representations of the data. Most parameters are shared
-    when fitting a FDataBasis or FDataGrid, except weights and
+    basis and grid representations of the data. The parameters are shared
+    when fitting a FDataBasis or FDataGrid, except for
     ``components_basis``.
 
     Parameters:
@@ -45,14 +45,6 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             components. We can use a different basis than the basis contained
             in the passed FDataBasis object. This parameter is only used when
             fitting a FDataBasis.
-        weights: the weights vector used for
-            discrete integration. If none then Simpson's rule is used for
-            computing the weights. If a callable object is passed, then the
-            weight vector will be obtained by evaluating the object at the
-            sample points of the passed FDataGrid object in the fit method.
-            This parameter is only used when fitting a FDataGrid.
-
-            .. deprecated:: 0.7.2
 
     Attributes:
         components\_: this contains the principal components.
@@ -98,19 +90,14 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         n_components: int = 3,
         centering: bool = True,
         regularization: Optional[L2Regularization[FData]] = None,
-        weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
+        _weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
     ) -> None:
         self.n_components = n_components
         self.centering = centering
         self.regularization = regularization
-        self.weights = weights
+        self.weights = _weights
         self.components_basis = components_basis
-        if weights is not None:
-            warnings.warn(
-                "The 'weights' parameter is deprecated and will be removed.",
-                DeprecationWarning,
-            )
 
     def _center_if_necessary(
         self,

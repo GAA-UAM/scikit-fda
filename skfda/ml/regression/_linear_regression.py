@@ -328,11 +328,13 @@ class LinearRegression(
             # Intercept is not penalized
             penalty_matrix[0, 0] = 0
 
+        # Notation from Ramsay's FDA section 13.4
         if self.functional_response:
             lambda_matrix = np.diag(lambdas)
             J_phi_theta = self.y_basis.inner_product_matrix(self.coef_basis[0])
             J_theta = self.coef_basis[0].inner_product_matrix()
 
+            # This is X' * X
             X_col_gram_mat = np.einsum('ijk,ilk->jl', X_new, X_new)
             J_theta_kron_X_col_gram_mat = np.kron(J_theta, X_col_gram_mat)
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np

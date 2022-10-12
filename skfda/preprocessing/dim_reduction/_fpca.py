@@ -10,6 +10,8 @@ import scipy.integrate
 from scipy.linalg import solve_triangular
 from sklearn.decomposition import PCA
 
+import skfda
+
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
@@ -370,27 +372,34 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         basis_matrix = basis.data_matrix[..., 0]
         if regularization_matrix is not None:
-            basis_matrix += regularization_matrix
+            basis_matrix += regularization_matrix.T @ regularization_matrix
 
-        fd_data = np.linalg.solve(
-            basis_matrix.T,
-            fd_data.T,
-        ).T
+        L = np.linalg.cholesky(basis_matrix)
+
+        # fd_data = np.linalg.solve( #     basis_matrix.T,
+        #     fd_data.T,
+        # ).T
+        fd_data = fd_data @ np.linalg.inv(L.T)
 
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix)
 
         pca = PCA(n_components=self.n_components)
         pca.fit(final_matrix)
-        self.components_ = X.copy(
-            data_matrix=np.transpose(
-                np.linalg.solve(
-                    np.sqrt(weights_matrix),
-                    np.transpose(pca.components_),
-                ),
+
+        components = np.transpose(
+            np.linalg.solve(
+                np.sqrt(weights_matrix),
+                np.transpose(pca.components_),
             ),
+        )
+        components = np.transpose(np.linalg.inv(L.T) @ components.T)
+
+        self.components_ = X.copy(
+            data_matrix=components,
             sample_names=(None,) * self.n_components,
         )
+        self.components_ /= skfda.misc.metrics.l2_norm(self.components_)
 
         self.explained_variance_ratio_ = (
             pca.explained_variance_ratio_

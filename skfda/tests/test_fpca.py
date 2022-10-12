@@ -7,7 +7,6 @@ from sklearn.decomposition import PCA
 
 from skfda import FDataBasis, FDataGrid
 from skfda.datasets import fetch_weather
-from skfda.misc.metrics import l2_norm
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
 from skfda.preprocessing.dim_reduction import FPCA
@@ -439,17 +438,10 @@ class FPCATestCase(unittest.TestCase):
 
         untransformed_scores = fpca.inverse_transform(scores)
         untransformed_results = fpca.inverse_transform(results.reshape(-1, 1))
-        differences = l2_norm(untransformed_scores - untransformed_results)
-
-        # Take into account the length of the interval:
-        differences /= (
-            fd_data.domain_range[0][1] - fd_data.domain_range[0][0]
-        )
-        
         np.testing.assert_allclose(
-            differences,
-            [0] * results.shape[0],
-            atol=0.001,
+            untransformed_scores.data_matrix.ravel(),
+            untransformed_results.data_matrix.ravel(),
+            atol=0.1,
         )
 
     def test_grid_fpca_regularization_fit_result(self) -> None:

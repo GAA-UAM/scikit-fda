@@ -331,17 +331,17 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         if self.weights is None:
             # grid_points is a list with one array in the 1D case
             identity = np.eye(len(X.grid_points[0]))
-            self.weights_ = scipy.integrate.simps(identity, X.grid_points[0])
+            self.weights = scipy.integrate.simps(identity, X.grid_points[0])
         elif callable(self.weights):
-            self.weights_ = self.weights(X.grid_points[0])
+            self.weights = self.weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
             # array
             if isinstance(self.weights, FDataGrid):
-                self.weights_ = np.squeeze(self.weights.data_matrix)
+                self.weights = np.squeeze(self.weights.data_matrix)
         else:
-            self.weights_ = self.weights
+            self.weights = self.weights
 
-        weights_matrix = np.diag(self.weights_)
+        weights_matrix = np.diag(self.weights)
 
         basis = FDataGrid(
             data_matrix=np.identity(n_points_discretization),
@@ -407,7 +407,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         return (  # type: ignore[no-any-return]
             X.data_matrix.reshape(X.data_matrix.shape[:-1])
-            * self.weights_
+            * self.weights
             @ np.transpose(
                 self.components_.data_matrix.reshape(
                     self.components_.data_matrix.shape[:-1],

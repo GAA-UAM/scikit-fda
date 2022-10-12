@@ -95,7 +95,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         self.n_components = n_components
         self.centering = centering
         self.regularization = regularization
-        self.weights = _weights
+        self._weights = _weights
         self.components_basis = components_basis
 
     def _center_if_necessary(
@@ -328,20 +328,20 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         X = self._center_if_necessary(X)
 
         # establish weights for each point of discretization
-        if self.weights is None:
+        if self._weights is None:
             # grid_points is a list with one array in the 1D case
             identity = np.eye(len(X.grid_points[0]))
-            self.weights = scipy.integrate.simps(identity, X.grid_points[0])
-        elif callable(self.weights):
-            self.weights = self.weights(X.grid_points[0])
+            self._weights = scipy.integrate.simps(identity, X.grid_points[0])
+        elif callable(self._weights):
+            self._weights = self._weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
             # array
-            if isinstance(self.weights, FDataGrid):
-                self.weights = np.squeeze(self.weights.data_matrix)
+            if isinstance(self._weights, FDataGrid):
+                self._weights = np.squeeze(self._weights.data_matrix)
         else:
-            self.weights = self.weights
+            self._weights = self._weights
 
-        weights_matrix = np.diag(self.weights)
+        weights_matrix = np.diag(self._weights)
 
         basis = FDataGrid(
             data_matrix=np.identity(n_points_discretization),
@@ -407,7 +407,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         return (  # type: ignore[no-any-return]
             X.data_matrix.reshape(X.data_matrix.shape[:-1])
-            * self.weights
+            * self._weights
             @ np.transpose(
                 self.components_.data_matrix.reshape(
                     self.components_.data_matrix.shape[:-1],

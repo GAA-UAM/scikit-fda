@@ -143,8 +143,6 @@ class LinearRegression(
             For functional data, the covariate is a FDataBasis object.
         intercept\_: Independent term in the linear model. Set to 0.0
             if `fit_intercept = False`.
-        coef_info\_: A list containing information about coefficient for
-            each covariate.
 
     Examples:
         >>> from skfda.ml.regression import LinearRegression

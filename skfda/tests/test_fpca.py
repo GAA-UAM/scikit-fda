@@ -416,7 +416,9 @@ class FPCATestCase(unittest.TestCase):
 
         # Ramsay uses a different inner product to calculate the scores
         # so we need to use the same inner product to compare the results
-        fpca.weights = scipy.integrate.simps(
+        # flake8 ignore comment required since a protected member is being
+        # accessed
+        fpca._weights = scipy.integrate.simps(  # noqa: WPS437
             np.eye(len(fd_data.grid_points[0])),
             fd_data.grid_points[0],
         )

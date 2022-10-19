@@ -35,14 +35,13 @@ def _check_shape_postive_cost_mat(
 
 def _check_indiscernable(
     cost_XX: NDArrayFloat,
-    cost_YY: NDArrayFloat,
-    cost_was_callable: bool = False,
+    cost_YY: NDArrayFloat
 ) -> None:
     """check that cost returns a symmetric matrix with zero diag"""
     # indiscernability: cost(x_t, x_t) = 0 for any t
     if (
-        np.all(np.diag(cost_XX) != 0)
-        or np.all(np.diag(cost_YY) != 0)
+        np.any(np.diag(cost_XX) != 0)
+        or np.any(np.diag(cost_YY) != 0)
     ):
         raise ValueError(
             "The cost between two identical objects "

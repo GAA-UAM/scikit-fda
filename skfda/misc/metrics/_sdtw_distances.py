@@ -17,8 +17,7 @@ from skfda.misc._math import inner_product_matrix, inner_product
 
 def _check_shape_postive_cost_mat(
     cost: NDArrayFloat,
-    expected_shape: Tuple[int, int],
-    shape_only: bool = False
+    expected_shape: Tuple[int, int]
 ) -> None:
     """check that matrix 'cost' is nonnegative and has expected shape"""
     n1, n2 = expected_shape
@@ -27,12 +26,11 @@ def _check_shape_postive_cost_mat(
         raise ValueError(
             f"Cost matrix must have shape ({n1}, {n2})"
         )
-    # non-negativity
-    if not(shape_only):
-        if not np.all(cost >= 0):
-            raise ValueError(
-                "Cost matrix must contain non-negative entries"
-            )
+    # non-negativity check
+    if not np.all(cost >= 0):
+        raise ValueError(
+            "Cost matrix must contain non-negative entries"
+        )
 
 
 def _check_indiscernable(
@@ -244,8 +242,7 @@ def _sdtw_divergence(
         for idx, c in enumerate(cost):
             _check_shape_postive_cost_mat(
                 cost=c,
-                expected_shape=expected_shapes[idx],
-                shape_only=False
+                expected_shape=expected_shapes[idx]
             )
 
         _check_indiscernable(

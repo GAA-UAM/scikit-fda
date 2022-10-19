@@ -158,7 +158,7 @@ def _sdtw_divergence(
         
         cost_evaluated = cost
 
-    elif isinstance(cost, callable):
+    elif callable(cost):
         # pre-computation for the symmetry check
         # of the cross-product part of the cost
         if check_cost:
@@ -232,10 +232,11 @@ def _sdtw_divergence(
             "or a Callable that returns a numpy array."
         )
 
-    # now for any initial input format of cost, cost has become a 3-tuple
+    # now for any initial input format of cost, cost_evaluated 
+    # is a tuple of three array
     if (
         check_cost
-        and (isinstance(cost, callable) or isinstance(cost, tuple))
+        and (callable(cost) or isinstance(cost, tuple))
     ):
 
         expected_shapes = [(n1, n2), (n1, n1), (n2, n2)]
@@ -250,7 +251,7 @@ def _sdtw_divergence(
             cost_YY=cost_evaluated[2]
         )
 
-        if isinstance(cost, callable):
+        if callable(cost):
             _check_symmetry(
                 cost_XY=cost_evaluated[0],
                 cost_YX=cost_evaluated_21

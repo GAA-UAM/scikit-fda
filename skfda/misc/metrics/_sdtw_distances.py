@@ -3,7 +3,7 @@ Implementation of soft Dynamic-Time-Warping (sDTW) divergence.
 """
 from __future__ import annotations
 
-from typing import Dict, Optional, Union, Callable, Tuple
+from typing import Dict, Optional, Union, Callable, Tuple, Any
 
 import numpy as np
 
@@ -132,7 +132,7 @@ def _sdtw_divergence(
     cost: Union[Tuple[NDArrayFloat], Callable[[
         NDArrayFloat, NDArrayFloat, NDArrayFloat]]] = None,
     check_cost: bool = False,
-    **kwargs_cost: Dict
+    **kwargs_cost: Any
 ) -> float:
 
     # fdata1 and fdata2 are only required to be one-dimensional.
@@ -148,30 +148,28 @@ def _sdtw_divergence(
             f"gamma was set to {gamma} but must be positive"
         )
 
-    # booleans to remember the input format of cost if given
-    cost_was_tuple = isinstance(cost, tuple)
-    cost_was_callable = isinstance(cost, Callable)
-
-    if cost_was_tuple:
+    if isinstance(cost, tuple):
         if len(cost) != 3:
             raise ValueError(
                 "When the alignment cost matrices are pre-computed, "
                 "then 'cost' must be a tuple of three two-dimensional "
                 "numpy arrays."
             )
+        
+        cost_evaluated = cost
 
-    elif cost_was_callable:
+    elif isinstance(cost, callable):
         # pre-computation for the symmetry check
         # of the cross-product part of the cost
         if check_cost:
-            cost_21 = cost(
+            cost_evaluated_21 = cost(
                 fdata2.data_matrix[0],
                 fdata1.data_matrix[0],
                 **kwargs_cost
             )
 
         # compute the cost matrices
-        cost = (
+        cost_evaluated = (
             cost(
                 fdata1.data_matrix[0],
                 fdata2.data_matrix[0],
@@ -213,7 +211,7 @@ def _sdtw_divergence(
         # or global kernel alignment (depends on gamma !=0)
         # 0.5 * diag(X@X.T) + 0.5 * diag(Y@Y.T) - X@Y.T
 
-        cost = (
+        cost_evaluated = (
             half_sq_euclidean(
                 fdata1.data_matrix[0],
                 fdata2.data_matrix[0]
@@ -235,31 +233,34 @@ def _sdtw_divergence(
         )
 
     # now for any initial input format of cost, cost has become a 3-tuple
-    if check_cost and (cost_was_callable or cost_was_tuple):
+    if (
+        check_cost
+        and (isinstance(cost, callable) or isinstance(cost, tuple))
+    ):
 
         expected_shapes = [(n1, n2), (n1, n1), (n2, n2)]
-        for idx, c in enumerate(cost):
+        for idx, c in enumerate(cost_evaluated):
             _check_shape_postive_cost_mat(
                 cost=c,
                 expected_shape=expected_shapes[idx]
             )
 
         _check_indiscernable(
-            cost_XX=cost[1],
-            cost_YY=cost[2]
+            cost_XX=cost_evaluated[1],
+            cost_YY=cost_evaluated[2]
         )
 
-        if cost_was_callable:
+        if isinstance(cost, callable):
             _check_symmetry(
-                cost_XY=cost[0],
-                cost_YX=cost_21
+                cost_XY=cost_evaluated[0],
+                cost_YX=cost_evaluated_21
             )
 
     # for nonnegativity, symmetry, unicity of div(X,Y)=0 at X=Y
     return(
-        _sdtw_numba._sdtw(cost[0], gamma)
-        - 0.5 * _sdtw_numba._sdtw(cost[1], gamma)
-        - 0.5 * _sdtw_numba._sdtw(cost[2], gamma)
+        _sdtw_numba._sdtw(cost_evaluated[0], gamma)
+        - 0.5 * _sdtw_numba._sdtw(cost_evaluated[1], gamma)
+        - 0.5 * _sdtw_numba._sdtw(cost_evaluated[2], gamma)
     )
 
 

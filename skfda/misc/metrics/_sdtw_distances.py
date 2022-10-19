@@ -62,8 +62,8 @@ def _check_symmetry(
 
 
 def _check_input_fdata(
-    fdata1,
-    fdata2
+    fdata1: FDataGrid,
+    fdata2: FDataGrid
 ) -> None:
     """check compatible, one sample and one-dimensional"""
     _check_compatible_fdata(fdata1, fdata2)
@@ -87,37 +87,56 @@ def _check_input_fdata(
 
 
 def half_sq_euclidean(
-    arg1: NDArrayFloat,
-    arg2: Optional[NDArrayFloat] = None,
+    arg1: FDataGrid,
+    arg2: Optional[FDataGrid] = None,
 ) -> NDArrayFloat:
     """
-    Return the half squared Euclidean row distance between
-    two matrices of size (n1, d) and (n2, d).
+    Return the half squared distance between sample points of two
+    FDataGrid objects with possibly different one dimensional grid sizes.
 
     Args:
-        arg1: First sample (n_samples_1, n_features).
-        arg2: Second sample (n_samples_2, n_features).
+        arg1: First FDataGrid object.
+        arg2: Second FDataGrid object.
             If it is ``None`` returns the half squared Euclidean distance
             between the rows of ``arg1``.
 
-    The distance is taken w.r.t matrix rows.
+    The distance is only taken w.r.t the data_matrix rows and thus does
+    not depend on the grid points.
     """
+
     if arg2 is not None:
-        # sq_euclidean(X, Y) =
-        # DotProduct(sigma_0_bounds=(10**-10, 10**10)) =
-        # diag(np.dot(X, X.T)) + diag(np.dot(Y, Y.T)) - 2*np.dot(X, Y.T)
-        # np.dot(X, Y.T)=inner_product_matrix(X, Y)
-        cost_12 = -1 * inner_product_matrix(arg1, arg2)
+        # 0.5 * sq_euclidean(X, Y) =
+        # 0.5 * diag(np.dot(X, X.T)) 
+        # + 0.5 * diag(np.dot(Y, Y.T)) 
+        # - np.dot(X, Y.T)
+        # where here np.dot(X, Y.T) = inner_product_matrix(X, Y)
+        cost_12 = -1 * inner_product_matrix(
+            arg1.data_matrix[0],
+            arg2.data_matrix[0]
+        )
 
         # np.sum(X ** 2, axis=1)=inner_product(X, X)
-        cost_12 += (0.5 * inner_product(arg1, arg1))[:, np.newaxis]
-        cost_12 += 0.5 * inner_product(arg2, arg2)
+        cost_12 += (0.5 * inner_product(
+            arg1.data_matrix[0],
+            arg1.data_matrix[0]
+        ))[:, np.newaxis]
+        cost_12 += 0.5 * inner_product(
+            arg2.data_matrix[0],
+            arg2.data_matrix[0]
+        )
 
         return cost_12
+
     else:
-        cost_11 = -1 * inner_product_matrix(arg1, arg2)
+        cost_11 = -1 * inner_product_matrix(
+            arg1.data_matrix[0],
+            arg1.data_matrix[0]
+        )
         # half Sum Of Squares on each row
-        sos_row = 0.5 * inner_product(arg1, arg1)
+        sos_row = 0.5 * inner_product(
+            arg1.data_matrix[0],
+            arg1.data_matrix[0]
+        )
         cost_11 += sos_row[:, np.newaxis]
         cost_11 += sos_row
 
@@ -163,66 +182,27 @@ def _sdtw_divergence(
         # of the cross-product part of the cost
         if check_cost:
             cost_evaluated_21 = cost(
-                fdata2.data_matrix[0],
-                fdata1.data_matrix[0],
+                fdata2,
+                fdata1,
                 **kwargs_cost
             )
 
         # compute the cost matrices
         cost_evaluated = (
             cost(
-                fdata1.data_matrix[0],
-                fdata2.data_matrix[0],
+                fdata1,
+                fdata2,
                 **kwargs_cost
             ),
             cost(
-                fdata1.data_matrix[0],
-                fdata1.data_matrix[0],
+                fdata1,
+                fdata1,
                 **kwargs_cost
             ),
             cost(
-                fdata2.data_matrix[0],
-                fdata2.data_matrix[0],
+                fdata2,
+                fdata2,
                 **kwargs_cost
-            )
-        )
-
-        # cost_12 = cost(
-        #     fdata1.data_matrix[0],
-        #     fdata2.data_matrix[0],
-        #     **kwargs_cost
-        # )
-        # cost_11 = cost(
-        #     fdata1.data_matrix[0],
-        #     fdata1.data_matrix[0],
-        #     **kwargs_cost
-        # )
-        # cost_22 = cost(
-        #     fdata2.data_matrix[0],
-        #     fdata2.data_matrix[0],
-        #     **kwargs_cost
-        # )
-
-        # cost = (cost_12, cost_11, cost_22)
-
-    elif cost is None:
-        # default cost: 0.5 * squared Euclidean:
-        # 0.5 * squared euclidean
-        # or global kernel alignment (depends on gamma !=0)
-        # 0.5 * diag(X@X.T) + 0.5 * diag(Y@Y.T) - X@Y.T
-
-        cost_evaluated = (
-            half_sq_euclidean(
-                fdata1.data_matrix[0],
-                fdata2.data_matrix[0]
-            ),
-            half_sq_euclidean(
-                fdata1.data_matrix[0],
-                fdata1.data_matrix[0]
-            ),
-            half_sq_euclidean(
-                fdata2.data_matrix[0],
-                fdata2.data_matrix[0]
             )
         )
 
@@ -257,7 +237,7 @@ def _sdtw_divergence(
                 cost_YX=cost_evaluated_21
             )
 
-    # for nonnegativity, symmetry, unicity of div(X,Y)=0 at X=Y
+    # for nonnegativity, symmetry, unicity of sdtw_div(X,Y)=0 at X=Y
     return(
         _sdtw_numba._sdtw(cost_evaluated[0], gamma)
         - 0.5 * _sdtw_numba._sdtw(cost_evaluated[1], gamma)
@@ -328,18 +308,18 @@ class sdtwDivergence():
         self,
         gamma: float = 1.0,
         cost: Union[Tuple[NDArrayFloat], Callable[[
-            NDArrayFloat, NDArrayFloat, NDArrayFloat]]] = None,
+            NDArrayFloat, NDArrayFloat, NDArrayFloat]]] = half_sq_euclidean,
+        check_cost: Optional[bool] = False
     ) -> None:
 
         self.gamma = gamma
         self.cost = cost
+        self.check_cost = check_cost
 
     def __call__(
         self,
         fdata1: FDataGrid,
-        fdata2: FDataGrid,
-        *,
-        check_cost: Optional[bool] = False
+        fdata2: FDataGrid
     ) -> NDArrayFloat:
         """Compute the soft-DTW divergence."""
         return _sdtw_divergence(
@@ -347,7 +327,7 @@ class sdtwDivergence():
             fdata2,
             gamma=self.gamma,
             cost=self.cost,
-            check_cost=check_cost,
+            check_cost=self.check_cost,
         )
 
     def __repr__(self) -> str:

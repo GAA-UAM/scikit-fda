@@ -3,14 +3,13 @@ Implementation of soft Dynamic-Time-Warping (sDTW) divergence.
 """
 from __future__ import annotations
 
-from typing import Dict, Optional, Union, Callable, Tuple, Any
+from typing import Optional, Union, Callable, Tuple, Any
+from ...typing._numpy import NDArrayFloat
 
 import numpy as np
 
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat
 
-from skfda._utils._utils import _check_compatible_fdata
 from skfda.misc.metrics import _sdtw_numba
 from skfda.misc._math import inner_product_matrix, inner_product
 
@@ -66,11 +65,22 @@ def _check_input_fdata(
     fdata2: FDataGrid
 ) -> None:
     """check compatible, one sample and one-dimensional"""
-    _check_compatible_fdata(fdata1, fdata2)
+
+    if (fdata1.dim_domain != fdata2.dim_domain):
+        raise ValueError(
+            f"Functional data has incompatible domain dimensions: "
+            f"{fdata1.dim_domain} != {fdata2.dim_domain}",
+        )
+
+    if (fdata1.dim_codomain != fdata2.dim_codomain):
+        raise ValueError(
+            f"Functional data has incompatible codomain dimensions: "
+            f"{fdata1.dim_codomain} != {fdata2.dim_codomain}",
+        )
 
     if not isinstance(fdata1, FDataGrid):
         raise ValueError(
-            "fdata1 and fdata2 must be FDataGrid objects"
+            "fdata1 and fdata2 must be FDataGrid objects."
         )
 
     # dim_codomain can be higher than one,
@@ -104,43 +114,37 @@ def half_sq_euclidean(
     not depend on the grid points.
     """
 
+    # np.sum(X ** 2, axis=1)=inner_product(X, X)
+    cost_11 = 0.5 * inner_product(
+        arg1.data_matrix[0],
+        arg1.data_matrix[0]
+    )
+
+    # 0.5 * sq_euclidean(X, Y)=
+    # 0.5 * diag(np.dot(X, X.T))
+    # + 0.5 * diag(np.dot(Y, Y.T))
+    # - np.dot(X, Y.T)
+    # where np.dot(X, Y.T)=inner_product_matrix(X, Y)
     if arg2 is not None:
-        # 0.5 * sq_euclidean(X, Y) =
-        # 0.5 * diag(np.dot(X, X.T)) 
-        # + 0.5 * diag(np.dot(Y, Y.T)) 
-        # - np.dot(X, Y.T)
-        # where here np.dot(X, Y.T) = inner_product_matrix(X, Y)
-        cost_12 = -1 * inner_product_matrix(
-            arg1.data_matrix[0],
-            arg2.data_matrix[0]
+
+        cost = -1 * inner_product_matrix(
+            arg2.data_matrix[0],
+            arg1.data_matrix[0]
         )
 
-        # np.sum(X ** 2, axis=1)=inner_product(X, X)
-        cost_12 += (0.5 * inner_product(
-            arg1.data_matrix[0],
-            arg1.data_matrix[0]
-        ))[:, np.newaxis]
-        cost_12 += 0.5 * inner_product(
+        cost += (0.5 * inner_product(
             arg2.data_matrix[0],
             arg2.data_matrix[0]
-        )
-
-        return cost_12
+        ))[:, np.newaxis]
 
     else:
-        cost_11 = -1 * inner_product_matrix(
+        cost = -1 * inner_product_matrix(
             arg1.data_matrix[0],
             arg1.data_matrix[0]
         )
-        # half Sum Of Squares on each row
-        sos_row = 0.5 * inner_product(
-            arg1.data_matrix[0],
-            arg1.data_matrix[0]
-        )
-        cost_11 += sos_row[:, np.newaxis]
-        cost_11 += sos_row
+        cost += cost_11[:, np.newaxis]
 
-        return cost_11
+    return cost + cost_11
 
 
 def _sdtw_divergence(
@@ -174,7 +178,7 @@ def _sdtw_divergence(
                 "then 'cost' must be a tuple of three two-dimensional "
                 "numpy arrays."
             )
-        
+
         cost_evaluated = cost
 
     elif callable(cost):
@@ -212,7 +216,7 @@ def _sdtw_divergence(
             "or a Callable that returns a numpy array."
         )
 
-    # now for any initial input format of cost, cost_evaluated 
+    # now for any initial input format of cost, cost_evaluated
     # is a tuple of three array
     if (
         check_cost

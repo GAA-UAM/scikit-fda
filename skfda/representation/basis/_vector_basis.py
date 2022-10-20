@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Tuple, TypeVar, Union
+from typing import Any, Iterable, Tuple, TypeVar, Union
 
 import numpy as np
 import scipy.linalg
 
-from ..._utils import _same_domain
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
-
-if TYPE_CHECKING:
-    from .. import FDataBasis
 
 T = TypeVar("T", bound='VectorValued')
 
@@ -67,6 +64,7 @@ class VectorValued(Basis):
     """
 
     def __init__(self, basis_list: Iterable[Basis]) -> None:
+        from ..._utils import _same_domain
 
         basis_list = tuple(basis_list)
 
@@ -104,12 +102,12 @@ class VectorValued(Basis):
     def dim_codomain(self) -> int:
         return len(self.basis_list)
 
-    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
+    def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))
 
         n_basis_eval = 0
 
-        basis_evaluations = [b.evaluate(eval_points) for b in self.basis_list]
+        basis_evaluations = [b(eval_points) for b in self.basis_list]
 
         for i, ev in enumerate(basis_evaluations):
 
@@ -120,9 +118,9 @@ class VectorValued(Basis):
 
     def _derivative_basis_and_coefs(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
 
         n_basis_list = [b.n_basis for b in self.basis_list]
         indexes = np.cumsum(n_basis_list)
@@ -141,17 +139,19 @@ class VectorValued(Basis):
 
         return new_basis, new_coefs
 
-    def _gram_matrix(self) -> np.ndarray:
+    def _gram_matrix(self) -> NDArrayFloat:
 
         gram_matrices = [b.gram_matrix() for b in self.basis_list]
 
-        return scipy.linalg.block_diag(*gram_matrices)
+        return scipy.linalg.block_diag(  # type: ignore[no-any-return]
+            *gram_matrices,
+        )
 
     def _coordinate_nonfull(
         self,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         key: Union[int, slice],
-    ) -> Tuple[Basis, np.ndarray]:
+    ) -> Tuple[Basis, NDArrayFloat]:
 
         basis_sizes = [b.n_basis for b in self.basis_list]
         basis_indexes = np.cumsum(basis_sizes)

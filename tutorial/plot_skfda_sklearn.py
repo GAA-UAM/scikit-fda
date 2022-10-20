@@ -102,13 +102,14 @@ plt.show()
 
 ##############################################################################
 # As an example consider the smoothing method
-# :class:`skfda.preprocessing.smoothing.NadarayaWatson`. Smoothing methods
-# attempt to remove noise from the data leveraging its continuous nature.
+# :class:`skfda.preprocessing.smoothing.NadarayaWatsonHatMatrix`. Smoothing
+# methods attempt to remove noise from the data leveraging its continuous
+# nature.
 # As these methods discard information of the original data they usually are
 # not reversible.
 
-import skfda.preprocessing.smoothing.kernel_smoothers as ks
-
+import skfda.preprocessing.smoothing as ks
+from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
 X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
 
 # Keep the first 5 functions
@@ -116,7 +117,7 @@ X = X[:5]
 
 X.plot()
 
-smoother = ks.NadarayaWatsonSmoother()
+smoother = ks.KernelSmoother(kernel_estimator=NadarayaWatsonHatMatrix())
 X_smooth = smoother.fit_transform(X)
 
 X_smooth.plot()
@@ -135,7 +136,7 @@ plt.show()
 #
 # Predictors should implement the ``fit_predict`` method for fitting the
 # estimators and predicting the targets in one step and/or the ``predict``
-# method for predicting the targets of possibly non previously bserved data.
+# method for predicting the targets of possibly non previously observed data.
 # Usually :term:`sklearn:transductive` estimators implement only the former
 # one, while :term:`sklearn:inductive` estimators implement the latter one (or
 # both).

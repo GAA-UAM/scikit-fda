@@ -11,13 +11,12 @@ FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import skfda
-from skfda.representation.interpolation import SplineInterpolation
-
+import matplotlib.pyplot as plt
+import numpy as np
 from mpl_toolkits.mplot3d import axes3d
 
-import numpy as np
-
+import skfda
+from skfda.representation.interpolation import SplineInterpolation
 
 ##############################################################################
 # The :class:`~skfda.representation.grid.FDataGrid` class is used for datasets
@@ -26,21 +25,25 @@ import numpy as np
 #
 # We will construct an example dataset with two curves with 6 points of
 # discretization.
-#
-fd = skfda.datasets.make_sinusoidal_process(n_samples=2, n_features=6,
-                                            random_state=1)
+
+fd = skfda.datasets.make_sinusoidal_process(
+    n_samples=2,
+    n_features=6,
+    random_state=1,
+)
 fig = fd.scatter()
 fig.legend(["Sample 1", "Sample 2"])
+plt.show()
 
 ##############################################################################
 # By default it is used linear interpolation, which is one of the simplest
 # methods of interpolation and therefore one of the least computationally
 # expensive, but has the disadvantage that the interpolant is not
 # differentiable at the points of discretization.
-#
 
 fig = fd.plot()
 fd.scatter(fig=fig)
+plt.show()
 
 ##############################################################################
 # The interpolation method of the FDataGrid could be changed setting the
@@ -48,45 +51,20 @@ fd.scatter(fig=fig)
 # the evaluation of the object.
 #
 # Polynomial spline interpolation could be performed using the interpolation
-# :class:`~skfda.representation.interpolation.SplineInterpolation. In the
+# :class:`~skfda.representation.interpolation.SplineInterpolation`. In the
 # following example a cubic interpolation is set.
 
 fd.interpolation = SplineInterpolation(interpolation_order=3)
 
 fig = fd.plot()
 fd.scatter(fig=fig)
-
-
-##############################################################################
-# Smooth interpolation could be performed with the attribute
-# ``smoothness_parameter`` of the spline interpolation.
-#
-
-# Sample with noise
-fd_smooth = skfda.datasets.make_sinusoidal_process(
-    n_samples=1, n_features=30,
-    random_state=1, error_std=.3)
-
-# Cubic interpolation
-fd_smooth.interpolation = SplineInterpolation(interpolation_order=3)
-
-fig = fd_smooth.plot(label="Cubic")
-
-# Smooth interpolation
-fd_smooth.interpolation = SplineInterpolation(interpolation_order=3,
-                                              smoothness_parameter=1.5)
-
-fd_smooth.plot(fig=fig, label="Cubic smoothed")
-
-fd_smooth.scatter(fig=fig)
-fig.legend()
+plt.show()
 
 ##############################################################################
 # Sometimes our samples are required to be monotone, in these cases it is
 # possible to use monotone cubic interpolation with the attribute
 # ``monotone``. A piecewise cubic hermite interpolating polynomial (PCHIP)
 # will be used.
-#
 
 fd = fd[1]
 
@@ -96,12 +74,15 @@ fd_monotone = fd.copy(data_matrix=np.sort(fd.data_matrix, axis=1))
 fig = fd_monotone.plot(linestyle='--', label="cubic")
 
 
-fd_monotone.interpolation = SplineInterpolation(interpolation_order=3,
-                                                monotone=True)
+fd_monotone.interpolation = SplineInterpolation(
+    interpolation_order=3,
+    monotone=True,
+)
 fd_monotone.plot(fig=fig, label="PCHIP")
 
 fd_monotone.scatter(fig=fig, c='C1')
 fig.legend()
+plt.show()
 
 ##############################################################################
 # All the interpolations will work regardless of the dimension of the image,
@@ -110,7 +91,6 @@ fig.legend()
 # For the next examples it is constructed a surface,
 # :math:`x_i: \mathbb{R}^2 \longmapsto \mathbb{R}`. By default, as in
 # unidimensional samples, it is used linear interpolation.
-#
 
 X, Y, Z = axes3d.get_test_data(1.2)
 data_matrix = [Z.T]
@@ -121,33 +101,14 @@ fd = skfda.FDataGrid(data_matrix, grid_points)
 
 fig = fd.plot()
 fd.scatter(fig=fig)
+plt.show()
 
 ##############################################################################
-# In the following figure it is shown the result of the cubic interpolation
+# In the following figure it is shown the result of the constant interpolation
 # applied to the surface.
-#
-# The degree of the interpolation polynomial does not have to coincide in both
-# directions, for example, cubic interpolation in the first
-# component and quadratic in the second one could be defined  using a tuple
-# with the values (3,2).
-#
 
-fd.interpolation = SplineInterpolation(interpolation_order=3)
+fd.interpolation = SplineInterpolation(interpolation_order=0)
 
 fig = fd.plot()
 fd.scatter(fig=fig)
-
-##############################################################################
-# The following table shows the interpolation methods available by the class
-# :class:`SplineInterpolation` depending on the domain dimension.
-#
-# +------------------+--------+----------------+----------+-------------+
-# | Domain dimension | Linear | Up to degree 5 | Monotone |  Smoothing  |
-# +==================+========+================+==========+=============+
-# |         1        |   ✔    |       ✔        |    ✔     |      ✔      |
-# +------------------+--------+----------------+----------+-------------+
-# |         2        |   ✔    |       ✔        |    ✖     |      ✔      |
-# +------------------+--------+----------------+----------+-------------+
-# |     3 or more    |   ✔    |       ✖        |    ✖     |      ✖      |
-# +------------------+--------+----------------+----------+-------------+
-#
+plt.show()

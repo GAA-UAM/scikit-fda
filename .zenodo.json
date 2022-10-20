@@ -41,7 +41,16 @@
         },
         {
             "name": "Petrunina, Elena"
+        },
+        {
+            "name": "Castillo, Álvaro"
+        },
+        {
+            "name": "Serna, Diego"
+        },
+        {
+            "name": "Hidalgo, Rafael"
         }
     ],
-    "license": "BSD 3-Clause License"
+    "license": "BSD-3-Clause"
 }

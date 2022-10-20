@@ -1,12 +1,23 @@
-from typing import Any, Optional, Tuple, TypeVar
+from typing import Any, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
+from typing_extensions import Protocol
 
-from ..._utils import _to_domain_range
-from .._typing import DomainRangeLike
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='Fourier')
+
+
+class _SinCos(Protocol):
+
+    def __call__(
+        self,
+        __array: NDArrayFloat,  # noqa: WPS112
+        out: NDArrayFloat,
+    ) -> NDArrayFloat:
+        pass
 
 
 class Fourier(Basis):
@@ -21,13 +32,16 @@ class Fourier(Basis):
         \phi_0(t) = \frac{1}{\sqrt{2}}
 
     .. math::
-        \phi_{2n -1}(t) = sin\left(\frac{2 \pi n}{T} t\right)
+        \phi_{2n -1}(t) = \frac{sin\left(\frac{2 \pi n}{T} t\right)}
+                                                    {\sqrt{\frac{T}{2}}}
 
     .. math::
-        \phi_{2n}(t) = cos\left(\frac{2 \pi n}{T} t\right)
+        \phi_{2n}(t) = \frac{cos\left(\frac{2 \pi n}{T} t\right)}
+                                                    {\sqrt{\frac{T}{2}}}
 
-    Actually this basis functions are not orthogonal but not orthonormal. To
-    achieve this they are divided by its norm: :math:`\sqrt{\frac{T}{2}}`.
+
+    This basis will be orthonormal if the period coincides with the length
+    of the interval in which it is defined.
 
     Parameters:
         domain_range: A tuple of length 2 containing the initial and
@@ -92,8 +106,10 @@ class Fourier(Basis):
                 define the basis.
 
         """
+        from ...misc.validation import validate_domain_range
+
         if domain_range is not None:
-            domain_range = _to_domain_range(domain_range)
+            domain_range = validate_domain_range(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")
@@ -112,12 +128,12 @@ class Fourier(Basis):
 
         return self._period
 
-    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
+    def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
 
         # Input is scalar
         eval_points = eval_points[..., 0]
 
-        functions = [np.sin, np.cos]
+        functions: Sequence[_SinCos] = [np.sin, np.cos]
         omega = 2 * np.pi / self.period
 
         normalization_denominator = np.sqrt(self.period / 2)
@@ -145,9 +161,9 @@ class Fourier(Basis):
 
     def _derivative_basis_and_coefs(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
 
         omega = 2 * np.pi / self.period
         deriv_factor = (np.arange(1, (self.n_basis + 1) / 2) * omega) ** order
@@ -169,7 +185,7 @@ class Fourier(Basis):
         # normalise
         return self.copy(), deriv_coefs
 
-    def _gram_matrix(self) -> np.ndarray:
+    def _gram_matrix(self) -> NDArrayFloat:
 
         # Orthogonal in this case
         if self.period == (self.domain_range[0][1] - self.domain_range[0][0]):

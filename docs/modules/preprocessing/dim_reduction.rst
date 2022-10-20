@@ -41,4 +41,4 @@ variance.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.dim_reduction.feature_extraction.FPCA
+   skfda.preprocessing.dim_reduction.FPCA

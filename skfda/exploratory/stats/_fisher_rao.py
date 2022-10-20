@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import scipy.integrate
 from fdasrsf.utility_functions import optimum_reparam
 
-from ..._utils import check_is_univariate, invert_warping, normalize_scale
+from ..._utils import invert_warping, normalize_scale
 from ...misc.operators import SRSF
+from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat
 from ...representation.interpolation import SplineInterpolation
+from ...typing._numpy import NDArrayFloat
 
 ###############################################################################
 # Based on the original implementation of J. Derek Tucker in                  #
@@ -45,7 +46,7 @@ def _elastic_alignment_array(
         the functions aligned to the template(s).
 
     """
-    return optimum_reparam(
+    return optimum_reparam(  # type: ignore[no-any-return]
         np.ascontiguousarray(template_data.T),
         np.ascontiguousarray(eval_points),
         np.ascontiguousarray(q_data.T),
@@ -186,7 +187,7 @@ def fisher_rao_karcher_mean(
     center: bool = True,
     max_iter: int = 20,
     tol: float = 1e-3,
-    initial: Optional[float] = None,
+    initial: float | None = None,
     grid_dim: int = 7,
     **kwargs: Any,
 ) -> FDataGrid:
@@ -239,7 +240,11 @@ def fisher_rao_karcher_mean(
         .. footbibliography::
 
     """
-    check_is_univariate(fdatagrid)
+    check_fdata_dimensions(
+        fdatagrid,
+        dim_domain=1,
+        dim_codomain=1,
+    )
 
     srsf_transformer = SRSF(initial_value=0)
     fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)

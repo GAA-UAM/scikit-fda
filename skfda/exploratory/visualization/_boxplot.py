@@ -8,20 +8,19 @@ from __future__ import annotations
 
 import math
 from abc import abstractmethod
-from typing import Optional, Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 
 from skfda.exploratory.depth.multivariate import Depth
 
-from ... import FData, FDataGrid
-from ...representation._typing import NDArrayBool, NDArrayFloat
+from ...representation import FData, FDataGrid
+from ...typing._numpy import NDArrayBool, NDArrayFloat
 from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes
 from ._baseplot import BasePlot
@@ -45,13 +44,13 @@ class FDataBoxplot(BasePlot):
     @abstractmethod
     def __init__(
         self,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
         factor: float = 1.5,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
     ) -> None:
         if factor < 0:
             raise ValueError(
@@ -269,15 +268,15 @@ class Boxplot(FDataBoxplot):
     def __init__(
         self,
         fdatagrid: FData,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        depth_method: Optional[Depth[FDataGrid]] = None,
+        depth_method: Depth[FDataGrid] | None = None,
         prob: Sequence[float] = (0.5,),
         factor: float = 1.5,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
     ):
         """Initialize the Boxplot class.
 
@@ -389,7 +388,7 @@ class Boxplot(FDataBoxplot):
 
     @property
     def median(self) -> NDArrayFloat:
-        return self._median
+        return self._median  # type: ignore[no-any-return]
 
     @property
     def central_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:
@@ -648,14 +647,14 @@ class SurfaceBoxplot(FDataBoxplot):
     def __init__(
         self,
         fdatagrid: FDataGrid,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        depth_method: Optional[Depth[FDataGrid]] = None,
+        depth_method: Depth[FDataGrid] | None = None,
         factor: float = 1.5,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
     ) -> None:
 
         super().__init__(
@@ -712,7 +711,7 @@ class SurfaceBoxplot(FDataBoxplot):
 
     @property
     def median(self) -> NDArrayFloat:
-        return self._median
+        return self._median  # type: ignore[no-any-return]
 
     @property
     def central_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:

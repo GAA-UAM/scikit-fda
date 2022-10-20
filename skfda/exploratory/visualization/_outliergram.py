@@ -6,15 +6,14 @@ Modified Band Depth and Modified Epigraph Index, that will help us detect
 these outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
-
-from typing import Optional, Sequence, Union
+from __future__ import annotations
 
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from ... import FDataGrid
+from ...representation import FDataGrid
 from ..outliers import OutliergramOutlierDetector
 from ._baseplot import BasePlot
 
@@ -23,10 +22,13 @@ class Outliergram(BasePlot):
     """
     Outliergram method of visualization.
 
-    Plots the Modified Band Depth (MBD) on the Y axis and the Modified
-    Epigraph Index (MEI) on the X axis. This points will create the form of
-    a parabola. The shape outliers will be the points that appear far from
-    this curve.
+    Plots the :class:`Modified Band Depth 
+    (MBD)<skfda.exploratory.depth.ModifiedBandDepth>` on the Y axis and the
+    :func:`Modified Epigraph Index
+    (MEI)<skfda.exploratory.stats.modified_epigraph_index>` on the X axis.
+    These points will create the form of a parabola.
+    The shape outliers will be the points that appear far from this curve.
+
     Args:
         fdata: functional data set that we want to examine.
         chart: figure over with the graphs are plotted or axis over
@@ -60,10 +62,10 @@ class Outliergram(BasePlot):
     def __init__(
         self,
         fdata: FDataGrid,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
         factor: float = 1.5,
     ) -> None:
         BasePlot.__init__(

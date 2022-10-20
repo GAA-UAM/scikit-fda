@@ -48,9 +48,9 @@ if TYPE_CHECKING:
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
 
-Input = TypeVar("Input")
-Output = TypeVar("Output")
-Target = TypeVar("Target")
+    Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
+    Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
+    Target = TypeVar("Target", bound=NDArrayInt)
 
 
 def check_is_univariate(fd: FData) -> None:
@@ -113,7 +113,7 @@ def _check_compatible_fdatagrid(fdata1: FDataGrid, fdata2: FDataGrid) -> None:
 def _to_grid(
     X: FData,
     y: FData,
-    eval_points: Optional[np.ndarray] = None,
+    eval_points: Optional[NDArrayFloat] = None,
 ) -> Tuple[FDataGrid, FDataGrid]:
     """Transform a pair of FDatas in grids to perform calculations."""
     from .. import FDataGrid
@@ -751,8 +751,8 @@ def _classifier_fit_depth_methods(
 
 
 def _fit_feature_transformer(  # noqa: WPS320 WPS234
-    X: Union[NDArrayInt, NDArrayFloat],
-    y: Union[NDArrayInt, NDArrayFloat],
+    X: Input,
+    y: Target,
     transformer: TransformerMixin[Input, Output, Target],
 ) -> Tuple[
     Union[NDArrayInt, NDArrayFloat],

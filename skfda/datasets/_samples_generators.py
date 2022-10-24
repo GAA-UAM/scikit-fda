@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import itertools
-from typing import Callable, Sequence, Union
+from typing import Callable, Sequence, Union, List
+from sklearn.utils import Bunch
 
 import numpy as np
 import scipy.integrate
@@ -495,3 +496,46 @@ def make_random_warping(
     )
 
     return warping
+
+
+def sparseify_dataset(
+    dataset: Bunch, 
+    sparse_factor: float = 0.2,
+) -> List[FDataGrid]:
+    
+    r"""Generate synthetic sparse dataset by removing samples from given dataset
+
+
+    Args:
+        dataset: Bunch containing the information of a dataset, 
+        in the format returned by fetch_<dataset_name>.
+        sparse_factor: Probability of selecting each data point. 
+        Between 0 and 1, default 0.2.
+    Returns:
+        List comprising one FDataGrid per sparseified samples¡.
+
+    """
+
+    sparse_data_grids = []
+    for i in range(dataset.data.data_matrix.shape[0]):
+
+        # For each sample, remove probabilistically according to sparse_factor
+        grid_point_mask = [np.random.rand() <= sparse_factor 
+                           for p in dataset.data.grid_points[0]]
+        
+        # If no points selected, continue
+        if not any(grid_point_mask):
+            continue
+        
+        selected_grid_points = dataset.data.grid_points[0][grid_point_mask]
+        selected_values = dataset.data.data_matrix[i][grid_point_mask]
+        
+        # Create new FDataGrid for each function 
+        # because grid points can be different
+        data_grid = FDataGrid(
+            data_matrix=[selected_values], 
+            grid_points=selected_grid_points
+        )
+        sparse_data_grids.append(data_grid)
+        
+    return sparse_data_grids

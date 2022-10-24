@@ -6,7 +6,7 @@ from typing import List
 import numpy as np
 
 from skfda._utils._sklearn_adapter import ClassifierMixin
-from skfda.datasets import make_multimodal_samples
+from skfda.datasets import make_gaussian_process
 from skfda.ml.classification import LogisticRegression
 from skfda.representation import FData
 
@@ -31,7 +31,7 @@ class TestClassifierClasses(unittest.TestCase):
             np.resize(classes, n_samples)
             for classes in self.classes_list
         ]
-        self.X = make_multimodal_samples(
+        self.X = make_gaussian_process(
             n_samples=n_samples,
             noise=0.05,
         )
@@ -46,11 +46,7 @@ class TestClassifierClasses(unittest.TestCase):
         for clf in self.tested_classifiers:
             # Iterate over all class sets to test different types of classes
             for classes, y in zip(self.classes_list, self.y_list):
-                message = (
-                    f'Testing classifier {clf.__class__.__name__} '
-                    f'with classes {classes}'
-                )
-                with self.subTest(msg=message):
+                with self.subTest(classifier=clf, classes=classes):
                     clf.fit(self.X, y)
                     np.testing.assert_array_equal(clf.classes_, classes)
 

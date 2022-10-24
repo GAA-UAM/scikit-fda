@@ -707,6 +707,11 @@ class FDataGrid(FData):  # noqa: WPS214
 
                 return other[other_index]
 
+            raise ValueError(
+                f"Invalid dimensions in operator between FDataGrid and Numpy "
+                f"array: {other.shape}"
+            )
+
         elif isinstance(other, FDataGrid):
             self._check_same_dimensions(other)
             return other.data_matrix

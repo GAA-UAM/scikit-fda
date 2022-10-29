@@ -78,10 +78,15 @@ class CustomBasis(Basis):
     def _check_linearly_independent(self, fdata) -> None:
         """Check if the functions are linearly independent."""
         coord_matrix = self._get_coordinates_matrix(fdata)
+
+        # Reshape to a bidimensional matrix. This only affects FDataGrids
+        # whose codomain is not 1-dimensional.
         coord_matrix = coord_matrix.reshape(coord_matrix.shape[0], -1)
+
         if coord_matrix.shape[0] > coord_matrix.shape[1]:
             raise ValueError(
-                "Too many samples in the basis",
+                "There are more functions than the maximum dimension of the "
+                "space that they could generate.",
             )
 
         rank = np.linalg.matrix_rank(coord_matrix)
@@ -102,6 +107,12 @@ class CustomBasis(Basis):
         new_basis = None
 
         coord_matrix = self._get_coordinates_matrix(deriv_fdata)
+
+        # If the basis formed by the derivatives has maximum rank,
+        # we can just return that
+        if np.linalg.matrix_rank(coord_matrix) == coord_matrix.shape[0]:
+            return CustomBasis(fdata=deriv_fdata), coefs
+
         coord_matrix_reshaped = coord_matrix.reshape(
             coord_matrix.shape[0],
             -1,
@@ -109,12 +120,12 @@ class CustomBasis(Basis):
 
         q, r = np.linalg.qr(coord_matrix_reshaped.T)
 
-        new_data = q.T.reshape(
+        new_coordinates = q.T.reshape(
             -1,
             *coord_matrix.shape[1:],
         )
 
-        self._set_coordinates_matrix(deriv_fdata, new_data)
+        self._set_coordinates_matrix(deriv_fdata, new_coordinates)
 
         new_basis = CustomBasis(fdata=deriv_fdata)
         coefs = coefs @ coord_matrix_reshaped @ q

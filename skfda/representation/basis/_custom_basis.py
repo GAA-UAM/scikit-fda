@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Tuple, TypeVar
 
-import numpy as np
 import multimethod
+import numpy as np
 
 from ...typing._numpy import NDArrayFloat
 from .._functional_data import FData
@@ -17,12 +17,15 @@ T = TypeVar("T", bound="CustomBasis")
 
 
 class CustomBasis(Basis):
-    """Defines the structure of a basis of functions.
+    """Basis composed of custom functions.
+
+    Defines a basis composed of the functions in the :class: `FData` object
+    passed as argument.
+    The functions must be linearly independent, otherwise
+    an exception is raised.
 
     Parameters:
-        domain_range: The :term:`domain range` over which the basis can be
-            evaluated.
-        n_basis: number of functions in the basis.
+        fdata: Functions that define the basis.
 
     """
 
@@ -96,12 +99,41 @@ class CustomBasis(Basis):
         coefs: NDArrayFloat,
         order: int = 1,
     ) -> Tuple[T, NDArrayFloat]:
+        deriv_fdata = self.fdata.derivative(order=order)
+        new_basis = None
 
-        derivated_basis = CustomBasis(
-            fdata=self.fdata.derivative(order=order),
-        )
+        if isinstance(deriv_fdata, FDataBasis):
+            q, r = np.linalg.qr(deriv_fdata.coefficients.T)
+            new_basis = CustomBasis(fdata=deriv_fdata.copy(coefficients=q.T))
+            coefs = coefs @ deriv_fdata.coefficients @ q
 
-        return derivated_basis, coefs
+        else:
+            flattened_shape = (
+                deriv_fdata.data_matrix.shape[0],
+                (
+                    deriv_fdata.data_matrix.shape[1]
+                    * deriv_fdata.data_matrix.shape[2]
+                ),
+            )
+
+            mat = deriv_fdata.data_matrix.reshape(flattened_shape)
+
+            q, r = np.linalg.qr(mat.T)
+            new_data = q.T.reshape(
+                (
+                    -1,
+                    deriv_fdata.data_matrix.shape[1],
+                    deriv_fdata.data_matrix.shape[2],
+                ),
+            )
+            new_basis = CustomBasis(
+                fdata=deriv_fdata.copy(
+                    data_matrix=new_data,
+                ),
+            )
+            coefs = coefs @ mat @ q
+
+        return new_basis, coefs
 
     def _coordinate_nonfull(
         self,

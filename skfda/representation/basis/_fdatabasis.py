@@ -359,7 +359,8 @@ class FDataBasis(FData):  # noqa: WPS214
 
         Examples:
             We first create the data basis.
-                >>> from skfda.representation.basis import FDataBasis, MonomialBasis
+                >>> from skfda.representation.basis import FDataBasis
+                >>> from skfda.representation.basis import MonomialBasis
                 >>> basis = MonomialBasis(n_basis=4)
                 >>> coefficients = [1, 1, 3, .5]
                 >>> fdata = FDataBasis(basis, coefficients)

@@ -16,7 +16,11 @@ from skfda.misc.scoring import (
     mean_squared_log_error,
     r2_score,
 )
-from skfda.representation.basis import BSplineBasis, FourierBasis, MonomialBasis
+from skfda.representation.basis import (
+    BSplineBasis,
+    FourierBasis,
+    MonomialBasis,
+)
 from skfda.typing._numpy import NDArrayFloat
 
 score_functions: Sequence[ScoreFunction] = (

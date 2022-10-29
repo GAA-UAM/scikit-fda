@@ -9,7 +9,13 @@ from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
 from ...representation import FData, FDataGrid
-from ...representation.basis import Basis, BSplineBasis, ConstantBasis, FourierBasis, MonomialBasis
+from ...representation.basis import (
+    Basis,
+    BSplineBasis,
+    ConstantBasis,
+    FourierBasis,
+    MonomialBasis,
+)
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._operators import Operator, gramian_matrix_optimization

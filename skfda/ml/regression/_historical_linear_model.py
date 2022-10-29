@@ -10,8 +10,11 @@ from sklearn.utils.validation import check_is_fitted
 from ..._utils import _cartesian_product, _pairwise_symmetric
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
 from ...representation import FData, FDataBasis, FDataGrid
-from ...representation.basis import Basis, FiniteElementBasis 
-from ...representation.basis import VectorValuedBasis
+from ...representation.basis import (
+    Basis,
+    FiniteElementBasis,
+    VectorValuedBasis,
+)
 from ...typing._numpy import NDArrayFloat
 
 _MeanType = Union[FDataGrid, float]

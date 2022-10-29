@@ -101,7 +101,7 @@ class LeastSquaresShiftRegistration(
         ...     LeastSquaresShiftRegistration,
         ... )
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.representation.basis import Fourier
+        >>> from skfda.representation.basis import FourierBasis
 
 
         Registration and creation of dataset in discretized form:
@@ -126,7 +126,7 @@ class LeastSquaresShiftRegistration(
 
         >>> fd = make_sinusoidal_process(n_samples=2, error_std=0,
         ...                              random_state=2)
-        >>> fd_basis = fd.to_basis(Fourier())
+        >>> fd_basis = fd.to_basis(FourierBasis())
         >>> reg.transform(fd_basis)
         FDataGrid(...)
 

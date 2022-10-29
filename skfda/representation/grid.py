@@ -918,7 +918,7 @@ class FDataGrid(FData):  # noqa: WPS214
             array([ 3.,  3.,  1.,  1.,  3.])
 
             >>> fd = FDataGrid(x, t)
-            >>> basis = skfda.representation.basis.Fourier(n_basis=3)
+            >>> basis = skfda.representation.basis.FourierBasis(n_basis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
             array([[ 2.  , 0.71, 0.71]])

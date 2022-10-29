@@ -10,11 +10,11 @@ from pandas.tests.extension import base
 
 from skfda.representation.basis import (
     Basis,
-    BSpline,
+    BSplineBasis,
     FDataBasis,
     FDataBasisDType,
-    Fourier,
-    Monomial,
+    FourierBasis,
+    MonomialBasis,
 )
 
 
@@ -22,9 +22,9 @@ from skfda.representation.basis import (
 # Fixtures
 ##############################################################################
 @pytest.fixture(params=[
-    Monomial(n_basis=5),
-    Fourier(n_basis=5),
-    BSpline(n_basis=5),
+    MonomialBasis(n_basis=5),
+    FourierBasis(n_basis=5),
+    BSplineBasis(n_basis=5),
 ])
 def basis(request: Any) -> Any:
     """A fixture providing the ExtensionDtype to validate."""

@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 
 import skfda
 from skfda.ml.regression import KNeighborsRegressor
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 
 ##############################################################################
 #
@@ -54,7 +54,7 @@ y.plot()
 # to make a smoothing of the precipitation curves using a basis
 # representation, employing for it a fourier basis with 5 elements.
 
-y = y.to_basis(Fourier(n_basis=5))
+y = y.to_basis(FourierBasis(n_basis=5))
 
 y.plot()
 

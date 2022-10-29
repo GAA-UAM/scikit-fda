@@ -6,10 +6,10 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import ArrayLike, NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='FiniteElement')
+T = TypeVar("T", bound='FiniteElementBasis')
 
 
-class FiniteElement(Basis):
+class FiniteElementBasis(Basis):
     """Finite element basis.
 
     Given a n-dimensional grid made of simplices, each element of the basis
@@ -22,8 +22,8 @@ class FiniteElement(Basis):
             :math:`n+1` vertices for an n-dimensional domain space.
 
     Examples:
-        >>> from skfda.representation.basis import FiniteElement
-        >>> basis = FiniteElement(
+        >>> from skfda.representation.basis import FiniteElementBasis
+        >>> basis = FiniteElementBasis(
         ...     vertices=[[0, 0], [0, 1], [1, 0], [1, 1]],
         ...     cells=[[0, 1, 2], [1, 2, 3]],
         ...     domain_range=[(0, 1), (0, 1)],
@@ -57,7 +57,7 @@ class FiniteElement(Basis):
         >>> n_points = 10
         >>> points = np.random.uniform(size=(n_points, 2))
         >>> delaunay = Delaunay(points)
-        >>> basis = FiniteElement(
+        >>> basis = FiniteElementBasis(
         ...     vertices=delaunay.points,
         ...     cells=delaunay.simplices,
         ... )

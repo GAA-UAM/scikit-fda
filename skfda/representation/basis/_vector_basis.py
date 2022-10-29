@@ -8,10 +8,10 @@ import scipy.linalg
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='VectorValued')
+T = TypeVar("T", bound='VectorValuedBasis')
 
 
-class VectorValued(Basis):
+class VectorValuedBasis(Basis):
     r"""Vector-valued basis.
 
     Basis for :term:`vector-valued functions <vector-valued function>`
@@ -33,12 +33,13 @@ class VectorValued(Basis):
 
             1 \vec{i}, t \vec{i}, t^2 \vec{i}, 1 \vec{j}, t \vec{j}
 
-        >>> from skfda.representation.basis import VectorValued, Monomial
+        >>> from skfda.representation.basis import VectorValuedBasis
+        >>> from skfda.representation.basis import MonomialBasis
         >>>
-        >>> basis_x = Monomial(domain_range=(0,5), n_basis=3)
-        >>> basis_y = Monomial(domain_range=(0,5), n_basis=2)
+        >>> basis_x = MonomialBasis(domain_range=(0,5), n_basis=3)
+        >>> basis_y = MonomialBasis(domain_range=(0,5), n_basis=2)
         >>>
-        >>> basis = VectorValued([basis_x, basis_y])
+        >>> basis = VectorValuedBasis([basis_x, basis_y])
 
 
         And evaluates all the functions in the basis in a list of descrete
@@ -159,7 +160,7 @@ class VectorValued(Basis):
 
         new_basis = self.basis_list[key]
         if not isinstance(new_basis, Basis):
-            new_basis = VectorValued(new_basis)
+            new_basis = VectorValuedBasis(new_basis)
 
         new_coefs = coef_splits[key]
         if not isinstance(new_coefs, np.ndarray):

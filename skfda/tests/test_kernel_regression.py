@@ -15,7 +15,7 @@ from skfda.misc.hat_matrix import (
 from skfda.misc.kernels import normal, uniform
 from skfda.misc.metrics import l2_distance
 from skfda.ml.regression import KernelRegression
-from skfda.representation.basis import FDataBasis, Fourier, Monomial
+from skfda.representation.basis import FDataBasis, FourierBasis, MonomialBasis
 from skfda.representation.grid import FDataGrid
 
 FloatArray = np.typing.NDArray[np.float_]
@@ -100,7 +100,7 @@ def _create_data_basis(
     fd = X.iloc[:, 0].values
     fat = y['fat'].values
 
-    basis = Fourier(
+    basis = FourierBasis(
         n_basis=10,
         domain_range=fd.domain_range,
     )
@@ -327,7 +327,7 @@ class TestNonOthonormalBasisLLR(unittest.TestCase):
         """Test LocalLinearRegression with monomial basis."""
         coef1 = [[1, 5, 8], [4, 6, 6], [9, 4, 1]]
         coef2 = [[6, 3, 5]]
-        basis = Monomial(n_basis=3, domain_range=(0, 3))
+        basis = MonomialBasis(n_basis=3, domain_range=(0, 3))
 
         X_train = FDataBasis(coefficients=coef1, basis=basis)
         X = FDataBasis(coefficients=coef2, basis=basis)

@@ -7,7 +7,7 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='Fourier')
+T = TypeVar("T", bound='FourierBasis')
 
 
 class _SinCos(Protocol):
@@ -20,7 +20,7 @@ class _SinCos(Protocol):
         pass
 
 
-class Fourier(Basis):
+class FourierBasis(Basis):
     r"""Fourier basis.
 
     Defines a functional basis for representing functions on a fourier
@@ -52,7 +52,7 @@ class Fourier(Basis):
     Examples:
         Constructs specifying number of basis, definition interval and period.
 
-        >>> fb = Fourier((0, np.pi), n_basis=3, period=1)
+        >>> fb = FourierBasis((0, np.pi), n_basis=3, period=1)
         >>> fb([0, np.pi / 4, np.pi / 2, np.pi]).round(2)
         array([[[ 1.  ],
                 [ 1.  ],
@@ -93,7 +93,7 @@ class Fourier(Basis):
         period: Optional[float] = None,
     ) -> None:
         """
-        Construct a Fourier object.
+        Construct a FourierBasis object.
 
         It forces the object to have an odd number of basis. If n_basis is
         even, it is incremented by one.

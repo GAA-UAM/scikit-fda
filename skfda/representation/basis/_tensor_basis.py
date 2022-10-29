@@ -8,7 +8,7 @@ from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 
-class Tensor(Basis):
+class TensorBasis(Basis):
     r"""Tensor basis.
 
     Basis for multivariate functions constructed as a tensor product of
@@ -28,12 +28,12 @@ class Tensor(Basis):
 
             1, v, u, uv, u^2, u^2v
 
-        >>> from skfda.representation.basis import Tensor, Monomial
+        >>> from skfda.representation.basis import TensorBasis, MonomialBasis
         >>>
-        >>> basis_x = Monomial(domain_range=(0,5), n_basis=3)
-        >>> basis_y = Monomial(domain_range=(0,3), n_basis=2)
+        >>> basis_x = MonomialBasis(domain_range=(0,5), n_basis=3)
+        >>> basis_y = MonomialBasis(domain_range=(0,3), n_basis=2)
         >>>
-        >>> basis = Tensor([basis_x, basis_y])
+        >>> basis = TensorBasis([basis_x, basis_y])
 
 
         And evaluates all the functions in the basis in a list of descrete

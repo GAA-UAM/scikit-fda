@@ -10,10 +10,10 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='BSpline')
+T = TypeVar("T", bound='BSplineBasis')
 
 
-class BSpline(Basis):
+class BSplineBasis(Basis):
     r"""BSpline basis.
 
     BSpline basis elements are defined recursively as:
@@ -43,21 +43,21 @@ class BSpline(Basis):
     Examples:
         Constructs specifying number of basis and order.
 
-        >>> bss = BSpline(n_basis=8, order=4)
+        >>> bss = BSplineBasis(n_basis=8, order=4)
 
         If no order is specified defaults to 4 because cubic splines are
         the most used. So the previous example is the same as:
 
-        >>> bss = BSpline(n_basis=8)
+        >>> bss = BSplineBasis(n_basis=8)
 
         It is also possible to create a BSpline basis specifying the knots.
 
-        >>> bss = BSpline(knots=[0, 0.2, 0.4, 0.6, 0.8, 1])
+        >>> bss = BSplineBasis(knots=[0, 0.2, 0.4, 0.6, 0.8, 1])
 
         Once we create a basis we can evaluate each of its functions at a
         set of points.
 
-        >>> bss = BSpline(n_basis=3, order=3)
+        >>> bss = BSplineBasis(n_basis=3, order=3)
         >>> bss([0, 0.5, 1])
         array([[[ 1.  ],
                 [ 0.25],

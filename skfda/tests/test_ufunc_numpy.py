@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from skfda import FDataGrid
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 
 T = TypeVar("T", "np.typing.NDArray[Any]", FDataGrid)
 
@@ -93,7 +93,7 @@ class TestOperators(unittest.TestCase):
         """Test that operations with numpy arrays for basis commute."""
         X = FDataGrid([[1, 2, 3], [4, 5, 6]])
         arr = np.array([1, 2])
-        basis = Fourier(n_basis=5)
+        basis = FourierBasis(n_basis=5)
 
         X_basis = X.to_basis(basis)
 

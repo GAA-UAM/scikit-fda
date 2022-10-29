@@ -296,21 +296,21 @@ def inner_product(
 
         It also work with basis objects
 
-        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>> basis = skfda.representation.basis.MonomialBasis(n_basis=3)
         >>>
         >>> fd1 = skfda.FDataBasis(basis, [0, 1, 0])
         >>> fd2 = skfda.FDataBasis(basis, [1, 0, 0])
         >>> inner_product(fd1, fd2)
         array([ 0.5])
 
-        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>> basis = skfda.representation.basis.MonomialBasis(n_basis=3)
         >>>
         >>> fd1 = skfda.FDataBasis(basis, [[0, 1, 0], [0, 0, 1]])
         >>> fd2 = skfda.FDataBasis(basis, [1, 0, 0])
         >>> inner_product(fd1, fd2)
         array([ 0.5       , 0.33333333])
 
-        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>> basis = skfda.representation.basis.MonomialBasis(n_basis=3)
         >>>
         >>> fd1 = skfda.FDataBasis(basis, [[0, 1, 0], [0, 0, 1]])
         >>> fd2 = skfda.FDataBasis(basis, [[1, 0, 0], [0, 1, 0]])
@@ -615,21 +615,21 @@ def cosine_similarity(
 
         It also work with basis objects
 
-        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>> basis = skfda.representation.basis.MonomialBasis(n_basis=3)
         >>>
         >>> fd1 = skfda.FDataBasis(basis, [0, 1, 0])
         >>> fd2 = skfda.FDataBasis(basis, [1, 0, 0])
         >>> cosine_similarity(fd1, fd2)
         array([ 0.8660254])
 
-        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>> basis = skfda.representation.basis.MonomialBasis(n_basis=3)
         >>>
         >>> fd1 = skfda.FDataBasis(basis, [[0, 1, 0], [0, 0, 1]])
         >>> fd2 = skfda.FDataBasis(basis, [1, 0, 0])
         >>> cosine_similarity(fd1, fd2)
         array([ 0.8660254 ,  0.74535599])
 
-        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>> basis = skfda.representation.basis.MonomialBasis(n_basis=3)
         >>>
         >>> fd1 = skfda.FDataBasis(basis, [[0, 1, 0], [0, 0, 1]])
         >>> fd2 = skfda.FDataBasis(basis, [[1, 0, 0], [0, 1, 0]])

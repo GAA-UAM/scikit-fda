@@ -20,7 +20,7 @@ from skfda.misc.hat_matrix import (
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
 from skfda.preprocessing.smoothing import KernelSmoother
-from skfda.representation.basis import BSpline, Monomial
+from skfda.representation.basis import BSplineBasis, MonomialBasis
 from skfda.representation.grid import FDataGrid
 
 
@@ -180,7 +180,7 @@ class TestBasisSmoother(unittest.TestCase):
         """Test Basis Smoother using BSpline basis and Cholesky method."""
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
-        basis = BSpline((0, 1), n_basis=5)
+        basis = BSplineBasis((0, 1), n_basis=5)
 
         fd = FDataGrid(data_matrix=x, grid_points=t)
 
@@ -205,7 +205,7 @@ class TestBasisSmoother(unittest.TestCase):
         """Test Basis Smoother using BSpline basis and QR method."""
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
-        basis = BSpline((0, 1), n_basis=5)
+        basis = BSplineBasis((0, 1), n_basis=5)
 
         fd = FDataGrid(data_matrix=x, grid_points=t)
 
@@ -232,7 +232,7 @@ class TestBasisSmoother(unittest.TestCase):
         # where the fit is very good but its just for testing purposes
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
-        basis = Monomial(n_basis=4)
+        basis = MonomialBasis(n_basis=4)
 
         fd = FDataGrid(data_matrix=x, grid_points=t)
 
@@ -257,11 +257,11 @@ class TestBasisSmoother(unittest.TestCase):
         """Test Basis Smoother for vector values functions."""
         X, _ = fetch_weather(return_X_y=True)
 
-        basis_dim = skfda.representation.basis.Fourier(
+        basis_dim = skfda.representation.basis.FourierBasis(
             n_basis=7, domain_range=X.domain_range,
         )
 
-        basis = skfda.representation.basis.VectorValued(
+        basis = skfda.representation.basis.VectorValuedBasis(
             [basis_dim] * 2,
         )
 

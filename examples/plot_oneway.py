@@ -14,7 +14,7 @@ real dataset.
 import skfda
 from skfda.inference.anova import oneway_anova
 from skfda.representation import FDataGrid, FDataBasis
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 
 ################################################################################
 # *One-way ANOVA* (analysis of variance) is a test that can be used to
@@ -31,7 +31,7 @@ from skfda.representation.basis import Fourier
 # of hips and knees from 39 different boys in a 20 point movement cycle.
 dataset = skfda.datasets.fetch_gait()
 fd_hip = dataset['data'].coordinates[0]
-fd_knee = dataset['data'].coordinates[1].to_basis(Fourier(n_basis=10))
+fd_knee = dataset['data'].coordinates[1].to_basis(FourierBasis(n_basis=10))
 
 ################################################################################
 # Let's start with the first feature, the angle of the hip. The sample

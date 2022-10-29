@@ -18,7 +18,7 @@ class TestPandas(unittest.TestCase):
             ],
         )
         self.fd_basis = self.fd.to_basis(
-            skfda.representation.basis.BSpline(
+            skfda.representation.basis.BSplineBasis(
                 n_basis=5,
             ),
         )

@@ -95,7 +95,7 @@ class BasisSmoother(_LinearSmoother):
         array([ 3.,  3.,  1.,  1.,  3.])
 
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
+        >>> basis = skfda.representation.basis.FourierBasis((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(basis)
         >>> fd_smooth = smoother.fit_transform(fd)
         >>> fd_smooth.data_matrix.round(2)
@@ -109,7 +109,7 @@ class BasisSmoother(_LinearSmoother):
         in basis form, by default, without extra smoothing:
 
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
+        >>> basis = skfda.representation.basis.FourierBasis((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...     basis,
         ...     method='cholesky',
@@ -150,7 +150,7 @@ class BasisSmoother(_LinearSmoother):
         >>> from skfda.misc.operators import LinearDifferentialOperator
         >>>
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
+        >>> basis = skfda.representation.basis.FourierBasis((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...     basis,
         ...     method='cholesky',
@@ -164,7 +164,7 @@ class BasisSmoother(_LinearSmoother):
         array([[ 2.04,  0.51,  0.55]])
 
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
+        >>> basis = skfda.representation.basis.FourierBasis((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...     basis,
         ...     method='qr',
@@ -178,7 +178,7 @@ class BasisSmoother(_LinearSmoother):
         array([[ 2.04,  0.51,  0.55]])
 
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
+        >>> basis = skfda.representation.basis.FourierBasis((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...     basis,
         ...     method='svd',

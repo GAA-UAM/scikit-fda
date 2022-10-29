@@ -44,13 +44,15 @@ fdgrid = skfda.datasets.make_sinusoidal_process(
     n_samples=2, error_std=0, random_state=0)
 fdgrid.dataset_name = "Grid"
 
-fd_fourier = fdgrid.to_basis(skfda.representation.basis.Fourier())
+fd_fourier = fdgrid.to_basis(skfda.representation.basis.FourierBasis())
 fd_fourier.dataset_name = "Fourier Basis"
 
-fd_monomial = fdgrid.to_basis(skfda.representation.basis.Monomial(n_basis=5))
+fd_monomial = fdgrid.to_basis(
+    skfda.representation.basis.MonomialBasis(n_basis=5))
 fd_monomial.dataset_name = "Monomial Basis"
 
-fd_bspline = fdgrid.to_basis(skfda.representation.basis.BSpline(n_basis=5))
+fd_bspline = fdgrid.to_basis(
+    skfda.representation.basis.BSplineBasis(n_basis=5))
 fd_bspline.dataset_name = "BSpline Basis"
 
 

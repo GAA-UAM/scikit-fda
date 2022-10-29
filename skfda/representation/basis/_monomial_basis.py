@@ -6,10 +6,10 @@ import scipy.linalg
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='Monomial')
+T = TypeVar("T", bound='MonomialBasis')
 
 
-class Monomial(Basis):
+class MonomialBasis(Basis):
     """Monomial basis.
 
     Basis formed by powers of the argument :math:`t`:
@@ -26,7 +26,7 @@ class Monomial(Basis):
         Defines a monomial base over the interval :math:`[0, 5]` consisting
         on the first 3 powers of :math:`t`: :math:`1, t, t^2`.
 
-        >>> bs_mon = Monomial(domain_range=(0,5), n_basis=3)
+        >>> bs_mon = MonomialBasis(domain_range=(0,5), n_basis=3)
 
         And evaluates all the functions in the basis in a list of descrete
         values.

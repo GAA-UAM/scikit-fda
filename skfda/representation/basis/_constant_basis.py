@@ -6,10 +6,10 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='Constant')
+T = TypeVar("T", bound='ConstantBasis')
 
 
-class Constant(Basis):
+class ConstantBasis(Basis):
     """Constant basis.
 
     Basis for constant functions
@@ -22,7 +22,7 @@ class Constant(Basis):
         Defines a contant base over the interval :math:`[0, 5]` consisting
         on the constant function 1 on :math:`[0, 5]`.
 
-        >>> bs_cons = Constant((0,5))
+        >>> bs_cons = ConstantBasis((0,5))
 
     """
 

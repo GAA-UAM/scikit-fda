@@ -3,7 +3,7 @@ import unittest
 
 from skfda.inference.hotelling import hotelling_t2, hotelling_test_ind
 from skfda.representation import FDataGrid
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 
 
 class HotellingTests(unittest.TestCase):
@@ -14,9 +14,9 @@ class HotellingTests(unittest.TestCase):
         fd1 = FDataGrid([[1, 1, 1]])
 
         with self.assertRaises(TypeError):
-            hotelling_test_ind(fd1.to_basis(Fourier(n_basis=3)), fd1)
+            hotelling_test_ind(fd1.to_basis(FourierBasis(n_basis=3)), fd1)
         with self.assertRaises(TypeError):
-            hotelling_test_ind(fd1, fd1.to_basis(Fourier(n_basis=3)))
+            hotelling_test_ind(fd1, fd1.to_basis(FourierBasis(n_basis=3)))
         with self.assertRaises(ValueError):
             hotelling_test_ind(fd1, fd1, n_reps=0)
 
@@ -25,9 +25,9 @@ class HotellingTests(unittest.TestCase):
         fd1 = FDataGrid([[1, 1, 1]])
 
         with self.assertRaises(TypeError):
-            hotelling_t2(fd1.to_basis(Fourier(n_basis=3)), fd1)
+            hotelling_t2(fd1.to_basis(FourierBasis(n_basis=3)), fd1)
         with self.assertRaises(TypeError):
-            hotelling_t2(fd1, fd1.to_basis(Fourier(n_basis=3)))
+            hotelling_t2(fd1, fd1.to_basis(FourierBasis(n_basis=3)))
 
     def test_hotelling_t2(self) -> None:
         """Trivial checks for the statistic."""
@@ -36,8 +36,8 @@ class HotellingTests(unittest.TestCase):
         self.assertAlmostEqual(hotelling_t2(fd1, fd1), 0)
         self.assertAlmostEqual(hotelling_t2(fd1, fd2), 1)
 
-        fd1 = fd1.to_basis(Fourier(n_basis=3))
-        fd2 = fd2.to_basis(Fourier(n_basis=3))
+        fd1 = fd1.to_basis(FourierBasis(n_basis=3))
+        fd2 = fd2.to_basis(FourierBasis(n_basis=3))
         self.assertAlmostEqual(hotelling_t2(fd1, fd1), 0)
         self.assertAlmostEqual(hotelling_t2(fd1, fd2), 1)
 

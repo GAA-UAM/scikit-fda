@@ -10,7 +10,7 @@ from skfda.inference.anova import (
     v_sample_stat,
 )
 from skfda.representation import FDataGrid
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 
 
 class OnewayAnovaTests(unittest.TestCase):
@@ -43,7 +43,7 @@ class OnewayAnovaTests(unittest.TestCase):
         self.assertEqual(v_sample_stat(fd, weights), 7.0)
         self.assertAlmostEqual(
             v_sample_stat(
-                fd.to_basis(Fourier(n_basis=5)),
+                fd.to_basis(FourierBasis(n_basis=5)),
                 weights,
             ),
             7.0,
@@ -56,7 +56,7 @@ class OnewayAnovaTests(unittest.TestCase):
         self.assertAlmostEqual(v_asymptotic_stat(fd, weights=weights), res)
         self.assertAlmostEqual(
             v_asymptotic_stat(
-                fd.to_basis(Fourier(n_basis=5)),
+                fd.to_basis(FourierBasis(n_basis=5)),
                 weights=weights,
             ),
             res,
@@ -86,7 +86,7 @@ class OnewayAnovaTests(unittest.TestCase):
         big_sim = oneway_anova(fd1, fd2, fd3, n_reps=2000, random_state=100)[1]
         self.assertAlmostEqual(little_sim, big_sim, delta=0.05)
 
-        fd = fd.to_basis(Fourier(n_basis=5))
+        fd = fd.to_basis(FourierBasis(n_basis=5))
         fd1 = fd[:5]
         fd2 = fd[5:10]
 

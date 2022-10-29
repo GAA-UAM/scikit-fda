@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 from skfda.datasets import make_sinusoidal_process
 from skfda.preprocessing.registration import LeastSquaresShiftRegistration
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 
 ##############################################################################
 # In this example we will use a
@@ -36,7 +36,7 @@ fd.plot()
 # is essential due to the use of derivatives in the optimization process.
 # Because of their sinusoidal nature we will use a Fourier basis.
 
-fd_basis = fd.to_basis(Fourier(n_basis=11))
+fd_basis = fd.to_basis(FourierBasis(n_basis=11))
 fd_basis.plot()
 
 ##############################################################################

@@ -13,7 +13,7 @@ from skfda.misc.metrics import (
     linf_norm,
     lp_norm,
 )
-from skfda.representation.basis import Monomial
+from skfda.representation.basis import MonomialBasis
 
 
 class TestLp(unittest.TestCase):
@@ -29,7 +29,7 @@ class TestLp(unittest.TestCase):
             ],
             grid_points=grid_points,
         )
-        basis = Monomial(n_basis=3, domain_range=(1, 5))
+        basis = MonomialBasis(n_basis=3, domain_range=(1, 5))
         self.fd_basis = FDataBasis(basis, [[1, 1, 0], [0, 0, 1]])
         self.fd_vector_valued = self.fd.concatenate(
             self.fd,

@@ -25,7 +25,7 @@ from skfda.preprocessing.registration.validation import (
     PairwiseCorrelation,
     SobolevLeastSquares,
 )
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 from skfda.representation.interpolation import SplineInterpolation
 
 
@@ -268,7 +268,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         np.testing.assert_array_almost_equal(deltas, [-0.022, 0.03])
 
         # Test with Basis
-        fd = self.fd.to_basis(Fourier())
+        fd = self.fd.to_basis(FourierBasis())
         reg.fit_transform(fd)
         deltas = reg.deltas_.round(3)
         np.testing.assert_array_almost_equal(deltas, [-0.022, 0.03])
@@ -439,7 +439,7 @@ class TestRegistrationValidation(unittest.TestCase):
     def test_amplitude_phase_score_with_basis(self) -> None:
         """Test the AmplitudePhaseDecomposition with FDataBasis."""
         scorer = AmplitudePhaseDecomposition()
-        X = self.X.to_basis(Fourier())
+        X = self.X.to_basis(FourierBasis())
         score = scorer(self.shift_registration, X)
         np.testing.assert_allclose(score, 0.995086, rtol=1e-6)
 

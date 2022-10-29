@@ -7,7 +7,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
     submod_attrs={
         '_basis': ["Basis"],
-        '_basis_of_fdata': ["BasisOfFData"],
+        '_custom_basis': ["CustomBasis"],
         "_bspline": ["BSpline"],
         "_constant": ["Constant"],
         "_fdatabasis": ["FDataBasis", "FDataBasisDType"],
@@ -21,9 +21,9 @@ __getattr__, __dir__, __all__ = lazy.attach(
 
 if TYPE_CHECKING:
     from ._basis import Basis as Basis
-    from ._basis_of_fdata import BasisOfFData as BasisOfFData
     from ._bspline import BSpline as BSpline
     from ._constant import Constant as Constant
+    from ._custom_basis import CustomBasis as CustomBasis
     from ._fdatabasis import (
         FDataBasis as FDataBasis,
         FDataBasisDType as FDataBasisDType,

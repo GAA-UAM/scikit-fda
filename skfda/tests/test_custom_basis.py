@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from skfda.representation.basis import BasisOfFData, FDataBasis, Fourier
+from skfda.representation.basis import CustomBasis, FDataBasis, Fourier
 from skfda.representation.grid import FDataGrid
 
 
@@ -20,7 +20,7 @@ class TestBasis(unittest.TestCase):
         )
 
         data_basis = FDataBasis(
-            basis=BasisOfFData(fdata=sample),
+            basis=CustomBasis(fdata=sample),
             coefficients=np.array([[1, 0], [0, 1], [1, 1]]),
         )
 
@@ -44,7 +44,7 @@ class TestBasis(unittest.TestCase):
         )
 
         data_basis = FDataBasis(
-            basis=BasisOfFData(
+            basis=CustomBasis(
                 fdata=FDataBasis(basis=basis, coefficients=coeficients),
             ),
             coefficients=coeficients,
@@ -76,7 +76,7 @@ class TestBasis(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            BasisOfFData(fdata=sample)
+            CustomBasis(fdata=sample)
 
         sample = FDataBasis(
             basis=Fourier(n_basis=3),
@@ -91,7 +91,7 @@ class TestBasis(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            BasisOfFData(fdata=sample)
+            CustomBasis(fdata=sample)
 
     def test_not_linearly_independent_range(self):
         """
@@ -106,7 +106,7 @@ class TestBasis(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            BasisOfFData(fdata=sample)
+            CustomBasis(fdata=sample)
 
         sample = FDataBasis(
             basis=Fourier(n_basis=3),
@@ -120,7 +120,7 @@ class TestBasis(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            BasisOfFData(fdata=sample)
+            CustomBasis(fdata=sample)
 
     def test_derivative_grid(self):
         """Test the derivative of a basis constructed from a FDataGrid."""
@@ -131,7 +131,7 @@ class TestBasis(unittest.TestCase):
         # The derivative of the first function is always 1
         # The derivative of the second function is 0 and then 4
 
-        basis = BasisOfFData(fdata=base_functions)
+        basis = CustomBasis(fdata=base_functions)
 
         coefs = np.array([[1, 0], [0, 1], [1, 1]])
         derivate_basis, derivative_coefs = basis.derivative_basis_and_coefs(
@@ -169,7 +169,7 @@ class TestBasis(unittest.TestCase):
             coefficients=basis_coef,
         )
 
-        basis = BasisOfFData(fdata=base_functions)
+        basis = CustomBasis(fdata=base_functions)
 
         coefs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [2, 1, 5]])
         derivate_basis, derivative_coefs = basis.derivative_basis_and_coefs(
@@ -214,11 +214,59 @@ class TestBasis(unittest.TestCase):
         # Therefore, the derivative of the basis is not a basis
 
         # The basis is linearly independent
-        base = BasisOfFData(fdata=base_functions)
+        base = CustomBasis(fdata=base_functions)
 
         # Its derivative is not linearly independent
         with self.assertRaises(ValueError):
             base.derivative_basis_and_coefs(np.ndarray([1, 1]))
+
+    def test_multivariate_codomain(self):
+        """Test basis from a multivariate function."""
+        points = np.array([0, 1, 2])
+        base_functions = FDataGrid(
+            data_matrix=np.array(
+                [
+                    [[0, 0, 1], [0, 0, 2], [0, 0, 3]],
+                    [[1, 0, 0], [2, 0, 0], [3, 0, 0]],
+                ],
+            ),
+            grid_points=points,
+        )
+        base = CustomBasis(fdata=base_functions)
+
+        coefs = np.array([[1, 0], [0, 1], [1, 1]])
+
+        functions = FDataBasis(
+            basis=base,
+            coefficients=coefs,
+        )
+
+        expected_data = np.array(
+            [
+                [[0, 0, 1], [0, 0, 2], [0, 0, 3]],
+                [[1, 0, 0], [2, 0, 0], [3, 0, 0]],
+                [[1, 0, 1], [2, 0, 2], [3, 0, 3]],
+            ],
+        )
+        np.testing.assert_equal(functions(points), expected_data)
+
+    def test_multivariate_codomain_linearly_dependent(self):
+        """Test basis from  multivariate linearly dependent functions."""
+        points = np.array([0, 1, 2])
+        base_functions = FDataGrid(
+            data_matrix=np.array(
+                [
+                    [[0, 0, 1], [0, 0, 2], [0, 0, 3]],
+                    [[1, 0, 0], [2, 0, 0], [3, 0, 0]],
+                    [[1, 0, 1], [2, 0, 2], [3, 0, 3]],
+                ],
+            ),
+            grid_points=points,
+        )
+        # The third function is the sum of the first two
+
+        with self.assertRaises(ValueError):
+            CustomBasis(fdata=base_functions)
 
 
 if __name__ == "__main__":

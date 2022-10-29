@@ -199,27 +199,6 @@ class TestBasis(unittest.TestCase):
             derivative_on_the_basis(eval_points),
         )
 
-    # def test_linearly_dependent_derivatives(self):
-    #     """
-    #     Construct a basis whose derivative is not a basis.
-
-    #     An error should be raised
-    #     """
-    #     base_functions = FDataGrid(
-    #         data_matrix=np.array([[1, 2, 3], [1, 3, 5]]),
-    #         grid_points=np.array([[0, 1, 2]]),
-    #     )
-    #     # The derivative of the first function is 1
-    #     # The derivative of the second function is 2
-    #     # Therefore, the derivative of the basis is not a basis
-
-    #     # The basis is linearly independent
-    #     base = CustomBasis(fdata=base_functions)
-
-    #     # Its derivative is not linearly independent
-    #     with self.assertRaises(ValueError):
-    #         base.derivative_basis_and_coefs(np.ndarray([1, 1]))
-
     def test_multivariate_codomain(self):
         """Test basis from a multivariate function."""
         points = np.array([0, 1, 2])
@@ -269,6 +248,7 @@ class TestBasis(unittest.TestCase):
             CustomBasis(fdata=base_functions)
 
     def test_evaluate_derivative(self):
+        """Test the evaluation of the derivative of a DataBasis."""
         grid_points = np.array([[0, 1, 2]])
         base_functions = FDataGrid(
             data_matrix=np.array([[1, 2, 3], [1, 3, 5]]),

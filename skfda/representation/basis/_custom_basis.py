@@ -44,53 +44,52 @@ class CustomBasis(Basis):
         self.fdata = fdata
 
     @multimethod.multidispatch
+    def _get_coordinates_matrix(self, fdata) -> NDArrayFloat:
+        raise ValueError(
+            "Unexpected type of functional data object.",
+        )
+
+    @multimethod.multidispatch
+    def _set_coordinates_matrix(self, fdata, matrix: np.ndarray):
+        raise ValueError(
+            "Unexpected type of functional data object.",
+        )
+
+    @_get_coordinates_matrix.register
+    def _get_coordinates_matrix_grid(self, fdata: FDataGrid) -> NDArrayFloat:
+        return fdata.data_matrix
+
+    @_set_coordinates_matrix.register
+    def _set_coordinates_matrix_grid(
+        self, fdata: FDataGrid, matrix: np.ndarray,
+    ):
+        fdata.data_matrix = matrix
+
+    @_get_coordinates_matrix.register
+    def _get_coordinates_matrix_basis(self, fdata: FDataBasis) -> NDArrayFloat:
+        return fdata.coefficients
+
+    @_set_coordinates_matrix.register
+    def _set_coordinates_matrix_basis(
+        self, fdata: FDataBasis, matrix: np.ndarray,
+    ):
+        fdata.coefficients = matrix
+
     def _check_linearly_independent(self, fdata) -> None:
         """Check if the functions are linearly independent."""
-        raise ValueError(
-            "The basis creation functionality is not available for the "
-            "type of FData object provided",
-        )
-
-    @_check_linearly_independent.register
-    def _check_linearly_independent_grid(self, fdata: FDataGrid) -> None:
-        """Ensure the functions in the FDataGrid are linearly independent."""
-        # Flatten the last dimension of the data matrix
-        flattened_shape = (
-            fdata.data_matrix.shape[0],
-            fdata.data_matrix.shape[1] * fdata.data_matrix.shape[2],
-        )
-
-        if fdata.n_samples > flattened_shape[1]:
+        coord_matrix = self._get_coordinates_matrix(fdata)
+        coord_matrix = coord_matrix.reshape(coord_matrix.shape[0], -1)
+        if coord_matrix.shape[0] > coord_matrix.shape[1]:
             raise ValueError(
-                "Too many samples in the basis. The number of samples "
-                "must be less than or equal to the number of sampling points "
-                "times the dimension of the codomain.",
+                "Too many samples in the basis",
             )
-        rank = np.linalg.matrix_rank(
-            fdata.data_matrix.reshape(flattened_shape),
-        )
 
-        if rank < fdata.n_samples:
+        rank = np.linalg.matrix_rank(coord_matrix)
+        if rank != coord_matrix.shape[0]:
             raise ValueError(
                 "There are only {rank} linearly independent "
                 "functions".format(
                     rank=rank,
-                ),
-            )
-
-    @_check_linearly_independent.register
-    def _check_linearly_independent_basis(self, fdata: FDataBasis) -> None:
-        """Ensure the functions in the FDataBasis are linearly independent."""
-        if fdata.n_samples > fdata.basis.n_basis:
-            raise ValueError(
-                "Too many samples in the basis. "
-                "The number of samples must be less than or equal to the "
-                "number of basis functions.",
-            )
-        if np.linalg.matrix_rank(fdata.coefficients) < fdata.n_samples:
-            raise ValueError(
-                "There are only {rank} linearly independent functions".format(
-                    rank=np.linalg.matrix_rank(fdata.coefficients),
                 ),
             )
 
@@ -102,36 +101,23 @@ class CustomBasis(Basis):
         deriv_fdata = self.fdata.derivative(order=order)
         new_basis = None
 
-        if isinstance(deriv_fdata, FDataBasis):
-            q, r = np.linalg.qr(deriv_fdata.coefficients.T)
-            new_basis = CustomBasis(fdata=deriv_fdata.copy(coefficients=q.T))
-            coefs = coefs @ deriv_fdata.coefficients @ q
+        coord_matrix = self._get_coordinates_matrix(deriv_fdata)
+        coord_matrix_reshaped = coord_matrix.reshape(
+            coord_matrix.shape[0],
+            -1,
+        )
 
-        else:
-            flattened_shape = (
-                deriv_fdata.data_matrix.shape[0],
-                (
-                    deriv_fdata.data_matrix.shape[1]
-                    * deriv_fdata.data_matrix.shape[2]
-                ),
-            )
+        q, r = np.linalg.qr(coord_matrix_reshaped.T)
 
-            mat = deriv_fdata.data_matrix.reshape(flattened_shape)
+        new_data = q.T.reshape(
+            -1,
+            *coord_matrix.shape[1:],
+        )
 
-            q, r = np.linalg.qr(mat.T)
-            new_data = q.T.reshape(
-                (
-                    -1,
-                    deriv_fdata.data_matrix.shape[1],
-                    deriv_fdata.data_matrix.shape[2],
-                ),
-            )
-            new_basis = CustomBasis(
-                fdata=deriv_fdata.copy(
-                    data_matrix=new_data,
-                ),
-            )
-            coefs = coefs @ mat @ q
+        self._set_coordinates_matrix(deriv_fdata, new_data)
+
+        new_basis = CustomBasis(fdata=deriv_fdata)
+        coefs = coefs @ coord_matrix_reshaped @ q
 
         return new_basis, coefs
 

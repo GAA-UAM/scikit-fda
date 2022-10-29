@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Tuple, TypeVar
 
 import numpy as np
+import multimethod
 
 from ...typing._numpy import NDArrayFloat
 from .._functional_data import FData
@@ -35,29 +36,38 @@ class CustomBasis(Basis):
             domain_range=fdata.domain_range,
             n_basis=fdata.n_samples,
         )
-        if isinstance(fdata, FDataGrid):
-            self._check_linearly_independent_grid(fdata)
-        else:
-            self._check_linearly_independent_basis(fdata)
+        self._check_linearly_independent(fdata)
 
         self.fdata = fdata
 
-    def _check_linearly_independent_grid(self, fdata: FDataGrid) -> None:
-        """Check if the observations in the FDataGrid linearly independent."""
-        if fdata.n_samples > fdata.data_matrix.shape[1]:
-            raise ValueError(
-                "Too many samples in the basis. "
-                "The number of samples must be less than or equal to the "
-                "number of sampling points.",
-            )
+    @multimethod.multidispatch
+    def _check_linearly_independent(self, fdata) -> None:
+        """Check if the functions are linearly independent."""
+        raise ValueError(
+            "The basis creation functionality is not available for the "
+            "type of FData object provided",
+        )
 
-        new_shape = (
+    @_check_linearly_independent.register
+    def _check_linearly_independent_grid(self, fdata: FDataGrid) -> None:
+        """Ensure the functions in the FDataGrid are linearly independent."""
+        # Flatten the last dimension of the data matrix
+        flattened_shape = (
             fdata.data_matrix.shape[0],
             fdata.data_matrix.shape[1] * fdata.data_matrix.shape[2],
         )
-        rank = np.linalg.matrix_rank(fdata.data_matrix.reshape(new_shape))
 
-        if rank != fdata.n_samples:
+        if fdata.n_samples > flattened_shape[1]:
+            raise ValueError(
+                "Too many samples in the basis. The number of samples "
+                "must be less than or equal to the number of sampling points "
+                "times the dimension of the codomain.",
+            )
+        rank = np.linalg.matrix_rank(
+            fdata.data_matrix.reshape(flattened_shape),
+        )
+
+        if rank < fdata.n_samples:
             raise ValueError(
                 "There are only {rank} linearly independent "
                 "functions".format(
@@ -65,8 +75,9 @@ class CustomBasis(Basis):
                 ),
             )
 
+    @_check_linearly_independent.register
     def _check_linearly_independent_basis(self, fdata: FDataBasis) -> None:
-        """Check if the observations in the FDataBasis linearly independent."""
+        """Ensure the functions in the FDataBasis are linearly independent."""
         if fdata.n_samples > fdata.basis.n_basis:
             raise ValueError(
                 "Too many samples in the basis. "
@@ -79,7 +90,6 @@ class CustomBasis(Basis):
                     rank=np.linalg.matrix_rank(fdata.coefficients),
                 ),
             )
-        pass
 
     def _derivative_basis_and_coefs(
         self: T,

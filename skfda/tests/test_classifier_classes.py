@@ -30,7 +30,8 @@ def classifier(request: Any) -> Any:
     params=[
         np.array([0, 1]),
         np.array(["class_a", "class_b"]),
-    ], ids=["int", "str"],
+    ],
+    ids=["int", "str"],
 )
 def classes(request: Any) -> Any:
     """Fixture for classes to test."""

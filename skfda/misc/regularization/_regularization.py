@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 import warnings
-from typing import Any, Generic, Iterable, Optional, Union
+from typing import Any, Generic, Iterable, List, Optional, Union
 
 import numpy as np
 import scipy.linalg
@@ -143,6 +143,8 @@ def compute_penalty_matrix(
     basis_iterable: Iterable[BasisTypes],
     regularization_parameter: Union[float, Iterable[float]],
     regularization: RegularizationLike,
+    dimension: int = 1,
+    fit_intercept: bool = False,
 ) -> Optional[NDArrayFloat]:
     """
     Compute the regularization matrix for a linear differential operator.
@@ -150,12 +152,25 @@ def compute_penalty_matrix(
     X can be a list of mixed data.
 
     """
+    lambdas: List[float] = []
+
     # If there is no regularization, return 0 and rely on broadcasting
     if regularization_parameter == 0 or regularization is None:
         return None
 
+    if fit_intercept:
+        lambdas = [0] + lambdas
+
     # Compute penalty matrix if not provided
-    if not isinstance(regularization, Iterable):
+    if isinstance(regularization, Iterable):
+        for reg in regularization:
+            if reg is None:
+                lambdas = lambdas + [0]
+            else:
+                lambdas = lambdas + [reg.regularization_parameter]
+    else:
+        lambda_parameter = regularization.regularization_parameter
+        lambdas = lambdas + [lambda_parameter] * dimension
         regularization = (regularization,)
 
     if not isinstance(regularization_parameter, Iterable):
@@ -172,6 +187,11 @@ def compute_penalty_matrix(
             regularization_parameter,
         )]
 
-    return scipy.linalg.block_diag(  # type: ignore[no-any-return]
+    reg_matrix = scipy.linalg.block_diag(
         *penalty_blocks,
     )
+
+    if dimension != 1:
+        reg_matrix = np.kron(reg_matrix, np.diag(lambdas))
+
+    return reg_matrix  # type: ignore[no-any-return]

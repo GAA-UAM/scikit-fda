@@ -299,8 +299,8 @@ class LinearRegression(
             self.coef_basis,
         )
 
-        regularization, y_regularization, lambdas = self._check_regularization(
-            self.regularization, self.y_regularization, self.y_nbasis,
+        regularization, y_regularization = self._check_regularization(
+            self.regularization, self.y_regularization,
         )
 
         if self.fit_intercept:
@@ -310,6 +310,8 @@ class LinearRegression(
             basis_iterable=(c.basis for c in coef_info),
             regularization_parameter=1,
             regularization=regularization,
+            dimension=self.y_nbasis,
+            fit_intercept=self.fit_intercept,
         )
 
         y_penalty_matrix = compute_penalty_matrix(
@@ -324,7 +326,6 @@ class LinearRegression(
 
         # Notation from Ramsay's FDA section 13.4
         if self.functional_response:
-            lambda_matrix = np.diag(lambdas)
             J_phi_theta = self.y_basis.inner_product_matrix(self.coef_basis[0])
             J_theta = self.coef_basis[0].inner_product_matrix()
 
@@ -333,14 +334,13 @@ class LinearRegression(
             J_theta_kron_X_col_gram_mat = np.kron(J_theta, X_col_gram_mat)
 
             if penalty_matrix is not None:
-                reg_matrix = np.kron(penalty_matrix, lambda_matrix)
-                J_theta_kron_X_col_gram_mat += reg_matrix
+                J_theta_kron_X_col_gram_mat += penalty_matrix
 
             if y_penalty_matrix is not None:
                 y_reg_matrix = np.kron(
                     y_penalty_matrix,
                     X_col_gram_mat,
-                ) * self.y_lambda_parameter
+                )
 
                 J_theta_kron_X_col_gram_mat += y_reg_matrix
 
@@ -437,35 +437,15 @@ class LinearRegression(
         self,
         regularization: RegularizationType,
         y_regularization: RegularizationType,
-        dimension: int,
     ) -> CheckRegularizationResultType:
 
-        if isinstance(regularization, Iterable):
-            lambdas: List[float] = []
-            for reg in regularization:
-                if reg is None:
-                    lambdas = lambdas + [0]
-                else:
-                    lambdas = lambdas + [reg.regularization_parameter]
-        elif regularization is not None:
-            lambda_parameter = regularization.regularization_parameter
-            lambdas = [lambda_parameter] * dimension
-        else:
-            lambdas = [0] * dimension
+        if self.fit_intercept and not self.functional_response:
+            if isinstance(regularization, Iterable):
+                regularization = itertools.chain([None], regularization)
+            elif regularization is not None:
+                regularization = (None, regularization)
 
-        if self.fit_intercept:
-            if self.functional_response:
-                lambdas = [0] + lambdas
-            else:
-                if isinstance(regularization, Iterable):
-                    regularization = itertools.chain([None], regularization)
-                elif regularization is not None:
-                    regularization = (None, regularization)
-
-        if y_regularization is not None:
-            self.y_lambda_parameter = y_regularization.regularization_parameter
-
-        return regularization, y_regularization, lambdas
+        return regularization, y_regularization
 
     def _concatenate_intercept(
         self,

@@ -441,7 +441,7 @@ class LinearRegression(
 
         if self.fit_intercept and not self.functional_response:
             if isinstance(regularization, Iterable):
-                regularization = itertools.chain([None], regularization)
+                regularization = [None] + regularization
             elif regularization is not None:
                 regularization = (None, regularization)
 

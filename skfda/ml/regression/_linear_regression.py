@@ -76,7 +76,11 @@ class LinearRegression(
     regression, but accepting also functional data expressed in a basis
     expansion.
 
-    The model assumed by this method, when the response is scalar, is:
+    Functional linear regression model is subdivided into three broad
+    categories, depending on whether the responses or the covariates,
+    or both, are curves.
+
+    Particulary, when the response is scalar, the model assumed is:
 
     .. math::
         y = w_0 + w_1 x_1 + \ldots + w_p x_p + \int w_{p+1}(t) x_{p+1}(t) dt \
@@ -85,7 +89,7 @@ class LinearRegression(
     where the covariates can be either multivariate or functional and the
     response is multivariate.
 
-    Otherwise, the model assumed, when the response is functional, is:
+    When the response is functional, the model assumed is:
 
     .. math::
         y(t) = \boldsymbol{\beta}^T(t)\boldsymbol{X}
@@ -568,8 +572,9 @@ class LinearRegression(
         if coef_basis is None:
             coef_basis = [None] * len_new_X
 
-        if len(coef_basis) != len_new_X:
-            coef_basis = coef_basis * len_new_X
+        if len(coef_basis) == 1 and len_new_X > 1:
+            # we assume basis objects are inmmutable
+            coef_basis = [coef_basis[0]] * len_new_X
 
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)

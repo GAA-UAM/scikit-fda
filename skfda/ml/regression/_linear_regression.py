@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import warnings
 from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
@@ -359,7 +358,7 @@ class LinearRegression(
             )
         else:
             inner_products_list = [
-                c.regression_matrix(x, y)  # type: ignore[arg-type]
+                c.regression_matrix(x, y)
                 for x, c in zip(X_new, coef_info)
             ]
             # This is C @ J

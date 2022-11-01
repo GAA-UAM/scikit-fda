@@ -194,4 +194,4 @@ def compute_penalty_matrix(
     if dimension != 1:
         reg_matrix = np.kron(reg_matrix, np.diag(lambdas))
 
-    return reg_matrix  # type: ignore[no-any-return]
+    return reg_matrix

@@ -83,7 +83,7 @@ def local_averages(
         10 to 18:
 
         >>> import numpy as np
-        >>> from skfda.exploratory.stats import local_averages
+        >>> from skfda.preprocessing.feature_construction import local_averages
         >>> averages = local_averages(
         ...     X,
         ...     domains=[(1, 3), (3, 10), (10, 18)],
@@ -103,8 +103,6 @@ def local_averages(
         consider.  For example, we could want to split the domain in 2
         intervals of the same length.
 
-        >>> import numpy as np
-        >>> from skfda.exploratory.stats import local_averages
         >>> np.around(local_averages(X, domains=2), decimals=2)
         array([[[ 116.94],
                 [ 177.26]],
@@ -245,7 +243,9 @@ def occupation_measure(
         we want that the function takes into account to interpolate.
         We are going to use 501 points.
 
-        >>> from skfda.exploratory.stats import occupation_measure
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     occupation_measure,
+        ... )
         >>> np.around(
         ...     occupation_measure(
         ...         fd_grid,
@@ -330,7 +330,9 @@ def number_crossings(
         First of all we import the Bessel Function and create the X axis
         data grid. Then we create the FdataGrid.
 
-        >>> from skfda.exploratory.stats import number_crossings
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     number_crossings,
+        ... ) 
         >>> from scipy.special import jv
         >>> import numpy as np
         >>> x_grid = np.linspace(0, 14, 14)
@@ -437,7 +439,9 @@ def unconditional_central_moment(
         the specified moment order.
 
         >>> import numpy as np
-        >>> from skfda.exploratory.stats import unconditional_central_moment
+        >>> from skfda.preprocessing.feature_construction import (
+        ...    unconditional_central_moment,
+        ... )
         >>> np.around(unconditional_central_moment(X[:5], 1), decimals=2)
         array([[ 0.01,  0.01],
                [ 0.02,  0.01],
@@ -497,7 +501,9 @@ def unconditional_moment(
         the specified moment order.
 
         >>> import numpy as np
-        >>> from skfda.exploratory.stats import unconditional_moment
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     unconditional_moment,
+        ... )
         >>> np.around(unconditional_moment(X[:5], 1), decimals=2)
         array([[ 4.7 ,  4.03],
                [ 6.16,  3.96],
@@ -557,7 +563,9 @@ def unconditional_expected_value(
 
         Then we call the function with the dataset and the function.
 
-        >>> from skfda.exploratory.stats import unconditional_expected_value
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     unconditional_expected_value,
+        ... )
         >>> np.around(unconditional_expected_value(X[:5], f), decimals=2)
             array([[ 4.96],
                    [ 4.88],

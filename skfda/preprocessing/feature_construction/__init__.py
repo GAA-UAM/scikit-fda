@@ -14,6 +14,14 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "NumberCrossingsTransformer",
             "OccupationMeasureTransformer",
         ],
+        "_functions": [
+            "local_averages",
+            "number_crossings",
+            "occupation_measure",
+            "unconditional_central_moment",
+            "unconditional_expected_value",
+            "unconditional_moment",
+        ],
         "_per_class_transformer": ["PerClassTransformer"],
     },
 )
@@ -30,6 +38,14 @@ if TYPE_CHECKING:
         LocalAveragesTransformer as LocalAveragesTransformer,
         NumberCrossingsTransformer as NumberCrossingsTransformer,
         OccupationMeasureTransformer as OccupationMeasureTransformer,
+    )
+    from ._functions import (
+        local_averages as local_averages,
+        number_crossings as number_crossings,
+        occupation_measure as occupation_measure,
+        unconditional_central_moment as unconditional_central_moment,
+        unconditional_expected_value as unconditional_expected_value,
+        unconditional_moment as unconditional_moment,
     )
     from ._per_class_transformer import (
         PerClassTransformer as PerClassTransformer,

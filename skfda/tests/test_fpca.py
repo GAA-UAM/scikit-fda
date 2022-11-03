@@ -412,6 +412,13 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(n_components=n_components, _weights=[1] * 365)
         fpca.fit(fd_data)
+
+        # The fda.usc uses the trapezoid rule to compute the integral
+        # with the following weights
+        weights = np.ones(len(fd_data.grid_points[0]))
+        weights[0] = 0.5
+        weights[-1] = 0.5
+        fpca._weights = weights  # noqa: WPS437 (protected access)
         scores = fpca.transform(fd_data)
 
         # results obtained
@@ -427,7 +434,7 @@ class FPCATestCase(unittest.TestCase):
             216.43002289, 233.53770292, 344.18479151,
         ])
 
-        np.testing.assert_allclose(scores.ravel(), results, rtol=0.25)
+        np.testing.assert_allclose(scores.ravel(), results)
 
     def test_grid_fpca_regularization_fit_result(self) -> None:
         """Compare the components in grid against the fda.usc package."""

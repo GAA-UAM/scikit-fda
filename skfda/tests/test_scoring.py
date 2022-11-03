@@ -296,7 +296,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_true_grid,
                 y_pred_grid,
                 multioutput='raw_values',
-            ).evaluate(1),
+            )(1),
             [[[-math.inf]]],
         )
 
@@ -367,7 +367,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_true_grid,
                 y_pred_grid,
                 multioutput='raw_values',
-            ).evaluate(1),
+            )(1),
             [[[-math.inf]]],
         )
 

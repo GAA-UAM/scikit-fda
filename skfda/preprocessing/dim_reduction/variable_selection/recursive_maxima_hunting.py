@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import abc
 import copy
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,14 +17,14 @@ from typing import (
     overload,
 )
 
+from typing_extensions import Literal
+
+import dcor
 import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
 import scipy.stats
 import sklearn.utils
-from typing_extensions import Literal
-
-import dcor
 
 from ...._utils import _compute_dependence, _DependenceMeasure as _DepMeasure
 from ...._utils._sklearn_adapter import (
@@ -788,20 +789,14 @@ class DependenceThresholdRedundancy(RedundancyCondition):
         )
 
 
+@dataclass
 class RMHResult(object):
-
-    def __init__(self, index: Tuple[int, ...], score: float) -> None:
-        self.index = index
-        self.score = score
-        self.matrix_after_correction: Optional[NDArrayFloat] = None
-        self.original_dependence: Optional[NDArrayFloat] = None
-        self.influence_mask: Optional[NDArrayBool] = None
-        self.current_mask: Optional[NDArrayBool] = None
-
-    def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__}(index={self.index}, score={self.score})"
-        )
+    index: Tuple[int, ...]
+    score: float
+    matrix_after_correction: NDArrayFloat
+    original_dependence: NDArrayFloat
+    influence_mask: NDArrayBool
+    current_mask: NDArrayBool
 
 
 def _get_influence_mask(
@@ -884,7 +879,6 @@ def _rec_maxima_hunting_gen_no_copy(
     redundancy_condition: Optional[RedundancyCondition] = None,
     stopping_condition: Optional[StoppingCondition] = None,
     mask: Optional[NDArrayBool] = None,
-    get_intermediate_results: bool = False,
 ) -> Iterable[RMHResult]:
     """
     Recursive maxima hunting algorithm.
@@ -902,7 +896,6 @@ def _rec_maxima_hunting_gen_no_copy(
             consideration as a maximum.
         stopping_condition: Condition to stop the algorithm.
         mask: Masked values.
-        get_intermediate_results: Return additional debug info.
 
     """
     y = np.asfarray(y)
@@ -968,14 +961,15 @@ def _rec_maxima_hunting_gen_no_copy(
             X=X,
             selected_index=t_max_index,
         )
-        result = RMHResult(index=t_max_index, score=score)
-
-        # Additional info, useful for debugging
-        if get_intermediate_results:
-            result.matrix_after_correction = np.copy(X.data_matrix)
-            result.original_dependence = dependences
-            result.influence_mask = influence_mask
-            result.current_mask = mask
+        result = RMHResult(
+            index=t_max_index,
+            score=score,
+            # Additional info, useful for debugging
+            matrix_after_correction=np.copy(X.data_matrix),
+            original_dependence=dependences,
+            influence_mask=influence_mask,
+            current_mask=mask,
+        )
 
         new_X = yield result  # Accept modifications to the matrix
         if new_X is not None:
@@ -1131,6 +1125,7 @@ class RecursiveMaximaHunting(
         self.features_shape_ = X.data_matrix.shape[1:]
 
         indexes = []
+        relevances = []
         for i, result in enumerate(
             _rec_maxima_hunting_gen(
                 X=X.copy(),
@@ -1143,11 +1138,16 @@ class RecursiveMaximaHunting(
         ):
 
             indexes.append(result.index)
+            relevances.append(result.original_dependence)
 
             if self.max_features is not None and i + 1 >= self.max_features:
                 break
 
         self.indexes_ = tuple(np.transpose(indexes).tolist())
+        self._relevances = FDataGrid(
+            data_matrix=np.vstack(relevances),
+            grid_points=X.grid_points,
+        )
 
         return self
 

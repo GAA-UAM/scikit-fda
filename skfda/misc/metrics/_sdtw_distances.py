@@ -1,4 +1,4 @@
-""""
+"""
 Implementation of soft Dynamic-Time-Warping (sDTW) divergence.
 """
 from __future__ import annotations

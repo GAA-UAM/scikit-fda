@@ -9,7 +9,11 @@ import pytest
 
 from skfda._utils._sklearn_adapter import ClassifierMixin
 from skfda.datasets import make_gaussian_process
-from skfda.ml.classification import LogisticRegression
+from skfda.ml.classification import (
+    KNeighborsClassifier,
+    LogisticRegression,
+    RadiusNeighborsClassifier,
+)
 from skfda.representation import FData
 
 from ..typing._numpy import NDArrayAny
@@ -18,6 +22,8 @@ from ..typing._numpy import NDArrayAny
 @pytest.fixture(
     params=[
         LogisticRegression(),
+        KNeighborsClassifier(),
+        RadiusNeighborsClassifier(),
     ],
     ids=lambda clf: type(clf).__name__,
 )

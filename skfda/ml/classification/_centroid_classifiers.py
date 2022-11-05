@@ -92,10 +92,10 @@ class NearestCentroid(
 
         classes, y_ind = _classifier_get_classes(y)
 
-        self._classes = classes
+        self.classes_ = classes
         self.centroids_ = self.centroid(X[y_ind == 0])
 
-        for cur_class in range(1, self._classes.size):
+        for cur_class in range(1, self.classes_.size):
             centroid = self.centroid(X[y_ind == cur_class])
             self.centroids_ = self.centroids_.concatenate(centroid)
 

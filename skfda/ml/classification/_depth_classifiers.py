@@ -147,10 +147,10 @@ class DDClassifier(
             X, y, [self.depth_method],
         )
 
-        self._classes = classes
+        self.classes_ = classes
         self.class_depth_methods_ = class_depth_methods
 
-        if (len(self._classes) != 2):
+        if (len(self.classes_) != 2):
             raise ValueError("DDClassifier only accepts two classes.")
 
         dd_coordinates = [
@@ -175,7 +175,7 @@ class DDClassifier(
 
             predicted_values = np.polyval(poly, dd_coordinates[0])
 
-            y_pred = self._classes[(
+            y_pred = self.classes_[(
                 dd_coordinates[1] > predicted_values
             ).astype(int)
             ]
@@ -207,7 +207,7 @@ class DDClassifier(
 
         predicted_values = np.polyval(self.poly_, dd_coordinates[0])
 
-        return self._classes[(  # type: ignore[no-any-return]
+        return self.classes_[(  # type: ignore[no-any-return]
             dd_coordinates[1] > predicted_values
         ).astype(int)
         ]
@@ -487,7 +487,7 @@ class _ArgMaxClassifier(
             self
         """
         classes, _ = _classifier_get_classes(y)
-        self._classes = classes
+        self.classes_ = classes
         return self
 
     def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> NDArrayInt:
@@ -502,7 +502,7 @@ class _ArgMaxClassifier(
         """
         if isinstance(X, pd.DataFrame):
             X = X.to_numpy()
-        return self._classes[  # type: ignore[no-any-return]
+        return self.classes_[  # type: ignore[no-any-return]
             np.argmax(X, axis=1)
         ]
 

@@ -17,21 +17,29 @@ from .._utils._sklearn_adapter import (
     ClassifierMixin,
     RegressorMixin,
 )
+from .._utils._utils import _classifier_get_classes
 from ..misc.metrics import l2_distance
 from ..misc.metrics._utils import _fit_metric
-from ..representation import FData, FDataGrid, concatenate
+from ..representation import FData, concatenate
 from ..typing._metric import Metric
-from ..typing._numpy import NDArrayFloat, NDArrayInt
+from ..typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
 FDataType = TypeVar("FDataType", bound="FData")
 SelfType = TypeVar("SelfType", bound="NeighborsBase[Any, Any]")
+SelfTypeClassifier = TypeVar(
+    "SelfTypeClassifier",
+    bound="NeighborsClassifierMixin[Any, Any]",
+)
 SelfTypeRegressor = TypeVar(
     "SelfTypeRegressor",
     bound="NeighborsRegressorMixin[Any, Any]",
 )
 Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
 Target = TypeVar("Target")
-TargetClassification = TypeVar("TargetClassification", bound=NDArrayInt)
+TargetClassification = TypeVar(
+    "TargetClassification",
+    bound=Union[NDArrayInt, NDArrayStr],
+)
 TargetRegression = TypeVar(
     "TargetRegression",
     bound=Union[NDArrayFloat, FData],
@@ -482,15 +490,15 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
 
 
 class NeighborsClassifierMixin(
-    NeighborsBase[Input, Target],
-    ClassifierMixin[Input, Target],
+    NeighborsBase[Input, TargetClassification],
+    ClassifierMixin[Input, TargetClassification],
 ):
     """Mixin class for classifiers based in nearest neighbors."""
 
     def predict(
         self,
         X: Input,
-    ) -> Target:
+    ) -> TargetClassification:
         """
         Predict the class labels for the provided data.
 
@@ -536,6 +544,31 @@ class NeighborsClassifierMixin(
         return (  # type: ignore [no-any-return]
             self._estimator.predict_proba(X_dist)
         )
+
+    def fit(
+        self: SelfTypeClassifier,
+        X: Input,
+        y: TargetClassification,
+    ) -> SelfTypeClassifier:
+        """
+        Fit the model using X as training data and y as responses.
+
+        Args:
+            X: Training data. FDataGrid
+                with the training data or array matrix with shape
+                [n_samples, n_samples] if metric='precomputed'.
+            y: Training data. FData with the training respones (functional
+                response case) or array matrix with length `n_samples` in
+                the multivariate response case.
+
+        Returns:
+            Self.
+
+        Note:
+            This method adds the attribute `classes_` to the classifier.
+        """
+        self.classes_ = _classifier_get_classes(y)[0]
+        return super().fit(X, y)
 
 
 class NeighborsRegressorMixin(

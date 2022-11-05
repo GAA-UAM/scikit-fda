@@ -130,7 +130,7 @@ class QuadraticDiscriminantAnalysis(
             self
         """
         classes, y_ind = _classifier_get_classes(y)
-        self.classes = classes
+        self.classes_ = classes
         self.y_ind = y_ind
 
         self._fit_gaussian_process(X)
@@ -198,7 +198,7 @@ class QuadraticDiscriminantAnalysis(
         cov_estimators = []
         means = []
         covariance = []
-        for class_index, _ in enumerate(self.classes):
+        for class_index, _ in enumerate(self.classes_):
             X_class = X[self.y_ind == class_index]
             cov_estimator = clone(self.cov_estimator).fit(X_class)
 
@@ -235,7 +235,7 @@ class QuadraticDiscriminantAnalysis(
                 self._regularized_covariances,
                 X_centered,
             ),
-            (-1, self.classes.size),
+            (-1, self.classes_.size),
         )
 
         return np.asarray(

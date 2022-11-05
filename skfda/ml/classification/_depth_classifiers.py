@@ -432,6 +432,7 @@ class DDGClassifier(
         )
 
         self._pipeline.fit(X, y)
+        self.classes_ = _classifier_get_classes(y)[0]
 
         return self
 

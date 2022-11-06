@@ -191,7 +191,7 @@ def compute_penalty_matrix(
         *penalty_blocks,
     )
 
-    if dimension != 1:
+    if dimension > 1:
         reg_matrix = np.kron(reg_matrix, np.diag(lambdas))
 
     return reg_matrix

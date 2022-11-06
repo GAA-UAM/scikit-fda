@@ -305,7 +305,7 @@ class LinearRegression(
         if self.fit_intercept:
             X_new, coef_info = self._concatenate_intercept(X_new, y, coef_info)
 
-        penalty_matrix = compute_penalty_matrix(
+        penalty_matrix_beta = compute_penalty_matrix(
             basis_iterable=(c.basis for c in coef_info),
             regularization_parameter=1,
             regularization=regularization,
@@ -313,15 +313,15 @@ class LinearRegression(
             fit_intercept=self.fit_intercept,
         )
 
-        y_penalty_matrix = compute_penalty_matrix(
+        penalty_matrix_y = compute_penalty_matrix(
             basis_iterable=(c.y_basis for c in coef_info),
             regularization_parameter=1,
             regularization=y_regularization,
         )
 
-        if self.fit_intercept and penalty_matrix is not None:
+        if self.fit_intercept and penalty_matrix_beta is not None:
             # Intercept is not penalized
-            penalty_matrix[0, 0] = 0
+            penalty_matrix_beta[0, 0] = 0
 
         # Notation from Ramsay's FDA section 13.4
         if self.functional_response:
@@ -332,12 +332,12 @@ class LinearRegression(
             X_col_gram_mat = np.einsum('ijk,ilk->jl', X_new, X_new)
             J_theta_kron_X_col_gram_mat = np.kron(J_theta, X_col_gram_mat)
 
-            if penalty_matrix is not None:
-                J_theta_kron_X_col_gram_mat += penalty_matrix
+            if penalty_matrix_beta is not None:
+                J_theta_kron_X_col_gram_mat += penalty_matrix_beta
 
-            if y_penalty_matrix is not None:
+            if penalty_matrix_y is not None:
                 y_reg_matrix = np.kron(
-                    y_penalty_matrix,
+                    penalty_matrix_y,
                     X_col_gram_mat,
                 )
 
@@ -371,7 +371,7 @@ class LinearRegression(
             basiscoefs = solve_regularized_weighted_lstsq(
                 coefs=inner_products,
                 result=y,
-                penalty_matrix=penalty_matrix,
+                penalty_matrix=penalty_matrix_beta,
             )
 
             coef_lengths = np.array([i.shape[1] for i in inner_products_list])

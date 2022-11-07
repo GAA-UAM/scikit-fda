@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence, TypeVar
+from typing import Sequence, TypeVar, Union
 
 import numpy as np
 from scipy.linalg import logm
@@ -13,7 +13,7 @@ from ...exploratory.stats.covariance import CovarianceEstimator
 from ...representation import FDataGrid
 from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
-Target = TypeVar("Target", bound=NDArrayInt | NDArrayStr)
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 class QuadraticDiscriminantAnalysis(

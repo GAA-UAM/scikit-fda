@@ -113,7 +113,7 @@ class NearestCentroid(
         """
         check_is_fitted(self)
 
-        return self._classes[  # type: ignore[no-any-return]
+        return self.classes_[  # type: ignore[no-any-return]
             PairwiseMetric(self.metric)(
                 X,
                 self.centroids_,

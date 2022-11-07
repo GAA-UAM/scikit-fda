@@ -1,7 +1,7 @@
 """Centroid-based models for supervised classification."""
 from __future__ import annotations
 
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Union
 
 from sklearn.utils.validation import check_is_fitted
 
@@ -16,7 +16,7 @@ from ...typing._metric import Metric
 from ...typing._numpy import NDArrayInt, NDArrayStr
 
 Input = TypeVar("Input", bound=FData)
-Target = TypeVar("Target", bound=NDArrayInt | NDArrayStr)
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 class NearestCentroid(

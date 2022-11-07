@@ -13,14 +13,15 @@ from ...misc.metrics import PairwiseMetric, l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData
 from ...typing._metric import Metric
-from ...typing._numpy import NDArrayInt
+from ...typing._numpy import NDArrayInt, NDArrayStr
 
 Input = TypeVar("Input", bound=FData)
+Target = TypeVar("Target", bound=NDArrayInt | NDArrayStr)
 
 
 class NearestCentroid(
     BaseEstimator,
-    ClassifierMixin[Input, NDArrayInt],
+    ClassifierMixin[Input, Target],
 ):
     """
     Nearest centroid classifier for functional data.
@@ -76,7 +77,7 @@ class NearestCentroid(
         self.metric = metric
         self.centroid = centroid
 
-    def fit(self, X: Input, y: NDArrayInt) -> NearestCentroid[Input]:
+    def fit(self, X: Input, y: Target) -> NearestCentroid[Input, Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -101,7 +102,7 @@ class NearestCentroid(
 
         return self
 
-    def predict(self, X: Input) -> NDArrayInt:
+    def predict(self, X: Input) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -121,7 +122,7 @@ class NearestCentroid(
         ]
 
 
-class DTMClassifier(NearestCentroid[Input]):
+class DTMClassifier(NearestCentroid[Input, Target]):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of

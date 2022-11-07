@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Sequence, TypeVar
 
 import numpy as np
 from scipy.linalg import logm
@@ -11,12 +11,14 @@ from ..._utils import _classifier_get_classes
 from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
 from ...exploratory.stats.covariance import CovarianceEstimator
 from ...representation import FDataGrid
-from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
+
+Target = TypeVar("Target", bound=NDArrayInt | NDArrayStr)
 
 
 class QuadraticDiscriminantAnalysis(
     BaseEstimator,
-    ClassifierMixin[FDataGrid, NDArrayInt],
+    ClassifierMixin[FDataGrid, Target],
 ):
     """
     Functional quadratic discriminant analysis.
@@ -117,8 +119,8 @@ class QuadraticDiscriminantAnalysis(
     def fit(
         self,
         X: FDataGrid,
-        y: NDArrayInt,
-    ) -> QuadraticDiscriminantAnalysis:
+        y: Target,
+    ) -> QuadraticDiscriminantAnalysis[Target]:
         """
         Fit the model using X as training data and y as target values.
 
@@ -150,7 +152,7 @@ class QuadraticDiscriminantAnalysis(
 
         return self
 
-    def predict(self, X: FDataGrid) -> NDArrayInt:
+    def predict(self, X: FDataGrid) -> Target:
         """
         Predict the class labels for the provided data.
 
@@ -163,10 +165,11 @@ class QuadraticDiscriminantAnalysis(
         """
         check_is_fitted(self)
 
-        return np.argmax(  # type: ignore[no-any-return]
-            self._calculate_log_likelihood(X.data_matrix),
-            axis=1,
-        )
+        return self.classes_[  # type: ignore[no-any-return]
+            np.argmax(
+                self._calculate_log_likelihood(X.data_matrix),
+                axis=1,
+            )]
 
     def _calculate_priors(self, y: NDArrayInt) -> NDArrayFloat:
         """

@@ -171,7 +171,7 @@ class QuadraticDiscriminantAnalysis(
                 axis=1,
             )]
 
-    def _calculate_priors(self, y: NDArrayInt) -> NDArrayFloat:
+    def _calculate_priors(self, y: Target) -> NDArrayFloat:
         """
         Calculate the prior probability of each class.
 

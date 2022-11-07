@@ -33,6 +33,7 @@ from ...representation import FData
 from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
 Input = TypeVar("Input", bound=FData)
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 def _classifier_get_depth_methods(
@@ -50,7 +51,7 @@ def _classifier_get_depth_methods(
 
 def _classifier_fit_depth_methods(
     X: Input,
-    y: NDArrayInt,
+    y: NDArrayInt | NDArrayStr,
     depth_methods: Sequence[Depth[Input]],
 ) -> Tuple[NDArrayStr | NDArrayInt, Sequence[Depth[Input]]]:
     classes, y_ind = _classifier_get_classes(y)
@@ -64,7 +65,7 @@ def _classifier_fit_depth_methods(
 
 class DDClassifier(
     BaseEstimator,
-    ClassifierMixin[Input, NDArrayInt],
+    ClassifierMixin[Input, Target],
 ):
     """Depth-versus-depth (DD) classifer for functional data.
 
@@ -130,7 +131,7 @@ class DDClassifier(
         self.depth_method = depth_method
         self.degree = degree
 
-    def fit(self, X: Input, y: NDArrayInt) -> DDClassifier[Input]:
+    def fit(self, X: Input, y: Target) -> DDClassifier[Input, Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -188,7 +189,7 @@ class DDClassifier(
 
         return self
 
-    def predict(self, X: Input) -> NDArrayInt:
+    def predict(self, X: Input) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -215,7 +216,7 @@ class DDClassifier(
 
 class DDGClassifier(
     BaseEstimator,
-    ClassifierMixin[Input, NDArrayInt],
+    ClassifierMixin[Input, Target],
 ):
     r"""Generalized depth-versus-depth (DD) classifer for functional data.
 
@@ -343,7 +344,11 @@ class DDGClassifier(
         return params  # type: ignore[no-any-return]
 
     # Copied from scikit-learn's _BaseComposition with minor modifications
-    def _set_params(self, attr: str, **params: object) -> DDGClassifier[Input]:
+    def _set_params(
+        self,
+        attr: str,
+        **params: object,
+    ) -> DDGClassifier[Input, Target]:
         # Ensure strict ordering of parameter setting:
         # 1. All steps
         if attr in params:
@@ -398,11 +403,11 @@ class DDGClassifier(
     def set_params(
         self,
         **params: object,
-    ) -> DDGClassifier[Input]:
+    ) -> DDGClassifier[Input, Target]:
 
         return self._set_params("depth_method", **params)
 
-    def fit(self, X: Input, y: NDArrayInt) -> DDGClassifier[Input]:
+    def fit(self, X: Input, y: Target) -> DDGClassifier[Input, Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -436,7 +441,7 @@ class DDGClassifier(
 
         return self
 
-    def predict(self, X: Input) -> NDArrayInt:
+    def predict(self, X: Input) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -451,7 +456,7 @@ class DDGClassifier(
 
 class _ArgMaxClassifier(
     BaseEstimator,
-    ClassifierMixin[NDArrayFloat, NDArrayInt],
+    ClassifierMixin[NDArrayFloat, Target],
 ):
     r"""Arg max classifier for multivariate data.
 
@@ -477,7 +482,7 @@ class _ArgMaxClassifier(
         array([1, 0, 0])
     """
 
-    def fit(self, X: NDArrayFloat, y: NDArrayInt) -> _ArgMaxClassifier:
+    def fit(self, X: NDArrayFloat, y: Target) -> _ArgMaxClassifier[Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -491,7 +496,7 @@ class _ArgMaxClassifier(
         self.classes_ = classes
         return self
 
-    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> NDArrayInt:
+    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -508,7 +513,7 @@ class _ArgMaxClassifier(
         ]
 
 
-class MaximumDepthClassifier(DDGClassifier[Input]):
+class MaximumDepthClassifier(DDGClassifier[Input, Target]):
     """Maximum depth classifier for functional data.
 
     Test samples are classified to the class where they are deeper.

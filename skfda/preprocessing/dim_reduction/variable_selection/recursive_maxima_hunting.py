@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import abc
 import copy
+import math
 from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     Iterable,
+    List,
     Mapping,
     Optional,
     Sequence,
@@ -17,22 +19,22 @@ from typing import (
     overload,
 )
 
-from typing_extensions import Literal
-
-import dcor
 import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
 import scipy.stats
 import sklearn.utils
+from typing_extensions import Literal
 
-from ...._utils import _compute_dependence, _DependenceMeasure as _DepMeasure
+import dcor
+
 from ...._utils._sklearn_adapter import (
     BaseEstimator,
     InductiveTransformerMixin,
 )
-from ....representation import FDataGrid
+from ....representation import FDataGrid, concatenate
 from ....typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ._base import _compute_dependence, _DependenceMeasure as _DepMeasure
 
 if TYPE_CHECKING:
     from ....misc.covariances import CovarianceLike
@@ -49,16 +51,6 @@ def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
         t = np.atleast_2d(t).T
 
     return t
-
-
-def _execute_kernel(
-    kernel: CovarianceLike,
-    t_0: ArrayLike,
-    t_1: ArrayLike,
-) -> NDArrayFloat:
-    from ....misc.covariances import _execute_covariance
-
-    return _execute_covariance(kernel, t_0, t_1)
 
 
 class _PicklableKernel():
@@ -99,12 +91,12 @@ def make_kernel(k: CovarianceLike) -> CovarianceLike:
 
     if isinstance(k, GPy.kern.Kern):
         return _PicklableKernel(k)
-    else:
-        return k
+
+    return k
 
 
 def _absolute_argmax(
-    function: NDArrayFloat,
+    function: FDataGrid,
     *,
     mask: NDArrayBool,
 ) -> Tuple[int, ...]:
@@ -123,13 +115,13 @@ def _absolute_argmax(
 
     """
     masked_function = ma.array(  # type: ignore[no-untyped-call]
-        function,
+        function.data_matrix,
         mask=mask,
     )
 
     t_max = ma.argmax(masked_function)
 
-    return np.unravel_index(t_max, function.shape)
+    return np.unravel_index(t_max, function.data_matrix.shape[1:-1])
 
 
 class Correction(BaseEstimator):
@@ -141,7 +133,7 @@ class Correction(BaseEstimator):
 
     """
 
-    def begin(self, X: FDataGrid, Y: NDArrayFloat) -> None:
+    def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
         """
         Initialize the correction for a run.
 
@@ -171,7 +163,7 @@ class Correction(BaseEstimator):
         self,
         X: FDataGrid,
         selected_index: Tuple[int, ...],
-    ) -> None:
+    ) -> FDataGrid:
         """
         Correct the trajectories.
 
@@ -186,8 +178,8 @@ class Correction(BaseEstimator):
         """
         pass
 
-    def __call__(self, *args: Any, **kwargs: Any) -> None:
-        self.correct(*args, **kwargs)
+    def __call__(self, *args: Any, **kwargs: Any) -> FDataGrid:
+        return self.correct(*args, **kwargs)
 
 
 class ConditionalMeanCorrection(Correction):
@@ -206,7 +198,7 @@ class ConditionalMeanCorrection(Correction):
         self,
         X: FDataGrid,
         selected_index: Tuple[int, ...],
-    ) -> NDArrayFloat:
+    ) -> FDataGrid:
         """
         Mean of the process conditioned to the value observed.
 
@@ -222,14 +214,12 @@ class ConditionalMeanCorrection(Correction):
         self,
         X: FDataGrid,
         selected_index: Tuple[int, ...],
-    ) -> None:
+    ) -> FDataGrid:
 
-        X.data_matrix[...] -= self.conditional_mean(
+        return X - self.conditional_mean(
             X,
             selected_index,
-        ).T
-
-        X.data_matrix[:, selected_index] = 0
+        )
 
 
 class GaussianCorrection(ConditionalMeanCorrection):
@@ -311,9 +301,11 @@ class GaussianCorrection(ConditionalMeanCorrection):
         t_0: NDArrayFloat,
         t_1: NDArrayFloat,
     ) -> NDArrayFloat:
+        from ....misc.covariances import _execute_covariance
+
         cov = getattr(self, "cov_", self.cov)
 
-        return _execute_kernel(cov, t_0, t_1)
+        return _execute_covariance(cov, t_0, t_1)
 
     def conditioned(
         self,
@@ -331,7 +323,8 @@ class GaussianCorrection(ConditionalMeanCorrection):
             correction = GaussianConditionedCorrection(
                 mean=self.mean,
                 cov=cov,
-                conditioning_points=np.asarray(t_0))
+                conditioning_points=np.asarray(t_0),
+            )
 
             correction._covariance_matrix_inv()
 
@@ -345,7 +338,7 @@ class GaussianCorrection(ConditionalMeanCorrection):
         self,
         X: FDataGrid,
         selected_index: Tuple[int, ...],
-    ) -> NDArrayFloat:
+    ) -> FDataGrid:
 
         T = X.grid_points[0]
 
@@ -372,7 +365,10 @@ class GaussianCorrection(ConditionalMeanCorrection):
             * (x_0.T - t_0_expectation)
         ) if var else expectation + np.zeros_like(x_0.T)
 
-        return cond_expectation  # type: ignore[no-any-return]
+        return X.copy(
+            data_matrix=cond_expectation.T,
+            sample_names=None,
+        )
 
 
 class GaussianConditionedCorrection(GaussianCorrection):
@@ -508,16 +504,16 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
 
     """
 
-    def begin(self, X: FDataGrid, Y: NDArrayFloat) -> None:
+    def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
 
         X_copy = np.copy(X.data_matrix[..., 0])
 
-        Y = np.ravel(Y)
-        for class_label in np.unique(Y):
-            trajectories = X_copy[Y == class_label, :]
+        y = np.ravel(y)
+        for class_label in np.unique(y):
+            trajectories = X_copy[y == class_label, :]
 
             mean = np.mean(trajectories, axis=0)
-            X_copy[Y == class_label, :] -= mean
+            X_copy[y == class_label, :] -= mean
 
         self.cov_matrix_ = np.cov(X_copy, rowvar=False)
         self.t_ = np.ravel(X.grid_points)
@@ -558,7 +554,7 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
         self,
         X: FDataGrid,
         selected_index: Tuple[int, ...],
-    ) -> NDArrayFloat:
+    ) -> FDataGrid:
 
         return self.gaussian_correction_.conditional_mean(
             X,
@@ -594,14 +590,11 @@ class UniformCorrection(Correction):
         self,
         X: FDataGrid,
         selected_index: Tuple[int, ...],
-    ) -> None:
-        x_index = (slice(None),) + tuple(selected_index) + (np.newaxis,)
+    ) -> FDataGrid:
+        x_index = (slice(None),) + selected_index
+        x_0 = X.data_matrix[x_index]
 
-        # Have to copy it because otherwise is a view and shouldn't be
-        # subtracted from the original matrix
-        x_0 = np.copy(X.data_matrix[x_index])
-
-        X.data_matrix[...] -= x_0
+        return X - x_0
 
 
 class StoppingCondition(BaseEstimator):
@@ -618,7 +611,7 @@ class StoppingCondition(BaseEstimator):
         self,
         *,
         selected_index: Tuple[int, ...],
-        dependences: NDArrayFloat,
+        dependences: FDataGrid,
         selected_variable: NDArrayFloat,
         X: FDataGrid,
         y: NDArrayFloat,
@@ -654,13 +647,13 @@ class ScoreThresholdStop(StoppingCondition):
         self,
         *,
         selected_index: Tuple[int, ...],
-        dependences: NDArrayFloat,
+        dependences: FDataGrid,
         **kwargs: Any,
     ) -> bool:
 
-        score = dependences[selected_index]
+        score = float(dependences.data_matrix[0, selected_index, 0])
 
-        return score < self.threshold  # type: ignore[no-any-return]
+        return score < self.threshold
 
 
 class AsymptoticIndependenceTestStop(StoppingCondition):
@@ -789,27 +782,13 @@ class DependenceThresholdRedundancy(RedundancyCondition):
         )
 
 
-@dataclass
-class RMHResult(object):
-    index: Tuple[int, ...]
-    score: float
-    matrix_after_correction: NDArrayFloat
-    original_dependence: NDArrayFloat
-    influence_mask: NDArrayBool
-    current_mask: NDArrayBool
-
-
 def _get_influence_mask(
     X: NDArrayFloat,
     t_max_index: Tuple[int, ...],
     redundancy_condition: RedundancyCondition,
     old_mask: NDArrayBool,
 ) -> NDArrayBool:
-    """
-    Get the mask of the points that have a large dependence with the
-    selected point.
-
-    """
+    """Get the mask of points that have a large dependence with another."""
     sl = slice(None)
 
     def get_index(
@@ -865,135 +844,6 @@ def _get_influence_mask(
     new_mask[t_max_index] = True
 
     return new_mask
-
-
-def _rec_maxima_hunting_gen_no_copy(
-    X: FDataGrid,
-    y: Union[NDArrayInt, NDArrayFloat],
-    *,
-    dependence_measure: _DepMeasure[
-        NDArrayFloat,
-        NDArrayFloat,
-    ] = dcor.u_distance_correlation_sqr,
-    correction: Optional[Correction] = None,
-    redundancy_condition: Optional[RedundancyCondition] = None,
-    stopping_condition: Optional[StoppingCondition] = None,
-    mask: Optional[NDArrayBool] = None,
-) -> Iterable[RMHResult]:
-    """
-    Recursive maxima hunting algorithm.
-
-    Find the most relevant features of a function using recursive maxima
-    hunting. It changes the original matrix.
-
-    Parameters:
-        dependence_measure: Dependence measure to use. By default,
-            it uses the bias corrected squared distance correlation.
-        correction: Correction used to subtract the information
-            of each selected point in each iteration.
-        redundancy_condition: Condition to consider a point
-            redundant with the selected maxima and discard it from future
-            consideration as a maximum.
-        stopping_condition: Condition to stop the algorithm.
-        mask: Masked values.
-
-    """
-    y = np.asfarray(y)
-
-    if correction is None:
-        correction = UniformCorrection()
-
-    if mask is None:
-        mask = np.zeros([len(t) for t in X.grid_points], dtype=bool)
-
-    if redundancy_condition is None:
-        redundancy_condition = DependenceThresholdRedundancy()
-
-    if stopping_condition is None:
-        stopping_condition = AsymptoticIndependenceTestStop()
-
-    first_pass = True
-
-    correction.begin(X, y)
-
-    while True:
-        dependences = _compute_dependence(
-            X=X.data_matrix,
-            y=y,
-            dependence_measure=dependence_measure,
-        )
-
-        t_max_index = _absolute_argmax(
-            dependences,
-            mask=mask,
-        )
-        score = dependences[t_max_index]
-
-        repeated_point = mask[t_max_index]
-
-        stopping_condition_reached = stopping_condition(
-            selected_index=t_max_index,
-            dependences=dependences,
-            selected_variable=X.data_matrix[
-                (slice(None),) + tuple(t_max_index)
-            ],
-            X=X,
-            y=y,
-        )
-
-        if (
-            (repeated_point or stopping_condition_reached)
-            and not first_pass
-        ):
-            return
-
-        influence_mask = _get_influence_mask(
-            X=X.data_matrix,
-            t_max_index=t_max_index,
-            redundancy_condition=redundancy_condition,
-            old_mask=mask,
-        )
-
-        mask |= influence_mask
-
-        # Correct the influence of t_max
-        correction(
-            X=X,
-            selected_index=t_max_index,
-        )
-        result = RMHResult(
-            index=t_max_index,
-            score=score,
-            # Additional info, useful for debugging
-            matrix_after_correction=np.copy(X.data_matrix),
-            original_dependence=dependences,
-            influence_mask=influence_mask,
-            current_mask=mask,
-        )
-
-        new_X = yield result  # Accept modifications to the matrix
-        if new_X is not None:
-            X.data_matrix = new_X
-
-        correction = correction.conditioned(
-            X=X.data_matrix,
-            T=X.grid_points[0],
-            t_0=X.grid_points[0][t_max_index],
-        )
-
-        first_pass = False
-
-
-def _rec_maxima_hunting_gen(
-    X: FDataGrid,
-    *args: Any,
-    **kwargs: Any,
-) -> Iterable[RMHResult]:
-    yield from _rec_maxima_hunting_gen_no_copy(
-        copy.copy(X),
-        *args,
-        **kwargs,
-    )
 
 
 class RecursiveMaximaHunting(
@@ -1109,47 +959,120 @@ class RecursiveMaximaHunting(
         correction: Optional[Correction] = None,
         redundancy_condition: Optional[RedundancyCondition] = None,
         stopping_condition: Optional[StoppingCondition] = None,
+        _get_intermediate_results: bool = False,
     ) -> None:
         self.dependence_measure = dependence_measure
         self.max_features = max_features
         self.correction = correction
         self.redundancy_condition = redundancy_condition
         self.stopping_condition = stopping_condition
+        self._get_intermediate_results = _get_intermediate_results
 
     def fit(  # type: ignore[override] # noqa: D102
         self,
         X: FDataGrid,
         y: Union[NDArrayInt, NDArrayFloat],
     ) -> RecursiveMaximaHunting:
-
+        """Recursive maxima hunting algorithm."""
         self.features_shape_ = X.data_matrix.shape[1:]
 
-        indexes = []
-        relevances = []
-        for i, result in enumerate(
-            _rec_maxima_hunting_gen(
-                X=X.copy(),
-                y=y,
-                dependence_measure=self.dependence_measure,
-                correction=self.correction,
-                redundancy_condition=self.redundancy_condition,
-                stopping_condition=self.stopping_condition,
-            ),
-        ):
+        y = np.asfarray(y)
 
-            indexes.append(result.index)
-            relevances.append(result.original_dependence)
-
-            if self.max_features is not None and i + 1 >= self.max_features:
-                break
-
-        self.indexes_ = tuple(np.transpose(indexes).tolist())
-        self._relevances = FDataGrid(
-            data_matrix=np.vstack(relevances),
-            grid_points=X.grid_points,
+        correction = (
+            self.correction
+            if self.correction
+            else UniformCorrection()
         )
 
-        return self
+        redundancy_condition = (
+            self.redundancy_condition
+            if self.redundancy_condition
+            else DependenceThresholdRedundancy()
+        )
+
+        stopping_condition = (
+            self.stopping_condition
+            if self.stopping_condition
+            else AsymptoticIndependenceTestStop()
+        )
+
+        max_features = (
+            self.max_features
+            if self.max_features
+            else math.inf
+        )
+
+        mask = np.zeros([len(t) for t in X.grid_points], dtype=bool)
+        indexes: List[Tuple[int, ...]] = []
+        corrected_functions = []
+        relevances = []
+        first_pass = True
+
+        correction.begin(X, y)
+
+        while True:
+            dependences = _compute_dependence(
+                X,
+                y,
+                dependence_measure=self.dependence_measure,
+            )
+            corrected_functions.append(X)
+            relevances.append(dependences)
+
+            t_max_index = _absolute_argmax(
+                dependences,
+                mask=mask,
+            )
+
+            repeated_point = mask[t_max_index]
+
+            stopping_condition_reached = stopping_condition(
+                selected_index=t_max_index,
+                dependences=dependences,
+                selected_variable=X.data_matrix[
+                    (slice(None),) + tuple(t_max_index)
+                ],
+                X=X,
+                y=y,
+            )
+
+            if (
+                (
+                    len(indexes) >= max_features
+                    or repeated_point
+                    or stopping_condition_reached
+                )
+                and not first_pass
+            ):
+                self.indexes_ = tuple(np.transpose(indexes).tolist())
+                self._relevances = concatenate(relevances)
+                self._corrected_functions = corrected_functions
+                return self
+
+            indexes.append(t_max_index)
+
+            influence_mask = _get_influence_mask(
+                X=X.data_matrix,
+                t_max_index=t_max_index,
+                redundancy_condition=redundancy_condition,
+                old_mask=mask,
+            )
+
+            mask |= influence_mask
+
+            # Correct the influence of t_max
+            X = correction(
+                X=X,
+                selected_index=t_max_index,
+            )
+
+            correction = correction.conditioned(
+                X=X.data_matrix,
+                T=X.grid_points[0],
+                t_0=X.grid_points[0][t_max_index],
+            )
+
+            first_pass = False
 
     def transform(self, X: FDataGrid) -> NDArrayFloat:
 

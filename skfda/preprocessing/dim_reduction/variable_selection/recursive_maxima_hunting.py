@@ -4,7 +4,6 @@ from __future__ import annotations
 import abc
 import copy
 import math
-from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1114,7 +1113,7 @@ class RecursiveMaximaHunting(
 
         if indices:
             return self.indexes_
-        else:
-            mask = np.zeros(self.features_shape_[0], dtype=bool)
-            mask[self.indexes_] = True
-            return mask
+
+        mask = np.zeros(self.features_shape_[0], dtype=bool)
+        mask[self.indexes_] = True
+        return mask

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import numbers
+from functools import singledispatch
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -604,58 +605,3 @@ def _classifier_get_classes(
             f'one; got {classes.size} class',
         )
     return classes, y_ind
-
-
-dtype_bound = np.number
-dtype_X_T = TypeVar("dtype_X_T", bound="dtype_bound[Any]")
-dtype_y_T = TypeVar("dtype_y_T", bound="dtype_bound[Any]")
-
-depX_T = TypeVar("depX_T", bound=NDArrayAny)
-depy_T = TypeVar("depy_T", bound=NDArrayAny)
-
-_DependenceMeasure = Callable[
-    [depX_T, depy_T],
-    NDArrayFloat,
-]
-
-
-def _compute_dependence(
-    X: np.typing.NDArray[dtype_X_T],
-    y: np.typing.NDArray[dtype_y_T],
-    *,
-    dependence_measure: _DependenceMeasure[
-        np.typing.NDArray[dtype_X_T],
-        np.typing.NDArray[dtype_y_T],
-    ],
-) -> NDArrayFloat:
-    """
-    Compute dependence between points and target.
-
-    Computes the dependence of each point in each trajectory in X with the
-    corresponding class label in Y.
-
-    """
-    from dcor import rowwise
-
-    # Move n_samples to the end
-    # The shape is now input_shape + n_samples + n_output
-    X = np.moveaxis(X, 0, -2)
-
-    input_shape = X.shape[:-2]
-
-    # Join input in a list for rowwise
-    X = X.reshape(-1, X.shape[-2], X.shape[-1])
-
-    if y.ndim == 1:
-        y = np.atleast_2d(y).T
-    Y = np.array([y] * len(X))
-
-    dependence_results = rowwise(  # type: ignore[no-untyped-call]
-        dependence_measure,
-        X,
-        Y,
-    )
-
-    return dependence_results.reshape(  # type: ignore[no-any-return]
-        input_shape,
-    )

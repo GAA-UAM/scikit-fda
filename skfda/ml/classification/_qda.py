@@ -103,8 +103,8 @@ class QuadraticDiscriminantAnalysis(
 
         >>> round(qda.score(X_test, y_test), 2)
         0.96
-
     """
+
     means_: Sequence[FDataGrid]
 
     def __init__(

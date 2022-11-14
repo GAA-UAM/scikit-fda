@@ -506,7 +506,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         Examples:
             >>> from skfda.representation.basis import(
-            ...     FDataBasis, 
+            ...     FDataBasis,
             ...     MonomialBasis,
             ... )
             >>> fd = FDataBasis(

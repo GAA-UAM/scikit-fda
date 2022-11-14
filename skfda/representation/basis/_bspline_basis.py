@@ -11,7 +11,7 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='BSplineBasis')
+T = TypeVar("T", bound="BSplineBasis")
 
 
 class BSplineBasis(Basis):
@@ -116,16 +116,14 @@ class BSplineBasis(Basis):
                 domain_range = (knots[0], knots[-1])
             elif domain_range[0] != knots[0] or domain_range[1] != knots[-1]:
                 raise ValueError(
-                    "The ends of the knots must be the same "
-                    "as the domain_range.",
+                    "The ends of the knots must be the same " "as the domain_range.",
                 )
 
         # n_basis default to number of knots + order of the splines - 2
         if n_basis is None:
             if knots is None:
                 raise ValueError(
-                    "Must provide either a list of knots or the"
-                    "number of basis.",
+                    "Must provide either a list of knots or the" "number of basis.",
                 )
             n_basis = len(knots) + order - 2
 
@@ -151,10 +149,12 @@ class BSplineBasis(Basis):
     @property
     def knots(self) -> Tuple[float, ...]:
         if self._knots is None:
-            return tuple(np.linspace(
-                *self.domain_range[0],
-                self.n_basis - self.order + 2,
-            ))
+            return tuple(
+                np.linspace(
+                    *self.domain_range[0],
+                    self.n_basis - self.order + 2,
+                )
+            )
 
         return self._knots
 
@@ -174,7 +174,8 @@ class BSplineBasis(Basis):
                 Analysis*. Springer. 50-51.
         """
         return tuple(
-            (self.knots[0],) * (self.order - 1) + self.knots
+            (self.knots[0],) * (self.order - 1)
+            + self.knots
             + (self.knots[-1],) * (self.order - 1),
         )
 
@@ -208,14 +209,13 @@ class BSplineBasis(Basis):
     ) -> T:
         from ...misc.validation import validate_domain_range
 
-        knots = np.array(self.knots, dtype=np.dtype('float'))
+        knots = np.array(self.knots, dtype=np.dtype("float"))
 
         if domain_range is not None:  # Rescales the knots
             domain_range = validate_domain_range(domain_range)[0]
             knots -= knots[0]
-            knots *= (
-                (domain_range[1] - domain_range[0])
-                / (self.knots[-1] - self.knots[0])
+            knots *= (domain_range[1] - domain_range[0]) / (
+                self.knots[-1] - self.knots[0]
             )
             knots += domain_range[0]
 
@@ -280,7 +280,7 @@ class BSplineBasis(Basis):
             for i in range(self.n_basis):
                 poly_i = np.trim_zeros(
                     ppoly_lst[i][:, interval],
-                    'f',
+                    "f",
                 )
                 # Indefinite integral
                 square = polymul(poly_i, poly_i)
@@ -289,14 +289,15 @@ class BSplineBasis(Basis):
                 # Definite integral
                 matrix[i, i] += np.diff(
                     polyval(
-                        integral, np.array(self.knots[interval: interval + 2])
+                        integral,
+                        np.array(self.knots[interval : interval + 2])
                         - self.knots[interval],
                     ),
                 )[0]
 
                 # The Gram matrix is banded, so not all intervals are used
                 for j in range(i + 1, min(i + self.order, self.n_basis)):
-                    poly_j = np.trim_zeros(ppoly_lst[j][:, interval], 'f')
+                    poly_j = np.trim_zeros(ppoly_lst[j][:, interval], "f")
 
                     # Indefinite integral
                     integral = polyint(polymul(poly_i, poly_j))
@@ -305,7 +306,7 @@ class BSplineBasis(Basis):
                     matrix[i, j] += np.diff(
                         polyval(
                             integral,
-                            np.array(self.knots[interval: interval + 2])
+                            np.array(self.knots[interval : interval + 2])
                             - self.knots[interval],
                         ),
                     )[0]
@@ -327,11 +328,13 @@ class BSplineBasis(Basis):
             self.order - 1,
         )
 
-        knots: NDArrayFloat = np.concatenate((
-            repeated_initial,
-            knots_array,
-            repeated_final,
-        ))
+        knots: NDArrayFloat = np.concatenate(
+            (
+                repeated_initial,
+                knots_array,
+                repeated_final,
+            )
+        )
 
         return SciBSpline(knots, coefs.T, self.order - 1)
 
@@ -345,7 +348,7 @@ class BSplineBasis(Basis):
 
         # Remove additional knots at the borders
         if order != 0:
-            knots = knots[order: -order]
+            knots = knots[order:-order]
 
         coefs = bspline.c
         domain_range = [knots[0], knots[-1]]
@@ -460,7 +463,6 @@ class BSpline(BSplineBasis):
             knots=knots,
         )
         warnings.warn(
-            "The BSplines class is deprecated. Use "
-            "BSplineBasis instead.",
+            "The BSplines class is deprecated. Use " "BSplineBasis instead.",
             DeprecationWarning,
         )

@@ -9,7 +9,7 @@ import scipy.linalg
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='VectorValuedBasis')
+T = TypeVar("T", bound="VectorValuedBasis")
 
 
 class VectorValuedBasis(Basis):
@@ -81,8 +81,7 @@ class VectorValuedBasis(Basis):
             for b in basis_list
         ):
             raise ValueError(
-                "The basis must all have the same domain "
-                "dimension and range",
+                "The basis must all have the same domain " "dimension and range",
             )
 
         self._basis_list = basis_list
@@ -113,7 +112,7 @@ class VectorValuedBasis(Basis):
 
         for i, ev in enumerate(basis_evaluations):
 
-            matrix[n_basis_eval:n_basis_eval + len(ev), :, i] = ev[..., 0]
+            matrix[n_basis_eval : n_basis_eval + len(ev), :, i] = ev[..., 0]
             n_basis_eval += len(ev)
 
         return matrix
@@ -171,10 +170,7 @@ class VectorValuedBasis(Basis):
 
     def __repr__(self) -> str:
         """Representation of a Basis object."""
-        return (
-            f"{self.__class__.__name__}("
-            f"basis_list={self.basis_list})"
-        )
+        return f"{self.__class__.__name__}(" f"basis_list={self.basis_list})"
 
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other) and self.basis_list == other.basis_list
@@ -245,7 +241,6 @@ class VectorValued(VectorValuedBasis):
         )
 
         warnings.warn(
-            "The VectorValued class is deprecated. Use "
-            "VectorValuedBasis instead.",
+            "The VectorValued class is deprecated. Use " "VectorValuedBasis instead.",
             DeprecationWarning,
         )

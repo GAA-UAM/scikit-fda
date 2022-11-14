@@ -7,7 +7,7 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import ArrayLike, NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='FiniteElementBasis')
+T = TypeVar("T", bound="FiniteElementBasis")
 
 
 class FiniteElementBasis(Basis):
@@ -212,7 +212,7 @@ class FiniteElement(FiniteElementBasis):
         >>> basis.n_basis
         10
 
-     """
+    """
 
     def __init__(
         self,
@@ -226,7 +226,6 @@ class FiniteElement(FiniteElementBasis):
             domain_range=domain_range,
         )
         warnings.warn(
-            "The FiniteElement class is deprecated. Use "
-            "FiniteElementBasis instead.",
+            "The FiniteElement class is deprecated. Use " "FiniteElementBasis instead.",
             DeprecationWarning,
         )

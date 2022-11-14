@@ -7,7 +7,7 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='ConstantBasis')
+T = TypeVar("T", bound="ConstantBasis")
 
 
 class ConstantBasis(Basis):
@@ -40,7 +40,8 @@ class ConstantBasis(Basis):
         order: int = 1,
     ) -> Tuple[T, NDArrayFloat]:
         return (
-            (self.copy(), coefs.copy()) if order == 0
+            (self.copy(), coefs.copy())
+            if order == 0
             else (self.copy(), np.zeros(coefs.shape))
         )
 
@@ -78,8 +79,7 @@ class Constant(ConstantBasis):
     def __init__(self, domain_range: Optional[DomainRangeLike] = None) -> None:
         """Constant basis constructor."""
         warnings.warn(
-            "The Constant class is deprecated. Use "
-            "ConstantBasis instead.",
+            "The Constant class is deprecated. Use " "ConstantBasis instead.",
             DeprecationWarning,
         )
         super().__init__(domain_range=domain_range)

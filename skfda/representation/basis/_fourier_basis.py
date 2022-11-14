@@ -8,11 +8,10 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='FourierBasis')
+T = TypeVar("T", bound="FourierBasis")
 
 
 class _SinCos(Protocol):
-
     def __call__(
         self,
         __array: NDArrayFloat,  # noqa: WPS112
@@ -144,7 +143,7 @@ class FourierBasis(Basis):
         phase_coefs = omega * seq_pairs
 
         # Multiply the phase coefficients elementwise
-        res = np.einsum('ij,k->ijk', phase_coefs, eval_points)
+        res = np.einsum("ij,k->ijk", phase_coefs, eval_points)
 
         # Apply odd and even functions
         for i in (0, 1):

@@ -8,7 +8,7 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='MonomialBasis')
+T = TypeVar("T", bound="MonomialBasis")
 
 
 class MonomialBasis(Basis):
@@ -104,13 +104,12 @@ class MonomialBasis(Basis):
 
         # We obtain the powers of both extremes in the domain range
         power_domain_limits = np.vander(
-            self.domain_range[0], 2 * self.n_basis,
+            self.domain_range[0],
+            2 * self.n_basis,
         )
 
         # Subtract the powers (Barrow's rule)
-        power_domain_limits_diff = (
-            power_domain_limits[1] - power_domain_limits[0]
-        )
+        power_domain_limits_diff = power_domain_limits[1] - power_domain_limits[0]
 
         # Multiply the constants that appear in the integration
         evaluated_points = integral_coefs * power_domain_limits_diff
@@ -121,8 +120,8 @@ class MonomialBasis(Basis):
 
         # Build the matrix
         return scipy.linalg.hankel(  # type: ignore[no-any-return]
-            ordered_evaluated_points[:self.n_basis],
-            ordered_evaluated_points[self.n_basis - 1:],
+            ordered_evaluated_points[: self.n_basis],
+            ordered_evaluated_points[self.n_basis - 1 :],
         )
 
     def _to_R(self) -> str:  # noqa: N802
@@ -208,7 +207,6 @@ class Monomial(MonomialBasis):
             n_basis=n_basis,
         )
         warnings.warn(
-            "The BSplines class is deprecated. Use "
-            "BSplineBasis instead.",
+            "The BSplines class is deprecated. Use " "BSplineBasis instead.",
             DeprecationWarning,
         )

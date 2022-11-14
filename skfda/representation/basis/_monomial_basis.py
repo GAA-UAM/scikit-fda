@@ -123,7 +123,7 @@ class MonomialBasis(Basis):
         # Build the matrix
         return scipy.linalg.hankel(  # type: ignore[no-any-return]
             ordered_evaluated_points[: self.n_basis],
-            ordered_evaluated_points[self.n_basis - 1 :],
+            ordered_evaluated_points[self.n_basis - 1:],
         )
 
     def _to_R(self) -> str:  # noqa: N802

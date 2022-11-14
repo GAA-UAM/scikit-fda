@@ -505,7 +505,10 @@ class FDataBasis(FData):  # noqa: WPS214
               object.
 
         Examples:
-            >>> from skfda.representation.basis import FDataBasis, MonomialBasis
+            >>> from skfda.representation.basis import(
+            ...     FDataBasis, 
+            ...     MonomialBasis,
+            ... )
             >>> fd = FDataBasis(
             ...     coefficients=[[1, 1, 1], [1, 0, 1]],
             ...     basis=MonomialBasis(domain_range=(0,5), n_basis=3),

@@ -171,7 +171,7 @@ class LogisticRegression(
             selected_values[:, n_selected] = X.data_matrix[:, tmax, 0]
 
         # fit for the complete set of points
-        mvlr.fit(selected_values, y_ind)
+        mvlr.fit(selected_values, y)
 
         self.coef_ = mvlr.coef_
         self.intercept_ = mvlr.intercept_

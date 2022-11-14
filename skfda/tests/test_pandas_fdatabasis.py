@@ -34,7 +34,6 @@ def basis(request: Any) -> Any:
 @pytest.fixture
 def dtype(basis: Basis) -> FDataBasisDType:
     """A fixture providing the ExtensionDtype to validate."""
-
     return FDataBasisDType(basis=basis)
 
 
@@ -45,7 +44,6 @@ def data(basis: Basis) -> FDataBasis:
     * data[0] and data[1] should both be non missing
     * data[0] and data[1] should not be equal
     """
-
     coef_matrix = np.arange(100 * basis.n_basis).reshape(100, basis.n_basis)
 
     return FDataBasis(basis=basis, coefficients=coef_matrix)

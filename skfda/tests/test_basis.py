@@ -255,8 +255,10 @@ class TestFDataBasisOperations(unittest.TestCase):
     def test_fdatabasis_add(self) -> None:
         """Test addition of FDataBasis."""
         monomial1 = FDataBasis(MonomialBasis(n_basis=3), [1, 2, 3])
-        monomial2 = FDataBasis(MonomialBasis(
-            n_basis=3), [[1, 2, 3], [3, 4, 5]])
+        monomial2 = FDataBasis(
+            MonomialBasis(n_basis=3),
+            [[1, 2, 3], [3, 4, 5]],
+        )
 
         self.assertTrue(
             (monomial1 + monomial2).equals(
@@ -276,8 +278,10 @@ class TestFDataBasisOperations(unittest.TestCase):
     def test_fdatabasis_sub(self) -> None:
         """Test subtraction of FDataBasis."""
         monomial1 = FDataBasis(MonomialBasis(n_basis=3), [1, 2, 3])
-        monomial2 = FDataBasis(MonomialBasis(
-            n_basis=3), [[1, 2, 3], [3, 4, 5]])
+        monomial2 = FDataBasis(
+            MonomialBasis(n_basis=3),
+            [[1, 2, 3], [3, 4, 5]],
+        )
 
         self.assertTrue(
             (monomial1 - monomial2).equals(
@@ -664,11 +668,14 @@ class TestTensorBasis(unittest.TestCase):
         self.dims = (self.n_x, self.n_y, self.n_z)
 
         self.basis_x = skfda.representation.basis.MonomialBasis(
-            n_basis=self.n_x)
+            n_basis=self.n_x,
+        )
         self.basis_y = skfda.representation.basis.FourierBasis(
-            n_basis=self.n_y)
+            n_basis=self.n_y,
+        )
         self.basis_z = skfda.representation.basis.BSplineBasis(
-            n_basis=self.n_z)
+            n_basis=self.n_z,
+        )
 
         self.basis = skfda.representation.basis.TensorBasis([
             self.basis_x,

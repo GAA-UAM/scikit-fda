@@ -346,14 +346,16 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         fd_registered_1 = reg.fit_transform(self.fd)
 
         reg_2 = LeastSquaresShiftRegistration[FDataGrid](
-            template=reg.template_)
+            template=reg.template_,
+        )
         fd_registered_2 = reg_2.fit_transform(self.fd)
 
         reg_3 = LeastSquaresShiftRegistration[FDataGrid](template=mean)
         fd_registered_3 = reg_3.fit_transform(self.fd)
 
         reg_4 = LeastSquaresShiftRegistration[FDataGrid](
-            template=reg.template_)
+            template=reg.template_,
+        )
         fd_registered_4 = reg_4.fit(self.fd).transform(self.fd)
 
         np.testing.assert_array_almost_equal(

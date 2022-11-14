@@ -14,7 +14,11 @@ import skfda
 from skfda.datasets import fetch_growth
 from skfda.exploratory.visualization import FPCAPlot
 from skfda.preprocessing.dim_reduction import FPCA
-from skfda.representation.basis import BSplineBasis, FourierBasis, MonomialBasis
+from skfda.representation.basis import (
+    BSplineBasis,
+    FourierBasis,
+    MonomialBasis,
+)
 
 ##############################################################################
 # In this example we are going to use functional principal component analysis

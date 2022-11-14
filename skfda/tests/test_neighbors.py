@@ -250,8 +250,9 @@ class TestNeighbors(unittest.TestCase):
             FDataGrid,
             FDataGrid,
         ](weights=self._weights, n_neighbors=5)
-        response = self.X.to_basis(FourierBasis(
-            domain_range=(-1, 1), n_basis=10))
+        response = self.X.to_basis(
+            FourierBasis(domain_range=(-1, 1), n_basis=10),
+        )
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -288,8 +289,9 @@ class TestNeighbors(unittest.TestCase):
             FDataGrid,
             FDataBasis,
         ](weights='distance', n_neighbors=5)
-        response = self.X.to_basis(FourierBasis(
-            domain_range=(-1, 1), n_basis=10))
+        response = self.X.to_basis(
+            FourierBasis(domain_range=(-1, 1), n_basis=10),
+        )
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)

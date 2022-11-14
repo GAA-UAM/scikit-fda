@@ -359,7 +359,7 @@ class HistoricalLinearRegression(
         )
 
         self._basis = VectorValuedBasis(
-            [fem_basis] * X_centered.dim_codomain
+            [fem_basis] * X_centered.dim_codomain,
         )
 
         design_matrix = _design_matrix(

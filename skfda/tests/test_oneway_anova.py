@@ -29,7 +29,9 @@ class OnewayAnovaTests(unittest.TestCase):
             v_asymptotic_stat(FDataGrid([0]), weights=[0, 1])
         with self.assertRaises(ValueError):
             v_asymptotic_stat(
-                FDataGrid([[1, 1, 1], [1, 1, 1]]), weights=[0, 0])
+                FDataGrid([[1, 1, 1], [1, 1, 1]]),
+                weights=[0, 0],
+            )
 
     def test_v_stats(self) -> None:
         """Test statistic behaviour."""

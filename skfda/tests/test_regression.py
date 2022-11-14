@@ -50,7 +50,8 @@ class TestScalarLinearRegression(unittest.TestCase):
         )
         np.testing.assert_allclose(
             scalar.intercept_,
-            0.0, atol=1e-6,
+            0.0,
+            atol=1e-6,
         )
 
         y_pred = scalar.predict(x_fd)

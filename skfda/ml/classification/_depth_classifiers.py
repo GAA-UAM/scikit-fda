@@ -33,6 +33,7 @@ from ...representation import FData
 from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
 Input = TypeVar("Input", bound=FData)
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 def _classifier_get_depth_methods(
@@ -50,7 +51,7 @@ def _classifier_get_depth_methods(
 
 def _classifier_fit_depth_methods(
     X: Input,
-    y: NDArrayInt,
+    y: NDArrayInt | NDArrayStr,
     depth_methods: Sequence[Depth[Input]],
 ) -> Tuple[NDArrayStr | NDArrayInt, Sequence[Depth[Input]]]:
     classes, y_ind = _classifier_get_classes(y)
@@ -64,7 +65,7 @@ def _classifier_fit_depth_methods(
 
 class DDClassifier(
     BaseEstimator,
-    ClassifierMixin[Input, NDArrayInt],
+    ClassifierMixin[Input, Target],
 ):
     """Depth-versus-depth (DD) classifer for functional data.
 
@@ -130,7 +131,7 @@ class DDClassifier(
         self.depth_method = depth_method
         self.degree = degree
 
-    def fit(self, X: Input, y: NDArrayInt) -> DDClassifier[Input]:
+    def fit(self, X: Input, y: Target) -> DDClassifier[Input, Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -147,10 +148,10 @@ class DDClassifier(
             X, y, [self.depth_method],
         )
 
-        self._classes = classes
+        self.classes_ = classes
         self.class_depth_methods_ = class_depth_methods
 
-        if (len(self._classes) != 2):
+        if (len(self.classes_) != 2):
             raise ValueError("DDClassifier only accepts two classes.")
 
         dd_coordinates = [
@@ -175,7 +176,7 @@ class DDClassifier(
 
             predicted_values = np.polyval(poly, dd_coordinates[0])
 
-            y_pred = self._classes[(
+            y_pred = self.classes_[(
                 dd_coordinates[1] > predicted_values
             ).astype(int)
             ]
@@ -188,7 +189,7 @@ class DDClassifier(
 
         return self
 
-    def predict(self, X: Input) -> NDArrayInt:
+    def predict(self, X: Input) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -207,7 +208,7 @@ class DDClassifier(
 
         predicted_values = np.polyval(self.poly_, dd_coordinates[0])
 
-        return self._classes[(  # type: ignore[no-any-return]
+        return self.classes_[(  # type: ignore[no-any-return]
             dd_coordinates[1] > predicted_values
         ).astype(int)
         ]
@@ -215,7 +216,7 @@ class DDClassifier(
 
 class DDGClassifier(
     BaseEstimator,
-    ClassifierMixin[Input, NDArrayInt],
+    ClassifierMixin[Input, Target],
 ):
     r"""Generalized depth-versus-depth (DD) classifer for functional data.
 
@@ -343,7 +344,11 @@ class DDGClassifier(
         return params  # type: ignore[no-any-return]
 
     # Copied from scikit-learn's _BaseComposition with minor modifications
-    def _set_params(self, attr: str, **params: object) -> DDGClassifier[Input]:
+    def _set_params(
+        self,
+        attr: str,
+        **params: object,
+    ) -> DDGClassifier[Input, Target]:
         # Ensure strict ordering of parameter setting:
         # 1. All steps
         if attr in params:
@@ -398,11 +403,11 @@ class DDGClassifier(
     def set_params(
         self,
         **params: object,
-    ) -> DDGClassifier[Input]:
+    ) -> DDGClassifier[Input, Target]:
 
         return self._set_params("depth_method", **params)
 
-    def fit(self, X: Input, y: NDArrayInt) -> DDGClassifier[Input]:
+    def fit(self, X: Input, y: Target) -> DDGClassifier[Input, Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -432,10 +437,11 @@ class DDGClassifier(
         )
 
         self._pipeline.fit(X, y)
+        self.classes_ = _classifier_get_classes(y)[0]
 
         return self
 
-    def predict(self, X: Input) -> NDArrayInt:
+    def predict(self, X: Input) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -450,7 +456,7 @@ class DDGClassifier(
 
 class _ArgMaxClassifier(
     BaseEstimator,
-    ClassifierMixin[NDArrayFloat, NDArrayInt],
+    ClassifierMixin[NDArrayFloat, Target],
 ):
     r"""Arg max classifier for multivariate data.
 
@@ -476,7 +482,7 @@ class _ArgMaxClassifier(
         array([1, 0, 0])
     """
 
-    def fit(self, X: NDArrayFloat, y: NDArrayInt) -> _ArgMaxClassifier:
+    def fit(self, X: NDArrayFloat, y: Target) -> _ArgMaxClassifier[Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -487,10 +493,10 @@ class _ArgMaxClassifier(
             self
         """
         classes, _ = _classifier_get_classes(y)
-        self._classes = classes
+        self.classes_ = classes
         return self
 
-    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> NDArrayInt:
+    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -502,12 +508,12 @@ class _ArgMaxClassifier(
         """
         if isinstance(X, pd.DataFrame):
             X = X.to_numpy()
-        return self._classes[  # type: ignore[no-any-return]
+        return self.classes_[  # type: ignore[no-any-return]
             np.argmax(X, axis=1)
         ]
 
 
-class MaximumDepthClassifier(DDGClassifier[Input]):
+class MaximumDepthClassifier(DDGClassifier[Input, Target]):
     """Maximum depth classifier for functional data.
 
     Test samples are classified to the class where they are deeper.

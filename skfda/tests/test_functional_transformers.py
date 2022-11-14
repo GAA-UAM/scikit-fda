@@ -6,7 +6,9 @@ import numpy as np
 
 import skfda.representation.basis as basis
 from skfda.datasets import fetch_growth
-from skfda.exploratory.stats import unconditional_expected_value
+from skfda.preprocessing.feature_construction import (
+    unconditional_expected_value,
+)
 
 
 class TestUnconditionalExpectedValues(unittest.TestCase):

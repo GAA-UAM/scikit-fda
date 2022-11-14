@@ -410,7 +410,10 @@ class FDataBasis(FData):  # noqa: WPS214
             FDataBasis object.
 
         Examples:
-            >>> from skfda.representation.basis import FDataBasis, MonomialBasis
+            >>> from skfda.representation.basis import (
+            ...     FDataBasis,
+            ...     MonomialBasis,
+            ... )
             >>> basis = MonomialBasis(n_basis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).sum()
@@ -503,8 +506,10 @@ class FDataBasis(FData):  # noqa: WPS214
 
         Examples:
             >>> from skfda.representation.basis import FDataBasis, MonomialBasis
-            >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
-            ...                 basis=MonomialBasis(domain_range=(0,5), n_basis=3))
+            >>> fd = FDataBasis(
+            ...     coefficients=[[1, 1, 1], [1, 0, 1]],
+            ...     basis=MonomialBasis(domain_range=(0,5), n_basis=3),
+            ... )
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
                 array([[[ 1.],

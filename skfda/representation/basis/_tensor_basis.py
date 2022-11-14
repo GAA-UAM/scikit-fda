@@ -66,7 +66,9 @@ class TensorBasis(Basis):
 
         self._basis_list = tuple(basis_list)
 
-        if not all(b.dim_domain == 1 and b.dim_codomain == 1 for b in self._basis_list):
+        if not all(
+            b.dim_domain == 1 and b.dim_codomain == 1 for b in self._basis_list
+        ):
             raise ValueError(
                 "The basis functions must be univariate and scalar valued",
             )
@@ -85,7 +87,7 @@ class TensorBasis(Basis):
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))
 
         basis_evaluations = [
-            b(eval_points[:, i : i + 1]) for i, b in enumerate(self.basis_list)
+            b(eval_points[:, i:i + 1]) for i, b in enumerate(self.basis_list)
         ]
 
         for i, ev in enumerate(itertools.product(*basis_evaluations)):
@@ -176,6 +178,6 @@ class Tensor(TensorBasis):
             basis_list=basis_list,
         )
         warnings.warn(
-            "The Tensor class is deprecated. Use " "TensorBasis instead.",
+            "The Tensor class is deprecated. Use TensorBasis instead.",
             DeprecationWarning,
         )

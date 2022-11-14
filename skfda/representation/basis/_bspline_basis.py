@@ -116,14 +116,16 @@ class BSplineBasis(Basis):
                 domain_range = (knots[0], knots[-1])
             elif domain_range[0] != knots[0] or domain_range[1] != knots[-1]:
                 raise ValueError(
-                    "The ends of the knots must be the same " "as the domain_range.",
+                    "The ends of the knots must be the same "
+                    "as the domain_range.",
                 )
 
         # n_basis default to number of knots + order of the splines - 2
         if n_basis is None:
             if knots is None:
                 raise ValueError(
-                    "Must provide either a list of knots or the" "number of basis.",
+                    "Must provide either a list of knots or the"
+                    "number of basis.",
                 )
             n_basis = len(knots) + order - 2
 
@@ -153,7 +155,7 @@ class BSplineBasis(Basis):
                 np.linspace(
                     *self.domain_range[0],
                     self.n_basis - self.order + 2,
-                )
+                ),
             )
 
         return self._knots
@@ -290,7 +292,7 @@ class BSplineBasis(Basis):
                 matrix[i, i] += np.diff(
                     polyval(
                         integral,
-                        np.array(self.knots[interval : interval + 2])
+                        np.array(self.knots[interval:interval + 2])
                         - self.knots[interval],
                     ),
                 )[0]
@@ -306,7 +308,7 @@ class BSplineBasis(Basis):
                     matrix[i, j] += np.diff(
                         polyval(
                             integral,
-                            np.array(self.knots[interval : interval + 2])
+                            np.array(self.knots[interval:interval + 2])
                             - self.knots[interval],
                         ),
                     )[0]
@@ -333,7 +335,7 @@ class BSplineBasis(Basis):
                 repeated_initial,
                 knots_array,
                 repeated_final,
-            )
+            ),
         )
 
         return SciBSpline(knots, coefs.T, self.order - 1)
@@ -463,6 +465,6 @@ class BSpline(BSplineBasis):
             knots=knots,
         )
         warnings.warn(
-            "The BSplines class is deprecated. Use " "BSplineBasis instead.",
+            "The BSplines class is deprecated. Use BSplineBasis instead.",
             DeprecationWarning,
         )

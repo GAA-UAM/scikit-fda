@@ -226,6 +226,7 @@ class FiniteElement(FiniteElementBasis):
             domain_range=domain_range,
         )
         warnings.warn(
-            "The FiniteElement class is deprecated. Use " "FiniteElementBasis instead.",
+            "The FiniteElement class is deprecated. Use "
+            "FiniteElementBasis instead.",
             DeprecationWarning,
         )

@@ -109,7 +109,9 @@ class MonomialBasis(Basis):
         )
 
         # Subtract the powers (Barrow's rule)
-        power_domain_limits_diff = power_domain_limits[1] - power_domain_limits[0]
+        power_domain_limits_diff = (
+            power_domain_limits[1] - power_domain_limits[0]
+        )
 
         # Multiply the constants that appear in the integration
         evaluated_points = integral_coefs * power_domain_limits_diff
@@ -207,6 +209,6 @@ class Monomial(MonomialBasis):
             n_basis=n_basis,
         )
         warnings.warn(
-            "The BSplines class is deprecated. Use " "BSplineBasis instead.",
+            "The Monomial class is deprecated. Use MonomialBasis instead.",
             DeprecationWarning,
         )

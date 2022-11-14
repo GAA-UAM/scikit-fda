@@ -81,7 +81,8 @@ class VectorValuedBasis(Basis):
             for b in basis_list
         ):
             raise ValueError(
-                "The basis must all have the same domain " "dimension and range",
+                "The basis must all have the same domain "
+                "dimension and range",
             )
 
         self._basis_list = basis_list
@@ -112,7 +113,7 @@ class VectorValuedBasis(Basis):
 
         for i, ev in enumerate(basis_evaluations):
 
-            matrix[n_basis_eval : n_basis_eval + len(ev), :, i] = ev[..., 0]
+            matrix[n_basis_eval:n_basis_eval + len(ev), :, i] = ev[..., 0]
             n_basis_eval += len(ev)
 
         return matrix
@@ -241,6 +242,7 @@ class VectorValued(VectorValuedBasis):
         )
 
         warnings.warn(
-            "The VectorValued class is deprecated. Use " "VectorValuedBasis instead.",
+            "The VectorValued class is deprecated. "
+            "Use VectorValuedBasis instead.",
             DeprecationWarning,
         )

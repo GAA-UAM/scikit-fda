@@ -49,7 +49,7 @@ def test_classes(
     """Test classes attribute of classifiers."""
     n_samples = 30
     y = np.resize(classes, n_samples)
-    X = make_gaussian_process(n_samples=n_samples)
+    X = make_gaussian_process(n_samples=n_samples, random_state=0)
     classifier.fit(X, y)
     resulting_classes = np.unique(classifier.predict(X))
 

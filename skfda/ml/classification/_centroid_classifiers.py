@@ -1,7 +1,7 @@
 """Centroid-based models for supervised classification."""
 from __future__ import annotations
 
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Union
 
 from sklearn.utils.validation import check_is_fitted
 
@@ -13,14 +13,15 @@ from ...misc.metrics import PairwiseMetric, l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData
 from ...typing._metric import Metric
-from ...typing._numpy import NDArrayInt
+from ...typing._numpy import NDArrayInt, NDArrayStr
 
 Input = TypeVar("Input", bound=FData)
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 class NearestCentroid(
     BaseEstimator,
-    ClassifierMixin[Input, NDArrayInt],
+    ClassifierMixin[Input, Target],
 ):
     """
     Nearest centroid classifier for functional data.
@@ -76,7 +77,7 @@ class NearestCentroid(
         self.metric = metric
         self.centroid = centroid
 
-    def fit(self, X: Input, y: NDArrayInt) -> NearestCentroid[Input]:
+    def fit(self, X: Input, y: Target) -> NearestCentroid[Input, Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -92,16 +93,16 @@ class NearestCentroid(
 
         classes, y_ind = _classifier_get_classes(y)
 
-        self._classes = classes
+        self.classes_ = classes
         self.centroids_ = self.centroid(X[y_ind == 0])
 
-        for cur_class in range(1, self._classes.size):
+        for cur_class in range(1, self.classes_.size):
             centroid = self.centroid(X[y_ind == cur_class])
             self.centroids_ = self.centroids_.concatenate(centroid)
 
         return self
 
-    def predict(self, X: Input) -> NDArrayInt:
+    def predict(self, X: Input) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -113,7 +114,7 @@ class NearestCentroid(
         """
         check_is_fitted(self)
 
-        return self._classes[  # type: ignore[no-any-return]
+        return self.classes_[  # type: ignore[no-any-return]
             PairwiseMetric(self.metric)(
                 X,
                 self.centroids_,
@@ -121,7 +122,7 @@ class NearestCentroid(
         ]
 
 
-class DTMClassifier(NearestCentroid[Input]):
+class DTMClassifier(NearestCentroid[Input, Target]):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of

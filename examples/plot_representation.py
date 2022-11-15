@@ -80,14 +80,14 @@ fd.plot()
 
 ##############################################################################
 # We will represent it using a basis of B-splines.
-fd_basis = fd.to_basis(basis.BSpline(n_basis=4))
+fd_basis = fd.to_basis(basis.BSplineBasis(n_basis=4))
 
 fd_basis.plot()
 
 ##############################################################################
 # We can increase the number of elements in the basis to try to reproduce the
 # original data with more fidelity.
-fd_basis_big = fd.to_basis(basis.BSpline(n_basis=7))
+fd_basis_big = fd.to_basis(basis.BSplineBasis(n_basis=7))
 
 fd_basis_big.plot()
 
@@ -105,7 +105,7 @@ fig.axes[0].legend(['Original', '4 elements', '7 elements'])
 # For example, in the Fourier basis the functions start and end at the same
 # points if the period is equal to the domain range, so this basis is clearly
 # non suitable for the Growth dataset.
-fd_basis = fd.to_basis(basis.Fourier(n_basis=7))
+fd_basis = fd.to_basis(basis.FourierBasis(n_basis=7))
 
 fd_basis.plot()
 

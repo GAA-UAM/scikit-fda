@@ -111,14 +111,14 @@ class LinearRegression(
 
     Examples:
         >>> from skfda.ml.regression import LinearRegression
-        >>> from skfda.representation.basis import (FDataBasis, Monomial,
-        ...                                         Constant)
+        >>> from skfda.representation.basis import (FDataBasis, MonomialBasis,
+        ...                                         ConstantBasis)
         >>> import pandas as pd
 
         Multivariate linear regression can be used with functions expressed in
         a basis. Also, a functional basis for the weights can be specified:
 
-        >>> x_basis = Monomial(n_basis=3)
+        >>> x_basis = MonomialBasis(n_basis=3)
         >>> x_fd = FDataBasis(x_basis, [[0, 0, 1],
         ...                             [0, 1, 0],
         ...                             [0, 1, 1],
@@ -128,7 +128,7 @@ class LinearRegression(
         >>> _ = linear.fit(x_fd, y)
         >>> linear.coef_[0]
         FDataBasis(
-            basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
             coefficients=[[-15.  96. -90.]],
             ...)
         >>> linear.intercept_
@@ -138,7 +138,7 @@ class LinearRegression(
 
         Covariates can include also multivariate data:
 
-        >>> x_basis = Monomial(n_basis=2)
+        >>> x_basis = MonomialBasis(n_basis=2)
         >>> x_fd = FDataBasis(x_basis, [[0, 2],
         ...                             [0, 4],
         ...                             [1, 0],
@@ -148,13 +148,13 @@ class LinearRegression(
         >>> x = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
         >>> y = [11, 10, 12, 6, 10, 13]
         >>> linear = LinearRegression(
-        ...              coef_basis=[None, Constant()])
+        ...              coef_basis=[None, ConstantBasis()])
         >>> _ = linear.fit([x, x_fd], y)
         >>> linear.coef_[0]
         array([ 2.,  1.])
         >>> linear.coef_[1]
         FDataBasis(
-        basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
+        basis=ConstantBasis(domain_range=((0.0, 1.0),), n_basis=1),
         coefficients=[[ 1.]],
         ...)
         >>> linear.intercept_
@@ -166,7 +166,7 @@ class LinearRegression(
 
         First example:
 
-        >>> x_basis = Monomial(n_basis=3)
+        >>> x_basis = MonomialBasis(n_basis=3)
         >>> x_fd = FDataBasis(x_basis, [[0, 0, 1],
         ...                             [0, 1, 0],
         ...                             [0, 1, 1],
@@ -178,7 +178,7 @@ class LinearRegression(
         >>> _ = linear.fit(df, y)
         >>> linear.coef_[0]
         FDataBasis(
-            basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
             coefficients=[[-15.  96. -90.]],
             ...)
         >>> linear.intercept_
@@ -188,7 +188,7 @@ class LinearRegression(
 
         Second example:
 
-        >>> x_basis = Monomial(n_basis=2)
+        >>> x_basis = MonomialBasis(n_basis=2)
         >>> x_fd = FDataBasis(x_basis, [[0, 2],
         ...                             [0, 4],
         ...                             [1, 0],
@@ -201,7 +201,7 @@ class LinearRegression(
         >>> df = pd.DataFrame(cov_dict)
         >>> y = [11, 10, 12, 6, 10, 13]
         >>> linear = LinearRegression(
-        ...              coef_basis=[None, Constant(), Constant()])
+        ...              coef_basis=[None, ConstantBasis(), ConstantBasis()])
         >>> _ = linear.fit(df, y)
         >>> linear.coef_[0]
         array([ 2.])
@@ -209,7 +209,7 @@ class LinearRegression(
         array([ 1.])
         >>> linear.coef_[2]
         FDataBasis(
-            basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
+            basis=ConstantBasis(domain_range=((0.0, 1.0),), n_basis=1),
             coefficients=[[ 1.]],
             ...)
         >>> linear.intercept_

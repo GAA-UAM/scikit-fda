@@ -10,13 +10,10 @@ Shows the usage of the different types of extrapolation.
 
 # sphinx_gallery_thumbnail_number = 2
 
-import skfda
-
-import mpl_toolkits.mplot3d
-
 import matplotlib.pyplot as plt
 import numpy as np
 
+import skfda
 
 ##############################################################################
 #
@@ -39,18 +36,25 @@ import numpy as np
 # To show how it works we will create a dataset with two unidimensional curves
 # defined in (0,1), and we will represent it using a grid and different types
 # of basis.
-#
+
 fdgrid = skfda.datasets.make_sinusoidal_process(
-    n_samples=2, error_std=0, random_state=0)
+    n_samples=2,
+    error_std=0,
+    random_state=0,
+)
 fdgrid.dataset_name = "Grid"
 
-fd_fourier = fdgrid.to_basis(skfda.representation.basis.Fourier())
+fd_fourier = fdgrid.to_basis(skfda.representation.basis.FourierBasis())
 fd_fourier.dataset_name = "Fourier Basis"
 
-fd_monomial = fdgrid.to_basis(skfda.representation.basis.Monomial(n_basis=5))
+fd_monomial = fdgrid.to_basis(
+    skfda.representation.basis.MonomialBasis(n_basis=5),
+)
 fd_monomial.dataset_name = "Monomial Basis"
 
-fd_bspline = fdgrid.to_basis(skfda.representation.basis.BSpline(n_basis=5))
+fd_bspline = fdgrid.to_basis(
+    skfda.representation.basis.BSplineBasis(n_basis=5),
+)
 fd_bspline.dataset_name = "BSpline Basis"
 
 
@@ -79,7 +83,7 @@ fdgrid.dataset_name = ""
 # For this reason the behavior outside the domain will change depending on the
 # representation, obtaining a periodic behavior in the case of the Fourier
 # basis and polynomial behaviors in the rest of the cases.
-#
+
 
 domain_extended = (-0.2, 1.2)
 
@@ -87,10 +91,10 @@ fig, ax = plt.subplots(2, 2)
 
 
 # Plot objects in the domain range extended
-fdgrid.plot(ax[0][0], domain_range=domain_extended, linestyle='--')
-fd_fourier.plot(ax[0][1], domain_range=domain_extended, linestyle='--')
-fd_monomial.plot(ax[1][0], domain_range=domain_extended, linestyle='--')
-fd_bspline.plot(ax[1][1], domain_range=domain_extended, linestyle='--')
+fdgrid.plot(ax[0][0], domain_range=domain_extended, linestyle="--")
+fd_fourier.plot(ax[0][1], domain_range=domain_extended, linestyle="--")
+fd_monomial.plot(ax[1][0], domain_range=domain_extended, linestyle="--")
+fd_bspline.plot(ax[1][1], domain_range=domain_extended, linestyle="--")
 
 # Plot configuration
 for axes in fig.axes:
@@ -117,7 +121,7 @@ fd_bspline.plot(ax[1][1])
 # It should be noted that the Fourier basis is periodic in itself, but the
 # period does not have to coincide with the domain range, obtaining different
 # results applying or not extrapolation in case of not coinciding.
-#
+
 t = np.linspace(*domain_extended)
 
 fig = plt.figure()
@@ -127,7 +131,7 @@ fdgrid.dataset_name = "Periodic extrapolation"
 # Extrapolation supplied in the evaluation
 values = fdgrid(t, extrapolation="periodic")[..., 0]
 
-plt.plot(t, values.T, linestyle='--')
+plt.plot(t, values.T, linestyle="--")
 
 plt.gca().set_prop_cycle(None)  # Reset color cycle
 
@@ -138,7 +142,7 @@ fdgrid.plot(fig=fig)  # Plot dataset
 #
 # Another possible extrapolation, ``"bounds"``, will use the values of the
 # interval bounds for points outside the domain range.
-#
+
 
 fig = plt.figure()
 fdgrid.dataset_name = "Boundary extrapolation"
@@ -148,7 +152,7 @@ fdgrid.extrapolation = "bounds"
 
 # Evaluation of the grid
 values = fdgrid(t)[..., 0]
-plt.plot(t, values.T, linestyle='--')
+plt.plot(t, values.T, linestyle="--")
 
 plt.gca().set_prop_cycle(None)  # Reset color cycle
 
@@ -161,7 +165,7 @@ fdgrid.plot(fig=fig)  # Plot dataset
 # the points extrapolated with the same value. The case of filling with zeros
 # could be specified with the string ``"zeros"``, which is equivalent to
 # ``extrapolation=FillExtrapolation(0)``.
-#
+
 
 fdgrid.dataset_name = "Fill with zeros"
 
@@ -169,7 +173,7 @@ fdgrid.dataset_name = "Fill with zeros"
 fdgrid.extrapolation = "zeros"
 
 # Plot in domain extended
-fig = fdgrid.plot(domain_range=domain_extended, linestyle='--')
+fig = fdgrid.plot(domain_range=domain_extended, linestyle="--")
 
 plt.gca().set_prop_cycle(None)  # Reset color cycle
 
@@ -179,7 +183,7 @@ fdgrid.plot(fig=fig)  # Plot dataset
 ##############################################################################
 #
 # The string ``"nan"`` is equivalent to ``FillExtrapolation(np.nan)``.
-#
+
 
 values = fdgrid([-1, 0, 0.5, 1, 2], extrapolation="nan")
 print(values)
@@ -188,7 +192,7 @@ print(values)
 #
 # It is possible to configure the extrapolation to raise an exception in case
 # of evaluating a point outside the domain.
-#
+
 
 try:
     res = fd_fourier(t, extrapolation="exception")
@@ -202,7 +206,7 @@ except ValueError as e:
 # using periodic extrapolation.
 
 fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+ax = fig.add_subplot(111, projection="3d")
 
 # Make data.
 t = np.arange(-2.5, 2.75, 0.25)
@@ -219,20 +223,20 @@ values = fd_surface((t, t), grid=True, extrapolation="periodic")
 T, S = np.meshgrid(t, t)
 
 
-ax.plot_wireframe(T, S, values[0, ..., 0], alpha=.3, color="C0")
+ax.plot_wireframe(T, S, values[0, ..., 0], alpha=0.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")
 
 ###############################################################################
 #
-# The previous extension can be compared with the extrapolation using the values
-# of the bounds.
+# The previous extension can be compared with the extrapolation using the
+# values of the bounds.
 
 
 values = fd_surface((t, t), grid=True, extrapolation="bounds")
 
 fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.plot_wireframe(T, S, values[0, ..., 0], alpha=.3, color="C0")
+ax = fig.add_subplot(111, projection="3d")
+ax.plot_wireframe(T, S, values[0, ..., 0], alpha=0.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")
 
 ###############################################################################
@@ -243,6 +247,6 @@ ax.plot_surface(X, Y, Z, color="C0")
 values = fd_surface((t, t), grid=True, extrapolation="zeros")
 
 fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.plot_wireframe(T, S, values[0, ..., 0], alpha=.3, color="C0")
+ax = fig.add_subplot(111, projection="3d")
+ax.plot_wireframe(T, S, values[0, ..., 0], alpha=0.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")

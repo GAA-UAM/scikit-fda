@@ -23,7 +23,7 @@ from skfda.preprocessing.dim_reduction.variable_selection.maxima_hunting import 
     MaximaHunting,
     RelativeLocalMaximaSelector,
 )
-from skfda.representation.basis import BSpline
+from skfda.representation.basis import BSplineBasis
 
 ##############################################################################
 # We will first load the Tecator data, keeping only the fat content target,
@@ -43,7 +43,7 @@ plt.show()
 ##############################################################################
 # In order to compute functional linear regression we first convert the data
 # to a basis expansion.
-basis = BSpline(
+basis = BSplineBasis(
     n_basis=10,
 )
 X_der_basis = X_der.to_basis(basis)

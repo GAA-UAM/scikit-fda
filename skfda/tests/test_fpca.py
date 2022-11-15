@@ -2,7 +2,6 @@
 import unittest
 
 import numpy as np
-import scipy
 from sklearn.decomposition import PCA
 
 from skfda import FDataBasis, FDataGrid
@@ -10,7 +9,7 @@ from skfda.datasets import fetch_weather
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
 from skfda.preprocessing.dim_reduction import FPCA
-from skfda.representation.basis import Basis, BSpline, Fourier
+from skfda.representation.basis import Basis, BSplineBasis, FourierBasis
 
 
 class FPCATestCase(unittest.TestCase):
@@ -22,7 +21,7 @@ class FPCATestCase(unittest.TestCase):
         with self.assertRaises(AttributeError):
             fpca.fit(None)  # type: ignore[arg-type]
 
-        basis = Fourier(n_basis=1)
+        basis = FourierBasis(n_basis=1)
         # Check that if n_components is bigger than the number of samples then
         # an exception should be thrown
         fd = FDataBasis(basis, [[0.9]])
@@ -61,7 +60,7 @@ class FPCATestCase(unittest.TestCase):
         fd_data = fetch_weather()['data'].coordinates[0]
 
         # Initialize basis data
-        basis = Fourier(n_basis=n_basis, domain_range=(0, 365))
+        basis = FourierBasis(n_basis=n_basis, domain_range=(0, 365))
         fd_basis = fd_data.to_basis(basis)
 
         fpca = FPCA(
@@ -115,7 +114,7 @@ class FPCATestCase(unittest.TestCase):
         fd_data = fetch_weather()['data'].coordinates[0]
 
         # Initialize basis data
-        basis = Fourier(n_basis=n_basis, domain_range=(0, 365))
+        basis = FourierBasis(n_basis=n_basis, domain_range=(0, 365))
         fd_basis = fd_data.to_basis(basis)
 
         fpca = FPCA(
@@ -199,7 +198,7 @@ class FPCATestCase(unittest.TestCase):
         fd_data = fetch_weather()['data'].coordinates[0]
 
         # Initialize basis data
-        basis = Fourier(n_basis=n_basis, domain_range=(0, 365))
+        basis = FourierBasis(n_basis=n_basis, domain_range=(0, 365))
         fd_basis = fd_data.to_basis(basis)
 
         fpca = FPCA(n_components=n_components)
@@ -414,15 +413,12 @@ class FPCATestCase(unittest.TestCase):
         fpca = FPCA(n_components=n_components, _weights=[1] * 365)
         fpca.fit(fd_data)
 
-        # Ramsay uses a different inner product to calculate the scores
-        # so we need to use the same inner product to compare the results
-        # flake8 ignore comment required since a protected member is being
-        # accessed
-        fpca._weights = scipy.integrate.simps(  # noqa: WPS437
-            np.eye(len(fd_data.grid_points[0])),
-            fd_data.grid_points[0],
-        )
-
+        # The fda.usc uses the trapezoid rule to compute the integral
+        # with the following weights
+        weights = np.ones(len(fd_data.grid_points[0]))
+        weights[0] = 0.5
+        weights[-1] = 0.5
+        fpca._weights = weights  # noqa: WPS437 (protected access)
         scores = fpca.transform(fd_data)
 
         # results obtained
@@ -438,13 +434,7 @@ class FPCATestCase(unittest.TestCase):
             216.43002289, 233.53770292, 344.18479151,
         ])
 
-        untransformed_scores = fpca.inverse_transform(scores)
-        untransformed_results = fpca.inverse_transform(results.reshape(-1, 1))
-        np.testing.assert_allclose(
-            untransformed_scores.data_matrix.ravel(),
-            untransformed_results.data_matrix.ravel(),
-            atol=0.1,
-        )
+        np.testing.assert_allclose(scores.ravel(), results)
 
     def test_grid_fpca_regularization_fit_result(self) -> None:
         """Compare the components in grid against the fda.usc package."""
@@ -611,7 +601,7 @@ class FPCATestCase(unittest.TestCase):
         # Low dimensional case (n_samples>n_grid)
         n_samples = 1000
         n_grid = 100
-        bsp = BSpline(
+        bsp = BSplineBasis(
             domain_range=(0, 50),
             n_basis=100,
             order=3,
@@ -627,7 +617,7 @@ class FPCATestCase(unittest.TestCase):
         # (almost) High dimensional case (n_samples<n_grid)
         n_samples = 100
         n_grid = 1000
-        bsp = BSpline(
+        bsp = BSplineBasis(
             domain_range=(0, 50),
             n_basis=100,
             order=3,
@@ -679,7 +669,7 @@ class FPCATestCase(unittest.TestCase):
         # Low dimensional case: n_basis<<n_samples
         n_samples = 1000
         n_basis = 20
-        bsp = BSpline(
+        bsp = BSplineBasis(
             domain_range=(0, 50),
             n_basis=n_basis,
             order=3,
@@ -694,7 +684,7 @@ class FPCATestCase(unittest.TestCase):
         # Case n_samples<n_basis
         n_samples = 10
         n_basis = 20
-        bsp = BSpline(
+        bsp = BSplineBasis(
             domain_range=(0, 50),
             n_basis=n_basis,
             order=3,

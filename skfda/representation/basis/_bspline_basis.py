@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
@@ -10,10 +11,10 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-T = TypeVar("T", bound='BSpline')
+T = TypeVar("T", bound="BSplineBasis")
 
 
-class BSpline(Basis):
+class BSplineBasis(Basis):
     r"""BSpline basis.
 
     BSpline basis elements are defined recursively as:
@@ -43,21 +44,21 @@ class BSpline(Basis):
     Examples:
         Constructs specifying number of basis and order.
 
-        >>> bss = BSpline(n_basis=8, order=4)
+        >>> bss = BSplineBasis(n_basis=8, order=4)
 
         If no order is specified defaults to 4 because cubic splines are
         the most used. So the previous example is the same as:
 
-        >>> bss = BSpline(n_basis=8)
+        >>> bss = BSplineBasis(n_basis=8)
 
         It is also possible to create a BSpline basis specifying the knots.
 
-        >>> bss = BSpline(knots=[0, 0.2, 0.4, 0.6, 0.8, 1])
+        >>> bss = BSplineBasis(knots=[0, 0.2, 0.4, 0.6, 0.8, 1])
 
         Once we create a basis we can evaluate each of its functions at a
         set of points.
 
-        >>> bss = BSpline(n_basis=3, order=3)
+        >>> bss = BSplineBasis(n_basis=3, order=3)
         >>> bss([0, 0.5, 1])
         array([[[ 1.  ],
                 [ 0.25],
@@ -150,10 +151,12 @@ class BSpline(Basis):
     @property
     def knots(self) -> Tuple[float, ...]:
         if self._knots is None:
-            return tuple(np.linspace(
-                *self.domain_range[0],
-                self.n_basis - self.order + 2,
-            ))
+            return tuple(
+                np.linspace(
+                    *self.domain_range[0],
+                    self.n_basis - self.order + 2,
+                ),
+            )
 
         return self._knots
 
@@ -173,7 +176,8 @@ class BSpline(Basis):
                 Analysis*. Springer. 50-51.
         """
         return tuple(
-            (self.knots[0],) * (self.order - 1) + self.knots
+            (self.knots[0],) * (self.order - 1)
+            + self.knots
             + (self.knots[-1],) * (self.order - 1),
         )
 
@@ -207,14 +211,13 @@ class BSpline(Basis):
     ) -> T:
         from ...misc.validation import validate_domain_range
 
-        knots = np.array(self.knots, dtype=np.dtype('float'))
+        knots = np.array(self.knots, dtype=np.dtype("float"))
 
         if domain_range is not None:  # Rescales the knots
             domain_range = validate_domain_range(domain_range)[0]
             knots -= knots[0]
-            knots *= (
-                (domain_range[1] - domain_range[0])
-                / (self.knots[-1] - self.knots[0])
+            knots *= (domain_range[1] - domain_range[0]) / (
+                self.knots[-1] - self.knots[0]
             )
             knots += domain_range[0]
 
@@ -279,7 +282,7 @@ class BSpline(Basis):
             for i in range(self.n_basis):
                 poly_i = np.trim_zeros(
                     ppoly_lst[i][:, interval],
-                    'f',
+                    "f",
                 )
                 # Indefinite integral
                 square = polymul(poly_i, poly_i)
@@ -288,14 +291,15 @@ class BSpline(Basis):
                 # Definite integral
                 matrix[i, i] += np.diff(
                     polyval(
-                        integral, np.array(self.knots[interval: interval + 2])
+                        integral,
+                        np.array(self.knots[interval:interval + 2])
                         - self.knots[interval],
                     ),
                 )[0]
 
                 # The Gram matrix is banded, so not all intervals are used
                 for j in range(i + 1, min(i + self.order, self.n_basis)):
-                    poly_j = np.trim_zeros(ppoly_lst[j][:, interval], 'f')
+                    poly_j = np.trim_zeros(ppoly_lst[j][:, interval], "f")
 
                     # Indefinite integral
                     integral = polyint(polymul(poly_i, poly_j))
@@ -304,7 +308,7 @@ class BSpline(Basis):
                     matrix[i, j] += np.diff(
                         polyval(
                             integral,
-                            np.array(self.knots[interval: interval + 2])
+                            np.array(self.knots[interval:interval + 2])
                             - self.knots[interval],
                         ),
                     )[0]
@@ -326,11 +330,13 @@ class BSpline(Basis):
             self.order - 1,
         )
 
-        knots: NDArrayFloat = np.concatenate((
-            repeated_initial,
-            knots_array,
-            repeated_final,
-        ))
+        knots: NDArrayFloat = np.concatenate(
+            (
+                repeated_initial,
+                knots_array,
+                repeated_final,
+            ),
+        )
 
         return SciBSpline(knots, coefs.T, self.order - 1)
 
@@ -344,7 +350,7 @@ class BSpline(Basis):
 
         # Remove additional knots at the borders
         if order != 0:
-            knots = knots[order: -order]
+            knots = knots[order:-order]
 
         coefs = bspline.c
         domain_range = [knots[0], knots[-1]]
@@ -363,3 +369,102 @@ class BSpline(Basis):
 
     def __hash__(self) -> int:
         return hash((super().__hash__(), self.order, self.knots))
+
+
+class BSpline(BSplineBasis):
+    r"""BSpline basis.
+
+    BSpline basis elements are defined recursively as:
+
+    .. math::
+        B_{i, 1}(x) = 1 \quad \text{if } t_i \le x < t_{i+1},
+        \quad 0 \text{ otherwise}
+
+    .. math::
+        B_{i, k}(x) = \frac{x - t_i}{t_{i+k} - t_i} B_{i, k-1}(x)
+        + \frac{t_{i+k+1} - x}{t_{i+k+1} - t_{i+1}} B_{i+1, k-1}(x)
+
+    Where k indicates the order of the spline.
+
+    .. deprecated:: 0.8
+        Use BSplineBasis instead.
+
+    Implementation details: In order to allow a discontinuous behaviour at
+    the boundaries of the domain it is necessary to placing m knots at the
+    boundaries [RS05]_. This is automatically done so that the user only has to
+    specify a single knot at the boundaries.
+
+
+    Parameters:
+        domain_range: A tuple of length 2 containing the initial and
+            end values of the interval over which the basis can be evaluated.
+        n_basis: Number of functions in the basis.
+        order: Order of the splines. One greather than their degree.
+        knots: List of knots of the spline functions.
+
+    Examples:
+        Constructs specifying number of basis and order.
+
+        >>> bss = BSpline(n_basis=8, order=4)
+
+        If no order is specified defaults to 4 because cubic splines are
+        the most used. So the previous example is the same as:
+
+        >>> bss = BSpline(n_basis=8)
+
+        It is also possible to create a BSpline basis specifying the knots.
+
+        >>> bss = BSpline(knots=[0, 0.2, 0.4, 0.6, 0.8, 1])
+
+        Once we create a basis we can evaluate each of its functions at a
+        set of points.
+
+        >>> bss = BSpline(n_basis=3, order=3)
+        >>> bss([0, 0.5, 1])
+        array([[[ 1.  ],
+                [ 0.25],
+                [ 0.  ]],
+               [[ 0.  ],
+                [ 0.5 ],
+                [ 0.  ]],
+               [[ 0.  ],
+                [ 0.25],
+                [ 1.  ]]])
+
+        And evaluates first derivative
+
+        >>> deriv = bss.derivative()
+        >>> deriv([0, 0.5, 1])
+        array([[[-2.],
+                [-1.],
+                [ 0.]],
+               [[ 2.],
+                [ 0.],
+                [-2.]],
+               [[ 0.],
+                [ 1.],
+                [ 2.]]])
+
+    References:
+        .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
+            Analysis*. Springer. 50-51.
+
+    """
+
+    def __init__(  # noqa: WPS238
+        self,
+        domain_range: DomainRangeLike | None = None,
+        n_basis: int | None = None,
+        order: int = 4,
+        knots: Sequence[float] | None = None,
+    ) -> None:
+        super().__init__(
+            domain_range=domain_range,
+            n_basis=n_basis,
+            order=order,
+            knots=knots,
+        )
+        warnings.warn(
+            "The BSplines class is deprecated. Use BSplineBasis instead.",
+            DeprecationWarning,
+        )

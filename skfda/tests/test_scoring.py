@@ -16,7 +16,11 @@ from skfda.misc.scoring import (
     mean_squared_log_error,
     r2_score,
 )
-from skfda.representation.basis import BSpline, Fourier, Monomial
+from skfda.representation.basis import (
+    BSplineBasis,
+    FourierBasis,
+    MonomialBasis,
+)
 from skfda.typing._numpy import NDArrayFloat
 
 score_functions: Sequence[ScoreFunction] = (
@@ -36,14 +40,14 @@ def _create_data_basis() -> Tuple[FDataBasis, FDataBasis]:
     # y_true: 1) 1 + 2x + 3x^2
     #         2) 4 + 5x + 6x^2
     y_true = FDataBasis(
-        basis=Monomial(domain_range=((0, 3),), n_basis=3),
+        basis=MonomialBasis(domain_range=((0, 3),), n_basis=3),
         coefficients=coef_true,
     )
 
     # y_pred: 1) 1 + 2x + 3x^2
     #         2) 4 + 6x + 5x^2
     y_pred = FDataBasis(
-        basis=Monomial(domain_range=((0, 3),), n_basis=3),
+        basis=MonomialBasis(domain_range=((0, 3),), n_basis=3),
         coefficients=coef_pred,
     )
 
@@ -124,8 +128,8 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
     ) -> None:
         y_true_grid, y_pred_grid = _create_data_grid()
 
-        y_true_basis = y_true_grid.to_basis(basis=BSpline(n_basis=10))
-        y_pred_basis = y_pred_grid.to_basis(basis=BSpline(n_basis=10))
+        y_true_basis = y_true_grid.to_basis(basis=BSplineBasis(n_basis=10))
+        y_pred_basis = y_pred_grid.to_basis(basis=BSplineBasis(n_basis=10))
 
         # The results should be close but not equal as the two representations
         # do not give same functions.
@@ -241,12 +245,12 @@ class TestScoreZeroDenominator(unittest.TestCase):
         # y_true and y_pred are 2 sets of 3 straight lines
         # for all f, f(1) = 1
         y_true_basis = FDataBasis(
-            basis=Monomial(domain_range=((0, 2),), n_basis=2),
+            basis=MonomialBasis(domain_range=((0, 2),), n_basis=2),
             coefficients=basis_coef_true,
         )
 
         y_pred_basis = FDataBasis(
-            basis=Monomial(domain_range=((0, 2),), n_basis=2),
+            basis=MonomialBasis(domain_range=((0, 2),), n_basis=2),
             coefficients=basis_coef_pred,
         )
 
@@ -280,7 +284,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
         # for all f in y_pred, f(1) = 2
         basis_coef_pred = [[2, 0], [3, -1], [4, -2]]
         y_pred_basis = FDataBasis(
-            basis=Monomial(domain_range=((0, 2),), n_basis=2),
+            basis=MonomialBasis(domain_range=((0, 2),), n_basis=2),
             coefficients=basis_coef_pred,
         )
 
@@ -315,12 +319,12 @@ class TestScoreZeroDenominator(unittest.TestCase):
         # for all f, f(1) = 1
         # var(y_true(1)) = 0 and var(y_true(1) - y_pred(1)) = 0
         y_true_basis = FDataBasis(
-            basis=Monomial(domain_range=((0, 2),), n_basis=2),
+            basis=MonomialBasis(domain_range=((0, 2),), n_basis=2),
             coefficients=basis_coef_true,
         )
 
         y_pred_basis = FDataBasis(
-            basis=Monomial(domain_range=((0, 2),), n_basis=2),
+            basis=MonomialBasis(domain_range=((0, 2),), n_basis=2),
             coefficients=basis_coef_pred,
         )
 
@@ -352,7 +356,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
         # Case when numerator is non-zero and denominator is zero (in t = 1)
         basis_coef_pred = [[2, 0], [2, -1], [2, -2]]
         y_pred_basis = FDataBasis(
-            basis=Monomial(domain_range=((0, 2),), n_basis=2),
+            basis=MonomialBasis(domain_range=((0, 2),), n_basis=2),
             coefficients=basis_coef_pred,
         )
         y_pred_grid = y_pred_basis.to_grid(grid_points=grid_points)
@@ -391,12 +395,12 @@ class TestScoreZeroDenominator(unittest.TestCase):
         # The second function in y_true should be zero at t = 0.5 and t = 1.5
 
         y_true_basis = FDataBasis(
-            basis=Fourier(domain_range=((0, 2),), n_basis=5),
+            basis=FourierBasis(domain_range=((0, 2),), n_basis=5),
             coefficients=basis_coef_true,
         )
 
         y_pred_basis = FDataBasis(
-            basis=Fourier(domain_range=((0, 2),), n_basis=5),
+            basis=FourierBasis(domain_range=((0, 2),), n_basis=5),
             coefficients=basis_coef_pred,
         )
 
@@ -430,12 +434,12 @@ class TestScoreZeroDenominator(unittest.TestCase):
         # All functions in y_pred should be always positive
 
         y_true_basis = FDataBasis(
-            basis=Fourier(domain_range=((0, 2),), n_basis=3),
+            basis=FourierBasis(domain_range=((0, 2),), n_basis=3),
             coefficients=basis_coef_true,
         )
 
         y_pred_basis = FDataBasis(
-            basis=Fourier(domain_range=((0, 2),), n_basis=3),
+            basis=FourierBasis(domain_range=((0, 2),), n_basis=3),
             coefficients=basis_coef_pred,
         )
 

@@ -23,7 +23,7 @@ class TestUnconditionalExpectedValues(unittest.TestCase):
             np.log,
         )
         data_basis = unconditional_expected_value(
-            X[:5].to_basis(basis.BSpline(n_basis=7)),
+            X[:5].to_basis(basis.BSplineBasis(n_basis=7)),
             np.log,
         )
         np.testing.assert_allclose(data_basis, data_grid, rtol=1e-3)

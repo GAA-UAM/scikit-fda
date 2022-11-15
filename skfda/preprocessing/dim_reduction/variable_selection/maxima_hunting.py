@@ -10,13 +10,13 @@ from sklearn.base import clone
 
 from dcor import u_distance_correlation_sqr
 
-from ...._utils import _compute_dependence, _DependenceMeasure
 from ...._utils._sklearn_adapter import (
     BaseEstimator,
     InductiveTransformerMixin,
 )
 from ....representation import FDataGrid
 from ....typing._numpy import NDArrayFloat, NDArrayInt, NDArrayReal
+from ._base import _compute_dependence, _DependenceMeasure
 
 _LocalMaximaSelector = Callable[[FDataGrid], NDArrayInt]
 
@@ -230,14 +230,10 @@ class MaximaHunting(
         )
 
         self.features_shape_ = X.data_matrix.shape[1:]
-        self.dependence_ = FDataGrid(
-            data_matrix=_compute_dependence(
-                X.data_matrix,
-                y.astype(np.float_),
-                dependence_measure=self.dependence_measure,
-            ),
-            grid_points=X.grid_points,
-            domain_range=X.domain_range,
+        self.dependence_ = _compute_dependence(
+            X,
+            y.astype(np.float_),
+            dependence_measure=self.dependence_measure,
         )
 
         self.indexes_ = self._maxima_selector(

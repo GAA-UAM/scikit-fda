@@ -9,7 +9,7 @@ from skfda.representation.grid import FDataGrid
 
 
 class TestBasis(unittest.TestCase):
-    """Tests for BasisOfFData."""
+    """Tests for CustomBasis."""
 
     def test_grid(self):
         """Test a datagrid toy example."""
@@ -230,7 +230,7 @@ class TestBasis(unittest.TestCase):
         np.testing.assert_equal(functions(points), expected_data)
 
     def test_multivariate_codomain_linearly_dependent(self):
-        """Test basis from  multivariate linearly dependent functions."""
+        """Test basis from multivariate linearly dependent functions."""
         points = np.array([0, 1, 2])
         base_functions = FDataGrid(
             data_matrix=np.array(

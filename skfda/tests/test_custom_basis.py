@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from skfda.representation.basis import CustomBasis, FDataBasis, Fourier
+from skfda.representation.basis import CustomBasis, FDataBasis, FourierBasis
 from skfda.representation.grid import FDataGrid
 
 
@@ -34,7 +34,7 @@ class TestBasis(unittest.TestCase):
 
     def test_basis(self):
         """Test a databasis toy example."""
-        basis = Fourier(n_basis=3)
+        basis = FourierBasis(n_basis=3)
         coeficients = np.array(
             [
                 [2, 1, 0],
@@ -79,7 +79,7 @@ class TestBasis(unittest.TestCase):
             CustomBasis(fdata=sample)
 
         sample = FDataBasis(
-            basis=Fourier(n_basis=3),
+            basis=FourierBasis(n_basis=3),
             coefficients=np.array(
                 [
                     [0, 1, 0],
@@ -109,7 +109,7 @@ class TestBasis(unittest.TestCase):
             CustomBasis(fdata=sample)
 
         sample = FDataBasis(
-            basis=Fourier(n_basis=3),
+            basis=FourierBasis(n_basis=3),
             coefficients=np.array(
                 [
                     [2, 1, 0],
@@ -166,7 +166,7 @@ class TestBasis(unittest.TestCase):
         )
 
         base_functions = FDataBasis(
-            basis=Fourier(n_basis=5),
+            basis=FourierBasis(n_basis=5),
             coefficients=basis_coef,
         )
 
@@ -186,7 +186,7 @@ class TestBasis(unittest.TestCase):
         eval_points = np.linspace(0, 1, 10)
 
         # Derivative of the original functions
-        basis_derivative, coefs_derivative = Fourier(
+        basis_derivative, coefs_derivative = FourierBasis(
             n_basis=5,
         ).derivative_basis_and_coefs(coefs=coefs @ basis_coef)
 

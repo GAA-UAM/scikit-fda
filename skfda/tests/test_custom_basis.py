@@ -273,3 +273,63 @@ def test_evaluate_derivative():
         np.array([[1, 1], [2, 2], [5, 5]]),
         rtol=1e-15,
     )
+
+
+def test_coordinates():
+    """Test the coordinates of a basis."""
+    grid_points = np.array([[0, 1]])
+    base_functions = FDataGrid(
+        data_matrix=np.array([
+            [[1, 2, 3], [1, 3, 5]],
+            [[4, 5, 6], [7, 8, 9]],
+        ]),
+        grid_points=grid_points,
+    )
+    basis = CustomBasis(fdata=base_functions)
+
+    coefs = np.array([[1, 0], [0, 1], [1, 2]])
+
+    functions = FDataBasis(
+        basis=basis,
+        coefficients=coefs,
+    )
+
+    # First coordinate at 0
+    np.testing.assert_allclose(
+        functions.coordinates[0](0),
+        np.array([[[1]], [[4]], [[9]]]),
+    )
+
+    # Second two coordinates at 1
+    np.testing.assert_allclose(
+        functions.coordinates[1:3](1),
+        np.array([[[3, 5]], [[8, 9]], [[16 + 3, 18 + 5]]]),
+    )
+
+
+def test_equality():
+    """Test the equality of two basis."""
+    grid_points = np.array([[0, 1, 2]])
+    base_functions = FDataGrid(
+        data_matrix=np.array([[1, 2, 3], [1, 3, 5]]),
+        grid_points=grid_points,
+    )
+    basis = CustomBasis(fdata=base_functions)
+
+    other_base_functions = FDataGrid(
+        data_matrix=np.array([[1, 2, 3], [1, 3, 5]]),
+        grid_points=grid_points,
+    )
+
+    other_basis = CustomBasis(fdata=other_base_functions)
+
+    assert basis == other_basis
+
+    different_base_functions = FDataGrid(
+        data_matrix=np.array([[1, 2, 3], [1, 8, 5]]),
+        grid_points=grid_points,
+    )
+
+    different_basis = CustomBasis(fdata=different_base_functions)
+
+    assert basis != different_basis

@@ -203,7 +203,17 @@ class CustomBasis(Basis):
         return self.fdata.dim_codomain
 
     def __eq__(self, other: Any) -> bool:
-        return super().__eq__(other) and self.fdata == other.fdata
+        return super().__eq__(other) and all(self.fdata == other.fdata)
+
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
+
+    def __repr__(self) -> str:
+        """Representation of a CustomBasis object."""
+        return "{super}, fdata={fdata}".format(
+            super=super().__repr__(),
+            fdata=self.fdata,
+        )
 
     def __hash__(self) -> int:
         return hash(self.fdata)

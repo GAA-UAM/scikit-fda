@@ -22,6 +22,8 @@ from typing import (
     overload,
 )
 
+from typing_extensions import Protocol
+
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
@@ -188,7 +190,7 @@ class FData(  # noqa: WPS214
 
     @property
     @abstractmethod
-    def coordinates(self: T) -> Sequence[T]:
+    def coordinates(self: T) -> _FDataCoordinateSequence:
         r"""Return a component of the FDataGrid.
 
         If the functional object contains multivariate samples
@@ -1317,3 +1319,24 @@ def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
         )
 
     return first.concatenate(*functions, as_coordinates=as_coordinates)
+
+
+class _FDataCoordinateSequence(Protocol):
+    """
+    Sequence of FData coordinates.
+
+    Note that this represents a sequence of coordinates, not a sequence of
+    FData objects.
+    """
+
+    def __init__(self, fdata: FData) -> None:
+        pass
+
+    def __getitem__(
+        self,
+        key: Union[int, slice],
+    ) -> FData:
+        pass
+
+    def __len__(self) -> int:
+        pass

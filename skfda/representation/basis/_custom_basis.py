@@ -129,7 +129,7 @@ class CustomBasis(Basis):
         # we can just return that
         rank = np.linalg.matrix_rank(data_matrix_reshaped)
         if rank == fdata.n_samples:
-            return CustomBasis(fdata=fdata), coefs
+            return type(self)(fdata=fdata), coefs
 
         # Otherwise, we need to find the basis of the subspace generated
         # by the functions
@@ -141,7 +141,7 @@ class CustomBasis(Basis):
             *fdata.data_matrix.shape[1:],
         )
 
-        new_basis = CustomBasis(fdata=fdata)
+        new_basis = type(self)(fdata=fdata)
 
         # Since the QR decomponsition yields an orthonormal basis,
         # the coefficients are just the projections of values of
@@ -165,13 +165,13 @@ class CustomBasis(Basis):
         # we can just return that
         rank = np.linalg.matrix_rank(fdata.coefficients)
         if rank == fdata.n_samples:
-            return CustomBasis(fdata=fdata), coefs
+            return type(self)(fdata=fdata), coefs
 
         q, r = np.linalg.qr(fdata.coefficients.T)
 
         fdata.coefficients = q.T
 
-        new_basis = CustomBasis(fdata=fdata)
+        new_basis = type(self)(fdata=fdata)
 
         # Since the QR decomponsition yields an orthonormal basis,
         # the coefficients are just the result of projecting the
@@ -203,13 +203,7 @@ class CustomBasis(Basis):
         return self.fdata.dim_codomain
 
     def __eq__(self, other: Any) -> bool:
-        from ..._utils import _same_domain
-
-        return (
-            isinstance(other, type(self))
-            and _same_domain(self, other)
-            and self.fdata == other.fdata
-        )
+        return super().__eq__(other) and self.fdata == other.fdata
 
     def __hash__(self) -> int:
         return hash(self.fdata)

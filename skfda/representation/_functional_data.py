@@ -75,6 +75,7 @@ class FData(  # noqa: WPS214
             coordinate functions.
 
     """
+
     dataset_name: Optional[str]
 
     def __init__(
@@ -1169,7 +1170,6 @@ class FData(  # noqa: WPS214
         Parameters:
             indices: Indices to be taken.
             allow_fill: How to handle negative values in `indices`.
-
                 * False: negative values in `indices` indicate positional
                   indices from the right (the default). This is similar to
                   :func:`numpy.take`.
@@ -1178,10 +1178,8 @@ class FData(  # noqa: WPS214
                   other negative values raise a ``ValueError``.
             fill_value: Fill value to use for NA-indices
                 when `allow_fill` is True.
-
                 This may be ``None``, in which case the default NA value for
                 the type, ``self.dtype.na_value``, is used.
-
                 For many ExtensionArrays, there will be two representations of
                 `fill_value`: a user-facing "boxed" scalar, and a low-level
                 physical NA value. `fill_value` should be the user-facing

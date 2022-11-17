@@ -22,12 +22,10 @@ from typing import (
     overload,
 )
 
-from typing_extensions import Protocol
-
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
-from typing_extensions import Literal
+from typing_extensions import Literal, Protocol
 
 from .._utils import _evaluate_grid, _to_grid_points
 from ..typing._base import (
@@ -47,8 +45,8 @@ from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
-    from .grid import FDataGrid
     from .basis import Basis, FDataBasis
+    from .grid import FDataGrid
 
 T = TypeVar('T', bound='FData')
 

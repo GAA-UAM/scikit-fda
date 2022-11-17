@@ -43,11 +43,11 @@ class CustomBasis(Basis):
 
         self.fdata = fdata
 
-    @multimethod.multidispatch
+    @multimethod.multidispatch(FData)
     def _check_linearly_independent(self, fdata: FData) -> None:
         raise ValueError("Unexpected type of functional data object.")
 
-    @_check_linearly_independent.register
+    @_check_linearly_independent.register(FDataGrid)
     def _check_linearly_independent_grid(self, fdata: FDataGrid) -> None:
         # Reshape to a bidimensional matrix. This only affects FDataGrids
         # whose codomain is not 1-dimensional and it can be done because
@@ -59,7 +59,7 @@ class CustomBasis(Basis):
         )
         return self._check_linearly_independent_matrix(coord_matrix)
 
-    @_check_linearly_independent.register
+    @_check_linearly_independent.register(FDataBasis)
     def _check_linearly_independent_basis(self, fdata: FDataBasis) -> None:
         return self._check_linearly_independent_matrix(fdata.coefficients)
 
@@ -89,7 +89,7 @@ class CustomBasis(Basis):
 
         return self._create_subspace_basis_coef(deriv_fdata, coefs)
 
-    @multimethod.multidispatch
+    @multimethod.multidispatch(FData)
     def _create_subspace_basis_coef(
         self: T,
         fdata: FData,
@@ -111,7 +111,7 @@ class CustomBasis(Basis):
             ),
         )
 
-    @_create_subspace_basis_coef.register
+    @_create_subspace_basis_coef.register(FDataGrid, np.ndarray)
     def _create_subspace_basis_coef_grid(
         self: T,
         fdata: FDataGrid,
@@ -154,7 +154,7 @@ class CustomBasis(Basis):
 
         return new_basis, coefs
 
-    @_create_subspace_basis_coef.register
+    @_create_subspace_basis_coef.register(FDataBasis, np.ndarray)
     def _create_subspace_basis_coef_basis(
         self: T,
         fdata: FDataBasis,

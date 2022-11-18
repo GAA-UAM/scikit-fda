@@ -371,7 +371,7 @@ def landmark_elastic_registration(
         >>> from skfda.preprocessing.registration import (
         ...     landmark_elastic_registration,
         ... )
-        >>> from skfda.representation.basis import BSpline
+        >>> from skfda.representation.basis import BSplineBasis
 
         We will create a data with landmarks as example
 
@@ -388,7 +388,7 @@ def landmark_elastic_registration(
 
         This method will work for FDataBasis as for FDataGrids
 
-        >>> fd = fd.to_basis(BSpline(n_basis=12))
+        >>> fd = fd.to_basis(BSplineBasis(n_basis=12))
         >>> landmark_elastic_registration(fd, landmarks)
         FDataGrid(...)
 

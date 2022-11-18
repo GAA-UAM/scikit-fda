@@ -64,7 +64,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> grid_points = [0, 1]
         >>> fd = FDataGrid(data_matrix, grid_points)
-        >>> basis = skfda.representation.basis.Monomial(
+        >>> basis = skfda.representation.basis.MonomialBasis(
         ...     domain_range=(0,1), n_basis=2
         ... )
         >>> basis_fd = fd.to_basis(basis)

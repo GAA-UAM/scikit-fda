@@ -10,11 +10,11 @@ from skfda import concatenate
 from skfda.datasets import fetch_weather
 from skfda.misc import inner_product_matrix
 from skfda.representation.basis import (
-    BSpline,
-    Constant,
+    BSplineBasis,
+    ConstantBasis,
     FDataBasis,
-    Fourier,
-    Monomial,
+    FourierBasis,
+    MonomialBasis,
 )
 from skfda.representation.grid import FDataGrid
 
@@ -28,7 +28,7 @@ class TestBasis(unittest.TestCase):
         """Test basis conversion using Cholesky method."""
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
-        basis = BSpline((0, 1), n_basis=5)
+        basis = BSplineBasis((0, 1), n_basis=5)
         np.testing.assert_array_almost_equal(
             FDataBasis.from_data(
                 x,
@@ -43,7 +43,7 @@ class TestBasis(unittest.TestCase):
         """Test basis conversion using QR method."""
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
-        basis = BSpline((0, 1), n_basis=5)
+        basis = BSplineBasis((0, 1), n_basis=5)
         np.testing.assert_array_almost_equal(
             FDataBasis.from_data(
                 x,
@@ -56,7 +56,7 @@ class TestBasis(unittest.TestCase):
 
     def test_basis_inner_matrix(self) -> None:
         """Test the inner product matrix of FDataBasis objects."""
-        basis = Monomial(n_basis=3)
+        basis = MonomialBasis(n_basis=3)
 
         np.testing.assert_array_almost_equal(
             basis.inner_product_matrix(),
@@ -77,7 +77,7 @@ class TestBasis(unittest.TestCase):
         )
 
         np.testing.assert_array_almost_equal(
-            basis.inner_product_matrix(Monomial(n_basis=4)),
+            basis.inner_product_matrix(MonomialBasis(n_basis=4)),
             [
                 [1, 1 / 2, 1 / 3, 1 / 4],
                 [1 / 2, 1 / 3, 1 / 4, 1 / 5],
@@ -89,7 +89,7 @@ class TestBasis(unittest.TestCase):
 
     def test_basis_gram_matrix_monomial(self) -> None:
         """Test the Gram matrix with monomial basis."""
-        basis = Monomial(n_basis=3)
+        basis = MonomialBasis(n_basis=3)
         gram_matrix = basis.gram_matrix()
         gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: WPS437
         gram_matrix_res = np.array([
@@ -109,7 +109,7 @@ class TestBasis(unittest.TestCase):
 
     def test_basis_gram_matrix_fourier(self) -> None:
         """Test the Gram matrix with fourier basis."""
-        basis = Fourier(n_basis=3)
+        basis = FourierBasis(n_basis=3)
         gram_matrix = basis.gram_matrix()
         gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: WPS437
         gram_matrix_res = np.identity(3)
@@ -127,7 +127,7 @@ class TestBasis(unittest.TestCase):
 
     def test_basis_gram_matrix_bspline(self) -> None:
         """Test the Gram matrix with B-spline basis."""
-        basis = BSpline(n_basis=6)
+        basis = BSplineBasis(n_basis=6)
         gram_matrix = basis.gram_matrix()
         gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: WPS437
         gram_matrix_res = np.array([
@@ -158,8 +158,8 @@ class TestBasis(unittest.TestCase):
 
     def test_basis_basis_inprod(self) -> None:
         """Test inner product between different basis."""
-        monomial = Monomial(n_basis=4)
-        bspline = BSpline(n_basis=5, order=4)
+        monomial = MonomialBasis(n_basis=4)
+        bspline = BSplineBasis(n_basis=5, order=4)
         np.testing.assert_allclose(
             monomial.inner_product_matrix(bspline),
             np.array([
@@ -177,8 +177,8 @@ class TestBasis(unittest.TestCase):
 
     def test_basis_fdatabasis_inprod(self) -> None:
         """Test inner product between different basis expansions."""
-        monomial = Monomial(n_basis=4)
-        bspline = BSpline(n_basis=5, order=3)
+        monomial = MonomialBasis(n_basis=4)
+        bspline = BSplineBasis(n_basis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
         np.testing.assert_allclose(
@@ -194,7 +194,7 @@ class TestBasis(unittest.TestCase):
 
     def test_fdatabasis_fdatabasis_inprod(self) -> None:
         """Test inner product between FDataBasis objects."""
-        monomial = Monomial(n_basis=4)
+        monomial = MonomialBasis(n_basis=4)
         monomialfd = FDataBasis(
             monomial,
             [
@@ -205,7 +205,7 @@ class TestBasis(unittest.TestCase):
                 [5, 6, 2, 0],
             ],
         )
-        bspline = BSpline(n_basis=5, order=3)
+        bspline = BSplineBasis(n_basis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
         np.testing.assert_allclose(
@@ -222,8 +222,8 @@ class TestBasis(unittest.TestCase):
 
     def test_comutativity_inprod(self) -> None:
         """Test commutativity of the inner product."""
-        monomial = Monomial(n_basis=4)
-        bspline = BSpline(n_basis=5, order=3)
+        monomial = MonomialBasis(n_basis=4)
+        bspline = BSplineBasis(n_basis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
         np.testing.assert_allclose(
@@ -235,8 +235,8 @@ class TestBasis(unittest.TestCase):
         """Test concatenation of two FDataBasis."""
         sample1 = np.arange(0, 10)
         sample2 = np.arange(10, 20)
-        fd1 = FDataGrid([sample1]).to_basis(Fourier(n_basis=5))
-        fd2 = FDataGrid([sample2]).to_basis(Fourier(n_basis=5))
+        fd1 = FDataGrid([sample1]).to_basis(FourierBasis(n_basis=5))
+        fd2 = FDataGrid([sample2]).to_basis(FourierBasis(n_basis=5))
 
         fd = concatenate([fd1, fd2])
 
@@ -254,13 +254,16 @@ class TestFDataBasisOperations(unittest.TestCase):
 
     def test_fdatabasis_add(self) -> None:
         """Test addition of FDataBasis."""
-        monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
-        monomial2 = FDataBasis(Monomial(n_basis=3), [[1, 2, 3], [3, 4, 5]])
+        monomial1 = FDataBasis(MonomialBasis(n_basis=3), [1, 2, 3])
+        monomial2 = FDataBasis(
+            MonomialBasis(n_basis=3),
+            [[1, 2, 3], [3, 4, 5]],
+        )
 
         self.assertTrue(
             (monomial1 + monomial2).equals(
                 FDataBasis(
-                    Monomial(n_basis=3),
+                    MonomialBasis(n_basis=3),
                     [[2, 4, 6], [4, 6, 8]],
                 ),
             ),
@@ -268,19 +271,22 @@ class TestFDataBasisOperations(unittest.TestCase):
 
         with np.testing.assert_raises(TypeError):
             monomial2 + FDataBasis(  # noqa: WPS428
-                Fourier(n_basis=3),
+                FourierBasis(n_basis=3),
                 [[2, 2, 3], [5, 4, 5]],
             )
 
     def test_fdatabasis_sub(self) -> None:
         """Test subtraction of FDataBasis."""
-        monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
-        monomial2 = FDataBasis(Monomial(n_basis=3), [[1, 2, 3], [3, 4, 5]])
+        monomial1 = FDataBasis(MonomialBasis(n_basis=3), [1, 2, 3])
+        monomial2 = FDataBasis(
+            MonomialBasis(n_basis=3),
+            [[1, 2, 3], [3, 4, 5]],
+        )
 
         self.assertTrue(
             (monomial1 - monomial2).equals(
                 FDataBasis(
-                    Monomial(n_basis=3),
+                    MonomialBasis(n_basis=3),
                     [[0, 0, 0], [-2, -2, -2]],
                 ),
             ),
@@ -288,13 +294,13 @@ class TestFDataBasisOperations(unittest.TestCase):
 
         with np.testing.assert_raises(TypeError):
             monomial2 - FDataBasis(  # noqa: WPS428
-                Fourier(n_basis=3),
+                FourierBasis(n_basis=3),
                 [[2, 2, 3], [5, 4, 5]],
             )
 
     def test_fdatabasis_mul(self) -> None:
         """Test multiplication of FDataBasis."""
-        basis = Monomial(n_basis=3)
+        basis = MonomialBasis(n_basis=3)
 
         monomial1 = FDataBasis(basis, [1, 2, 3])
         monomial2 = FDataBasis(basis, [[1, 2, 3], [3, 4, 5]])
@@ -343,7 +349,7 @@ class TestFDataBasisOperations(unittest.TestCase):
 
         with np.testing.assert_raises(TypeError):
             monomial2 * FDataBasis(  # noqa: WPS428
-                Fourier(n_basis=3),
+                FourierBasis(n_basis=3),
                 [[2, 2, 3], [5, 4, 5]],
             )
 
@@ -352,7 +358,7 @@ class TestFDataBasisOperations(unittest.TestCase):
 
     def test_fdatabasis_div(self) -> None:
         """Test division of FDataBasis."""
-        basis = Monomial(n_basis=3)
+        basis = MonomialBasis(n_basis=3)
 
         monomial1 = FDataBasis(basis, [1, 2, 3])
         monomial2 = FDataBasis(basis, [[1, 2, 3], [3, 4, 5]])
@@ -389,14 +395,14 @@ class TestFDataBasisDerivatives(unittest.TestCase):
     def test_fdatabasis_derivative_constant(self) -> None:
         """Test derivatives with a constant basis."""
         constant = FDataBasis(
-            Constant(),
+            ConstantBasis(),
             [[1], [2], [3], [4]],
         )
 
         self.assertTrue(
             constant.derivative().equals(
                 FDataBasis(
-                    Constant(),
+                    ConstantBasis(),
                     [[0], [0], [0], [0]],
                 ),
             ),
@@ -405,7 +411,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
         self.assertTrue(
             constant.derivative(order=0).equals(
                 FDataBasis(
-                    Constant(),
+                    ConstantBasis(),
                     [[1], [2], [3], [4]],
                 ),
             ),
@@ -414,12 +420,12 @@ class TestFDataBasisDerivatives(unittest.TestCase):
     def test_fdatabasis_derivative_monomial(self) -> None:
         """Test derivatives with a monomial basis."""
         monomial = FDataBasis(
-            Monomial(n_basis=8),
+            MonomialBasis(n_basis=8),
             [1, 5, 8, 9, 7, 8, 4, 5],
         )
 
         monomial2 = FDataBasis(
-            Monomial(n_basis=5),
+            MonomialBasis(n_basis=5),
             [
                 [4, 9, 7, 4, 3],
                 [1, 7, 9, 8, 5],
@@ -430,7 +436,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
         self.assertTrue(
             monomial.derivative().equals(
                 FDataBasis(
-                    Monomial(n_basis=7),
+                    MonomialBasis(n_basis=7),
                     [5, 16, 27, 28, 40, 24, 35],
                 ),
             ),
@@ -443,7 +449,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
         self.assertTrue(
             monomial.derivative(order=6).equals(
                 FDataBasis(
-                    Monomial(n_basis=2),
+                    MonomialBasis(n_basis=2),
                     [2880, 25200],
                 ),
             ),
@@ -452,7 +458,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
         self.assertTrue(
             monomial2.derivative().equals(
                 FDataBasis(
-                    Monomial(n_basis=4),
+                    MonomialBasis(n_basis=4),
                     [
                         [9, 14, 12, 12],
                         [7, 18, 24, 20],
@@ -469,7 +475,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
         self.assertTrue(
             monomial2.derivative(order=3).equals(
                 FDataBasis(
-                    Monomial(n_basis=2),
+                    MonomialBasis(n_basis=2),
                     [
                         [24, 72],
                         [48, 120],
@@ -482,12 +488,12 @@ class TestFDataBasisDerivatives(unittest.TestCase):
     def test_fdatabasis_derivative_fourier(self) -> None:
         """Test derivatives with a fourier basis."""
         fourier = FDataBasis(
-            Fourier(n_basis=7),
+            FourierBasis(n_basis=7),
             [1, 5, 8, 9, 8, 4, 5],
         )
 
         fourier2 = FDataBasis(
-            Fourier(n_basis=5),
+            FourierBasis(n_basis=5),
             [
                 [4, 9, 7, 4, 3],
                 [1, 7, 9, 8, 5],
@@ -550,11 +556,11 @@ class TestFDataBasisDerivatives(unittest.TestCase):
     def test_fdatabasis_derivative_bspline(self) -> None:
         """Test derivatives with a B-spline basis."""
         bspline = FDataBasis(
-            BSpline(n_basis=8),
+            BSplineBasis(n_basis=8),
             [1, 5, 8, 9, 7, 8, 4, 5],
         )
         bspline2 = FDataBasis(
-            BSpline(n_basis=5),
+            BSplineBasis(n_basis=5),
             [
                 [4, 9, 7, 4, 3],
                 [1, 7, 9, 8, 5],
@@ -565,7 +571,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
         bs0 = bspline.derivative(order=0)
         bs1 = bspline.derivative()
         bs2 = bspline.derivative(order=2)
-        np.testing.assert_equal(bs1.basis, BSpline(n_basis=7, order=3))
+        np.testing.assert_equal(bs1.basis, BSplineBasis(n_basis=7, order=3))
 
         np.testing.assert_almost_equal(
             bs1.coefficients,
@@ -576,7 +582,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
 
         np.testing.assert_equal(
             bs2.basis,
-            BSpline(n_basis=6, order=2),
+            BSplineBasis(n_basis=6, order=2),
         )
 
         np.testing.assert_almost_equal(
@@ -588,7 +594,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
         bs1 = bspline2.derivative()
         bs2 = bspline2.derivative(order=2)
 
-        np.testing.assert_equal(bs1.basis, BSpline(n_basis=4, order=3))
+        np.testing.assert_equal(bs1.basis, BSplineBasis(n_basis=4, order=3))
 
         np.testing.assert_almost_equal(
             bs1.coefficients,
@@ -603,7 +609,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
 
         np.testing.assert_equal(
             bs2.basis,
-            BSpline(n_basis=3, order=2),
+            BSplineBasis(n_basis=3, order=2),
         )
 
         np.testing.assert_almost_equal(
@@ -623,11 +629,11 @@ class TestVectorValuedBasis(unittest.TestCase):
         """Test vector valued basis."""
         X, _ = fetch_weather(return_X_y=True)
 
-        basis_dim = skfda.representation.basis.Fourier(
+        basis_dim = skfda.representation.basis.FourierBasis(
             n_basis=7,
             domain_range=X.domain_range,
         )
-        basis = skfda.representation.basis.VectorValued(
+        basis = skfda.representation.basis.VectorValuedBasis(
             [basis_dim] * 2,
         )
 
@@ -661,11 +667,17 @@ class TestTensorBasis(unittest.TestCase):
 
         self.dims = (self.n_x, self.n_y, self.n_z)
 
-        self.basis_x = skfda.representation.basis.Monomial(n_basis=self.n_x)
-        self.basis_y = skfda.representation.basis.Fourier(n_basis=self.n_y)
-        self.basis_z = skfda.representation.basis.BSpline(n_basis=self.n_z)
+        self.basis_x = skfda.representation.basis.MonomialBasis(
+            n_basis=self.n_x,
+        )
+        self.basis_y = skfda.representation.basis.FourierBasis(
+            n_basis=self.n_y,
+        )
+        self.basis_z = skfda.representation.basis.BSplineBasis(
+            n_basis=self.n_z,
+        )
 
-        self.basis = skfda.representation.basis.Tensor([
+        self.basis = skfda.representation.basis.TensorBasis([
             self.basis_x,
             self.basis_y,
             self.basis_z,

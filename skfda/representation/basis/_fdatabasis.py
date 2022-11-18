@@ -65,13 +65,13 @@ class FDataBasis(FData):  # noqa: WPS214
             types of extrapolation.
 
     Examples:
-        >>> from skfda.representation.basis import FDataBasis, Monomial
+        >>> from skfda.representation.basis import FDataBasis, MonomialBasis
         >>>
-        >>> basis = Monomial(n_basis=4)
+        >>> basis = MonomialBasis(n_basis=4)
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=((0.0, 1.0),), n_basis=4),
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=4),
             coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
@@ -176,8 +176,8 @@ class FDataBasis(FData):  # noqa: WPS214
             >>> x
             array([ 3.,  3.,  1.,  1.,  3.])
 
-            >>> from skfda.representation.basis import FDataBasis, Fourier
-            >>> basis = Fourier((0, 1), n_basis=3)
+            >>> from skfda.representation.basis import FDataBasis, FourierBasis
+            >>> basis = FourierBasis((0, 1), n_basis=3)
             >>> fd = FDataBasis.from_data(x, grid_points=t, basis=basis)
             >>> fd.coefficients.round(2)
             array([[ 2.  , 0.71, 0.71]])
@@ -359,8 +359,9 @@ class FDataBasis(FData):  # noqa: WPS214
 
         Examples:
             We first create the data basis.
-                >>> from skfda.representation.basis import FDataBasis, Monomial
-                >>> basis = Monomial(n_basis=4)
+                >>> from skfda.representation.basis import FDataBasis
+                >>> from skfda.representation.basis import MonomialBasis
+                >>> basis = MonomialBasis(n_basis=4)
                 >>> coefficients = [1, 1, 3, .5]
                 >>> fdata = FDataBasis(basis, coefficients)
 
@@ -409,12 +410,15 @@ class FDataBasis(FData):  # noqa: WPS214
             FDataBasis object.
 
         Examples:
-            >>> from skfda.representation.basis import FDataBasis, Monomial
-            >>> basis = Monomial(n_basis=4)
+            >>> from skfda.representation.basis import (
+            ...     FDataBasis,
+            ...     MonomialBasis,
+            ... )
+            >>> basis = MonomialBasis(n_basis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).sum()
             FDataBasis(
-                basis=Monomial(domain_range=((0.0, 1.0),), n_basis=4),
+                basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=4),
                 coefficients=[[ 2.  2.  6.  1.]],
                 ...)
 
@@ -501,9 +505,14 @@ class FDataBasis(FData):  # noqa: WPS214
               object.
 
         Examples:
-            >>> from skfda.representation.basis import FDataBasis, Monomial
-            >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
-            ...                 basis=Monomial(domain_range=(0,5), n_basis=3))
+            >>> from skfda.representation.basis import(
+            ...     FDataBasis,
+            ...     MonomialBasis,
+            ... )
+            >>> fd = FDataBasis(
+            ...     coefficients=[[1, 1, 1], [1, 0, 1]],
+            ...     basis=MonomialBasis(domain_range=(0,5), n_basis=3),
+            ... )
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
                 array([[[ 1.],

@@ -164,7 +164,7 @@ class LogisticRegression(
                 selected_values = selected_values[:, :n_selected]
                 likelihood_curves_data = likelihood_curves_data[
                     :n_selected,
-                    n_selected - 1,
+                    n_features - 1,
                 ]
                 break
 

@@ -105,7 +105,7 @@ class LogisticRegression(
         self.solver = solver
         self.max_iter = max_iter
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, WPS210
         self,
         X: FDataGrid,
         y: NDArrayAny,

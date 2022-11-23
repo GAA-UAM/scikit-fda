@@ -9,8 +9,18 @@ import pytest
 
 from skfda._utils._sklearn_adapter import ClassifierMixin
 from skfda.datasets import make_gaussian_process
+from skfda.exploratory.depth import ModifiedBandDepth
+from skfda.exploratory.stats.covariance import ParametricGaussianCovariance
+from skfda.misc.covariances import Gaussian
 from skfda.ml.classification import (
+    DDClassifier,
+    DDGClassifier,
+    DTMClassifier,
     KNeighborsClassifier,
+    LogisticRegression,
+    MaximumDepthClassifier,
+    NearestCentroid,
+    QuadraticDiscriminantAnalysis,
     RadiusNeighborsClassifier,
 )
 from skfda.representation import FData
@@ -20,7 +30,21 @@ from ..typing._numpy import NDArrayAny
 
 @pytest.fixture(
     params=[
+        DDClassifier(degree=2),
+        DDGClassifier(
+            depth_method=[("mbd", ModifiedBandDepth())],
+            multivariate_classifier=KNeighborsClassifier(),
+        ),
+        DTMClassifier(proportiontocut=0.25),
         KNeighborsClassifier(),
+        LogisticRegression(),
+        MaximumDepthClassifier(),
+        NearestCentroid(),
+        QuadraticDiscriminantAnalysis(
+            cov_estimator=ParametricGaussianCovariance(
+                Gaussian(),
+            ),
+        ),
         RadiusNeighborsClassifier(),
     ],
     ids=lambda clf: type(clf).__name__,

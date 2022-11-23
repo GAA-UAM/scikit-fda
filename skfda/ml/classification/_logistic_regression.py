@@ -162,7 +162,10 @@ class LogisticRegression(
                 # This does not improve
                 selected_indexes = selected_indexes[:n_selected]
                 selected_values = selected_values[:, :n_selected]
-                likelihood_curves_data = likelihood_curves_data[:n_selected, t]
+                likelihood_curves_data = likelihood_curves_data[
+                    :n_selected,
+                    n_selected - 1,
+                ]
                 break
 
             last_max_likelihood = max_likelihood

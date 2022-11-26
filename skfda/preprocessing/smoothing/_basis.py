@@ -6,7 +6,7 @@ This module contains the class for the basis smoothing.
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 from typing_extensions import Final
@@ -334,3 +334,102 @@ class BasisSmoother(_LinearSmoother):
             )
 
         return super().transform(X, y)
+
+    
+class SparseBasisSmoother(BasisSmoother):
+    r"""
+    Transform raw_data in the form of a list of single-function FDataGrid objects
+    into a smooth FDataBasis object by applying BasisSmoother to each FDataGrid
+    individually. This allows the smoothing of sparse data.
+
+    Args:
+        basis: Basis used.
+        weights: Matrix to weight the observations. Defaults to the identity
+            matrix.
+        smoothing_parameter: Smoothing parameter. Trying with several
+            factors in a logarithm scale is suggested. If 0 no smoothing is
+            performed. Defaults to 1.
+        regularization: Regularization object. This allows the penalization of
+            complicated models, which applies additional smoothing. By default
+            is ``None`` meaning that no additional smoothing has to take
+            place.
+        method: Algorithm used for calculating the coefficients using
+            the least squares method. The values admitted are 'cholesky', 'qr'
+            and 'svd' for Cholesky, QR and SVD factorisation methods
+            respectively, or a callable similar to the `lstsq` function. The
+            default is 'svd', which is the most robust but less performant one.
+        output_points: The output points. If ommited, the input points are
+            used. If ``return_basis`` is ``True``, this parameter is ignored.
+        return_basis: If ``False`` (the default) returns the smoothed
+            data as an FDataGrid, like the other smoothers. If ``True`` returns
+            a FDataBasis object.
+
+    """
+    
+    def __init__(
+        self,
+        basis: Basis,
+        *,
+        smoothing_parameter: float = 1.0,
+        weights: Optional[NDArrayFloat] = None,
+        regularization: Optional[L2Regularization[FDataGrid]] = None,
+        output_points: Optional[GridPointsLike] = None,
+        method: LstsqMethod = 'svd',
+        return_basis: bool = False,
+    ) -> None:
+        super().__init__(basis, 
+                         smoothing_parameter=smoothing_parameter, 
+                         weights=weights, 
+                         regularization=regularization, 
+                         output_points=output_points, 
+                         method=method, 
+                         return_basis=return_basis)
+        self.fitted_smoothers = None
+        
+    def _unify_data_basis_list(
+        self,
+        data_basii: List[FDataBasis],
+    ) -> FDataBasis:
+        # Must have only one basis
+        assert(len(set([d.basis for d in data_basii])) == 1), \
+            "All samples must have same basis to be unifiable"
+        
+        M = np.zeros((len(data_basii), len(data_basii[0].coefficients[0])))
+        for i, d_basis in enumerate(data_basii):
+            M[i] = d_basis.coefficients[0]
+        
+        return FDataBasis(data_basii[0].basis, M)
+        
+    def fit(
+        self,
+        X: List[FDataGrid],
+        y: object = None,
+    ) -> SparseBasisSmoother:
+        fitted_smoothers = []
+        for d_grid in X:
+            _smoother = BasisSmoother(
+                self.basis, 
+                return_basis=self.return_basis
+            )
+            _smoother.fit(d_grid, y)
+            fitted_smoothers.append(_smoother)
+            
+        self.fitted_smoothers = fitted_smoothers
+
+        return self
+    
+    def transform(
+        self,
+        X: List[FDataGrid],
+        y: object = None,
+    ) -> FDataBasis:
+        
+        if self.fitted_smoothers is None or len(self.fitted_smoothers) == 0:
+            raise ValueError("The smoothers must be fitted \
+                             before attempting the transform")
+        
+        transformed_basii = []
+        for i, d_grid in enumerate(X):
+            transformed_basii.append(self.fitted_smoothers[i].transform(d_grid))
+        
+        return self._unify_data_basis_list(transformed_basii)

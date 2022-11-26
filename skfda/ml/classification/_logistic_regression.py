@@ -105,7 +105,7 @@ class LogisticRegression(
         self.solver = solver
         self.max_iter = max_iter
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, WPS210
         self,
         X: FDataGrid,
         y: NDArrayAny,
@@ -162,7 +162,10 @@ class LogisticRegression(
                 # This does not improve
                 selected_indexes = selected_indexes[:n_selected]
                 selected_values = selected_values[:, :n_selected]
-                likelihood_curves_data = likelihood_curves_data[:n_selected, t]
+                likelihood_curves_data = likelihood_curves_data[
+                    :n_selected,
+                    n_features - 1,
+                ]
                 break
 
             last_max_likelihood = max_likelihood
@@ -171,7 +174,7 @@ class LogisticRegression(
             selected_values[:, n_selected] = X.data_matrix[:, tmax, 0]
 
         # fit for the complete set of points
-        mvlr.fit(selected_values, y_ind)
+        mvlr.fit(selected_values, y)
 
         self.coef_ = mvlr.coef_
         self.intercept_ = mvlr.intercept_

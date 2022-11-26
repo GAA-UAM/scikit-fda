@@ -4,13 +4,13 @@ import unittest
 import numpy as np
 
 from skfda.representation.basis import (
-    BSpline,
-    Constant,
+    BSplineBasis,
+    ConstantBasis,
     FDataBasis,
-    Fourier,
-    Monomial,
-    Tensor,
-    VectorValued,
+    FourierBasis,
+    MonomialBasis,
+    TensorBasis,
+    VectorValuedBasis,
 )
 
 
@@ -24,7 +24,7 @@ class TestFDataBasisEvaluation(unittest.TestCase):
 
     def test_evaluation_single_point(self) -> None:
         """Test the evaluation of a single point FDataBasis."""
-        fourier = Fourier(
+        fourier = FourierBasis(
             domain_range=(0, 1),
             n_basis=3,
         )
@@ -54,7 +54,7 @@ class TestFDataBasisEvaluation(unittest.TestCase):
         Nothing should change as the domain dimension is 1.
 
         """
-        fourier = Fourier(
+        fourier = FourierBasis(
             domain_range=(0, 1),
             n_basis=3,
         )
@@ -93,7 +93,7 @@ class TestFDataBasisEvaluation(unittest.TestCase):
 
     def test_evaluation_unaligned(self) -> None:
         """Test the unaligned evaluation."""
-        fourier = Fourier(
+        fourier = FourierBasis(
             domain_range=(0, 1),
             n_basis=3,
         )
@@ -134,7 +134,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_simple_evaluation(self) -> None:
         """Compare Fourier evaluation with R package fda."""
-        fourier = Fourier(
+        fourier = FourierBasis(
             domain_range=(0, 2),
             n_basis=5,
         )
@@ -164,7 +164,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_evaluation_derivative(self) -> None:
         """Test the evaluation of the derivative of Fourier."""
-        fourier = Fourier(domain_range=(0, 1), n_basis=3)
+        fourier = FourierBasis(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([
             [0.00078238, 0.48857741, 0.63971985],
@@ -193,7 +193,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
 
     def test_simple_evaluation(self) -> None:
         """Compare BSpline evaluation with R package fda."""
-        bspline = BSpline(
+        bspline = BSplineBasis(
             domain_range=(0, 2),
             n_basis=5,
         )
@@ -223,7 +223,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
 
     def test_evaluation_derivative(self) -> None:
         """Test the evaluation of the derivative of BSpline."""
-        bspline = BSpline(
+        bspline = BSplineBasis(
             domain_range=(0, 1),
             n_basis=5,
             order=3,
@@ -253,7 +253,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
 
     def test_evaluation_simple_monomial(self) -> None:
         """Compare Monomial evaluation with R package fda."""
-        monomial = Monomial(
+        monomial = MonomialBasis(
             domain_range=(0, 2),
             n_basis=5,
         )
@@ -283,7 +283,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
 
     def test_evaluation_derivative(self) -> None:
         """Test the evaluation of the derivative of Monomial."""
-        monomial = Monomial(
+        monomial = MonomialBasis(
             domain_range=(0, 1),
             n_basis=3,
         )
@@ -312,10 +312,10 @@ class TestBasisEvaluationVectorValued(unittest.TestCase):
 
     def test_constant(self) -> None:
         """Test vector-valued constant basis."""
-        basis_first = Constant()
-        basis_second = Constant()
+        basis_first = ConstantBasis()
+        basis_second = ConstantBasis()
 
-        basis = VectorValued([basis_first, basis_second])
+        basis = VectorValuedBasis([basis_first, basis_second])
 
         fd = FDataBasis(basis=basis, coefficients=[[1, 2], [3, 4]])
 
@@ -327,13 +327,13 @@ class TestBasisEvaluationVectorValued(unittest.TestCase):
 
     def test_monomial(self) -> None:
         """Test vector-valued monomial basis."""
-        basis_first = Constant(domain_range=(0, 5))
-        basis_second = Monomial(
+        basis_first = ConstantBasis(domain_range=(0, 5))
+        basis_second = MonomialBasis(
             n_basis=3,
             domain_range=(0, 5),
         )
 
-        basis = VectorValued([basis_first, basis_second])
+        basis = VectorValuedBasis([basis_first, basis_second])
 
         fd = FDataBasis(
             basis=basis,
@@ -360,9 +360,9 @@ class TestBasisEvaluationTensor(unittest.TestCase):
 
     def test_tensor_monomial_constant(self) -> None:
         """Test monomial ⊗ constant basis."""
-        basis = Tensor([
-            Monomial(n_basis=2),
-            Constant(),
+        basis = TensorBasis([
+            MonomialBasis(n_basis=2),
+            ConstantBasis(),
         ])
 
         fd = FDataBasis(

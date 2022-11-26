@@ -6,7 +6,7 @@ from typing import Callable, Sequence, Union
 import numpy as np
 
 from skfda.misc.operators import LinearDifferentialOperator
-from skfda.representation.basis import Constant, FDataBasis, Monomial
+from skfda.representation.basis import ConstantBasis, FDataBasis, MonomialBasis
 
 WeightCallable = Callable[[np.ndarray], np.ndarray]
 
@@ -85,7 +85,7 @@ class TestLinearDifferentialOperator(unittest.TestCase):
         n_basis = 4
         n_weights = 6
 
-        monomial = Monomial(domain_range=(0, 1), n_basis=n_basis)
+        monomial = MonomialBasis(domain_range=(0, 1), n_basis=n_basis)
 
         weights = np.arange(n_basis * n_weights).reshape((n_weights, n_basis))
 
@@ -101,7 +101,7 @@ class TestLinearDifferentialOperator(unittest.TestCase):
         )
 
         # Check failure if intervals do not match
-        constant = Constant(domain_range=(0, 2))
+        constant = ConstantBasis(domain_range=(0, 2))
         fdlist.append(FDataBasis(constant, 1))
         with np.testing.assert_raises(ValueError):
             LinearDifferentialOperator(weights=fdlist)
@@ -113,7 +113,7 @@ class TestLinearDifferentialOperator(unittest.TestCase):
             LinearDifferentialOperator(1, weights=[1, 1])
 
         # Check invalid domain range
-        monomial = Monomial(domain_range=(0, 1), n_basis=3)
+        monomial = MonomialBasis(domain_range=(0, 1), n_basis=3)
         fdlist = [FDataBasis(monomial, [1, 2, 3])]
 
         with np.testing.assert_raises(ValueError):

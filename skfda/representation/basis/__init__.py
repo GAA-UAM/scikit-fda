@@ -7,27 +7,45 @@ __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
     submod_attrs={
         '_basis': ["Basis"],
-        "_bspline": ["BSpline"],
-        "_constant": ["Constant"],
+        "_bspline_basis": ["BSplineBasis", "BSpline"],
+        "_constant_basis": ["ConstantBasis", "Constant"],
         "_fdatabasis": ["FDataBasis", "FDataBasisDType"],
-        "_finite_element": ["FiniteElement"],
-        "_fourier": ["Fourier"],
-        "_monomial": ["Monomial"],
-        "_tensor_basis": ["Tensor"],
-        "_vector_basis": ["VectorValued"],
+        "_finite_element_basis": ["FiniteElementBasis", "FiniteElement"],
+        "_fourier_basis": ["FourierBasis", "Fourier"],
+        "_monomial_basis": ["MonomialBasis", "Monomial"],
+        "_tensor_basis": ["TensorBasis", "Tensor"],
+        "_vector_basis": ["VectorValuedBasis", "VectorValued"],
     },
 )
 
 if TYPE_CHECKING:
     from ._basis import Basis as Basis
-    from ._bspline import BSpline as BSpline
-    from ._constant import Constant as Constant
+    from ._bspline_basis import (
+        BSpline as BSpline,
+        BSplineBasis as BSplineBasis,
+    )
+    from ._constant_basis import (
+        Constant as Constant,
+        ConstantBasis as ConstantBasis,
+    )
     from ._fdatabasis import (
         FDataBasis as FDataBasis,
         FDataBasisDType as FDataBasisDType,
     )
-    from ._finite_element import FiniteElement as FiniteElement
-    from ._fourier import Fourier as Fourier
-    from ._monomial import Monomial as Monomial
-    from ._tensor_basis import Tensor as Tensor
-    from ._vector_basis import VectorValued as VectorValued
+    from ._finite_element_basis import (
+        FiniteElement as FiniteElement,
+        FiniteElementBasis as FiniteElementBasis,
+    )
+    from ._fourier_basis import (
+        Fourier as Fourier,
+        FourierBasis as FourierBasis,
+    )
+    from ._monomial_basis import (
+        Monomial as Monomial,
+        MonomialBasis as MonomialBasis,
+    )
+    from ._tensor_basis import Tensor as Tensor, TensorBasis as TensorBasis
+    from ._vector_basis import (
+        VectorValued as VectorValued,
+        VectorValuedBasis as VectorValuedBasis,
+    )

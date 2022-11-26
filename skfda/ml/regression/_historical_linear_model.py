@@ -10,7 +10,11 @@ from sklearn.utils.validation import check_is_fitted
 from ..._utils import _cartesian_product, _pairwise_symmetric
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
 from ...representation import FData, FDataBasis, FDataGrid
-from ...representation.basis import Basis, FiniteElement, VectorValued
+from ...representation.basis import (
+    Basis,
+    FiniteElementBasis,
+    VectorValuedBasis,
+)
 from ...typing._numpy import NDArrayFloat
 
 _MeanType = Union[FDataGrid, float]
@@ -185,7 +189,7 @@ def _create_fem_basis(
     stop: float,
     n_intervals: int,
     lag: float,
-) -> FiniteElement:
+) -> FiniteElementBasis:
 
     interval_len = (stop - start) / n_intervals
 
@@ -202,7 +206,7 @@ def _create_fem_basis(
         valid_points=valid_points,
     )
 
-    return FiniteElement(
+    return FiniteElementBasis(
         vertices=final_points,
         cells=triangles,
         domain_range=((start, stop),) * 2,
@@ -354,8 +358,8 @@ class HistoricalLinearRegression(
             lag=self.lag,
         )
 
-        self._basis = VectorValued(
-            [fem_basis] * X_centered.dim_codomain
+        self._basis = VectorValuedBasis(
+            [fem_basis] * X_centered.dim_codomain,
         )
 
         design_matrix = _design_matrix(

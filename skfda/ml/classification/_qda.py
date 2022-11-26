@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Sequence, TypeVar, Union
 
 import numpy as np
 from scipy.linalg import logm
@@ -11,12 +11,14 @@ from ..._utils import _classifier_get_classes
 from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
 from ...exploratory.stats.covariance import CovarianceEstimator
 from ...representation import FDataGrid
-from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
+
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 class QuadraticDiscriminantAnalysis(
     BaseEstimator,
-    ClassifierMixin[FDataGrid, NDArrayInt],
+    ClassifierMixin[FDataGrid, Target],
 ):
     """
     Functional quadratic discriminant analysis.
@@ -101,8 +103,8 @@ class QuadraticDiscriminantAnalysis(
 
         >>> round(qda.score(X_test, y_test), 2)
         0.96
-
     """
+
     means_: Sequence[FDataGrid]
 
     def __init__(
@@ -117,8 +119,8 @@ class QuadraticDiscriminantAnalysis(
     def fit(
         self,
         X: FDataGrid,
-        y: NDArrayInt,
-    ) -> QuadraticDiscriminantAnalysis:
+        y: Target,
+    ) -> QuadraticDiscriminantAnalysis[Target]:
         """
         Fit the model using X as training data and y as target values.
 
@@ -130,7 +132,7 @@ class QuadraticDiscriminantAnalysis(
             self
         """
         classes, y_ind = _classifier_get_classes(y)
-        self.classes = classes
+        self.classes_ = classes
         self.y_ind = y_ind
 
         self._fit_gaussian_process(X)
@@ -150,7 +152,7 @@ class QuadraticDiscriminantAnalysis(
 
         return self
 
-    def predict(self, X: FDataGrid) -> NDArrayInt:
+    def predict(self, X: FDataGrid) -> Target:
         """
         Predict the class labels for the provided data.
 
@@ -163,12 +165,13 @@ class QuadraticDiscriminantAnalysis(
         """
         check_is_fitted(self)
 
-        return np.argmax(  # type: ignore[no-any-return]
-            self._calculate_log_likelihood(X.data_matrix),
-            axis=1,
-        )
+        return self.classes_[  # type: ignore[no-any-return]
+            np.argmax(
+                self._calculate_log_likelihood(X.data_matrix),
+                axis=1,
+            )]
 
-    def _calculate_priors(self, y: NDArrayInt) -> NDArrayFloat:
+    def _calculate_priors(self, y: Target) -> NDArrayFloat:
         """
         Calculate the prior probability of each class.
 
@@ -198,7 +201,7 @@ class QuadraticDiscriminantAnalysis(
         cov_estimators = []
         means = []
         covariance = []
-        for class_index, _ in enumerate(self.classes):
+        for class_index, _ in enumerate(self.classes_):
             X_class = X[self.y_ind == class_index]
             cov_estimator = clone(self.cov_estimator).fit(X_class)
 
@@ -235,7 +238,7 @@ class QuadraticDiscriminantAnalysis(
                 self._regularized_covariances,
                 X_centered,
             ),
-            (-1, self.classes.size),
+            (-1, self.classes_.size),
         )
 
         return np.asarray(

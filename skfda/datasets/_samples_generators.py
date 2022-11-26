@@ -498,9 +498,9 @@ def make_random_warping(
     return warping
 
 
-def sparseify_dataset(
+def sparsify_dataset(
     dataset: Bunch, 
-    sparse_factor: float = 0.2,
+    density: float = 0.2,
 ) -> List[FDataGrid]:
     
     r"""Generate synthetic sparse dataset by removing samples from given dataset
@@ -509,7 +509,7 @@ def sparseify_dataset(
     Args:
         dataset: Bunch containing the information of a dataset, 
         in the format returned by fetch_<dataset_name>.
-        sparse_factor: Probability of selecting each data point. 
+        density: Probability of selecting each data point. 
         Between 0 and 1, default 0.2.
     Returns:
         List comprising one FDataGrid per sparseified samples¡.
@@ -519,8 +519,8 @@ def sparseify_dataset(
     sparse_data_grids = []
     for i in range(dataset.data.data_matrix.shape[0]):
 
-        # For each sample, remove probabilistically according to sparse_factor
-        grid_point_mask = [np.random.rand() <= sparse_factor 
+        # For each sample, remove probabilistically according to density
+        grid_point_mask = [np.random.rand() <= density 
                            for p in dataset.data.grid_points[0]]
         
         # If no points selected, continue

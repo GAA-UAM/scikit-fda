@@ -189,7 +189,7 @@ class FData(  # noqa: WPS214
 
     @property
     @abstractmethod
-    def coordinates(self: T) -> _FDataCoordinateSequence:
+    def coordinates(self: T) -> _CoordinateSequence:
         r"""Return a component of the FDataGrid.
 
         If the functional object contains multivariate samples
@@ -1317,21 +1317,21 @@ def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
     return first.concatenate(*functions, as_coordinates=as_coordinates)
 
 
-class _FDataCoordinateSequence(Protocol):
+F = TypeVar("F")
+
+
+class _CoordinateSequence(Protocol[F]):
     """
-    Sequence of FData coordinates.
+    Sequence of coordinates.
 
     Note that this represents a sequence of coordinates, not a sequence of
     FData objects.
     """
 
-    def __init__(self, fdata: FData) -> None:
-        pass
-
     def __getitem__(
         self,
         key: Union[int, slice],
-    ) -> FData:
+    ) -> F:
         pass
 
     def __len__(self) -> int:

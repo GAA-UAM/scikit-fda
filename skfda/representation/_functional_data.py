@@ -1317,7 +1317,7 @@ def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
     return first.concatenate(*functions, as_coordinates=as_coordinates)
 
 
-F = TypeVar("F")
+F = TypeVar("F", covariant=True)
 
 
 class _CoordinateSequence(Protocol[F]):

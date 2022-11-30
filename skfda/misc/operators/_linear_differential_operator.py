@@ -9,7 +9,13 @@ from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
 from ...representation import FData, FDataGrid
-from ...representation.basis import Basis, BSpline, Constant, Fourier, Monomial
+from ...representation.basis import (
+    Basis,
+    BSplineBasis,
+    ConstantBasis,
+    FourierBasis,
+    MonomialBasis,
+)
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._operators import Operator, gramian_matrix_optimization
@@ -60,7 +66,8 @@ class LinearDifferentialOperator(
 
         >>> from skfda.misc.operators import LinearDifferentialOperator
         >>> from skfda.representation.basis import (FDataBasis,
-        ...                                         Monomial, Constant)
+        ...                                         MonomialBasis,
+        ...                                         ConstantBasis)
         >>>
         >>> LinearDifferentialOperator(2)
         LinearDifferentialOperator(
@@ -77,23 +84,23 @@ class LinearDifferentialOperator(
 
         Create a linear differential operator with non-constant weights.
 
-        >>> constant = Constant()
-        >>> monomial = Monomial(domain_range=(0, 1), n_basis=3)
+        >>> constant = ConstantBasis()
+        >>> monomial = MonomialBasis(domain_range=(0, 1), n_basis=3)
         >>> fdlist = [FDataBasis(constant, [0.]),
         ...           FDataBasis(constant, [0.]),
         ...           FDataBasis(monomial, [1., 2., 3.])]
         >>> LinearDifferentialOperator(weights=fdlist)
         LinearDifferentialOperator(
         weights=(FDataBasis(
-                basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
+                basis=ConstantBasis(domain_range=((0.0, 1.0),), n_basis=1),
                 coefficients=[[ 0.]],
                 ...),
             FDataBasis(
-                basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
+                basis=ConstantBasis(domain_range=((0.0, 1.0),), n_basis=1),
                 coefficients=[[ 0.]],
                 ...),
             FDataBasis(
-                basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
+                basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
                 coefficients=[[ 1. 2. 3.]],
                 ...)),
         )
@@ -219,7 +226,7 @@ class LinearDifferentialOperator(
 @gramian_matrix_optimization.register
 def constant_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
-    basis: Constant,
+    basis: ConstantBasis,
 ) -> NDArrayFloat:
     """Optimized version for Constant basis."""
     coefs = linear_operator.constant_weights()
@@ -233,7 +240,7 @@ def constant_penalty_matrix_optimized(
 
 
 def _monomial_evaluate_constant_linear_diff_op(
-    basis: Monomial,
+    basis: MonomialBasis,
     weights: NDArrayFloat,
 ) -> NDArrayFloat:
     """Evaluate constant weights over the monomial basis."""
@@ -295,7 +302,7 @@ def _monomial_evaluate_constant_linear_diff_op(
 @gramian_matrix_optimization.register
 def monomial_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
-    basis: Monomial,
+    basis: MonomialBasis,
 ) -> NDArrayFloat:
     """Optimized version for Monomial basis."""
     weights = linear_operator.constant_weights()
@@ -358,7 +365,7 @@ def monomial_penalty_matrix_optimized(
 
 
 def _fourier_penalty_matrix_optimized_orthonormal(
-    basis: Fourier,
+    basis: FourierBasis,
     weights: NDArrayFloat,
 ) -> NDArrayFloat:
     """Return the penalty when the basis is orthonormal."""
@@ -423,7 +430,7 @@ def _fourier_penalty_matrix_optimized_orthonormal(
 @gramian_matrix_optimization.register
 def fourier_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
-    basis: Fourier,
+    basis: FourierBasis,
 ) -> NDArrayFloat:
     """Optimized version for Fourier basis."""
     weights = linear_operator.constant_weights()
@@ -441,7 +448,7 @@ def fourier_penalty_matrix_optimized(
 @gramian_matrix_optimization.register
 def bspline_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
-    basis: BSpline,
+    basis: BSplineBasis,
 ) -> NDArrayFloat:
     """Optimized version for BSpline basis."""
     coefs = linear_operator.constant_weights()

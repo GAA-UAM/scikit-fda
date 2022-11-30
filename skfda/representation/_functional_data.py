@@ -25,7 +25,7 @@ from typing import (
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
-from typing_extensions import Literal
+from typing_extensions import Literal, Protocol
 
 from .._utils import _evaluate_grid, _to_grid_points
 from ..typing._base import (
@@ -45,8 +45,8 @@ from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
-    from .grid import FDataGrid
     from .basis import Basis, FDataBasis
+    from .grid import FDataGrid
 
 T = TypeVar('T', bound='FData')
 
@@ -75,6 +75,7 @@ class FData(  # noqa: WPS214
             coordinate functions.
 
     """
+
     dataset_name: Optional[str]
 
     def __init__(
@@ -188,7 +189,7 @@ class FData(  # noqa: WPS214
 
     @property
     @abstractmethod
-    def coordinates(self: T) -> Sequence[T]:
+    def coordinates(self: T) -> _CoordinateSequence:
         r"""Return a component of the FDataGrid.
 
         If the functional object contains multivariate samples
@@ -1169,7 +1170,6 @@ class FData(  # noqa: WPS214
         Parameters:
             indices: Indices to be taken.
             allow_fill: How to handle negative values in `indices`.
-
                 * False: negative values in `indices` indicate positional
                   indices from the right (the default). This is similar to
                   :func:`numpy.take`.
@@ -1178,10 +1178,8 @@ class FData(  # noqa: WPS214
                   other negative values raise a ``ValueError``.
             fill_value: Fill value to use for NA-indices
                 when `allow_fill` is True.
-
                 This may be ``None``, in which case the default NA value for
                 the type, ``self.dtype.na_value``, is used.
-
                 For many ExtensionArrays, there will be two representations of
                 `fill_value`: a user-facing "boxed" scalar, and a low-level
                 physical NA value. `fill_value` should be the user-facing
@@ -1317,3 +1315,24 @@ def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
         )
 
     return first.concatenate(*functions, as_coordinates=as_coordinates)
+
+
+F = TypeVar("F", covariant=True)
+
+
+class _CoordinateSequence(Protocol[F]):
+    """
+    Sequence of coordinates.
+
+    Note that this represents a sequence of coordinates, not a sequence of
+    FData objects.
+    """
+
+    def __getitem__(
+        self,
+        key: Union[int, slice],
+    ) -> F:
+        pass
+
+    def __len__(self) -> int:
+        pass

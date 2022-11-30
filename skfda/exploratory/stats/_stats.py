@@ -18,25 +18,32 @@ F = TypeVar('F', bound=FData)
 T = TypeVar('T', bound=Union[NDArrayFloat, FData])
 
 
-def mean(X: F) -> F:
+def mean(
+    X: F,
+    weights: NDArrayFloat | None = None,
+) -> F:
     """
     Compute the mean of all the samples in a FData object.
 
     Args:
         X: Object containing all the samples whose mean is wanted.
-
+        weights: Sample weight. By default, uniform weight are used.
 
     Returns:
         Mean of all the samples in the original object, as a
         :term:`functional data object` with just one sample.
 
     """
-    return X.mean()
+    if weights is None:
+        return X.mean()
+
+    weight = (1 / np.sum(weights)) * weights
+    return (X * weight).sum()
 
 
 def var(X: FData) -> FDataGrid:
     """
-    Compute the variance of a set of samples in a FDataGrid object.
+    Compute the variance of a set of samples in a FData object.
 
     Args:
         X: Object containing all the set of samples whose variance is desired.

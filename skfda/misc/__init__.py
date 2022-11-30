@@ -13,6 +13,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "metrics",
         "operators",
         "regularization",
+        "scoring",
         "validation",
     ],
     submod_attrs={

@@ -25,9 +25,9 @@ class CoefficientsTransformer(
         ... )
         >>> from skfda.representation.basis import (
         ...     FDataBasis,
-        ...     Monomial,
+        ...     MonomialBasis,
         ... )
-        >>> basis = Monomial(n_basis=4)
+        >>> basis = MonomialBasis(n_basis=4)
         >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
         >>> fd = FDataBasis(basis, coefficients)
         >>>

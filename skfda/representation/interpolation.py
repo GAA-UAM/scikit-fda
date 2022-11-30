@@ -183,6 +183,8 @@ class SplineInterpolation(_BaseInterpolation):
             fdatagrid.data_matrix,
             k=self.interpolation_order,
             axis=1,
+            # Orders 0 and 1 behave well
+            check_finite=self.interpolation_order > 1,
         )
 
     def _get_interpolator_nd(

@@ -17,7 +17,7 @@ from skfda.ml.classification import (
 from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
 from skfda.representation import FDataBasis, FDataGrid
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 
 
 class TestNeighbors(unittest.TestCase):
@@ -250,7 +250,9 @@ class TestNeighbors(unittest.TestCase):
             FDataGrid,
             FDataGrid,
         ](weights=self._weights, n_neighbors=5)
-        response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
+        response = self.X.to_basis(
+            FourierBasis(domain_range=(-1, 1), n_basis=10),
+        )
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -287,7 +289,9 @@ class TestNeighbors(unittest.TestCase):
             FDataGrid,
             FDataBasis,
         ](weights='distance', n_neighbors=5)
-        response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
+        response = self.X.to_basis(
+            FourierBasis(domain_range=(-1, 1), n_basis=10),
+        )
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -357,10 +361,10 @@ class TestNeighbors(unittest.TestCase):
         y = 5 * self.X + 1
         neigh.fit(self.X, y)
         r = neigh.score(self.X, y)
-        np.testing.assert_almost_equal(r, 0.962651178452408)
+        np.testing.assert_almost_equal(r, 0.65599399478951)
 
         # Weighted case and basis form
-        y = y.to_basis(Fourier(domain_range=y.domain_range[0], n_basis=5))
+        y = y.to_basis(FourierBasis(domain_range=y.domain_range[0], n_basis=5))
         neigh.fit(self.X, y)
 
         r = neigh.score(
@@ -368,7 +372,7 @@ class TestNeighbors(unittest.TestCase):
             y[:7],
             sample_weight=np.array(4 * [1.0 / 5] + 3 * [1.0 / 15]),
         )
-        np.testing.assert_almost_equal(r, 0.9982527586114364)
+        np.testing.assert_almost_equal(r, 0.9802105817331564)
 
     def test_score_functional_response_exceptions(self) -> None:
         """Test weights with invalid length."""
@@ -380,19 +384,6 @@ class TestNeighbors(unittest.TestCase):
 
         with np.testing.assert_raises(ValueError):
             neigh.score(self.X, self.X, sample_weight=np.array([1, 2, 3]))
-
-    def test_multivariate_response_score(self) -> None:
-        """Test multivariate score."""
-        neigh = RadiusNeighborsRegressor[
-            FDataGrid,
-            np.typing.NDArray[np.float_],
-        ]()
-        y = make_multimodal_samples(n_samples=5, dim_domain=2, random_state=0)
-        neigh.fit(self.X[:5], y)
-
-        # It is not supported the multivariate score by the moment
-        with np.testing.assert_raises(ValueError):
-            neigh.score(self.X[:5], y)
 
     def test_lof_fit_predict(self) -> None:
         """Test same results with different forms to call fit_predict."""

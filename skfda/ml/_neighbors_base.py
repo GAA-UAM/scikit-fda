@@ -17,21 +17,29 @@ from .._utils._sklearn_adapter import (
     ClassifierMixin,
     RegressorMixin,
 )
+from .._utils._utils import _classifier_get_classes
 from ..misc.metrics import l2_distance
 from ..misc.metrics._utils import _fit_metric
-from ..representation import FData, FDataGrid, concatenate
+from ..representation import FData, concatenate
 from ..typing._metric import Metric
-from ..typing._numpy import NDArrayFloat, NDArrayInt
+from ..typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
 FDataType = TypeVar("FDataType", bound="FData")
 SelfType = TypeVar("SelfType", bound="NeighborsBase[Any, Any]")
+SelfTypeClassifier = TypeVar(
+    "SelfTypeClassifier",
+    bound="NeighborsClassifierMixin[Any, Any]",
+)
 SelfTypeRegressor = TypeVar(
     "SelfTypeRegressor",
     bound="NeighborsRegressorMixin[Any, Any]",
 )
 Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
 Target = TypeVar("Target")
-TargetClassification = TypeVar("TargetClassification", bound=NDArrayInt)
+TargetClassification = TypeVar(
+    "TargetClassification",
+    bound=Union[NDArrayInt, NDArrayStr],
+)
 TargetRegression = TypeVar(
     "TargetRegression",
     bound=Union[NDArrayFloat, FData],
@@ -482,15 +490,15 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
 
 
 class NeighborsClassifierMixin(
-    NeighborsBase[Input, Target],
-    ClassifierMixin[Input, Target],
+    NeighborsBase[Input, TargetClassification],
+    ClassifierMixin[Input, TargetClassification],
 ):
     """Mixin class for classifiers based in nearest neighbors."""
 
     def predict(
         self,
         X: Input,
-    ) -> Target:
+    ) -> TargetClassification:
         """
         Predict the class labels for the provided data.
 
@@ -536,6 +544,31 @@ class NeighborsClassifierMixin(
         return (  # type: ignore [no-any-return]
             self._estimator.predict_proba(X_dist)
         )
+
+    def fit(
+        self: SelfTypeClassifier,
+        X: Input,
+        y: TargetClassification,
+    ) -> SelfTypeClassifier:
+        """
+        Fit the model using X as training data and y as responses.
+
+        Args:
+            X: Training data. FDataGrid
+                with the training data or array matrix with shape
+                [n_samples, n_samples] if metric='precomputed'.
+            y: Training data. FData with the training respones (functional
+                response case) or array matrix with length `n_samples` in
+                the multivariate response case.
+
+        Returns:
+            Self.
+
+        Note:
+            This method adds the attribute `classes_` to the classifier.
+        """
+        self.classes_ = _classifier_get_classes(y)[0]
+        return super().fit(X, y)
 
 
 class NeighborsRegressorMixin(
@@ -662,132 +695,3 @@ class NeighborsRegressorMixin(
         )
 
         return concatenate(iterable)  # type: ignore[no-any-return]
-
-    def score(
-        self,
-        X: Input,
-        y: TargetRegression,
-        sample_weight: NDArrayFloat | None = None,
-    ) -> float:
-        r"""Return the coefficient of determination R^2 of the prediction.
-
-        In the multivariate response case, the coefficient :math:`R^2` is
-        defined as
-
-        .. math::
-            1 - \frac{\sum_{i=1}^{n} (y_i - \hat y_i)^2}
-            {\sum_{i=1}^{n} (y_i - \frac{1}{n}\sum_{i=1}^{n}y_i)^2}
-
-        where :math:`\hat{y}_i` is the prediction associated to the test sample
-        :math:`X_i`, and :math:`{y}_i` is the true response. See
-        :func:`sklearn.metrics.r2_score <sklearn.metrics.r2_score>` for more
-        information.
-
-
-        In the functional case it is returned an extension of the coefficient
-        of determination :math:`R^2`, defined as
-
-        .. math::
-            1 - \frac{\sum_{i=1}^{n}\int (y_i(t) - \hat{y}_i(t))^2dt}
-            {\sum_{i=1}^{n} \int (y_i(t)- \frac{1}{n}\sum_{i=1}^{n}y_i(t))^2dt}
-
-
-        The best possible score is 1.0 and it can be negative
-        (because the model can be arbitrarily worse). A constant model that
-        always predicts the expected value of y, disregarding the input
-        features, would get a R^2 score of 0.0.
-
-        Args:
-            X: Test samples to be predicted.
-            y: True responses of the test samples.
-            sample_weight: Sample weights.
-
-        Returns:
-            Coefficient of determination.
-
-        """
-        if self._functional:
-            return self._functional_score(X, y, sample_weight=sample_weight)
-
-        # Default sklearn multivariate score
-        return super().score(X, y, sample_weight=sample_weight)
-
-    def _functional_score(
-        self: NeighborsRegressorMixin[Input, TargetRegressionFData],
-        X: Input,
-        y: TargetRegressionFData,
-        sample_weight: NDArrayFloat | None = None,
-    ) -> float:
-        r"""
-        Return an extension of the coefficient of determination R^2.
-
-        The coefficient is defined as
-
-        .. math::
-            1 - \frac{\sum_{i=1}^{n}\int (y_i(t) - \hat{y}_i(t))^2dt}
-            {\sum_{i=1}^{n} \int (y_i(t)- \frac{1}{n}\sum_{i=1}^{n}y_i(t))^2dt}
-
-        where :math:`\hat{y}_i` is the prediction associated to the test sample
-        :math:`X_i`, and :math:`{y}_i` is the true response.
-
-        The best possible score is 1.0 and it can be negative
-        (because the model can be arbitrarily worse). A constant model that
-        always predicts the expected value of y, disregarding the input
-        features, would get a R^2 score of 0.0.
-
-        Args:
-            X: Test samples to be predicted.
-            y: True responses of the test samples.
-            sample_weight (array_like, shape = [n_samples], optional): Sample
-                weights.
-
-        Returns:
-            Coefficient of determination.
-
-        """
-        # TODO: If it is created a module in ml.regression with other
-        # score metrics, move it.
-        from scipy.integrate import simps
-
-        if y.dim_codomain != 1 or y.dim_domain != 1:
-            raise ValueError(
-                "Score not implemented for multivariate "
-                "functional data.",
-            )
-
-        # Make prediction
-        pred = self.predict(X)
-
-        u = y - pred
-        v = y - y.mean()
-
-        # Discretize to integrate and make squares if needed
-        if not isinstance(u, FDataGrid):
-            u = u.to_grid()
-            v = v.to_grid()
-
-        data_u = u.data_matrix[..., 0]
-        data_v = v.data_matrix[..., 0]
-
-        # Square without allocate more memory
-        np.square(data_u, out=data_u)
-        np.square(data_v, out=data_v)
-
-        if sample_weight is not None:
-            if len(sample_weight) != len(y):
-                raise ValueError("Must be a weight for each sample.")
-
-            normalized_sample_weight = sample_weight / sample_weight.sum()
-            data_u_t = data_u.T
-            data_u_t *= normalized_sample_weight
-            data_v_t = data_v.T
-            data_v_t *= normalized_sample_weight
-
-        # Sum and integrate
-        sum_u = np.sum(data_u, axis=0)
-        sum_v = np.sum(data_v, axis=0)
-
-        int_u = simps(sum_u, x=u.grid_points[0])
-        int_v = simps(sum_v, x=v.grid_points[0])
-
-        return float(1 - int_u / int_v)

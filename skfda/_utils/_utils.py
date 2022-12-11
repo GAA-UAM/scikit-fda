@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
     Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
     Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
-    Target = TypeVar("Target", bound=NDArrayInt)
+    Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 _MapAcceptableSelf = TypeVar(
@@ -589,8 +589,8 @@ def _check_estimator(estimator: Type[BaseEstimator]) -> None:
 
 
 def _classifier_get_classes(
-    y: NDArrayStr | NDArrayInt,
-) -> Tuple[NDArrayStr | NDArrayInt, NDArrayInt]:
+    y: Target,
+) -> Tuple[Target, NDArrayInt]:
 
     check_classification_targets(y)
 

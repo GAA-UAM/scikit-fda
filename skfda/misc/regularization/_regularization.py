@@ -101,7 +101,7 @@ class L2Regularization(
             else self.linear_operator
         )
 
-        return self.regularization_parameter * gramian_matrix(
+        return self.regularization_parameter * gram_matrix(
             linear_operator,
             basis,
         )

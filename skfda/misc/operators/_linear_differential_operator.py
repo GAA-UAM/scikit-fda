@@ -18,7 +18,7 @@ from ...representation.basis import (
 )
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
-from ._operators import Operator, gramian_matrix_optimization
+from ._operators import Operator, gram_matrix_optimization
 
 Order = int
 
@@ -218,12 +218,12 @@ class LinearDifferentialOperator(
 
 #############################################################
 #
-# Optimized implementations of gramian matrix for each basis.
+# Optimized implementations of gram matrix for each basis.
 #
 #############################################################
 
 
-@gramian_matrix_optimization.register
+@gram_matrix_optimization.register
 def constant_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: ConstantBasis,
@@ -299,7 +299,7 @@ def _monomial_evaluate_constant_linear_diff_op(
     return polynomials  # type: ignore[no-any-return]
 
 
-@gramian_matrix_optimization.register
+@gram_matrix_optimization.register
 def monomial_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: MonomialBasis,
@@ -427,7 +427,7 @@ def _fourier_penalty_matrix_optimized_orthonormal(
     return penalty_matrix
 
 
-@gramian_matrix_optimization.register
+@gram_matrix_optimization.register
 def fourier_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: FourierBasis,
@@ -445,7 +445,7 @@ def fourier_penalty_matrix_optimized(
     return _fourier_penalty_matrix_optimized_orthonormal(basis, weights)
 
 
-@gramian_matrix_optimization.register
+@gram_matrix_optimization.register
 def bspline_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: BSplineBasis,
@@ -576,7 +576,7 @@ def bspline_penalty_matrix_optimized(
     return penalty_matrix
 
 
-@gramian_matrix_optimization.register
+@gram_matrix_optimization.register
 def fdatagrid_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: FDataGrid,

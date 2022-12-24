@@ -11,7 +11,7 @@ from ..._utils._sklearn_adapter import BaseEstimator
 from ...representation import FData
 from ...representation.basis import Basis
 from ...typing._numpy import NDArrayFloat
-from ..operators import Identity, Operator, gramian_matrix
+from ..operators import Identity, Operator, gram_matrix
 from ..operators._operators import OperatorInput
 
 

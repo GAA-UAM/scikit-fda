@@ -501,6 +501,72 @@ def _inner_product_integrate(
     return summation  # type: ignore[no-any-return]
 
 
+def weighted_inner_product_integrate(
+    arg1: Union[FDataBasis, Basis],
+    arg2: Union[FDataBasis, Basis],
+    arg3: FDataBasis,
+    arg4: FDataBasis,
+) -> NDArrayFloat:
+    r"""
+    Return the weighted inner product matrix between its arguments.
+
+    For two basis (:math:\theta_1) and (:math:\theta_2) the weighted 
+    inner product is defined as:
+
+    . math::
+        \int \boldsymbol{\theta}_1 (t) \boldsymbol{\theta}^T_2 (t) w(t) dt
+
+    where w(t) is defined by a functional vectors product:
+
+    . math::
+        \boldsymbol{w}^T_1 (t) \boldsymbol{w}_2 (t)
+
+    Args:
+        arg1: First basis.
+        arg2: Second basis.
+        arg3: First weight, functional vector.
+        arg4: Second weight, functional vector.
+
+    Returns:
+        Inner product matrix between basis and weight.
+
+    """
+    if isinstance(arg1, Basis):
+        arg1 = arg1.to_basis()
+
+    if isinstance(arg2, Basis):
+        arg2 = arg2.to_basis()
+
+    if not np.array_equal(
+        arg1.domain_range,
+        arg2.domain_range,
+    ):
+        raise ValueError("Domain range for basis objects must be equal")
+
+    if not np.array_equal(
+        arg3.domain_range,
+        arg4.domain_range,
+    ):
+        raise ValueError("Domain range for weight objects must be equal")
+
+    domain_range = arg1.domain_range
+
+    def integrand(args):  # noqa: WPS430
+        f1 = arg1(args)[:, 0, :]
+        f2 = arg2(args)[:, 0, :]
+        f3 = arg3(args)[:, 0, :]
+        f4 = arg4(args)[:, 0, :]
+
+        weight = f3 * f4
+
+        return f1 * f2.T * np.sum(weight)
+
+    return nquad_vec(
+        integrand,
+        domain_range,
+    )  # type: ignore[no-any-return]
+
+
 def inner_product_matrix(
     arg1: Vector,
     arg2: Optional[Vector] = None,

@@ -510,7 +510,7 @@ def weighted_inner_product_integrate(
     r"""
     Return the weighted inner product matrix between its arguments.
 
-    For two basis (:math:\theta_1) and (:math:\theta_2) the weighted 
+    For two basis (:math:\theta_1) and (:math:\theta_2) the weighted
     inner product is defined as:
 
     . math::

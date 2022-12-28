@@ -9,6 +9,7 @@ from skfda._utils import _pairwise_symmetric
 from skfda.datasets import make_gaussian_process
 from skfda.misc.covariances import Gaussian
 from skfda.representation.basis import (
+    FDataBasis,
     MonomialBasis,
     TensorBasis,
     VectorValuedBasis,
@@ -110,6 +111,31 @@ class InnerProductTest(unittest.TestCase):
         np.testing.assert_allclose(
             skfda.misc.inner_product(fd_basis, fd_basis),
             res,
+            rtol=1e-5,
+        )
+
+    def test_weighted_inner_product_integrate(self) -> None:
+        """Test weighted_inner_product_integrate function."""
+        basis = MonomialBasis(n_basis=2)
+        fd_basis = MonomialBasis(n_basis=3)
+        weight = FDataBasis(fd_basis, [[0, 1, 0], [0, 1, 0], [0, 0, 1]])
+
+        a = 1 / 5 + 2 / 3
+        b = 2 / 5 + 1 / 7
+        diag = 1 / 2 + 1 / 6
+
+        data_matrix = np.array([[a, diag], [diag, b]])
+
+        weighted_inner_product = skfda.misc.weighted_inner_product_integrate(
+            basis,
+            basis,
+            weight,
+            weight,
+        )
+
+        np.testing.assert_allclose(
+            weighted_inner_product,
+            data_matrix,
             rtol=1e-5,
         )
 

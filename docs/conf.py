@@ -134,6 +134,10 @@ html_theme_options = {
             "type": "url",
         },
     ],
+    "logo": {
+        "image_light": "logo.png",
+        "image_dark": "logo.png",
+    }
 }
 
 html_context = {

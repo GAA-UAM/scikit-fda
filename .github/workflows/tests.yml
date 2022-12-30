@@ -28,7 +28,7 @@ jobs:
     - name: Run tests
       run: |
         pip3 debug --verbose .
-        pip3 install numba==0.53
+        pip3 install numba
         pip3 install --upgrade-strategy eager -v .
         coverage run --source=skfda/ setup.py test;
 

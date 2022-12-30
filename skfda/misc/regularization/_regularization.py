@@ -11,7 +11,7 @@ from ..._utils._sklearn_adapter import BaseEstimator
 from ...representation import FData
 from ...representation.basis import Basis
 from ...typing._numpy import NDArrayFloat
-from ..operators import Identity, Operator, gramian_matrix
+from ..operators import Identity, Operator, gram_matrix
 from ..operators._operators import OperatorInput
 
 
@@ -101,7 +101,7 @@ class L2Regularization(
             else self.linear_operator
         )
 
-        return self.regularization_parameter * gramian_matrix(
+        return self.regularization_parameter * gram_matrix(
             linear_operator,
             basis,
         )

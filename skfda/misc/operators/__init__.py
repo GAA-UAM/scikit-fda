@@ -12,8 +12,8 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "_operators": [
             "MatrixOperator",
             "Operator",
-            "gramian_matrix",
-            "gramian_matrix_optimization",
+            "gram_matrix",
+            "gram_matrix_optimization",
         ],
         "_srvf": ["SRSF"],
     },
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from ._operators import (
         MatrixOperator as MatrixOperator,
         Operator as Operator,
-        gramian_matrix as gramian_matrix,
-        gramian_matrix_optimization as gramian_matrix_optimization,
+        gram_matrix as gram_matrix,
+        gram_matrix_optimization as gram_matrix_optimization,
     )
     from ._srvf import SRSF as SRSF

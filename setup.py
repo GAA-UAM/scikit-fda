@@ -20,7 +20,19 @@ includes detailed information of the different modules, classes and methods of
 the package, along with several examples showing different funcionalities.
 """
 
+import os
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
-setup(name="scikit-fda")
+with open(
+    os.path.join(os.path.dirname(__file__), "VERSION"),
+    "r",
+) as version_file:
+    version = version_file.read().strip()
+
+setup(
+    name="scikit-fda",
+    version=version,
+    include_package_data=True,
+    packages=find_packages(),
+)

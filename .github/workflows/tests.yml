@@ -30,7 +30,7 @@ jobs:
         pip3 debug --verbose .
         pip3 install numba
         pip3 install ".[test]"
-        coverage run --source=skfda/ pytest;
+        coverage run --source=skfda/ -m pytest;
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1

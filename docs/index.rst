@@ -26,13 +26,6 @@ Github you can find more information related to the development of the package.
    :hidden:
 
    auto_examples/index
-   
-.. toctree::
-   :maxdepth: 1
-   :titlesonly:
-   :hidden:
-
-   auto_full_examples/index
 
 .. toctree::
    :maxdepth: 2

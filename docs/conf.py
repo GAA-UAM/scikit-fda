@@ -137,7 +137,7 @@ html_theme_options = {
     "logo": {
         "image_light": "logo.png",
         "image_dark": "logo.png",
-    }
+    },
 }
 
 html_context = {
@@ -276,9 +276,9 @@ branch = "master" if rtd_version == "stable" else "develop"
 
 sphinx_gallery_conf = {
     # path to your examples scripts
-    'examples_dirs': ['../examples', '../tutorial', '../full_examples'],
+    'examples_dirs': ['../examples', '../tutorial'],
     # path where to save gallery generated examples
-    'gallery_dirs': ['auto_examples', 'auto_tutorial', 'auto_full_examples'],
+    'gallery_dirs': ['auto_examples', 'auto_tutorial'],
     'reference_url': {
         # The module you locally document uses None
         'skfda': None,

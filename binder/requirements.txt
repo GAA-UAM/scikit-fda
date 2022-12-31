@@ -1,0 +1,4 @@
+-r ../readthedocs-requirements.txt
+jupytext
+sphinx-gallery<=0.7.0
+.

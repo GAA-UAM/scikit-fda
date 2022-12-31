@@ -1,4 +1,11 @@
-from . import depth
-from . import outliers
-from . import stats
-from . import visualization
+import lazy_loader as lazy
+
+__getattr__, __dir__, __all__ = lazy.attach(
+    __name__,
+    submodules=[
+        "depth",
+        "outliers",
+        "stats",
+        "visualization",
+    ],
+)

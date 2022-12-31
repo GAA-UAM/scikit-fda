@@ -5,22 +5,27 @@ from typing import Tuple, Union
 
 import numpy as np
 import scipy.integrate
-from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _cartesian_product, _pairwise_symmetric
-from ...representation import FDataBasis, FDataGrid
-from ...representation.basis import Basis, FiniteElement, VectorValued
+from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
+from ...representation import FData, FDataBasis, FDataGrid
+from ...representation.basis import (
+    Basis,
+    FiniteElementBasis,
+    VectorValuedBasis,
+)
+from ...typing._numpy import NDArrayFloat
 
 _MeanType = Union[FDataGrid, float]
 
 
 def _pairwise_fem_inner_product(
-    basis_fd: FDataBasis,
-    fd: FDataGrid,
+    basis_fd: FData,
+    fd: FData,
     y_val: float,
-    grid: np.ndarray,
-) -> np.ndarray:
+    grid: NDArrayFloat,
+) -> NDArrayFloat:
 
     eval_grid_fem = np.concatenate(
         (
@@ -38,15 +43,15 @@ def _pairwise_fem_inner_product(
 
     prod = eval_fem * eval_fd
     integral = scipy.integrate.simps(prod, grid, axis=1)
-    return np.sum(integral, axis=-1)
+    return np.sum(integral, axis=-1)  # type: ignore[no-any-return]
 
 
 def _inner_product_matrix(
     basis: Basis,
-    fd: FDataGrid,
+    fd: FData,
     limits: Tuple[float, float],
     y_val: float,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Compute inner products with the FEM basis.
 
@@ -67,16 +72,16 @@ def _inner_product_matrix(
         Matrix of inner products.
 
     """
-    basis_fd = basis.to_basis()
+    basis_fd: FData = basis.to_basis()
     grid = fd.grid_points[0]
     grid_index = (grid >= limits[0]) & (grid <= limits[1])
     grid = grid[grid_index]
 
     return _pairwise_symmetric(
-        _pairwise_fem_inner_product,
+        _pairwise_fem_inner_product,  # type: ignore[arg-type]
         basis_fd,
         fd,
-        y_val=y_val,
+        y_val=y_val,  # type: ignore[arg-type]
         grid=grid,
     )
 
@@ -84,8 +89,8 @@ def _inner_product_matrix(
 def _design_matrix(
     basis: Basis,
     fd: FDataGrid,
-    pred_points: np.ndarray,
-) -> np.ndarray:
+    pred_points: NDArrayFloat,
+) -> NDArrayFloat:
     """
     Compute the indefinite integrals of the curves over s up to each t-value.
 
@@ -112,7 +117,7 @@ def _get_valid_points(
     interval_len: float,
     n_intervals: int,
     lag: float,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Return the valid points as integer tuples."""
     interval_points = np.arange(n_intervals + 1)
     full_grid_points = _cartesian_product((interval_points, interval_points))
@@ -123,15 +128,15 @@ def _get_valid_points(
 
     discrete_lag = np.inf if lag == np.inf else math.ceil(lag / interval_len)
 
-    return past_points[
+    return past_points[  # type: ignore[no-any-return]
         past_points[:, 1] - past_points[:, 0] <= discrete_lag
     ]
 
 
 def _get_triangles(
     n_intervals: int,
-    valid_points: np.ndarray,
-) -> np.ndarray:
+    valid_points: NDArrayFloat,
+) -> NDArrayFloat:
     """Construct the triangle grid given the valid points."""
     # A matrix where the (integer) coords of a point match
     # to its index or to -1 if it does not exist.
@@ -176,7 +181,7 @@ def _get_triangles(
     triangles = np.concatenate((down_triangles, up_triangles))
     has_wrong_index = np.any(triangles < 0, axis=1)
 
-    return triangles[~has_wrong_index]
+    return triangles[~has_wrong_index]  # type: ignore[no-any-return]
 
 
 def _create_fem_basis(
@@ -184,7 +189,7 @@ def _create_fem_basis(
     stop: float,
     n_intervals: int,
     lag: float,
-) -> FiniteElement:
+) -> FiniteElementBasis:
 
     interval_len = (stop - start) / n_intervals
 
@@ -201,7 +206,7 @@ def _create_fem_basis(
         valid_points=valid_points,
     )
 
-    return FiniteElement(
+    return FiniteElementBasis(
         vertices=final_points,
         cells=triangles,
         domain_range=((start, stop),) * 2,
@@ -209,8 +214,8 @@ def _create_fem_basis(
 
 
 class HistoricalLinearRegression(
-    BaseEstimator,  # type: ignore
-    RegressorMixin,  # type: ignore
+    BaseEstimator,
+    RegressorMixin[FDataGrid, FDataGrid],
 ):
     r"""Historical functional linear regression.
 
@@ -339,7 +344,7 @@ class HistoricalLinearRegression(
         self,
         X: FDataGrid,
         y: FDataGrid,
-    ) -> Tuple[np.ndarray, _MeanType]:
+    ) -> Tuple[NDArrayFloat, _MeanType]:
 
         X_centered, y_centered, X_mean, y_mean = self._center_X_y(X, y)
 
@@ -353,8 +358,8 @@ class HistoricalLinearRegression(
             lag=self.lag,
         )
 
-        self._basis = VectorValued(
-            [fem_basis] * X_centered.dim_codomain
+        self._basis = VectorValuedBasis(
+            [fem_basis] * X_centered.dim_codomain,
         )
 
         design_matrix = _design_matrix(
@@ -391,7 +396,10 @@ class HistoricalLinearRegression(
 
         return design_matrix, y_mean
 
-    def _prediction_from_matrix(self, design_matrix: np.ndarray) -> FDataGrid:
+    def _prediction_from_matrix(
+        self,
+        design_matrix: NDArrayFloat,
+    ) -> FDataGrid:
 
         points = (design_matrix @ self._coef_coefs).reshape(
             -1,

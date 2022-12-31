@@ -6,8 +6,9 @@ It allows multiple modes and colors, which could
 be set manually or automatically depending on values
 like depth measures.
 """
+from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Dict, Sequence, Sized, Tuple, TypeVar
 
 import matplotlib.cm
 import matplotlib.patches
@@ -18,16 +19,15 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from typing_extensions import Protocol
 
-from ... import FDataGrid
-from ..._utils import _to_domain_range, _to_grid_points, constants
+from ..._utils import _to_grid_points, constants
+from ...misc.validation import validate_domain_range
 from ...representation._functional_data import FData
-from ...representation._typing import DomainRangeLike, GridPointsLike
+from ...typing._base import DomainRangeLike, GridPointsLike
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _set_labels
 
 K = TypeVar('K', contravariant=True)
 V = TypeVar('V', covariant=True)
-T = TypeVar('T', FDataGrid, np.ndarray)
 
 
 class Indexable(Protocol[K, V]):
@@ -41,15 +41,15 @@ class Indexable(Protocol[K, V]):
 
 
 def _get_color_info(
-    fdata: T,
-    group: Optional[Sequence[K]] = None,
-    group_names: Optional[Indexable[K, str]] = None,
-    group_colors: Optional[Indexable[K, ColorLike]] = None,
+    fdata: Sized,
+    group: Sequence[K] | None = None,
+    group_names: Indexable[K, str] | None = None,
+    group_colors: Indexable[K, ColorLike] | None = None,
     legend: bool = False,
-    kwargs: Optional[Dict[str, Any]] = None,
+    kwargs: Dict[str, Any] | None = None,
 ) -> Tuple[
-    Optional[ColorLike],
-    Optional[Sequence[matplotlib.patches.Patch]],
+    Sequence[ColorLike] | None,
+    Sequence[matplotlib.patches.Patch] | None,
 ]:
 
     if kwargs is None:
@@ -61,7 +61,10 @@ def _get_color_info(
         # In this case, each curve has a label, and all curves with the same
         # label should have the same color
 
-        group_unique, group_indexes = np.unique(group, return_inverse=True)
+        group_unique, group_indexes = np.unique(
+            np.asarray(group),
+            return_inverse=True,
+        )
         n_labels = len(group_unique)
 
         if group_colors is not None:
@@ -76,7 +79,7 @@ def _get_color_info(
                 cycle_colors, np.arange(n_labels), mode='wrap',
             )
 
-        sample_colors = group_colors_array[group_indexes]
+        sample_colors = list(group_colors_array[group_indexes])
 
         group_names_array = None
 
@@ -119,6 +122,7 @@ class GraphPlot(BasePlot):
     a group of colors for the representations. Besides, we can use a list of
     variables (depths, scalar regression targets...) can be used as an
     argument to display the functions wtih a gradient of colors.
+
     Args:
         fdata: functional data set that we want to plot.
         gradient_criteria: list of real values used to determine the color
@@ -191,21 +195,21 @@ class GraphPlot(BasePlot):
     def __init__(
         self,
         fdata: FData,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-        n_points: Union[int, Tuple[int, int], None] = None,
-        domain_range: Optional[DomainRangeLike] = None,
-        group: Optional[Sequence[K]] = None,
-        group_colors: Optional[Indexable[K, ColorLike]] = None,
-        group_names: Optional[Indexable[K, str]] = None,
-        gradient_criteria: Optional[Sequence[float]] = None,
-        max_grad: Optional[float] = None,
-        min_grad: Optional[float] = None,
-        colormap: Union[Colormap, str, None] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
+        n_points: int | Tuple[int, int] | None = None,
+        domain_range: DomainRangeLike | None = None,
+        group: Sequence[K] | None = None,
+        group_colors: Indexable[K, ColorLike] | None = None,
+        group_names: Indexable[K, str] | None = None,
+        gradient_criteria: Sequence[float] | None = None,
+        max_grad: float | None = None,
+        min_grad: float | None = None,
+        colormap: Colormap | str | None = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -236,7 +240,7 @@ class GraphPlot(BasePlot):
             else:
                 self.max_grad = max_grad
 
-            self.gradient_list: Optional[Sequence[float]] = (
+            self.gradient_list: Sequence[float] | None = (
                 [
                     (grad_color - self.min_grad)
                     / (self.max_grad - self.min_grad)
@@ -257,7 +261,7 @@ class GraphPlot(BasePlot):
         if domain_range is None:
             self.domain_range = self.fdata.domain_range
         else:
-            self.domain_range = _to_domain_range(domain_range)
+            self.domain_range = validate_domain_range(domain_range)
 
         if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
@@ -304,7 +308,7 @@ class GraphPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Dict[str, Optional[ColorLike]] = {}
+        color_dict: Dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -420,17 +424,17 @@ class ScatterPlot(BasePlot):
     def __init__(
         self,
         fdata: FData,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-        grid_points: Optional[GridPointsLike] = None,
-        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
-        group: Optional[Sequence[K]] = None,
-        group_colors: Optional[Indexable[K, ColorLike]] = None,
-        group_names: Optional[Indexable[K, str]] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
+        grid_points: GridPointsLike | None = None,
+        domain_range: Tuple[int, int] | DomainRangeLike | None = None,
+        group: Sequence[K] | None = None,
+        group_colors: Indexable[K, ColorLike] | None = None,
+        group_names: Indexable[K, str] | None = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -462,7 +466,7 @@ class ScatterPlot(BasePlot):
         if self.domain_range is None:
             self.domain_range = self.fdata.domain_range
         else:
-            self.domain_range = _to_domain_range(self.domain_range)
+            self.domain_range = validate_domain_range(self.domain_range)
 
         sample_colors, patches = _get_color_info(
             self.fdata,
@@ -503,7 +507,7 @@ class ScatterPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Dict[str, Optional[ColorLike]] = {}
+        color_dict: Dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -546,7 +550,7 @@ class ScatterPlot(BasePlot):
 def set_color_dict(
     sample_colors: Any,
     ind: int,
-    color_dict: Dict[str, Optional[ColorLike]],
+    color_dict: Dict[str, ColorLike | None],
 ) -> None:
     """
     Auxiliary method used to update color_dict.

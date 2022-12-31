@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import itertools
-from typing import Optional, Tuple, Union, overload
+from typing import Tuple, overload
 
 import numpy as np
-from sklearn.utils import check_random_state
+import scipy.special
 from typing_extensions import Literal
 
-import scipy.special
-
-from ..._utils import RandomStateLike
+from ...misc.validation import validate_random_state
 from ...representation import FData, FDataBasis
+from ...typing._base import RandomStateLike
+from ...typing._numpy import NDArrayFloat
 
 
 def hotelling_t2(
@@ -64,8 +66,8 @@ def hotelling_t2(
         >>> fd2 = FDataGrid([[3, 3, 3], [5, 5, 5]])
         >>> '%.2f' % hotelling_t2(fd1, fd2)
         '2.00'
-        >>> fd1 = fd1.to_basis(basis.Fourier(n_basis=3))
-        >>> fd2 = fd2.to_basis(basis.Fourier(n_basis=3))
+        >>> fd1 = fd1.to_basis(basis.FourierBasis(n_basis=3))
+        >>> fd2 = fd2.to_basis(basis.FourierBasis(n_basis=3))
         >>> '%.2f' % hotelling_t2(fd1, fd2)
         '2.00'
 
@@ -122,7 +124,7 @@ def hotelling_test_ind(
     fd1: FData,
     fd2: FData,
     *,
-    n_reps: Optional[int] = None,
+    n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: Literal[False] = False,
 ) -> Tuple[float, float]:
@@ -134,10 +136,10 @@ def hotelling_test_ind(
     fd1: FData,
     fd2: FData,
     *,
-    n_reps: Optional[int] = None,
+    n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: Literal[True],
-) -> Tuple[float, float, np.ndarray]:
+) -> Tuple[float, float, NDArrayFloat]:
     pass
 
 
@@ -145,10 +147,10 @@ def hotelling_test_ind(
     fd1: FData,
     fd2: FData,
     *,
-    n_reps: Optional[int] = None,
+    n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: bool = False,
-) -> Union[Tuple[float, float], Tuple[float, float, np.ndarray]]:
+) -> Tuple[float, float] | Tuple[float, float, NDArrayFloat]:
     """
     Compute Hotelling :math:`T^2`-test.
 
@@ -186,8 +188,8 @@ def hotelling_test_ind(
         TypeError: In case of bad arguments.
 
     Examples:
-        >>> from skfda.inference.hotelling import hotelling_t2
-        >>> from skfda.representation import FDataGrid, basis
+        >>> from skfda.inference.hotelling import hotelling_test_ind
+        >>> from skfda.representation import FDataGrid
         >>> from numpy import printoptions
 
         >>> fd1 = FDataGrid([[1, 1, 1], [3, 3, 3]])
@@ -214,14 +216,14 @@ def hotelling_test_ind(
     if n_reps is not None and n_reps < 1:
         raise ValueError("Number of repetitions must be positive.")
 
-    n1, n2 = fd1.n_samples, fd2.n_samples
+    n1 = fd1.n_samples
     t2_0 = hotelling_t2(fd1, fd2)
-    n = n1 + n2
+    n = n1 + fd2.n_samples
     sample = fd1.concatenate(fd2)
     indices = np.arange(n)
 
     if n_reps is not None:  # Computing n_reps random permutations
-        random_state = check_random_state(random_state)
+        random_state = validate_random_state(random_state)
         dist = np.empty(n_reps)
         for i in range(n_reps):
             random_state.shuffle(indices)
@@ -236,7 +238,7 @@ def hotelling_test_ind(
             sample1, sample2 = sample[sample1_i], sample[sample2_i]
             dist[i] = hotelling_t2(sample1, sample2)
 
-    p_value = np.sum(dist > t2_0) / len(dist)
+    p_value = float(np.sum(dist > t2_0) / len(dist))
 
     if return_dist:
         return t2_0, p_value, dist

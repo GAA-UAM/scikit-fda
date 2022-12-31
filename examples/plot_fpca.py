@@ -13,8 +13,12 @@ import matplotlib.pyplot as plt
 import skfda
 from skfda.datasets import fetch_growth
 from skfda.exploratory.visualization import FPCAPlot
-from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
-from skfda.representation.basis import BSpline, Fourier, Monomial
+from skfda.preprocessing.dim_reduction import FPCA
+from skfda.representation.basis import (
+    BSplineBasis,
+    FourierBasis,
+    MonomialBasis,
+)
 
 ##############################################################################
 # In this example we are going to use functional principal component analysis
@@ -50,7 +54,7 @@ fpca_discretized.components_.plot()
 # We also plot the data for better visual representation.
 dataset = fetch_growth()
 fd = dataset['data']
-basis = skfda.representation.basis.BSpline(n_basis=7)
+basis = skfda.representation.basis.BSplineBasis(n_basis=7)
 basis_fd = fd.to_basis(basis)
 basis_fd.plot()
 
@@ -76,7 +80,7 @@ fpca.components_.plot()
 FPCAPlot(
     basis_fd.mean(),
     fpca.components_,
-    30,
+    factor=30,
     fig=plt.figure(figsize=(6, 2 * 4)),
     n_rows=2,
 ).plot()
@@ -90,8 +94,8 @@ FPCAPlot(
 # basis
 dataset = fetch_growth()
 fd = dataset['data']
-basis_fd = fd.to_basis(BSpline(n_basis=7))
-fpca = FPCA(n_components=2, components_basis=Fourier(n_basis=7))
+basis_fd = fd.to_basis(BSplineBasis(n_basis=7))
+fpca = FPCA(n_components=2, components_basis=FourierBasis(n_basis=7))
 fpca.fit(basis_fd)
 fpca.components_.plot()
 
@@ -103,7 +107,7 @@ fpca.components_.plot()
 # principal components
 dataset = fetch_growth()
 fd = dataset['data']
-basis_fd = fd.to_basis(BSpline(n_basis=7))
-fpca = FPCA(n_components=2, components_basis=Monomial(n_basis=4))
+basis_fd = fd.to_basis(BSplineBasis(n_basis=7))
+fpca = FPCA(n_components=2, components_basis=MonomialBasis(n_basis=4))
 fpca.fit(basis_fd)
 fpca.components_.plot()

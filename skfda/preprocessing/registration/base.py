@@ -9,12 +9,12 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Any, TypeVar, overload
 
-from ... import FData
-from ..._utils import (
+from ..._utils._sklearn_adapter import (
     BaseEstimator,
     InductiveTransformerMixin,
     TransformerMixin,
 )
+from ...representation import FData
 
 SelfType = TypeVar("SelfType")
 Input = TypeVar("Input", bound=FData)
@@ -23,14 +23,14 @@ Output = TypeVar("Output", bound=FData)
 
 class RegistrationTransformer(
     BaseEstimator,
-    TransformerMixin[Input, Output, None],
+    TransformerMixin[Input, Output, object],
 ):
     """Base class for the registration methods."""
 
     def fit(
         self: SelfType,
         X: Input,
-        y: None = None,
+        y: object = None,
     ) -> SelfType:
         """
         Fit the registration model.
@@ -49,14 +49,14 @@ class RegistrationTransformer(
     def fit_transform(
         self,
         X: Input,
-        y: None = None,
+        y: object = None,
     ) -> Output:
         pass
 
-    def fit_transform(
+    def fit_transform(  # noqa: WPS612
         self,
         X: Input,
-        y: None = None,
+        y: object = None,
         **fit_params: Any,
     ) -> Output:
         """
@@ -71,13 +71,13 @@ class RegistrationTransformer(
             Registered training data.
 
         """
-        return super().fit_transform(  # type: ignore[call-arg]
+        return super().fit_transform(
             X,
             y,
             **fit_params,
         )
 
-    def score(self, X: Input, y: None = None) -> float:
+    def score(self, X: Input, y: object = None) -> float:
         r"""
         Return the percentage of total variation removed.
 
@@ -109,12 +109,12 @@ class RegistrationTransformer(
         """
         from .validation import AmplitudePhaseDecomposition
 
-        return AmplitudePhaseDecomposition()(self, X, y)
+        return AmplitudePhaseDecomposition()(self, X, X)
 
 
 class InductiveRegistrationTransformer(
     RegistrationTransformer[Input, Output],
-    InductiveTransformerMixin[Input, Output, None],
+    InductiveTransformerMixin[Input, Output, object],
 ):
 
     @abstractmethod

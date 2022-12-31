@@ -56,3 +56,5 @@ functional data:
    misc/metrics
    misc/operators
    misc/regularization
+   misc/hat_matrix
+   misc/scoring

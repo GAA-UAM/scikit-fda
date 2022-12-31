@@ -3,18 +3,21 @@ from __future__ import annotations
 from typing import Callable, Tuple
 
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import LogisticRegression as mvLogisticRegression
 from sklearn.utils.validation import check_is_fitted
+from typing_extensions import Literal
 
 from ..._utils import _classifier_get_classes
+from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayAny, NDArrayInt
+from ...typing._numpy import NDArrayAny, NDArrayInt
+
+Solver = Literal["newton-cg", "lbfgs", "liblinear", "sag", "saga"]
 
 
 class LogisticRegression(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
+    BaseEstimator,
+    ClassifierMixin[FDataGrid, NDArrayAny],
 ):
     r"""Logistic Regression classifier for functional data.
 
@@ -27,9 +30,26 @@ class LogisticRegression(
         data with one dimensional domains is supported.
 
     Args:
-        p:
-            number of points (and coefficients) to be selected by
+        n_features_to_select:
+            Number of points (and coefficients) to be selected by
             the algorithm.
+        penalty:
+            Penalty to use in the multivariate logistic regresion
+            optimization problem. For more info check the parameter
+            "penalty" in
+            :external:class:`sklearn.linear_model.LogisticRegression`.
+        C:
+            Inverse of the regularization parameter in the multivariate
+            logistic regresion optimization problem. For more info
+            check the parameter "C" in
+            :external:class:`sklearn.linear_model.LogisticRegression`.
+        solver:
+            Algorithm to use in the multivariate logistic regresion
+            optimization problem. For more info check the parameter
+            "solver" in
+            :external:class:`sklearn.linear_model.LogisticRegression`.
+        max_iter:
+            Maximum number of iterations taken for the solver to converge.
 
     Attributes:
         classes\_: A list containing the name of the classes
@@ -59,11 +79,11 @@ class LogisticRegression(
         >>> lr = LogisticRegression()
         >>> _ = lr.fit(fd[::2], y[::2])
         >>> lr.coef_.round(2)
-        array([[ 1.28,  1.17,  1.27,  1.27,  0.96]])
+        array([[ 18.91,  19.69,  19.9 ,   6.09,  12.49]])
         >>> lr.points_.round(2)
-        array([ 0.11,  0.06,  0.07,  0.03,  0.  ])
+        array([ 0.11,  0.06,  0.07,  0.02,  0.03])
         >>> lr.score(fd[1::2],y[1::2])
-        0.94
+        0.92
 
         References:
             .. footbibliography::
@@ -72,12 +92,20 @@ class LogisticRegression(
 
     def __init__(
         self,
-        p: int = 5,
+        max_features: int = 5,
+        penalty: Literal["l1", "l2", "elasticnet", None] = None,
+        C: float = 1,
+        solver: Solver = 'lbfgs',
+        max_iter: int = 100,
     ) -> None:
 
-        self.p = p
+        self.max_features = max_features
+        self.penalty = penalty
+        self.C = C
+        self.solver = solver
+        self.max_iter = max_iter
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, WPS210
         self,
         X: FDataGrid,
         y: NDArrayAny,
@@ -90,35 +118,70 @@ class LogisticRegression(
         n_samples = len(y)
         n_features = len(X.grid_points[0])
 
-        selected_indexes = np.zeros(self.p, dtype=np.intc)
+        selected_indexes = np.empty(self.max_features, dtype=np.int_)
+        selected_values = np.empty((n_samples, self.max_features))
+
+        likelihood_curves_data = np.empty(
+            (self.max_features, n_features),
+        )
+
+        penalty = 'none' if self.penalty is None else self.penalty
 
         # multivariate logistic regression
-        mvlr = mvLogisticRegression(penalty='l2')
+        mvlr = mvLogisticRegression(
+            penalty=penalty,
+            C=self.C,
+            solver=self.solver,
+            max_iter=self.max_iter,
+        )
 
-        x_mv = np.zeros((n_samples, self.p))
-        LL = np.zeros(n_features)
-        for q in range(self.p):
+        max_features = min(self.max_features, len(X.grid_points[0]))
+
+        last_max_likelihood = -np.inf
+
+        for n_selected in range(max_features):
             for t in range(n_features):
 
-                x_mv[:, q] = X.data_matrix[:, t, 0]
-                mvlr.fit(x_mv[:, :q + 1], y_ind)
+                selected_values[:, n_selected] = X.data_matrix[:, t, 0]
+                mvlr.fit(selected_values[:, :n_selected + 1], y_ind)
 
                 # log-likelihood function at t
-                log_probs = mvlr.predict_log_proba(x_mv[:, :q + 1])
+                with np.errstate(divide='ignore'):
+                    log_probs = mvlr.predict_log_proba(
+                        selected_values[:, :n_selected + 1],
+                    )
+
                 log_probs = np.concatenate(
                     (log_probs[y_ind == 0, 0], log_probs[y_ind == 1, 1]),
                 )
-                LL[t] = np.mean(log_probs)
+                likelihood_curves_data[n_selected, t] = np.mean(log_probs)
 
-            tmax = np.argmax(LL)
-            selected_indexes[q] = tmax
-            x_mv[:, q] = X.data_matrix[:, tmax, 0]
+            tmax = np.argmax(likelihood_curves_data[n_selected])
+            max_likelihood = likelihood_curves_data[n_selected, tmax]
+            if max_likelihood == last_max_likelihood:
+                # This does not improve
+                selected_indexes = selected_indexes[:n_selected]
+                selected_values = selected_values[:, :n_selected]
+                likelihood_curves_data = likelihood_curves_data[
+                    :n_selected,
+                    n_features - 1,
+                ]
+                break
+
+            last_max_likelihood = max_likelihood
+
+            selected_indexes[n_selected] = tmax
+            selected_values[:, n_selected] = X.data_matrix[:, tmax, 0]
 
         # fit for the complete set of points
-        mvlr.fit(x_mv, y_ind)
+        mvlr.fit(selected_values, y)
 
         self.coef_ = mvlr.coef_
         self.intercept_ = mvlr.intercept_
+        self._likelihood_curves = FDataGrid(
+            likelihood_curves_data,
+            grid_points=X.grid_points,
+        )
         self._mvlr = mvlr
 
         self._selected_indexes = selected_indexes

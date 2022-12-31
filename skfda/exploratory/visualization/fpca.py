@@ -1,4 +1,7 @@
-from typing import Optional, Sequence, Union
+from __future__ import annotations
+
+import warnings
+from typing import Sequence
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -17,7 +20,7 @@ class FPCAPlot(BasePlot):
         mean: The functional data object containing the mean function.
             If len(mean) > 1, the mean is computed.
         components: The principal components
-        multiple: Multiple of the principal component curve to be added or
+        factor: Multiple of the principal component curve to be added or
             subtracted.
         fig: Figure over which the graph is plotted. If not specified it will
             be initialized
@@ -31,13 +34,14 @@ class FPCAPlot(BasePlot):
         self,
         mean: FData,
         components: FData,
-        multiple: float,
-        chart: Union[Figure, Axes, None] = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
+        factor: float = 1,
+        multiple: float | None = None,
+        chart: Figure | Axes | None = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
     ):
         super().__init__(
             chart,
@@ -48,7 +52,23 @@ class FPCAPlot(BasePlot):
         )
         self.mean = mean
         self.components = components
-        self.multiple = multiple
+        if multiple is None:
+            self.factor = factor
+        else:
+            warnings.warn(
+                "The 'multiple' parameter is deprecated, "
+                "use 'factor' instead.",
+                DeprecationWarning,
+            )
+            self.factor = multiple
+
+    @property
+    def multiple(self) -> float:
+        warnings.warn(
+            "The 'multiple' attribute is deprecated, use 'factor' instead.",
+            DeprecationWarning,
+        )
+        return self.factor
 
     @property
     def n_subplots(self) -> int:

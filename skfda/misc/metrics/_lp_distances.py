@@ -9,9 +9,9 @@ import numpy as np
 from typing_extensions import Final
 
 from ...representation import FData
-from ...representation._typing import NDArrayFloat
+from ...typing._metric import Norm
+from ...typing._numpy import NDArrayFloat
 from ._lp_norms import LpNorm
-from ._typing import Norm
 from ._utils import NormInducedMetric, pairwise_metric_optimization
 
 T = TypeVar("T", NDArrayFloat, FData)
@@ -138,7 +138,7 @@ def _pairwise_metric_optimization_lp_fdata(
             out=distance_matrix_sqr,
         )
 
-        return np.sqrt(distance_matrix_sqr)
+        return np.sqrt(distance_matrix_sqr)  # type: ignore[no-any-return]
 
     return NotImplemented
 

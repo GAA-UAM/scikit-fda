@@ -1,5 +1,11 @@
 """Feature extraction."""
-from ._ddg_transformer import DDGTransformer
-from ._fda_feature_union import FDAFeatureUnion
-from ._fpca import FPCA
-from ._per_class_transformer import PerClassTransformer
+import warnings
+
+from .. import FPCA
+
+warnings.warn(
+    'The module "feature_extraction" is deprecated.'
+    'Please use "dim_reduction" for FPCA'
+    'or "feature_construction" for feature construction techniques',
+    category=DeprecationWarning,
+)

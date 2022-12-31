@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import io
 import math
 import re
 from itertools import repeat
-from typing import Optional, Sequence, Tuple, TypeVar, Union
+from typing import Sequence, Tuple, TypeVar, Union
 
 import matplotlib.backends.backend_svg
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from typing_extensions import Protocol
+from typing_extensions import Protocol, TypeAlias
 
 from ...representation._functional_data import FData
 
@@ -22,7 +24,7 @@ svg_height_regex = re.compile(
 )
 svg_height_replacement = r'\g<1>\g<2>'
 
-ColorLike = Union[
+ColorLike: TypeAlias = Union[
     Tuple[float, float, float],
     Tuple[float, float, float, float],
     str,
@@ -72,9 +74,9 @@ def _figure_to_svg(figure: Figure) -> str:
 
 
 def _get_figure_and_axes(
-    chart: Union[Figure, Axes, Sequence[Axes], None] = None,
-    fig: Optional[Figure] = None,
-    axes: Union[Axes, Sequence[Axes], None] = None,
+    chart: Figure | Axes | Sequence[Axes] | None = None,
+    fig: Figure | None = None,
+    axes: Axes | Sequence[Axes] | None = None,
 ) -> Tuple[Figure, Sequence[Axes]]:
     """Obtain the figure and axes from the arguments."""
     num_defined = sum(e is not None for e in (chart, fig, axes))
@@ -112,8 +114,8 @@ def _get_figure_and_axes(
 
 def _get_axes_shape(
     n_axes: int,
-    n_rows: Optional[int] = None,
-    n_cols: Optional[int] = None,
+    n_rows: int | None = None,
+    n_cols: int | None = None,
 ) -> Tuple[int, int]:
     """Get the number of rows and columns of the subplots."""
     if (
@@ -155,10 +157,10 @@ def _projection_from_dim(dim: int) -> str:
 def _set_figure_layout(
     fig: Figure,
     axes: Sequence[Axes],
-    dim: Union[int, Sequence[int]] = 2,
+    dim: int | Sequence[int] = 2,
     n_axes: int = 1,
-    n_rows: Optional[int] = None,
-    n_cols: Optional[int] = None,
+    n_rows: int | None = None,
+    n_cols: int | None = None,
 ) -> Tuple[Figure, Sequence[Axes]]:
     """
     Set the figure axes for plotting.
@@ -242,7 +244,7 @@ def _set_labels(
     fdata: FData,
     fig: Figure,
     axes: Sequence[Axes],
-    patches: Optional[Sequence[matplotlib.patches.Patch]] = None,
+    patches: Sequence[matplotlib.patches.Patch] | None = None,
 ) -> None:
     """Set labels if any.
 
@@ -267,7 +269,7 @@ def _set_labels(
     elif patches is not None:
         axes[0].legend(handles=patches)
 
-    assert len(axes) == fdata.dim_codomain
+    assert len(axes) >= fdata.dim_codomain
 
     # Axis labels
     if axes[0].name == '3d':

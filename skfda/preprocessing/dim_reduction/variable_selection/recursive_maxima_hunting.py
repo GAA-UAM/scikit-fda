@@ -1,23 +1,47 @@
+"""Recursive Maxima Hunting implementation."""
+from __future__ import annotations
+
 import abc
 import copy
-import numbers
-import random
+import math
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    overload,
+)
 
 import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
 import scipy.stats
-import sklearn.base
 import sklearn.utils
+from typing_extensions import Literal
 
 import dcor
 
-from ...._utils import _compute_dependence
-from ....representation import FDataGrid
+from ...._utils._sklearn_adapter import (
+    BaseEstimator,
+    InductiveTransformerMixin,
+)
+from ....representation import FDataGrid, concatenate
+from ....typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ._base import _compute_dependence, _DependenceMeasure as _DepMeasure
+
+if TYPE_CHECKING:
+    from ....misc.covariances import CovarianceLike
+    import GPy
 
 
-def _transform_to_2d(t):
-    t = np.asarray(t)
+def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
+    t = np.asfarray(t)
 
     dim = len(t.shape)
     assert dim <= 2
@@ -28,40 +52,37 @@ def _transform_to_2d(t):
     return t
 
 
-def _execute_kernel(kernel, t_0, t_1):
-    from ....misc.covariances import _execute_covariance
-
-    return _execute_covariance(kernel, t_0, t_1)
-
-
 class _PicklableKernel():
-    """ Class used to pickle GPy kernels."""
+    """Class used to pickle GPy kernels."""
 
-    def __init__(self, kernel):
+    def __init__(self, kernel: GPy.kern.Kern) -> None:
         super().__setattr__('_PicklableKernel__kernel', kernel)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         if name != '__deepcopy__':
             return getattr(self.__kernel, name)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         setattr(self.__kernel, name, value)
 
-    def __getstate__(self):
-        return {'class': self.__kernel.__class__,
-                'input_dim': self.__kernel.input_dim,
-                'values': self.__kernel.param_array}
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            'class': self.__kernel.__class__,
+            'input_dim': self.__kernel.input_dim,
+            'values': self.__kernel.param_array,
+        }
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
         super().__setattr__('_PicklableKernel__kernel', state['class'](
-            input_dim=state['input_dim']))
+            input_dim=state['input_dim']),
+        )
         self.__kernel.param_array[...] = state['values']
 
-    def __call__(self, *args, **kwargs):
-        return self.__kernel.K(*args, **kwargs)
+    def __call__(self, *args: Any, **kwargs: Any) -> NDArrayFloat:
+        return self.__kernel.K(*args, **kwargs)  # type: ignore[no-any-return]
 
 
-def make_kernel(k):
+def make_kernel(k: CovarianceLike) -> CovarianceLike:
     try:
         import GPy
     except ImportError:
@@ -69,54 +90,66 @@ def make_kernel(k):
 
     if isinstance(k, GPy.kern.Kern):
         return _PicklableKernel(k)
-    else:
-        return k
+
+    return k
 
 
-def _absolute_argmax(function, *, mask):
+def _absolute_argmax(
+    function: FDataGrid,
+    *,
+    mask: NDArrayBool,
+) -> Tuple[int, ...]:
     """
-    Computes the absolute maximum of a discretized function.
+    Compute the absolute maximum of a discretized function.
 
     Some values of the function may be masked in order not to consider them
     as maximum.
 
     Parameters:
-        function (numpy array): Discretized function.
-        mask (numpy boolean array): Masked values.
+        function: Discretized function.
+        mask: Masked values.
 
     Returns:
-        int: Index of the absolute maximum.
+        Index of the absolute maximum.
 
     """
-    masked_function = ma.array(function, mask=mask)
+    masked_function = ma.array(  # type: ignore[no-untyped-call]
+        function.data_matrix,
+        mask=mask,
+    )
 
     t_max = ma.argmax(masked_function)
 
-    t_max = np.unravel_index(t_max, function.shape)
-
-    return t_max
+    return np.unravel_index(t_max, function.data_matrix.shape[1:-1])
 
 
-class Correction(abc.ABC, sklearn.base.BaseEstimator):
+class Correction(BaseEstimator):
     """
-    Base class for applying a correction after a point is taken, eliminating
+    Base class for corrections.
+
+    A correction applies a modification after a point is taken, eliminating
     its influence over the rest.
 
     """
 
-    def begin(self, X: FDataGrid, Y):
+    def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
         """
-        Initialization for a particular application of Recursive Maxima
-        Hunting.
+        Initialize the correction for a run.
 
         The initial parameters of Recursive Maxima Hunting can be used there.
 
         """
         pass
 
-    def conditioned(self, **kwargs):
+    def conditioned(
+        self,
+        *,
+        X: NDArrayFloat,
+        T: NDArrayFloat,
+        t_0: float,
+    ) -> Correction:
         """
-        Returns a correction object conditioned to the value of a point.
+        Return a correction object conditioned to the value of a point.
 
         This method is necessary because after the RMH correction step, the
         functions follow a different model.
@@ -125,7 +158,11 @@ class Correction(abc.ABC, sklearn.base.BaseEstimator):
         return self
 
     @abc.abstractmethod
-    def correct(self, X, selected_index):
+    def correct(
+        self,
+        X: FDataGrid,
+        selected_index: Tuple[int, ...],
+    ) -> FDataGrid:
         """
         Correct the trajectories.
 
@@ -133,16 +170,15 @@ class Correction(abc.ABC, sklearn.base.BaseEstimator):
         other points in the function.
 
         Parameters:
-
-            X (FDataGrid): Functions in the current iteration of the algorithm.
-            selected_index (int or tuple of int): Index of the selected point
+            X: Functions in the current iteration of the algorithm.
+            selected_index: Index of the selected point
                 in the ``data_matrix``.
 
         """
         pass
 
-    def __call__(self, *args, **kwargs):
-        self.correct(*args, **kwargs)
+    def __call__(self, *args: Any, **kwargs: Any) -> FDataGrid:
+        return self.correct(*args, **kwargs)
 
 
 class ConditionalMeanCorrection(Correction):
@@ -157,26 +193,32 @@ class ConditionalMeanCorrection(Correction):
     """
 
     @abc.abstractmethod
-    def conditional_mean(self, X, selected_index):
+    def conditional_mean(
+        self,
+        X: FDataGrid,
+        selected_index: Tuple[int, ...],
+    ) -> FDataGrid:
         """
-        Mean of the process conditioned to the value observed at the
-        selected point.
+        Mean of the process conditioned to the value observed.
 
         Parameters:
-
-            X (FDataGrid): Functions in the current iteration of the algorithm.
+            X: Functions in the current iteration of the algorithm.
             selected_index (int or tuple of int): Index of the selected point
                 in the ``data_matrix``.
 
         """
         pass
 
-    def correct(self, X, selected_index):
+    def correct(
+        self,
+        X: FDataGrid,
+        selected_index: Tuple[int, ...],
+    ) -> FDataGrid:
 
-        X.data_matrix[...] -= self.conditional_mean(
-            X, selected_index).T
-
-        X.data_matrix[:, selected_index] = 0
+        return X - self.conditional_mean(
+            X,
+            selected_index,
+        )
 
 
 class GaussianCorrection(ConditionalMeanCorrection):
@@ -195,23 +237,29 @@ class GaussianCorrection(ConditionalMeanCorrection):
     :class:`GaussianConditionedCorrection`.
 
     Parameters:
-
-        mean (number or function): Mean function of the Gaussian process.
-        cov (number or function): Covariance function of the Gaussian process.
-        fit_hyperparameters (boolean): If ``True`` the hyperparameters of the
+        mean: Mean function of the Gaussian process.
+        cov: Covariance function of the Gaussian process.
+        fit_hyperparameters: If ``True`` the hyperparameters of the
             covariance function are optimized for the data.
 
     """
 
-    def __init__(self, *, mean=0, cov=1, fit_hyperparameters=False):
-        super(GaussianCorrection, self).__init__()
+    def __init__(
+        self,
+        *,
+        mean: Union[float, Callable[[NDArrayFloat], NDArrayFloat]] = 0,
+        cov: Union[float, CovarianceLike] = 1,
+        fit_hyperparameters: bool = False,
+    ) -> None:
+        super().__init__()
 
         self.mean = mean
         self.cov = make_kernel(cov)
         self.fit_hyperparameters = fit_hyperparameters
 
-    def begin(self, X, y):
+    def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
         if self.fit_hyperparameters:
+            # TODO: Migrate this to scikit-learn
             import GPy
 
             T = X.grid_points[0]
@@ -224,31 +272,47 @@ class GaussianCorrection(ConditionalMeanCorrection):
                 mean = np.mean(trajectories, axis=0)
                 X_copy[y == class_label, :] -= mean
 
+            gpy_kernel = getattr(self.cov, "_PicklableKernel__kernel")
+
             m = GPy.models.GPRegression(
-                T[:, None], X_copy.T,
-                kernel=self.cov._PicklableKernel__kernel)
+                T[:, None],
+                X_copy.T,
+                kernel=gpy_kernel,
+            )
             m.constrain_positive('')
             m.optimize()
 
             self.cov_ = copy.deepcopy(make_kernel(m.kern))
 
-    def _evaluate_mean(self, t):
+    def _evaluate_mean(self, t: NDArrayFloat) -> NDArrayFloat:
 
         mean = self.mean
 
-        if isinstance(mean, numbers.Number):
+        if isinstance(mean, (int, float)):
             expectation = np.ones_like(t, dtype=float) * mean
         else:
             expectation = mean(t)
 
         return expectation
 
-    def _evaluate_cov(self, t_0, t_1):
+    def _evaluate_cov(
+        self,
+        t_0: NDArrayFloat,
+        t_1: NDArrayFloat,
+    ) -> NDArrayFloat:
+        from ....misc.covariances import _execute_covariance
+
         cov = getattr(self, "cov_", self.cov)
 
-        return _execute_kernel(cov, t_0, t_1)
+        return _execute_covariance(cov, t_0, t_1)
 
-    def conditioned(self, X, t_0, **kwargs):
+    def conditioned(
+        self,
+        *,
+        X: NDArrayFloat,
+        T: NDArrayFloat,
+        t_0: float,
+    ) -> Correction:
         # If the point makes the matrix singular, don't change the correction
 
         cov = getattr(self, "cov_", self.cov)
@@ -258,7 +322,8 @@ class GaussianCorrection(ConditionalMeanCorrection):
             correction = GaussianConditionedCorrection(
                 mean=self.mean,
                 cov=cov,
-                conditioning_points=t_0)
+                conditioning_points=np.asarray(t_0),
+            )
 
             correction._covariance_matrix_inv()
 
@@ -268,7 +333,11 @@ class GaussianCorrection(ConditionalMeanCorrection):
 
             return self
 
-    def conditional_mean(self, X, selected_index):
+    def conditional_mean(
+        self,
+        X: FDataGrid,
+        selected_index: Tuple[int, ...],
+    ) -> FDataGrid:
 
         T = X.grid_points[0]
 
@@ -289,44 +358,55 @@ class GaussianCorrection(ConditionalMeanCorrection):
         b_T = self._evaluate_cov(T, t_0)
         assert b_T.shape == T.shape
 
-        cond_expectation = (expectation +
-                            b_T / var *
-                            (x_0.T - t_0_expectation)
-                            ) if var else expectation + np.zeros_like(x_0.T)
+        cond_expectation = (
+            expectation
+            + b_T / var
+            * (x_0.T - t_0_expectation)
+        ) if var else expectation + np.zeros_like(x_0.T)
 
-        return cond_expectation
+        return X.copy(
+            data_matrix=cond_expectation.T,
+            sample_names=None,
+        )
 
 
 class GaussianConditionedCorrection(GaussianCorrection):
-    r"""
+    """
+    Correction for a conditioned Gaussian process.
+
     Correction assuming that the underlying process is Gaussian, with several
     values conditioned to 0.
 
-   The conditional mean is inherited from :class:`GaussianCorrection`, with
-   the conditioned mean and covariance.
+    The conditional mean is inherited from :class:`GaussianCorrection`, with
+    the conditioned mean and covariance.
 
     The corrections after this is applied are of type
     :class:`GaussianConditionedCorrection`, adding additional points.
 
     Parameters:
-
-        conditioning_points (iterable of ints or tuples of ints): Points where
-            the process is conditioned to have the value 0.
-        mean (number or function): Mean function of the (unconditioned)
-            Gaussian process.
-        cov (number or function): Covariance function of the (unconditioned)
-            Gaussian process.
+        conditioning_points: Points where the process is conditioned to
+            have the value 0.
+        mean: Mean function of the (unconditioned) Gaussian process.
+        cov: Covariance function of the (unconditioned) Gaussian process.
 
     """
 
-    def __init__(self, conditioning_points, *, mean=0, cov=1):
+    def __init__(
+        self,
+        conditioning_points: NDArrayFloat,
+        *,
+        mean: Union[float, Callable[[NDArrayFloat], NDArrayFloat]] = 0,
+        cov: CovarianceLike = 1,
+    ) -> None:
 
-        super(GaussianConditionedCorrection, self).__init__(
-            mean=mean, cov=cov)
+        super().__init__(
+            mean=mean,
+            cov=cov,
+        )
 
         self.conditioning_points = conditioning_points
 
-    def _covariance_matrix_inv(self):
+    def _covariance_matrix_inv(self) -> NDArrayFloat:
 
         cond_points = self._conditioning_points()
 
@@ -334,7 +414,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
         if cov_matrix_inv is None:
 
             cov_matrix = super()._evaluate_cov(
-                cond_points, cond_points
+                cond_points, cond_points,
             )
 
             self._cov_matrix_inv = np.linalg.inv(cov_matrix)
@@ -342,10 +422,16 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
         return cov_matrix_inv
 
-    def _conditioning_points(self):
+    def _conditioning_points(self) -> NDArrayFloat:
         return _transform_to_2d(self.conditioning_points)
 
-    def conditioned(self, X, t_0, **kwargs):
+    def conditioned(
+        self,
+        *,
+        X: NDArrayFloat,
+        T: NDArrayFloat,
+        t_0: float,
+    ) -> Correction:
 
         # If the point makes the matrix singular, don't change the correction
         try:
@@ -354,7 +440,8 @@ class GaussianConditionedCorrection(GaussianCorrection):
                 mean=self.mean,
                 cov=self.cov,
                 conditioning_points=np.concatenate(
-                    (self._conditioning_points(), [[t_0]]))
+                    (self._conditioning_points(), np.array([[t_0]])),
+                ),
             )
 
             correction._covariance_matrix_inv()
@@ -365,7 +452,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
             return self
 
-    def _evaluate_mean(self, t):
+    def _evaluate_mean(self, t: NDArrayFloat) -> NDArrayFloat:
 
         cond_points = self._conditioning_points()
 
@@ -385,9 +472,13 @@ class GaussianConditionedCorrection(GaussianCorrection):
         expectation = original_expect + modified_expect
         assert expectation.shape == t.shape
 
-        return expectation
+        return expectation  # type: ignore[no-any-return]
 
-    def _evaluate_cov(self, t_0, t_1):
+    def _evaluate_cov(
+        self,
+        t_0: NDArrayFloat,
+        t_1: NDArrayFloat,
+    ) -> NDArrayFloat:
 
         cond_points = self._conditioning_points()
 
@@ -397,55 +488,83 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
         b_t_1 = super()._evaluate_cov(cond_points, t_1)
 
-        return (super()._evaluate_cov(t_0, t_1) -
-                b_t_0_T @ A_inv @ b_t_1)
+        return (
+            super()._evaluate_cov(t_0, t_1)
+            - b_t_0_T @ A_inv @ b_t_1
+        )
 
 
 class GaussianSampleCorrection(ConditionalMeanCorrection):
     """
+    Gaussian correction with sample covariance.
+
     Correction assuming that the process is Gaussian and using as the kernel
     the sample covariance.
 
     """
 
-    def begin(self, X: FDataGrid, Y):
+    def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
 
         X_copy = np.copy(X.data_matrix[..., 0])
 
-        Y = np.ravel(Y)
-        for class_label in np.unique(Y):
-            trajectories = X_copy[Y == class_label, :]
+        y = np.ravel(y)
+        for class_label in np.unique(y):
+            trajectories = X_copy[y == class_label, :]
 
             mean = np.mean(trajectories, axis=0)
-            X_copy[Y == class_label, :] -= mean
+            X_copy[y == class_label, :] -= mean
 
         self.cov_matrix_ = np.cov(X_copy, rowvar=False)
         self.t_ = np.ravel(X.grid_points)
         self.gaussian_correction_ = GaussianCorrection(
-            cov=self.cov)
+            cov=self.cov_fun,
+        )
 
-    def cov(self, t_0, t_1):
+    def cov_fun(
+        self,
+        t_0: ArrayLike,
+        t_1: ArrayLike,
+    ) -> NDArrayFloat:
         i = np.searchsorted(self.t_, t_0)
         j = np.searchsorted(self.t_, t_1)
 
-        i = np.ravel(i)
-        j = np.ravel(j)
+        i_r = np.ravel(i)
+        j_r = np.ravel(j)
 
-        return self.cov_matrix_[np.ix_(i, j)]
+        return self.cov_matrix_[  # type: ignore[no-any-return]
+            np.ix_(i_r, j_r)
+        ]
 
-    def conditioned(self, t_0, **kwargs):
+    def conditioned(
+        self,
+        *,
+        X: NDArrayFloat,
+        T: NDArrayFloat,
+        t_0: float,
+    ) -> Correction:
         self.gaussian_correction_ = self.gaussian_correction_.conditioned(
-            t_0=t_0, **kwargs)
+            X=X,
+            T=T,
+            t_0=t_0,
+        )
         return self
 
-    def conditional_mean(self, X, selected_index):
+    def conditional_mean(
+        self,
+        X: FDataGrid,
+        selected_index: Tuple[int, ...],
+    ) -> FDataGrid:
 
         return self.gaussian_correction_.conditional_mean(
-            X, selected_index)
+            X,
+            selected_index,
+        )
 
 
 class UniformCorrection(Correction):
     """
+    Correction for uniform process.
+
     Correction assuming that the underlying process is an Ornstein-Uhlenbeck
     process with infinite lengthscale.
 
@@ -456,22 +575,28 @@ class UniformCorrection(Correction):
 
     """
 
-    def conditioned(self, X, t_0, **kwargs):
+    def conditioned(
+        self,
+        X: NDArrayFloat,
+        T: NDArrayFloat,
+        t_0: float,
+    ) -> Correction:
         from ....misc.covariances import Brownian
 
         return GaussianCorrection(cov=Brownian(origin=t_0))
 
-    def correct(self, X, selected_index):
-        x_index = (slice(None),) + tuple(selected_index) + (np.newaxis,)
+    def correct(
+        self,
+        X: FDataGrid,
+        selected_index: Tuple[int, ...],
+    ) -> FDataGrid:
+        x_index = (slice(None),) + selected_index
+        x_0 = X.data_matrix[x_index]
 
-        # Have to copy it because otherwise is a view and shouldn't be
-        # subtracted from the original matrix
-        x_0 = np.copy(X.data_matrix[x_index])
-
-        X.data_matrix[...] -= x_0
+        return X - x_0
 
 
-class StoppingCondition(abc.ABC, sklearn.base.BaseEstimator):
+class StoppingCondition(BaseEstimator):
     """
     Stopping condition for RMH.
 
@@ -481,8 +606,16 @@ class StoppingCondition(abc.ABC, sklearn.base.BaseEstimator):
     """
 
     @abc.abstractmethod
-    def __call__(self, **kwargs):
-        pass
+    def __call__(
+        self,
+        *,
+        selected_index: Tuple[int, ...],
+        dependences: FDataGrid,
+        selected_variable: NDArrayFloat,
+        X: FDataGrid,
+        y: NDArrayFloat,
+    ) -> bool:
+        """Whether the algorithm should stop."""
 
 
 class ScoreThresholdStop(StoppingCondition):
@@ -497,22 +630,27 @@ class ScoreThresholdStop(StoppingCondition):
     points chosen and can vary per problem.
 
     Parameters:
-
-        threshold (float): Value compared with the score. If the score
-                           of the selected point is not higher than that,
-                           the point will not be selected (unless it is
-                           the first iteration) and RMH will end.
+        threshold: Value compared with the score. If the score
+            of the selected point is not higher than that,
+            the point will not be selected (unless it is
+            the first iteration) and RMH will end.
 
     """
 
-    def __init__(self, threshold=0.2):
+    def __init__(self, threshold: float = 0.2) -> None:
 
         super().__init__()
         self.threshold = threshold
 
-    def __call__(self, *, selected_index, dependences, **kwargs):
+    def __call__(
+        self,
+        *,
+        selected_index: Tuple[int, ...],
+        dependences: FDataGrid,
+        **kwargs: Any,
+    ) -> bool:
 
-        score = dependences[selected_index]
+        score = float(dependences.data_matrix[0, selected_index, 0])
 
         return score < self.threshold
 
@@ -538,20 +676,24 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
     distance covariance.
 
     Parameters:
-
-        significance (float): Significance used in the independence test. By
-                              default is 0.01 (1%).
+        significance: Significance used in the independence test. By
+            default is 0.01 (1%).
 
     References:
         .. footbibliography::
 
     """
 
-    def __init__(self, significance=0.01):
+    def __init__(self, significance: float = 0.01) -> None:
         super().__init__()
         self.significance = significance
 
-    def chi_bound(self, x, y, significance):
+    def chi_bound(
+        self,
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        significance: float,
+    ) -> float:
 
         x_dist = dcor.distances.pairwise_distances(x)
         y_dist = dcor.distances.pairwise_distances(y)
@@ -560,16 +702,24 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
 
         chi_quant = scipy.stats.chi2.ppf(1 - significance, df=1)
 
-        return chi_quant * t2 / x_dist.shape[0]
+        return float(chi_quant * t2 / x_dist.shape[0])
 
-    def __call__(self, *, selected_variable, y, **kwargs):
+    def __call__(
+        self,
+        *,
+        selected_variable: NDArrayFloat,
+        y: NDArrayFloat,
+        **kwargs: Any,
+    ) -> bool:
 
         bound = self.chi_bound(selected_variable, y, self.significance)
 
-        return dcor.u_distance_covariance_sqr(selected_variable, y) < bound
+        return bool(
+            dcor.u_distance_covariance_sqr(selected_variable, y) < bound,
+        )
 
 
-class RedundancyCondition(abc.ABC, sklearn.base.BaseEstimator):
+class RedundancyCondition(BaseEstimator):
     """
     Redundancy condition for RMH.
 
@@ -579,77 +729,83 @@ class RedundancyCondition(abc.ABC, sklearn.base.BaseEstimator):
     """
 
     @abc.abstractmethod
-    def __call__(self, max_point, test_point, **kwargs):
+    def __call__(
+        self,
+        *,
+        max_point: NDArrayFloat,
+        test_point: NDArrayFloat,
+        **kwargs: Any,
+    ) -> bool:
         pass
 
 
 class DependenceThresholdRedundancy(RedundancyCondition):
     """
-    The points are redundant if their dependency is above a given
-    threshold.
+    The points are redundant if their dependency is above a given threshold.
 
     This stopping condition requires that the dependency has a known bound, for
     example that it takes values in the interval :math:`[0, 1]`.
 
     Parameters:
-
-        threshold (float): Value compared with the score. If the score
+        threshold: Value compared with the score. If the score
             of the selected point is not higher than that,
             the point will not be selected (unless it is
             the first iteration) and RMH will end.
-        dependence_measure (callable): Dependence measure to use. By default,
+        dependence_measure: Dependence measure to use. By default,
             it uses the bias corrected squared distance correlation.
 
     """
 
-    def __init__(self, threshold=0.9, *,
-                 dependence_measure=dcor.u_distance_correlation_sqr):
-
+    def __init__(
+        self,
+        threshold: float = 0.9,
+        *,
+        dependence_measure: _DepMeasure[
+            NDArrayFloat,
+            NDArrayFloat,
+        ] = dcor.u_distance_correlation_sqr,
+    ) -> None:
         super().__init__()
         self.threshold = threshold
         self.dependence_measure = dependence_measure
 
-    def __call__(self, *, max_point, test_point, **kwargs):
-
-        return self.dependence_measure(max_point, test_point) > self.threshold
-
-
-class RMHResult(object):
-
-    def __init__(self, index, score):
-        self.index = index
-        self.score = score
-        self.matrix_after_correction = None
-        self.original_dependence = None
-        self.influence_mask = None
-        self.current_mask = None
-
-    def __repr__(self):
-        return (self.__class__.__name__ +
-                "(index={index}, score={score})"
-                .format(index=self.index, score=self.score))
+    def __call__(
+        self,
+        *,
+        max_point: NDArrayFloat,
+        test_point: NDArrayFloat,
+        **kwargs: Any,
+    ) -> bool:
+        return bool(
+            self.dependence_measure(max_point, test_point) > self.threshold,
+        )
 
 
-def _get_influence_mask(X, t_max_index, redundancy_condition, old_mask):
-    """
-    Get the mask of the points that have a large dependence with the
-    selected point.
-
-    """
+def _get_influence_mask(
+    X: NDArrayFloat,
+    t_max_index: Tuple[int, ...],
+    redundancy_condition: RedundancyCondition,
+    old_mask: NDArrayBool,
+) -> NDArrayBool:
+    """Get the mask of points that have a large dependence with another."""
     sl = slice(None)
 
-    def get_index(index):
+    def get_index(
+        index: Tuple[int, ...],
+    ) -> Tuple[Union[slice, int, None], ...]:
         return (sl,) + tuple(index) + (np.newaxis,)
 
-    def is_redundant(index):
+    def is_redundant(index: Tuple[int, ...]) -> bool:
 
         max_point = np.squeeze(X[get_index(t_max_index)], axis=1)
         test_point = np.squeeze(X[get_index(index)], axis=1)
 
-        return redundancy_condition(max_point=max_point,
-                                    test_point=test_point)
+        return redundancy_condition(
+            max_point=max_point,
+            test_point=test_point,
+        )
 
-    def adjacent_indexes(index):
+    def adjacent_indexes(index: Tuple[int, ...]) -> Iterable[Tuple[int, ...]]:
         for i, coord in enumerate(index):
             # Out of bounds right check
             if coord < (X.shape[i + 1] - 1):
@@ -662,15 +818,18 @@ def _get_influence_mask(X, t_max_index, redundancy_condition, old_mask):
                 new_index[i] -= 1
                 yield tuple(new_index)
 
-    def update_mask(new_mask, index):
+    def update_mask(
+        new_mask: NDArrayBool,
+        index: Tuple[int, ...],
+    ) -> None:
         indexes = [index]
 
         while indexes:
             index = indexes.pop()
             # Check if it wasn't masked before
             if (
-                not old_mask[index] and not new_mask[index] and
-                is_redundant(index)
+                not old_mask[index] and not new_mask[index]
+                and is_redundant(index)
             ):
                 new_mask[index] = True
                 for i in adjacent_indexes(index):
@@ -686,113 +845,15 @@ def _get_influence_mask(X, t_max_index, redundancy_condition, old_mask):
     return new_mask
 
 
-def _rec_maxima_hunting_gen_no_copy(
-        X: FDataGrid, y, *,
-        dependence_measure=dcor.u_distance_correlation_sqr,
-        correction=None,
-        redundancy_condition=None,
-        stopping_condition=None,
-        mask=None,
-        get_intermediate_results=False):
-    """
-    Find the most relevant features of a function using recursive maxima
-    hunting. It changes the original matrix.
-
-    Parameters:
-
-        dependence_measure (callable): Dependence measure to use. By default,
-            it uses the bias corrected squared distance correlation.
-        max_features (int): Maximum number of features to select.
-        correction (Correction): Correction used to subtract the information
-            of each selected point in each iteration.
-        redundancy_condition (callable): Condition to consider a point
-            redundant with the selected maxima and discard it from future
-            consideration as a maximum.
-        stopping_condition (callable): Condition to stop the algorithm.
-        mask (boolean array): Masked values.
-        get_intermediate_results (boolean): Return additional debug info.
-
-    """
-    # X = np.asfarray(X)
-    y = np.asfarray(y)
-
-    if correction is None:
-        correction = UniformCorrection()
-
-    if mask is None:
-        mask = np.zeros([len(t) for t in X.grid_points], dtype=bool)
-
-    if redundancy_condition is None:
-        redundancy_condition = DependenceThresholdRedundancy()
-
-    if stopping_condition is None:
-        stopping_condition = AsymptoticIndependenceTestStop()
-
-    first_pass = True
-
-    correction.begin(X, y)
-
-    while True:
-        dependences = _compute_dependence(
-            X=X.data_matrix, y=y,
-            dependence_measure=dependence_measure)
-
-        t_max_index = _absolute_argmax(dependences,
-                                       mask=mask)
-        score = dependences[t_max_index]
-
-        repeated_point = mask[t_max_index]
-
-        stopping_condition_reached = stopping_condition(
-            selected_index=t_max_index,
-            dependences=dependences,
-            selected_variable=X.data_matrix[(slice(None),) +
-                                            tuple(t_max_index)],
-            X=X, y=y)
-
-        if ((repeated_point or stopping_condition_reached) and
-                not first_pass):
-            return
-
-        influence_mask = _get_influence_mask(
-            X=X.data_matrix, t_max_index=t_max_index,
-            redundancy_condition=redundancy_condition,
-            old_mask=mask)
-
-        mask |= influence_mask
-
-        # Correct the influence of t_max
-        correction(X=X,
-                   selected_index=t_max_index)
-        result = RMHResult(index=t_max_index, score=score)
-
-        # Additional info, useful for debugging
-        if get_intermediate_results:
-            result.matrix_after_correction = np.copy(X.data_matrix)
-            result.original_dependence = dependences
-            result.influence_mask = influence_mask
-            result.current_mask = mask
-
-        new_X = yield result  # Accept modifications to the matrix
-        if new_X is not None:
-            X.data_matrix = new_X
-
-        correction = correction.conditioned(
-            X=X.data_matrix,
-            T=X.grid_points[0],
-            t_0=X.grid_points[0][t_max_index])
-
-        first_pass = False
-
-
-def _rec_maxima_hunting_gen(X, *args, **kwargs):
-    yield from _rec_maxima_hunting_gen_no_copy(copy.copy(X),
-                                               *args, **kwargs)
-
-
 class RecursiveMaximaHunting(
-        sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
-    r"""
+    BaseEstimator,
+    InductiveTransformerMixin[
+        FDataGrid,
+        NDArrayFloat,
+        Union[NDArrayInt, NDArrayFloat],
+    ],
+):
+    """
     Recursive Maxima Hunting variable selection.
 
     This is a filter variable selection method for problems with a target
@@ -814,24 +875,22 @@ class RecursiveMaximaHunting(
     :doc:`/modules/preprocessing/dim_reduction/recursive_maxima_hunting`.
 
     Parameters:
-
-        dependence_measure (callable): Dependence measure to use. By default,
+        dependence_measure: Dependence measure to use. By default,
             it uses the bias corrected squared distance correlation.
-        max_features (int): Maximum number of features to select. By default
+        max_features: Maximum number of features to select. By default
             there is no limit.
-        correction (Correction): Correction used to subtract the information
+        correction: Correction used to subtract the information
             of each selected point in each iteration. By default it is
             a :class:`.UniformCorrection` object.
-        redundancy_condition (callable): Condition to consider a point
+        redundancy_condition: Condition to consider a point
             redundant with the selected maxima and discard it from future
             consideration as a maximum. By default it is a
-            :class:`.DependenceThresholdRedundancy` object.
-        stopping_condition (callable): Condition to stop the algorithm. By
+            :class:`DependenceThresholdRedundancy` object.
+        stopping_condition: Condition to stop the algorithm. By
             default it is a :class:`.AsymptoticIndependenceTestStop`
             object.
 
     Examples:
-
         >>> from skfda.preprocessing.dim_reduction import variable_selection
         >>> from skfda.datasets import make_gaussian_process
         >>> import skfda
@@ -888,60 +947,173 @@ class RecursiveMaximaHunting(
 
     """
 
-    def __init__(self, *,
-                 dependence_measure=dcor.u_distance_correlation_sqr,
-                 max_features=None,
-                 correction=None,
-                 redundancy_condition=None,
-                 stopping_condition=None):
+    def __init__(
+        self,
+        *,
+        dependence_measure: _DepMeasure[
+            NDArrayFloat,
+            NDArrayFloat,
+        ] = dcor.u_distance_correlation_sqr,
+        max_features: Optional[int] = None,
+        correction: Optional[Correction] = None,
+        redundancy_condition: Optional[RedundancyCondition] = None,
+        stopping_condition: Optional[StoppingCondition] = None,
+        _get_intermediate_results: bool = False,
+    ) -> None:
         self.dependence_measure = dependence_measure
         self.max_features = max_features
         self.correction = correction
         self.redundancy_condition = redundancy_condition
         self.stopping_condition = stopping_condition
+        self._get_intermediate_results = _get_intermediate_results
 
-    def fit(self, X, y):
-
+    def fit(  # type: ignore[override] # noqa: D102
+        self,
+        X: FDataGrid,
+        y: Union[NDArrayInt, NDArrayFloat],
+    ) -> RecursiveMaximaHunting:
+        """Recursive maxima hunting algorithm."""
         self.features_shape_ = X.data_matrix.shape[1:]
 
-        indexes = []
-        for i, result in enumerate(
-            _rec_maxima_hunting_gen(
-                X=X.copy(),
-                y=y,
+        y = np.asfarray(y)
+
+        correction = (
+            self.correction
+            if self.correction
+            else UniformCorrection()
+        )
+
+        redundancy_condition = (
+            self.redundancy_condition
+            if self.redundancy_condition
+            else DependenceThresholdRedundancy()
+        )
+
+        stopping_condition = (
+            self.stopping_condition
+            if self.stopping_condition
+            else AsymptoticIndependenceTestStop()
+        )
+
+        max_features = (
+            self.max_features
+            if self.max_features
+            else math.inf
+        )
+
+        mask = np.zeros([len(t) for t in X.grid_points], dtype=bool)
+        indexes: List[Tuple[int, ...]] = []
+        corrected_functions = []
+        relevances = []
+        first_pass = True
+
+        correction.begin(X, y)
+
+        while True:
+            dependences = _compute_dependence(
+                X,
+                y,
                 dependence_measure=self.dependence_measure,
-                correction=self.correction,
-                redundancy_condition=self.redundancy_condition,
-                stopping_condition=self.stopping_condition)):
+            )
+            corrected_functions.append(X)
+            relevances.append(dependences)
 
-            indexes.append(result.index)
+            t_max_index = _absolute_argmax(
+                dependences,
+                mask=mask,
+            )
 
-            if self.max_features is not None and i >= self.max_features:
-                break
+            repeated_point = mask[t_max_index]
 
-        self.indexes_ = tuple(np.transpose(indexes).tolist())
+            stopping_condition_reached = stopping_condition(
+                selected_index=t_max_index,
+                dependences=dependences,
+                selected_variable=X.data_matrix[
+                    (slice(None),) + tuple(t_max_index)
+                ],
+                X=X,
+                y=y,
+            )
 
-        return self
+            if (
+                (
+                    len(indexes) >= max_features
+                    or repeated_point
+                    or stopping_condition_reached
+                )
+                and not first_pass
+            ):
+                self.indexes_ = tuple(np.transpose(indexes).tolist())
+                self._relevances = concatenate(relevances)
+                self._corrected_functions = corrected_functions
+                return self
 
-    def transform(self, X):
+            indexes.append(t_max_index)
+
+            influence_mask = _get_influence_mask(
+                X=X.data_matrix,
+                t_max_index=t_max_index,
+                redundancy_condition=redundancy_condition,
+                old_mask=mask,
+            )
+
+            mask |= influence_mask
+
+            # Correct the influence of t_max
+            X = correction(
+                X=X,
+                selected_index=t_max_index,
+            )
+
+            correction = correction.conditioned(
+                X=X.data_matrix,
+                T=X.grid_points[0],
+                t_0=X.grid_points[0][t_max_index],
+            )
+
+            first_pass = False
+
+    def transform(self, X: FDataGrid) -> NDArrayFloat:
 
         X_matrix = X.data_matrix
 
         sklearn.utils.validation.check_is_fitted(self)
 
         if X_matrix.shape[1:] != self.features_shape_:
-            raise ValueError("The trajectories have a different number of "
-                             "points than the ones fitted")
+            raise ValueError(
+                "The trajectories have a different number of "
+                "points than the ones fitted",
+            )
 
         output = X_matrix[(slice(None),) + self.indexes_]
 
-        return output.reshape(X.n_samples, -1)
+        return output.reshape(  # type: ignore[no-any-return]
+            X.n_samples,
+            -1,
+        )
 
-    def get_support(self, indices: bool=False):
+    @overload
+    def get_support(
+        self,
+        indices: Literal[True],
+    ) -> Sequence[Tuple[int, ...]]:
+        pass
+
+    @overload
+    def get_support(
+        self,
+        indices: Literal[False] = False,
+    ) -> NDArrayBool:
+        pass
+
+    def get_support(
+        self,
+        indices: bool = False,
+    ) -> Union[Sequence[Tuple[int, ...]], NDArrayBool]:
 
         if indices:
             return self.indexes_
-        else:
-            mask = np.zeros(self.features_shape_[0], dtype=bool)
-            mask[self.indexes_] = True
-            return mask
+
+        mask = np.zeros(self.features_shape_[0], dtype=bool)
+        mask[self.indexes_] = True
+        return mask

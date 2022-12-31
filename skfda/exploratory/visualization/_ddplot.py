@@ -4,8 +4,9 @@ This module contains the necessary functions to construct the DD-Plot.
 To do this depth is calculated for the two chosen distributions, and then
 a scatter plot is created of this two variables.
 """
+from __future__ import annotations
 
-from typing import Optional, TypeVar, Union
+from typing import TypeVar
 
 import numpy as np
 from matplotlib.artist import Artist
@@ -15,7 +16,7 @@ from matplotlib.figure import Figure
 
 from ...exploratory.depth.multivariate import Depth
 from ...representation._functional_data import FData
-from ...representation._typing import NDArrayInt
+from ...typing._numpy import NDArrayInt
 from ._baseplot import BasePlot
 
 T = TypeVar('T', bound=FData)
@@ -56,12 +57,12 @@ class DDPlot(BasePlot):
         fdata: T,
         dist1: T,
         dist2: T,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
         depth_method: Depth[T],
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        c: Optional[NDArrayInt] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        c: NDArrayInt | None = None,
         cmap_bold: ListedColormap = None,
         x_label: str = "X depth",
         y_label: str = "Y depth",

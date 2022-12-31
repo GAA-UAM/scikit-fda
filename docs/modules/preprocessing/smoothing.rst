@@ -20,16 +20,14 @@ the influence of each input point over it. For doing this, it considers a
 kernel function placed at the desired point. The influence of each input point
 will be related with the value of the kernel function at that input point.
 
-There are several kernel smoothers provided in this library. All of them are
-also *linear* smoothers, meaning that they compute a smoothing matrix (or hat
+The kernel smoother provided in this library is
+also a *linear* smoother, meaning that it computes a smoothing matrix (or hat
 matrix) that performs the smoothing as a linear transformation.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.smoothing.kernel_smoothers.NadarayaWatsonSmoother
-   skfda.preprocessing.smoothing.kernel_smoothers.LocalLinearRegressionSmoother
-   skfda.preprocessing.smoothing.kernel_smoothers.KNeighborsSmoother
+   skfda.preprocessing.smoothing.KernelSmoother
    
 Basis smoother
 --------------

@@ -23,6 +23,9 @@ import sys
 import warnings
 
 import pkg_resources
+# Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
+# repository
+import sphinx_gallery.binder
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 from sphinx.ext.napoleon.docstring import GoogleDocstring
 
@@ -112,17 +115,36 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 
-html_logo = "logos/notitle_logo/notitle_logo.png"
+html_logo = "logo.png"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
 html_theme_options = {
-    'logo_only': True,
-    'style_nav_header_background': 'Gainsboro',
+    "use_edit_page_button": True,
+    "github_url": "https://github.com/GAA-UAM/scikit-fda",
+    "icon_links": [
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/scikit-fda",
+            "icon": "https://avatars.githubusercontent.com/u/2964877",
+            "type": "url",
+        },
+    ],
+    "logo": {
+        "image_light": "logo.png",
+        "image_dark": "logo.png",
+    },
+}
+
+html_context = {
+    "github_user": "GAA-UAM",
+    "github_repo": "scikit-fda",
+    "github_version": "develop",
+    "doc_path": "docs",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -132,18 +154,6 @@ html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
-#
-# This is required for the alabaster theme
-# refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'relations.html',  # needs 'show_related': True theme option to display
-        'searchbox.html',
-        'donate.html',
-    ]
-}
 
 # -- Options for HTMLHelp output ------------------------------------------
 
@@ -261,6 +271,9 @@ class SkfdaExplicitSubOrder(object):
         return f"zzz{filename}"
 
 
+rtd_version = os.environ.get("READTHEDOCS_VERSION", "latest")
+branch = "master" if rtd_version == "stable" else "develop"
+
 sphinx_gallery_conf = {
     # path to your examples scripts
     'examples_dirs': ['../examples', '../tutorial'],
@@ -273,6 +286,14 @@ sphinx_gallery_conf = {
     'backreferences_dir': 'backreferences',
     'doc_module': 'skfda',
     'within_subsection_order': SkfdaExplicitSubOrder,
+    'binder': {
+        'org': 'GAA-UAM',
+        'repo': 'scikit-fda',
+        'branch': branch,
+        'binderhub_url': 'https://mybinder.org',
+        'dependencies': ['../binder/requirements.txt'],
+        'notebooks_dir': '../examples',
+    },
 }
 
 warnings.filterwarnings(
@@ -331,3 +352,25 @@ def patched_parse(self):
 
 GoogleDocstring._unpatched_parse = GoogleDocstring._parse
 GoogleDocstring._parse = patched_parse
+
+
+# Binder integration
+# Taken from
+# https://stanczakdominik.github.io/posts/simple-binder-usage-with-sphinx-gallery-through-jupytext/
+original_gen_binder_rst = sphinx_gallery.binder.gen_binder_rst
+
+
+def patched_gen_binder_rst(*args, **kwargs):
+    return original_gen_binder_rst(*args, **kwargs).replace(
+        "../examples/auto_",
+        "",
+    ).replace(
+        ".ipynb",
+        ".py",
+    )
+
+
+#  # And then we finish our monkeypatching misdeed by redirecting
+
+# sphinx-gallery to use our function:
+sphinx_gallery.binder.gen_binder_rst = patched_gen_binder_rst

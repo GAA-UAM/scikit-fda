@@ -1,33 +1,38 @@
 from __future__ import annotations
 
-from typing import NamedTuple, Optional, Tuple
+from dataclasses import dataclass
+from typing import Tuple
 
 import numpy as np
 import scipy.integrate
 import scipy.stats
 from numpy import linalg as la
-from sklearn.base import BaseEstimator, OutlierMixin
 from sklearn.covariance import MinCovDet
 
-from skfda.exploratory.depth.multivariate import Depth, ProjectionDepth
+from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
+from ...misc.validation import validate_random_state
+from ...representation import FDataGrid
+from ...typing._base import RandomStateLike
+from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ..depth.multivariate import Depth, ProjectionDepth
+from . import _directional_outlyingness_experiment_results as experiments
 
-from ... import FDataGrid
-from ..._utils import RandomStateLike
-from ...representation._typing import NDArrayFloat, NDArrayInt
 
+@dataclass
+class DirectionalOutlyingnessStats:
+    """Directional outlyingness statistical measures."""
 
-class DirectionalOutlyingnessStats(NamedTuple):
     directional_outlyingness: NDArrayFloat
     functional_directional_outlyingness: NDArrayFloat
     mean_directional_outlyingness: NDArrayFloat
     variation_directional_outlyingness: NDArrayFloat
 
 
-def directional_outlyingness_stats(
+def directional_outlyingness_stats(  # noqa: WPS218
     fdatagrid: FDataGrid,
     *,
-    multivariate_depth: Optional[Depth[NDArrayFloat]] = None,
-    pointwise_weights: Optional[NDArrayFloat] = None,
+    multivariate_depth: Depth[NDArrayFloat] | None = None,
+    pointwise_weights: NDArrayFloat | None = None,
 ) -> DirectionalOutlyingnessStats:
     r"""
     Compute the directional outlyingness of the functional data.
@@ -246,9 +251,9 @@ def directional_outlyingness_stats(
     )
 
 
-class MSPlotOutlierDetector(
-    BaseEstimator,  # type: ignore
-    OutlierMixin,  # type: ignore
+class MSPlotOutlierDetector(  # noqa: WPS230
+    BaseEstimator,
+    OutlierMixin[FDataGrid],
 ):
     r"""Outlier detector using directional outlyingness.
 
@@ -287,29 +292,27 @@ class MSPlotOutlierDetector(
     detecting outliers under a normal distribution.
 
     Parameters:
-        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :class:`projection
-            depth <fda.depth_measures.multivariate.ProjectionDepth>`.
-        pointwise_weights (array_like, optional): an array containing the
+        multivariate_depth: Method used to order the data. Defaults
+            to :class:`projection depth
+            <fda.depth_measures.multivariate.ProjectionDepth>`.
+        pointwise_weights: an array containing the
             weights of each points of discretisati on where values have
             been recorded.
-        alpha (float, optional): Denotes the quantile to choose the cutoff
-            value for detecting outliers Defaults to 0.993, which is used
-            in the classical boxplot.
-        assume_centered (boolean, optional): If True, the support of the
+        cutoff_factor: Factor that multiplies the cutoff value, in order to
+            consider more or less curves as outliers.
+        assume_centered: If True, the support of the
             robust location and the covariance estimates is computed, and a
             covariance estimate is recomputed from it, without centering
             the data. Useful to work with data whose mean is significantly
             equal to zero but is not exactly zero. If False, default value,
             the robust location and covariance are directly computed with
             the FastMCD algorithm without additional treatment.
-        support_fraction (float, 0 < support_fraction < 1, optional): The
-            proportion of points to be included in the support of the
-            raw MCD estimate.
+        support_fraction: The proportion of points to be included in the
+            support of the raw MCD estimate.
             Default is None, which implies that the minimum value of
             support_fraction will be used within the algorithm:
             [n_sample + n_features + 1] / 2
-        random_state (int, RandomState instance or None, optional): If int,
+        random_state: If int,
             random_state is the seed used by the random number generator;
             If RandomState instance, random_state is the random number
             generator; If None, the random number generator is the
@@ -339,13 +342,13 @@ class MSPlotOutlierDetector(
     def __init__(
         self,
         *,
-        multivariate_depth: Optional[Depth[NDArrayFloat]] = None,
-        pointwise_weights: Optional[NDArrayFloat] = None,
+        multivariate_depth: Depth[NDArrayFloat] | None = None,
+        pointwise_weights: NDArrayFloat | None = None,
         assume_centered: bool = False,
-        support_fraction: Optional[float] = None,
+        support_fraction: float | None = None,
         num_resamples: int = 1000,
         random_state: RandomStateLike = 0,
-        alpha: float = 0.993,
+        cutoff_factor: float = 1,
         _force_asymptotic: bool = False,
     ) -> None:
         self.multivariate_depth = multivariate_depth
@@ -354,7 +357,7 @@ class MSPlotOutlierDetector(
         self.support_fraction = support_fraction
         self.num_resamples = num_resamples
         self.random_state = random_state
-        self.alpha = alpha
+        self.cutoff_factor = cutoff_factor
         self._force_asymptotic = _force_asymptotic
 
     def _compute_points(self, X: FDataGrid) -> NDArrayFloat:
@@ -363,19 +366,18 @@ class MSPlotOutlierDetector(
             multivariate_depth = ProjectionDepth()
 
         # The depths of the samples are calculated giving them an ordering.
-        *_, mean_dir_outl, variation_dir_outl = directional_outlyingness_stats(
+        stats = directional_outlyingness_stats(
             X,
             multivariate_depth=multivariate_depth,
-            pointwise_weights=self.pointwise_weights)
-
-        points = np.concatenate(
-            (mean_dir_outl, variation_dir_outl[:, np.newaxis]),
-            axis=1,
+            pointwise_weights=self.pointwise_weights,
         )
 
-        return points
+        mean = stats.mean_directional_outlyingness
+        variation = stats.variation_directional_outlyingness[:, np.newaxis]
 
-    def _parameters_asymptotic(
+        return np.concatenate((mean, variation), axis=1)
+
+    def _parameters_asymptotic(  # noqa: WPS210
         self,
         sample_size: int,
         dimension: int,
@@ -406,23 +408,24 @@ class MSPlotOutlierDetector(
 
         # m estimation
         alpha = (n - h) / n
-        q_alpha = scipy.stats.chi2.ppf(1 - alpha, df=p)
+        alpha_compl = 1 - alpha
+        q_alpha = scipy.stats.chi2.ppf(alpha_compl, df=p)
 
         dist_p2 = scipy.stats.chi2.cdf(q_alpha, df=p + 2)
         dist_p4 = scipy.stats.chi2.cdf(q_alpha, df=p + 4)
-        c_alpha = (1 - alpha) / dist_p2
+        c_alpha = alpha_compl / dist_p2
         c2 = -dist_p2 / 2
         c3 = -dist_p4 / 2
         c4 = 3 * c3
 
-        b1 = (c_alpha * (c3 - c4)) / (1 - alpha)
+        b1 = (c3 - c4) / dist_p2
         b2 = (
-            0.5 + c_alpha / (1 - alpha)
-            * (c3 - q_alpha / p * (c2 + (1 - alpha) / 2))
+            0.5 + 1 / dist_p2
+            * (c3 - q_alpha / p * (c2 + alpha_compl / 2))
         )
 
         v1 = (
-            (1 - alpha) * b1**2
+            alpha_compl * b1**2
             * (alpha * (c_alpha * q_alpha / p - 1) ** 2 - 1)
             - 2 * c3 * c_alpha**2
             * (
@@ -430,13 +433,14 @@ class MSPlotOutlierDetector(
                 + (p + 2) * b2 * (2 * b1 - p * b2)
             )
         )
-        v2 = n * (b1 * (b1 - p * b2) * (1 - alpha))**2 * c_alpha**2
+        v2 = n * (b1 * (b1 - p * b2) * alpha_compl)**2 * c_alpha**2
         v = v1 / v2
 
         m_asympt = 2 / (c_alpha**2 * v)
 
         estimated_m = (
-            m_asympt * np.exp(0.725 - 0.00663 * p - 0.0780 * np.log(n))
+            m_asympt
+            * np.exp(0.725 - 0.00663 * p - 0.078 * np.log(n))  # noqa: WPS432
         )
 
         dfn = p
@@ -445,7 +449,13 @@ class MSPlotOutlierDetector(
         # Calculation of the cutoff value and scaling factor to identify
         # outliers.
         scaling = estimated_c * dfd / estimated_m / dfn
-        cutoff_value = scipy.stats.f.ppf(self.alpha, dfn, dfd, loc=0, scale=1)
+        cutoff_value = scipy.stats.f.ppf(
+            0.993,  # noqa: WPS432
+            dfn,
+            dfd,
+            loc=0,
+            scale=1,
+        )
 
         return scaling, cutoff_value
 
@@ -454,39 +464,38 @@ class MSPlotOutlierDetector(
         sample_size: int,
         dimension: int,
     ) -> Tuple[float, float]:
-        from . import \
-            _directional_outlyingness_experiment_results as experiments
 
         key = sample_size // 5
 
         use_asympt = True
 
-        if dimension == 2:
-            scaling_list = experiments.dim2_scaling_list
-            cutoff_list = experiments.dim2_cutoff_list
-            assert len(scaling_list) == len(cutoff_list)
-            if key < len(scaling_list):
-                use_asympt = False
+        if not self._force_asymptotic:
+            if dimension == 2:
+                scaling_list = experiments.dim2_scaling_list
+                cutoff_list = experiments.dim2_cutoff_list
+                assert len(scaling_list) == len(cutoff_list)
+                if key < len(scaling_list):
+                    use_asympt = False
 
-        elif dimension == 3:
-            scaling_list = experiments.dim3_scaling_list
-            cutoff_list = experiments.dim3_cutoff_list
-            assert len(scaling_list) == len(cutoff_list)
-            if key < len(scaling_list):
-                use_asympt = False
+            elif dimension == 3:
+                scaling_list = experiments.dim3_scaling_list
+                cutoff_list = experiments.dim3_cutoff_list
+                assert len(scaling_list) == len(cutoff_list)
+                if key < len(scaling_list):
+                    use_asympt = False
 
         if use_asympt:
             return self._parameters_asymptotic(sample_size, dimension)
 
         return scaling_list[key], cutoff_list[key]
 
-    def fit_predict(self, X: FDataGrid, y: None = None) -> NDArrayInt:
+    def fit_predict(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: object = None,
+    ) -> NDArrayInt:
 
-        try:
-            self.random_state_ = np.random.RandomState(self.random_state)
-        except ValueError:
-            self.random_state_ = self.random_state
-
+        self.random_state_ = validate_random_state(self.random_state)
         self.points_ = self._compute_points(X)
 
         # The square mahalanobis distances of the samples are
@@ -496,7 +505,8 @@ class MSPlotOutlierDetector(
             assume_centered=self.assume_centered,
             support_fraction=self.support_fraction,
             random_state=self.random_state_,
-        ).fit(self.points_)
+        )
+        self.cov_.fit(self.points_)
 
         # Calculation of the degrees of freedom of the F-distribution
         # (approximation of the tail of the distance distribution).
@@ -515,13 +525,11 @@ class MSPlotOutlierDetector(
             )
 
         self.scaling_ = scaling
-        self.cutoff_value_ = cutoff_value
+        self.cutoff_value_ = cutoff_value * self.cutoff_factor
 
-        rmd_2 = self.cov_.mahalanobis(self.points_)
+        rmd_2: NDArrayFloat = self.cov_.mahalanobis(self.points_)
 
         outliers = self.scaling_ * rmd_2 > self.cutoff_value_
 
         # Predict as scikit-learn outlier detectors
-        predicted = ~outliers + outliers * -1
-
-        return predicted
+        return ~outliers + outliers * -1

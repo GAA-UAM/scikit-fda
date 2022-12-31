@@ -4,11 +4,13 @@ from typing import Any, Callable, Generic, Optional, Tuple, TypeVar
 import multimethod
 import numpy as np
 
-from ..._utils import _pairwise_symmetric
+from ..._utils import _MapAcceptable, _pairwise_symmetric
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat, Vector
-from ._typing import Metric, MetricElementType, Norm, VectorType
+from ...typing._base import Vector
+from ...typing._metric import Metric, Norm, VectorType
+from ...typing._numpy import NDArrayFloat
 
+_MapAcceptableT = TypeVar("_MapAcceptableT", bound=_MapAcceptable)
 T = TypeVar("T", bound=FData)
 
 
@@ -140,7 +142,7 @@ def pairwise_metric_optimization(
     elem1: Any,
     elem2: Optional[Any],
 ) -> NDArrayFloat:
-    r"""
+    """
     Optimized computation of a pairwise metric.
 
     This is a generic function that can be subclassed for different
@@ -150,8 +152,9 @@ def pairwise_metric_optimization(
     return NotImplemented
 
 
-class PairwiseMetric(Generic[MetricElementType]):
-    r"""Pairwise metric function.
+class PairwiseMetric(Generic[_MapAcceptableT]):
+    """
+    Pairwise metric function.
 
     Computes a given metric pairwise. The matrix returned by the pairwise
     metric is a matrix with as many rows as observations in the first object
@@ -167,20 +170,24 @@ class PairwiseMetric(Generic[MetricElementType]):
 
     def __init__(
         self,
-        metric: Metric[MetricElementType],
+        metric: Metric[_MapAcceptableT],
     ):
         self.metric = metric
 
     def __call__(
         self,
-        elem1: MetricElementType,
-        elem2: Optional[MetricElementType] = None,
+        elem1: _MapAcceptableT,
+        elem2: Optional[_MapAcceptableT] = None,
     ) -> NDArrayFloat:
         """Evaluate the pairwise metric."""
         optimized = pairwise_metric_optimization(self.metric, elem1, elem2)
 
         return (
-            _pairwise_symmetric(self.metric, elem1, elem2)
+            _pairwise_symmetric(
+                self.metric,  # type: ignore[arg-type]
+                elem1,
+                elem2,
+            )
             if optimized is NotImplemented
             else optimized
         )
@@ -253,7 +260,7 @@ class TransformationMetric(Generic[Original, Transformed], Metric[Original]):
 
 
 @pairwise_metric_optimization.register
-def _pairwise_metric_optimization_transformation_distance(
+def _pairwise_metric_optimization_transformation_dist(
     metric: TransformationMetric[Any, Any],
     e1: T,
     e2: Optional[T],
@@ -265,3 +272,14 @@ def _pairwise_metric_optimization_transformation_distance(
     pairwise = PairwiseMetric(metric.metric)
 
     return pairwise(e1_trans, e2_trans)
+
+
+def _fit_metric(metric: Metric[T], X: T) -> None:
+    """Fits a metric if it has a fit method.
+
+    Args:
+        metric: The metric to fit.
+        X: FData with the training data.
+    """
+    fit = getattr(metric, 'fit', lambda X: None)
+    fit(X)

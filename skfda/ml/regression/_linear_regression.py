@@ -9,10 +9,11 @@ import pandas as pd
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
+from ...misc._math import weighted_inner_product_integrate
 from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
-from ...representation.basis import Basis
+from ...representation.basis import Basis, ConstantBasis
 from ...typing._numpy import NDArrayFloat
 from ._coefficients import CoefficientInfo, coefficient_info_from_covariate
 
@@ -259,18 +260,6 @@ class LinearRegression(
             elif regularization is not None:
                 regularization = (None, regularization)
 
-        inner_products_list = [
-            c.regression_matrix(x, y)  # type: ignore[arg-type]
-            for x, c in zip(X_new, coef_info)
-        ]
-
-        # This is C @ J
-        inner_products = np.concatenate(inner_products_list, axis=1)
-
-        if sample_weight is not None:
-            inner_products = inner_products * np.sqrt(sample_weight)
-            y = y * np.sqrt(sample_weight)
-
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(c.basis for c in coef_info),
             regularization_parameter=1,
@@ -281,13 +270,65 @@ class LinearRegression(
             # Intercept is not penalized
             penalty_matrix[0, 0] = 0
 
-        basiscoefs = solve_regularized_weighted_lstsq(
-            coefs=inner_products,
-            result=y,
-            penalty_matrix=penalty_matrix,
-        )
+        if self.functional_response:
+            coef_lengths = []
+            left_inner_products_list = []
+            right_inner_products_list = []
 
-        coef_lengths = np.array([i.shape[1] for i in inner_products_list])
+            for i in enumerate(self.coef_basis):
+                coef_lengths.append(i[1].n_basis)
+                row = []
+                right_inner_products_list.append(
+                    weighted_inner_product_integrate(
+                        i[1],
+                        ConstantBasis(),
+                        X_new[i[0]],
+                        y,
+                    ),
+                )
+                for j in enumerate(self.coef_basis):
+                    row.append(
+                        weighted_inner_product_integrate(
+                            i[1],
+                            j[1],
+                            X_new[i[0]],
+                            X_new[j[0]],
+                        ),
+                    )
+                left_inner_products_list.append(row)
+
+            coef_lengths.pop()
+            left_inner_products = np.block(left_inner_products_list)
+            right_inner_products = np.concatenate(right_inner_products_list)
+
+            if penalty_matrix is not None:
+                left_inner_products += penalty_matrix
+
+            basiscoefs = np.linalg.solve(
+                left_inner_products,
+                right_inner_products,
+            )
+        else:
+            inner_products_list = [
+                c.regression_matrix(x, y)  # type: ignore[arg-type]
+                for x, c in zip(X_new, coef_info)
+            ]
+
+            # This is C @ J
+            inner_products = np.concatenate(inner_products_list, axis=1)
+
+            if sample_weight is not None:
+                inner_products = inner_products * np.sqrt(sample_weight)
+                y = y * np.sqrt(sample_weight)
+
+            basiscoefs = solve_regularized_weighted_lstsq(
+                coefs=inner_products,
+                result=y,
+                penalty_matrix=penalty_matrix,
+            )
+
+            coef_lengths = np.array([k.shape[1] for k in inner_products_list])
+
         coef_start = np.cumsum(coef_lengths)
         basiscoef_list = np.split(basiscoefs, coef_start)
 
@@ -382,34 +423,36 @@ class LinearRegression(
     def _argcheck_X_y(  # noqa: N802
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
-        y: NDArrayFloat,
+        y: Union[AcceptedDataType, Sequence[AcceptedDataType]],
         sample_weight: Optional[NDArrayFloat] = None,
         coef_basis: Optional[BasisCoefsType] = None,
     ) -> ArgcheckResultType:
         """Do some checks to types and shapes."""
         new_X = self._argcheck_X(X)
 
-        if any(isinstance(i, FData) for i in y):
-            raise ValueError(
-                "Some of the response variables are not scalar",
-            )
+        len_new_X = len(new_X)
 
-        y = np.asarray(y)
+        if isinstance(y, FData):
+            # TODO: check samples on independent and dependent variables
+
+            self.functional_response = True
+            if coef_basis is None:
+                self.coef_basis = [y.basis]
+        else:
+            if any(len(y) != len(x) for x in new_X):
+                raise ValueError(
+                    "The number of samples on independent and "
+                    "dependent variables should be the same",
+                )
+            self.functional_response = False
+            y = np.asarray(y)
 
         if coef_basis is None:
-            coef_basis = [None] * len(new_X)
+            coef_basis = [None] * len_new_X
 
-        if len(coef_basis) != len(new_X):
-            raise ValueError(
-                "Number of regression coefficients does "
-                "not match number of independent variables.",
-            )
-
-        if any(len(y) != len(x) for x in new_X):
-            raise ValueError(
-                "The number of samples on independent and "
-                "dependent variables should be the same",
-            )
+        if len(coef_basis) == 1 and len_new_X > 1:
+            # we assume basis objects are inmmutable
+            coef_basis = [coef_basis[0]] * len_new_X
 
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)

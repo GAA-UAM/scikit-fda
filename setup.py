@@ -21,66 +21,18 @@ the package, along with several examples showing different funcionalities.
 """
 
 import os
-import sys
 
 from setuptools import find_packages, setup
 
-needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest-runner'] if needs_pytest else []
-
-DOCLINES = (__doc__ or '').split("\n")
-
-with open(os.path.join(os.path.dirname(__file__),
-                       'VERSION'), 'r') as version_file:
+with open(
+    os.path.join(os.path.dirname(__file__), "VERSION"),
+    "r",
+) as version_file:
     version = version_file.read().strip()
 
-setup(name='scikit-fda',
-      version=version,
-      description=DOCLINES[1],
-      long_description="\n".join(DOCLINES[3:]),
-      url='https://fda.readthedocs.io',
-      project_urls={
-          "Bug Tracker": "https://github.com/GAA-UAM/scikit-fda/issues",
-          "Documentation": "https://fda.readthedocs.io",
-          "Source Code": "https://github.com/GAA-UAM/scikit-fda",
-      },
-      maintainer='Carlos Ramos Carreño',
-      maintainer_email='vnmabus@gmail.com',
-      include_package_data=True,
-      platforms=['any'],
-      license='BSD',
-      packages=find_packages(),
-      python_requires='>=3.7, <4',
-      classifiers=[
-          'Development Status :: 4 - Beta',
-          'Intended Audience :: Developers',
-          'Intended Audience :: Science/Research',
-          'License :: OSI Approved :: BSD License',
-          'Natural Language :: English',
-          'Operating System :: OS Independent',
-          'Programming Language :: Python :: 3.7',
-          'Programming Language :: Python :: 3.8',
-          'Topic :: Scientific/Engineering :: Mathematics',
-          'Topic :: Software Development :: Libraries :: Python Modules',
-          'Typing :: Typed',
-      ],
-      install_requires=[
-          'cython',
-          'dcor',
-          'fdasrsf>=2.2.0',
-          'findiff',
-          'lazy_loader',
-          'matplotlib',
-          'multimethod>=1.5',
-          'numpy>=1.16',
-          'pandas>=1.0',
-          'rdata',
-          'scikit-datasets[cran]>=0.1.24',
-          'scikit-learn>=0.20',
-          'scipy>=1.3.0',
-          'typing-extensions',
-      ],
-      setup_requires=pytest_runner,
-      tests_require=['pytest', 'pytest-env'],
-      test_suite='skfda.tests',
-      zip_safe=False)
+setup(
+    name="scikit-fda",
+    version=version,
+    include_package_data=True,
+    packages=find_packages(),
+)

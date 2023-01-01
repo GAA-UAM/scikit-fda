@@ -29,8 +29,8 @@ jobs:
       run: |
         pip3 debug --verbose .
         pip3 install numba
-        pip3 install --upgrade-strategy eager -v .
-        coverage run --source=skfda/ setup.py test;
+        pip3 install ".[test]"
+        coverage run --source=skfda/ -m pytest;
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1

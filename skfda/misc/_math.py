@@ -511,8 +511,8 @@ def _inner_product_integrate(
 def weighted_inner_product_integrate(
     arg1: Union[FDataBasis, Basis],
     arg2: Union[FDataBasis, Basis],
-    arg3: FDataBasis,
-    arg4: FDataBasis,
+    arg3: Union[FDataBasis, NDArrayFloat],
+    arg4: Union[FDataBasis, NDArrayFloat],
 ) -> NDArrayFloat:
     r"""
     Return the weighted inner product matrix between its arguments.
@@ -550,19 +550,31 @@ def weighted_inner_product_integrate(
     ):
         raise ValueError("Domain range for basis objects must be equal")
 
-    if not np.array_equal(
+    """
+    if not isinstance(arg3, type(arg4)):
+        raise ValueError("Weights types must be equal")
+
+    if isinstance(arg3, FData) and not np.array_equal(
         arg3.domain_range,
         arg4.domain_range,
     ):
         raise ValueError("Domain range for weight objects must be equal")
-
+    """
     domain_range = arg1.domain_range
 
     def integrand(args):  # noqa: WPS430
         f1 = arg1(args)[:, 0, :]
         f2 = arg2(args)[:, 0, :]
-        f3 = arg3(args)[:, 0, :]
-        f4 = arg4(args)[:, 0, :]
+
+        if isinstance(arg3, FData):
+            f3 = arg3(args)[:, 0, :]
+        else:
+            f3 = arg3
+
+        if isinstance(arg4, FData):
+            f4 = arg4(args)[:, 0, :]
+        else:
+            f4 = arg4
 
         weight = f3 * f4
 

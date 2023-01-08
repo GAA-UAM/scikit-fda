@@ -239,7 +239,6 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             coefficients=component_coefficients.T,
             sample_names=(None,) * self.n_components,
         )
-        #self.components_ /= skfda.misc.metrics.l2_norm(self.components_)
 
         return self
 
@@ -374,7 +373,6 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             data_matrix=components,
             sample_names=(None,) * self.n_components,
         )
-        #self.components_ /= skfda.misc.metrics.l2_norm(self.components_)
 
         self.explained_variance_ratio_ = (
             pca.explained_variance_ratio_

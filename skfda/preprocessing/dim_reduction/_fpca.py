@@ -358,14 +358,17 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         if self.regularization is not None:
             factorization_matrix += regularization_matrix
 
-        L = np.linalg.cholesky(factorization_matrix)
-        final_matrix = fd_data @ weights_matrix @ np.linalg.inv(L.T)
+        # Tranpose of the Cholesky decomposition
+        Lt = np.linalg.cholesky(factorization_matrix).T
+
+        new_data_matrix = fd_data @ weights_matrix
+        new_data_matrix = np.linalg.solve(Lt.T, new_data_matrix.T).T
 
         pca = PCA(n_components=self.n_components)
-        pca.fit(final_matrix)
+        pca.fit(new_data_matrix)
 
         components = pca.components_
-        components = np.transpose(np.linalg.inv(L.T) @ components.T)
+        components = np.linalg.solve(Lt, pca.components_.T).T
 
         self.components_ = X.copy(
             data_matrix=components,

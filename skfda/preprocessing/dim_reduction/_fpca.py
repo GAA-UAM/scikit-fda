@@ -9,8 +9,6 @@ import scipy.integrate
 from scipy.linalg import solve_triangular
 from sklearn.decomposition import PCA
 
-import skfda
-
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
@@ -356,9 +354,9 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             regularization=self.regularization,
         )
 
-        factorization_matrix = weights_matrix
+        factorization_matrix = weights_matrix.astype(float)
         if self.regularization is not None:
-            factorization_matrix = factorization_matrix + regularization_matrix
+            factorization_matrix += regularization_matrix
 
         L = np.linalg.cholesky(factorization_matrix)
         final_matrix = fd_data @ weights_matrix @ np.linalg.inv(L.T)

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
@@ -31,8 +30,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     Principal component analysis.
 
     Class that implements functional principal component analysis for both
-    basis and grid representations of the data. Most parameters are shared
-    when fitting a FDataBasis or FDataGrid, except weights and
+    basis and grid representations of the data. The parameters are shared
+    when fitting a FDataBasis or FDataGrid, except for
     ``components_basis``.
 
     Parameters:
@@ -47,14 +46,6 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             components. We can use a different basis than the basis contained
             in the passed FDataBasis object. This parameter is only used when
             fitting a FDataBasis.
-        weights: the weights vector used for
-            discrete integration. If none then Simpson's rule is used for
-            computing the weights. If a callable object is passed, then the
-            weight vector will be obtained by evaluating the object at the
-            sample points of the passed FDataGrid object in the fit method.
-            This parameter is only used when fitting a FDataGrid.
-
-            .. deprecated:: 0.7.2
 
     Attributes:
         components\_: this contains the principal components.
@@ -75,7 +66,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> grid_points = [0, 1]
         >>> fd = FDataGrid(data_matrix, grid_points)
-        >>> basis = skfda.representation.basis.Monomial(
+        >>> basis = skfda.representation.basis.MonomialBasis(
         ...     domain_range=(0,1), n_basis=2
         ... )
         >>> basis_fd = fd.to_basis(basis)
@@ -100,19 +91,14 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         n_components: int = 3,
         centering: bool = True,
         regularization: Optional[L2Regularization[FData]] = None,
-        weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
+        _weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
     ) -> None:
         self.n_components = n_components
         self.centering = centering
         self.regularization = regularization
-        self.weights = weights
+        self._weights = _weights
         self.components_basis = components_basis
-        if weights is not None:
-            warnings.warn(
-                "The 'weights' parameter is deprecated and will be removed.",
-                DeprecationWarning,
-            )
 
     def _center_if_necessary(
         self,
@@ -345,20 +331,20 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         X = self._center_if_necessary(X)
 
         # establish weights for each point of discretization
-        if self.weights is None:
+        if self._weights is None:
             # grid_points is a list with one array in the 1D case
             identity = np.eye(len(X.grid_points[0]))
-            self.weights_ = scipy.integrate.simps(identity, X.grid_points[0])
-        elif callable(self.weights):
-            self.weights_ = self.weights(X.grid_points[0])
+            self._weights = scipy.integrate.simps(identity, X.grid_points[0])
+        elif callable(self._weights):
+            self._weights = self._weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
             # array
-            if isinstance(self.weights, FDataGrid):
-                self.weights_ = np.squeeze(self.weights.data_matrix)
+            if isinstance(self._weights, FDataGrid):
+                self._weights = np.squeeze(self._weights.data_matrix)
         else:
-            self.weights_ = self.weights
+            self._weights = self._weights
 
-        weights_matrix = np.diag(self.weights_)
+        weights_matrix = np.diag(self._weights)
 
         basis = FDataGrid(
             data_matrix=np.identity(n_points_discretization),
@@ -419,7 +405,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         return (  # type: ignore[no-any-return]
             X.data_matrix.reshape(X.data_matrix.shape[:-1])
-            * self.weights_
+            * self._weights
             @ np.transpose(
                 self.components_.data_matrix.reshape(
                     self.components_.data_matrix.shape[:-1],

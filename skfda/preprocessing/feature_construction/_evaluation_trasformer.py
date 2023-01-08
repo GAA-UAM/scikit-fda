@@ -51,7 +51,7 @@ class EvaluationTransformer(
         >>> from skfda.preprocessing.feature_construction import (
         ...     EvaluationTransformer,
         ... )
-        >>> from skfda.representation.basis import Monomial
+        >>> from skfda.representation.basis import MonomialBasis
 
         Functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
@@ -91,7 +91,7 @@ class EvaluationTransformer(
 
         Evaluation of a functional data object at several points.
 
-        >>> basis = Monomial(n_basis=4)
+        >>> basis = MonomialBasis(n_basis=4)
         >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
         >>> fd = FDataBasis(basis, coefficients)
         >>>

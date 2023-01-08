@@ -13,11 +13,11 @@ from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import HistoricalLinearRegression, LinearRegression
 from skfda.representation.basis import (
-    BSpline,
-    Constant,
+    BSplineBasis,
+    ConstantBasis,
     FDataBasis,
-    Fourier,
-    Monomial,
+    FourierBasis,
+    MonomialBasis,
 )
 from skfda.representation.grid import FDataGrid
 
@@ -26,10 +26,10 @@ class TestScalarLinearRegression(unittest.TestCase):
 
     def test_regression_single_explanatory(self) -> None:
 
-        x_basis = Monomial(n_basis=7)
+        x_basis = MonomialBasis(n_basis=7)
         x_fd = FDataBasis(x_basis, np.identity(7))
 
-        beta_basis = Fourier(n_basis=5)
+        beta_basis = FourierBasis(n_basis=5)
         beta_fd = FDataBasis(beta_basis, [1, 1, 1, 1, 1])
         y = np.array([
             0.9999999999999993,
@@ -50,7 +50,8 @@ class TestScalarLinearRegression(unittest.TestCase):
         )
         np.testing.assert_allclose(
             scalar.intercept_,
-            0.0, atol=1e-6,
+            0.0,
+            atol=1e-6,
         )
 
         y_pred = scalar.predict(x_fd)
@@ -77,9 +78,9 @@ class TestScalarLinearRegression(unittest.TestCase):
     def test_regression_multiple_explanatory(self) -> None:
         y = np.array([1, 2, 3, 4, 5, 6, 7])
 
-        X = FDataBasis(Monomial(n_basis=7), np.identity(7))
+        X = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
 
-        beta1 = BSpline(domain_range=(0, 1), n_basis=5)
+        beta1 = BSplineBasis(domain_range=(0, 1), n_basis=5)
 
         scalar = LinearRegression(coef_basis=[beta1])
 
@@ -119,7 +120,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         ] = [
             multivariate,
             FDataBasis(
-                Monomial(n_basis=3),
+                MonomialBasis(n_basis=3),
                 [
                     [1, 0, 0], [0, 1, 0], [0, 0, 1],
                     [1, 0, 1], [1, 0, 0], [0, 1, 0],
@@ -131,7 +132,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         intercept = 2
         coefs_multivariate = np.array([3, 1])
         coefs_functions = FDataBasis(
-            Monomial(n_basis=3),
+            MonomialBasis(n_basis=3),
             [[3, 0, 0]],
         )
         y_integral = np.array([3, 3 / 2, 1, 4, 3, 3 / 2, 1])
@@ -173,7 +174,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         multivariate2 = np.asarray([7, 3, 2, 1, 1, 5])
         multivariate = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
 
-        x_basis = Monomial(n_basis=2)
+        x_basis = MonomialBasis(n_basis=2)
         x_fd = FDataBasis(
             x_basis,
             [[0, 2], [0, 4], [1, 0], [2, 0], [1, 2], [2, 2]],
@@ -181,10 +182,10 @@ class TestScalarLinearRegression(unittest.TestCase):
 
         y = [11, 10, 12, 6, 10, 13]
 
-        linear = LinearRegression(coef_basis=[None, Constant()])
+        linear = LinearRegression(coef_basis=[None, ConstantBasis()])
         linear.fit([multivariate, x_fd], y)
 
-        linear2 = LinearRegression(coef_basis=[None, None, Constant()])
+        linear2 = LinearRegression(coef_basis=[None, None, ConstantBasis()])
         linear2.fit([multivariate1, multivariate2, x_fd], y)
 
         np.testing.assert_equal(
@@ -208,7 +209,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         multivariate2 = [0, 7, 7, 9, 16, 14, 5]
         multivariate = [list(obs) for obs in zip(multivariate1, multivariate2)]
 
-        x_basis = Monomial(n_basis=3)
+        x_basis = MonomialBasis(n_basis=3)
         x_fd = FDataBasis(x_basis, [[1, 0, 0], [0, 1, 0], [0, 0, 1],
                                     [1, 0, 1], [1, 0, 0], [0, 1, 0],
                                     [0, 0, 1]])
@@ -221,7 +222,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         intercept = 2
         coefs_multivariate = np.array([3, 1])
         coefs_functions = FDataBasis(
-            Monomial(n_basis=3), [[3, 0, 0]],
+            MonomialBasis(n_basis=3), [[3, 0, 0]],
         )
         y_integral = np.array([3, 3 / 2, 1, 4, 3, 3 / 2, 1])
         y_sum = multivariate @ coefs_multivariate
@@ -263,7 +264,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         ] = [
             multivariate,
             FDataBasis(
-                Monomial(n_basis=3),
+                MonomialBasis(n_basis=3),
                 [
                     [1, 0, 0], [0, 1, 0], [0, 0, 1],
                     [1, 0, 1], [1, 0, 0], [0, 1, 0],
@@ -318,10 +319,10 @@ class TestScalarLinearRegression(unittest.TestCase):
 
     def test_regression_regularization(self) -> None:
 
-        x_basis = Monomial(n_basis=7)
+        x_basis = MonomialBasis(n_basis=7)
         x_fd = FDataBasis(x_basis, np.identity(7))
 
-        beta_basis = Fourier(n_basis=5)
+        beta_basis = FourierBasis(n_basis=5)
         beta_fd = FDataBasis(
             beta_basis,
             [1.0403, 0, 0, 0, 0],
@@ -368,7 +369,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         y_pred = scalar.predict(x_fd)
         np.testing.assert_allclose(y_pred, y_pred_compare, atol=1e-4)
 
-        x_basis = Monomial(n_basis=3)
+        x_basis = MonomialBasis(n_basis=3)
         x_fd = FDataBasis(
             x_basis,
             [
@@ -424,17 +425,17 @@ class TestScalarLinearRegression(unittest.TestCase):
         x_fd = np.identity(7)
         y = np.zeros(7)
 
-        scalar = LinearRegression(coef_basis=[Fourier(n_basis=5)])
+        scalar = LinearRegression(coef_basis=[FourierBasis(n_basis=5)])
 
         with np.testing.assert_warns(UserWarning):
             scalar.fit([x_fd], y)
 
     def test_error_y_is_FData(self) -> None:
         """Tests that none of the explained variables is an FData object."""
-        x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
-        y = list(FDataBasis(Monomial(n_basis=7), np.identity(7)))
+        x_fd = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
+        y = list(FDataBasis(MonomialBasis(n_basis=7), np.identity(7)))
 
-        scalar = LinearRegression(coef_basis=[Fourier(n_basis=5)])
+        scalar = LinearRegression(coef_basis=[FourierBasis(n_basis=5)])
 
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)  # type: ignore[arg-type]
@@ -442,9 +443,9 @@ class TestScalarLinearRegression(unittest.TestCase):
     def test_error_X_beta_len_distinct(self) -> None:
         """Test that the number of beta bases and explanatory variables
         are not different """
-        x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
+        x_fd = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
         y = np.array([1 for _ in range(7)])
-        beta = Fourier(n_basis=5)
+        beta = FourierBasis(n_basis=5)
 
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
@@ -458,17 +459,17 @@ class TestScalarLinearRegression(unittest.TestCase):
         """Test that the number of response samples and explanatory samples
         are not different """
 
-        x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
+        x_fd = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
         y = np.array([1 for _ in range(8)])
-        beta = Fourier(n_basis=5)
+        beta = FourierBasis(n_basis=5)
 
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
 
-        x_fd = FDataBasis(Monomial(n_basis=8), np.identity(8))
+        x_fd = FDataBasis(MonomialBasis(n_basis=8), np.identity(8))
         y = np.array([1 for _ in range(7)])
-        beta = Fourier(n_basis=5)
+        beta = FourierBasis(n_basis=5)
 
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
@@ -476,9 +477,9 @@ class TestScalarLinearRegression(unittest.TestCase):
 
     def test_error_beta_not_basis(self) -> None:
         """Test that all beta are Basis objects. """
-        x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
+        x_fd = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
         y = np.array([1 for _ in range(7)])
-        beta = FDataBasis(Monomial(n_basis=7), np.identity(7))
+        beta = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
 
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(TypeError):
@@ -486,10 +487,10 @@ class TestScalarLinearRegression(unittest.TestCase):
 
     def test_error_weights_lenght(self) -> None:
         """Test that the number of weights is equal to n_samples."""
-        x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
+        x_fd = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
         y = np.array([1 for _ in range(7)])
         weights = np.array([1 for _ in range(8)])
-        beta = Monomial(n_basis=7)
+        beta = MonomialBasis(n_basis=7)
 
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
@@ -497,10 +498,10 @@ class TestScalarLinearRegression(unittest.TestCase):
 
     def test_error_weights_negative(self) -> None:
         """Test that none of the weights are negative."""
-        x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
+        x_fd = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
         y = np.array([1 for _ in range(7)])
         weights = np.array([-1 for _ in range(7)])
-        beta = Monomial(n_basis=7)
+        beta = MonomialBasis(n_basis=7)
 
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):

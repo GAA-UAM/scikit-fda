@@ -117,7 +117,7 @@ print('Score NW:', nw_res)
 # number of functions in the basis affects the estimation result and should
 # ideally also be chosen using cross-validation.
 
-fourier = skfda.representation.basis.Fourier(n_basis=10)
+fourier = skfda.representation.basis.FourierBasis(n_basis=10)
 
 X_basis = X.to_basis(basis=fourier)
 X_basis_train, X_basis_test, y_train, y_test = train_test_split(

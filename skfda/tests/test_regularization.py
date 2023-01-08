@@ -14,20 +14,20 @@ import skfda
 from skfda.misc.operators import (
     Identity,
     LinearDifferentialOperator,
-    gramian_matrix,
+    gram_matrix,
 )
 from skfda.misc.operators._linear_differential_operator import (
     _monomial_evaluate_constant_linear_diff_op,
 )
-from skfda.misc.operators._operators import gramian_matrix_numerical
+from skfda.misc.operators._operators import gram_matrix_numerical
 from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import LinearRegression
 from skfda.representation.basis import (
     Basis,
-    BSpline,
-    Constant,
-    Fourier,
-    Monomial,
+    BSplineBasis,
+    ConstantBasis,
+    FourierBasis,
+    MonomialBasis,
 )
 
 LinearDifferentialOperatorInput = Union[
@@ -58,8 +58,8 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
         operator = LinearDifferentialOperator(linear_diff_op)
 
-        penalty = gramian_matrix(operator, basis)
-        numerical_penalty = gramian_matrix_numerical(operator, basis)
+        penalty = gram_matrix(operator, basis)
+        numerical_penalty = gram_matrix_numerical(operator, basis)
 
         np.testing.assert_allclose(
             penalty,
@@ -76,7 +76,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
     def test_constant_penalty(self) -> None:
         """Test penalty for Constant basis."""
-        basis = Constant(domain_range=(0, 3))
+        basis = ConstantBasis(domain_range=(0, 3))
 
         res = np.array([[12]])
 
@@ -86,7 +86,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         """Test directly the penalty for Monomial basis."""
         n_basis = 5
 
-        basis = Monomial(n_basis=n_basis)
+        basis = MonomialBasis(n_basis=n_basis)
 
         linear_diff_op = [3]
         res = np.array([
@@ -141,7 +141,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
     def test_monomial_penalty(self) -> None:
         """Test penalty for Monomial basis."""
-        basis = Monomial(n_basis=5, domain_range=(0, 3))
+        basis = MonomialBasis(n_basis=5, domain_range=(0, 3))
 
         # Theorethical result
         res = np.array([
@@ -154,7 +154,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
         self._test_penalty(basis, linear_diff_op=2, result=res)
 
-        basis = Monomial(n_basis=8, domain_range=(1, 5))
+        basis = MonomialBasis(n_basis=8, domain_range=(1, 5))
 
         self._test_penalty(basis, linear_diff_op=[1, 2, 3])
         self._test_penalty(basis, linear_diff_op=7)
@@ -164,7 +164,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
     def test_fourier_penalty(self) -> None:
         """Test penalty for Fourier basis."""
-        basis = Fourier(n_basis=5)
+        basis = FourierBasis(n_basis=5)
 
         res = np.array([
             [0, 0, 0, 0, 0],
@@ -177,7 +177,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         # Those comparisons require atol as there are zeros involved
         self._test_penalty(basis, linear_diff_op=2, atol=0.01, result=res)
 
-        basis = Fourier(n_basis=9, domain_range=(1, 5))
+        basis = FourierBasis(n_basis=9, domain_range=(1, 5))
         self._test_penalty(basis, linear_diff_op=[1, 2, 3], atol=1e-7)
         self._test_penalty(basis, linear_diff_op=[2, 3, 0.1, 1], atol=1e-7)
         self._test_penalty(basis, linear_diff_op=0, atol=1e-7)
@@ -186,7 +186,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
     def test_bspline_penalty(self) -> None:
         """Test penalty for BSpline basis."""
-        basis = BSpline(n_basis=5)
+        basis = BSplineBasis(n_basis=5)
 
         res = np.array([
             [96, -132, 24, 12, 0],
@@ -198,7 +198,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
         self._test_penalty(basis, linear_diff_op=2, result=res)
 
-        basis = BSpline(n_basis=9, domain_range=(1, 5))
+        basis = BSplineBasis(n_basis=9, domain_range=(1, 5))
         self._test_penalty(basis, linear_diff_op=[1, 2, 3])
         self._test_penalty(basis, linear_diff_op=[2, 3, 0.1, 1])
         self._test_penalty(basis, linear_diff_op=0)
@@ -206,12 +206,12 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         self._test_penalty(basis, linear_diff_op=3)
         self._test_penalty(basis, linear_diff_op=4)
 
-        basis = BSpline(n_basis=16, order=8)
+        basis = BSplineBasis(n_basis=16, order=8)
         self._test_penalty(basis, linear_diff_op=0, atol=1e-7)
 
     def test_bspline_penalty_special_case(self) -> None:
         """Test for behavior like in issue #185."""
-        basis = BSpline(n_basis=5)
+        basis = BSplineBasis(n_basis=5)
 
         res = np.array([
             [1152, -2016, 1152, -288, 0],
@@ -222,8 +222,8 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         ])
 
         operator = LinearDifferentialOperator(basis.order - 1)
-        penalty = gramian_matrix(operator, basis)
-        numerical_penalty = gramian_matrix_numerical(operator, basis)
+        penalty = gram_matrix(operator, basis)
+        numerical_penalty = gram_matrix_numerical(operator, basis)
 
         np.testing.assert_allclose(
             penalty,
@@ -246,7 +246,7 @@ class TestDefaultL2Regularization(unittest.TestCase):
         fd = skfda.FDataGrid(data_matrix.T)
 
         smoother = skfda.preprocessing.smoothing.BasisSmoother(
-            basis=skfda.representation.basis.BSpline(
+            basis=skfda.representation.basis.BSplineBasis(
                 n_basis=10,
                 domain_range=fd.domain_range,
             ),
@@ -254,7 +254,7 @@ class TestDefaultL2Regularization(unittest.TestCase):
         )
 
         smoother2 = skfda.preprocessing.smoothing.BasisSmoother(
-            basis=skfda.representation.basis.BSpline(
+            basis=skfda.representation.basis.BSplineBasis(
                 n_basis=10,
                 domain_range=fd.domain_range,
             ),
@@ -282,7 +282,7 @@ class TestEndpointsDifferenceRegularization(unittest.TestCase):
         fd = skfda.FDataGrid(data_matrix.T)
 
         smoother = skfda.preprocessing.smoothing.BasisSmoother(
-            basis=skfda.representation.basis.BSpline(
+            basis=skfda.representation.basis.BSplineBasis(
                 n_basis=10,
                 domain_range=fd.domain_range,
             ),

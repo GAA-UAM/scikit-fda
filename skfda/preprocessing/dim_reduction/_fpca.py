@@ -253,6 +253,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             coefficients=component_coefficients.T,
             sample_names=(None,) * self.n_components,
         )
+        #self.components_ /= skfda.misc.metrics.l2_norm(self.components_)
 
         return self
 
@@ -370,36 +371,24 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             regularization=self.regularization,
         )
 
-        basis_matrix = basis.data_matrix[..., 0]
-        if regularization_matrix is not None:
-            basis_matrix += regularization_matrix.T @ regularization_matrix
+        factorization_matrix = weights_matrix
+        if self.regularization is not None:
+            factorization_matrix = factorization_matrix + regularization_matrix
 
-        L = np.linalg.cholesky(basis_matrix)
-
-        # fd_data = np.linalg.solve( #     basis_matrix.T,
-        #     fd_data.T,
-        # ).T
-        fd_data = fd_data @ np.linalg.inv(L.T)
-
-        # see docstring for more information
-        final_matrix = fd_data @ np.sqrt(weights_matrix)
+        L = np.linalg.cholesky(factorization_matrix)
+        final_matrix = fd_data @ weights_matrix @ np.linalg.inv(L.T)
 
         pca = PCA(n_components=self.n_components)
         pca.fit(final_matrix)
 
-        components = np.transpose(
-            np.linalg.solve(
-                np.sqrt(weights_matrix),
-                np.transpose(pca.components_),
-            ),
-        )
+        components = pca.components_
         components = np.transpose(np.linalg.inv(L.T) @ components.T)
 
         self.components_ = X.copy(
             data_matrix=components,
             sample_names=(None,) * self.n_components,
         )
-        self.components_ /= skfda.misc.metrics.l2_norm(self.components_)
+        #self.components_ /= skfda.misc.metrics.l2_norm(self.components_)
 
         self.explained_variance_ratio_ = (
             pca.explained_variance_ratio_

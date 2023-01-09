@@ -354,7 +354,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             regularization=self.regularization,
         )
 
-        # See PR #497 for more information about this approach
+        # See issue #497 for more information about this approach
         factorization_matrix = weights_matrix.astype(float)
         if self.regularization is not None:
             factorization_matrix += regularization_matrix

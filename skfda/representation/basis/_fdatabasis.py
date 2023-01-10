@@ -22,6 +22,7 @@ from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
 from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
 from .._functional_data import FData
+from ..basis import TensorBasis
 from ..extrapolation import ExtrapolationLike
 
 if TYPE_CHECKING:
@@ -461,25 +462,35 @@ class FDataBasis(FData):  # noqa: WPS214
         """
         return self.to_grid(eval_points).var().to_basis(self.basis)
 
-    def cov(self, eval_points: Optional[NDArrayFloat] = None) -> FData:
+    def cov(self: T) -> T:
         """Compute the covariance of the functional data object.
 
-        A numerical approach its used. The object its transformed into its
-        discrete representation and then the covariance matrix is computed.
-
-        Args:
-            eval_points: Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object. If none are passed it calls
-                numpy.linspace with bounds equal to the ones defined in
-                self.domain_range and the number of points the maximum
-                between 501 and 10 times the number of basis.
+        Calculates the unbiased sample covariance function of the data.
+        This is a function defined over the basis consisting of the tensor
+        product of the original basis with itself. The resulting covariance
+        function is then represented as an FDataBasis object with one
+        sample with such tensor basis with the coefficients being the
+        flattened covariance matrix of the original coefficients.
 
         Returns:
-            Matrix of covariances.
+            Covariance function in the tensor basis.
 
         """
-        return self.to_grid(eval_points).cov()
+        dataset_name = (
+            f"{self.dataset_name} - covariance"
+            if self.dataset_name is not None else None
+        )
+
+        basis = TensorBasis([self.basis, self.basis])
+        coefficients = np.cov(self.coefficients, rowvar=False).flatten()
+
+        return FDataBasis(
+            basis=basis,
+            coefficients=coefficients,
+            dataset_name=dataset_name,
+            argument_names=self.argument_names * 2,
+            sample_names=("covariance",),
+        )
 
     def to_grid(
         self,

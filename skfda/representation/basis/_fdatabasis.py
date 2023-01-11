@@ -22,8 +22,8 @@ from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
 from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
 from .._functional_data import FData
-from ..basis import TensorBasis
 from ..extrapolation import ExtrapolationLike
+from . import TensorBasis
 
 if TYPE_CHECKING:
     from .. import FDataGrid

@@ -23,11 +23,10 @@ from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
 from .._functional_data import FData
 from ..extrapolation import ExtrapolationLike
-from . import TensorBasis
 
 if TYPE_CHECKING:
     from .. import FDataGrid
-    from . import Basis
+    from . import Basis, TensorBasis
 
 T = TypeVar('T', bound='FDataBasis')
 

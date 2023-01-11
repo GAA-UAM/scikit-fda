@@ -26,7 +26,7 @@ from ..extrapolation import ExtrapolationLike
 
 if TYPE_CHECKING:
     from .. import FDataGrid
-    from . import Basis, TensorBasis
+    from . import Basis
 
 T = TypeVar('T', bound='FDataBasis')
 
@@ -475,6 +475,9 @@ class FDataBasis(FData):  # noqa: WPS214
             Covariance function in the tensor basis.
 
         """
+        # import TensorBasis here to avoid circular dependencies
+        from . import TensorBasis
+
         dataset_name = (
             f"{self.dataset_name} - covariance"
             if self.dataset_name is not None else None

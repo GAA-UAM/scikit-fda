@@ -819,6 +819,20 @@ class FData(  # noqa: WPS214
 
         return self
 
+    @abstractmethod
+    def cov(self: T) -> T:
+        """Compute the covariance of the functional data object.
+
+        Calculates the unbiased sample covariance function of the data.
+        This is expected to be only defined for univariate functions.
+        The resulting covariance function is defined in the cartesian
+        product of the domain of the functions.
+
+        Returns:
+            Covariance function.
+        """
+        pass
+
     def mean(
         self: T,
         *,

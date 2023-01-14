@@ -107,8 +107,8 @@ class MahalanobisDistance(BaseEstimator):
                 self.n_components,
                 self.centering,
                 self.regularization,
-                self.weights,
                 self.components_basis,
+                self.weights,
             )
             fpca.fit(X)
             self.eigenvalues_ = fpca.explained_variance_

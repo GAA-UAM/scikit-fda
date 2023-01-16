@@ -1,6 +1,6 @@
 """Discretised functional data module.
 
-This module defines a class for representing discretized sparse data,
+This module defines a class for representing discretized irregular data,
 in which the observations may be made in different grid points in each
 data function, and the overall density of the observations may be low
 
@@ -48,35 +48,68 @@ from .interpolation import SplineInterpolation
 if TYPE_CHECKING:
     from .basis import Basis, FDataBasis
 
-T = TypeVar("T", bound='FDataSparse')
+T = TypeVar("T", bound='FDataIrregular')
         
 
-
-class FDataSparse(FData):  # noqa: WPS214
-   #TODO Docstring
+class FDataIrregular(FData):  # noqa: WPS214
+   # TODO Docstring
+   # TODO 1. Scatter
+   # TODO 2. Fix the input to fix domain, codomain and all dimensions (hard lock array size)
+   # TODO 3. Plot and PlotAndScatter
 
     def __init__(  # noqa: WPS211
         self,
+        input_dataframe: pandas.DataFrame,
+        id_name: str,
+        argument_names: LabelTupleLike,
+        coordinate_names: LabelTupleLike,
         *,
-        sparse_data_grids: Optional[List[FDataGrid]] = None,
+        dim_domain: Optional[int] = 1,
+        dim_codomain: Optional[int] = 1,
+        domain_range: Optional[DomainRangeLike] = None,
         dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
     ):
-        """Construct a FDataSparse object."""
-        #Create data structure of function pointers and coordinates
+        """Construct a FDataIrregular object."""
+        # Set dimensions
+        # TODO Check dimensions against num of arguments and coordinates?
+        self._dim_domain = dim_domain
+        self._dim_codomain = dim_codomain
         
-        self.lookup_table = np.empty((0,))
-        self.coordinates_table = np.empty((0,))
-        self.values_table = np.empty((0,))
-        self.num_values = 0
+        # Accept stringsd but ensure the column names are tuples
+        _is_str = isinstance(argument_names, str)
+        argument_names = [argument_names] if _is_str else argument_names
         
-        #If data is given, populate the structure
-        if sparse_data_grids is not None:
-            for data_grid in sparse_data_grids:
-                self.add_function(data_grid)
+        _is_str = isinstance(coordinate_names, str)
+        coordinate_names = [coordinate_names]  if _is_str else coordinate_names
+        
+        #TODO Add long/wide differentiation, matrix loading
+        
+        self._load_long_dataframe(
+            input_dataframe,
+            id_name,
+            argument_names,
+            coordinate_names,
+            )
+        
+        #TODO Fix for higher dimensions
+        i=0
+        self._sample_range = list()
+        for f in self.function_indices[1:]:
+            self._sample_range.append((self.function_arguments[i][0], 
+                                      self.function_arguments[f-1][0]))
+            i = f
+        self._sample_range.append((self.function_arguments[i][0], 
+                                      self.function_arguments[-1][0]))
+        
+        from ..misc.validation import validate_domain_range
+        if domain_range is None:
+            domain_range = self.sample_range
+            # Default value for domain_range is a list of tuples with
+            # the first and last element of each list of the grid_points.
+
+        self._domain_range = validate_domain_range(domain_range)
 
         super().__init__(
             extrapolation=extrapolation,
@@ -86,66 +119,49 @@ class FDataSparse(FData):  # noqa: WPS214
             sample_names=sample_names,
         )
     
-    def add_function(
+    #TODO Fix for higher dimensions
+    #TODO Check typing
+    def _load_long_dataframe(
         self,
-        data_grid: FDataGrid,
-    )-> None:
-        #TODO Implement for higher dimensions and maybe multiple functions in data grid
+        dataframe: pandas.DataFrame,
+        id_column: str,
+        argument_columns: LabelTupleLike,
+        coordinate_columns: LabelTupleLike,
+        ) -> None:
         
-        #Extract the tuples of grid points from data_grid
-        grid_points = data_grid.grid_points[0]
+        # Obtain num functions and num observations from data
+        num_observations = dataframe.shape[0]
+        num_functions = dataframe[id_column].nunique()
         
-        #Extract the tuple of values for each grid point
-        values = [x[0] for x in data_grid.data_matrix[0]]
+        # Create data structure of function pointers and coordinates
+        self.num_functions = num_functions
+        self.num_observations = num_observations
         
-        #Reshape coordinate and values array and add new values
-        self.coordinates_table = np.concatenate((self.coordinates_table, 
-                                                 grid_points), 
-                                          axis=0)
-        self.values_table = np.concatenate((self.values_table, 
-                                            values), 
-                                          axis=0)
+        self.function_indices = np.zeros((self.num_functions, ), 
+                                         dtype=np.uint32)
+        self.function_arguments = np.zeros((self.num_observations, 
+                                            self.dim_domain))
+        self.function_values = np.zeros((self.num_observations, 
+                                         self.dim_codomain))
         
-        #Add one entry to lookup_table
-        self.lookup_table = np.append(self.lookup_table, 
-                                      self.num_values)
-        self.num_values += len(grid_points)
-        
-    def add_point(
-        self,
-        function_index: int,
-        coordinates: Tuple,
-        values: Tuple
-    )-> None:
-        # Find the interval of indexes where the function is stored
-        not_last_function = (function_index + 1) < len(self.lookup_table)
-        function_start = self.lookup_table[function_index]
-        function_end = self.lookup_table[function_index
-                                         + 1] if not_last_function else self.num_values
+        head = 0
+        index = 0
+        for _, f_values in dataframe.groupby(id_column):
+            self.function_indices[index] = head
+            num_values = f_values.shape[0]
             
-        #Find where in the interval lies the coordinate
-        function_coordinates = self.coordinates_table[function_start:function_end]
-        compare_coordinates = [coordinates < coord 
-                               for coord in function_coordinates]
-        
-        insertion_index = compare_coordinates.index(True)
+            # Insert in order
+            f_values = f_values.sort_values(argument_columns)
             
-        #Concatenate the new point sandwiched between the others
-        self.coordinates_table = np.concatenate((self.coordinates_table[:insertion_index], 
-                                           [coordinates], 
-                                           self.coordinates_table[insertion_index:]),
-                                          axis=0)
-        
-        self.values = np.concatenate((self.values_table[:insertion_index], 
-                                           [values], 
-                                           self.values_table[insertion_index:]),
-                                          axis=0)
-        
-        #Update the lookup table and number of values
-        if not_last_function:
-            self.lookup_table[function_index + 1] += 1
-        self.num_values += 1
-        
+            new_args = f_values[argument_columns].values
+            self.function_arguments[head:head+num_values, :] = new_args
+            
+            new_coords = f_values[coordinate_columns].values
+            self.function_values[head:head+num_values, :] = new_coords
+            
+            # Update head and index
+            head += num_values
+            index += 1
 
 
     def round(  # noqa: WPS125
@@ -159,7 +175,7 @@ class FDataSparse(FData):  # noqa: WPS214
     @property
     def sample_points(self) -> GridPoints:
         warnings.warn(
-            "Parameter sample_points is deprecated. Use the "
+            "Parameter sample_points is deprecated. Use the " \
             "parameter grid_points instead.",
             DeprecationWarning,
         )
@@ -167,28 +183,21 @@ class FDataSparse(FData):  # noqa: WPS214
 
     @property
     def dim_domain(self) -> int:
-        if self.num_values == 0:
-            return 1 #TODO What to do here
-        #TODO Check float
-        #return len(self.coordinates_table[0]) #Length of any coordinate tuple
-        return 1
+        return self._dim_domain
 
     @property
     def dim_codomain(self) -> int:
-        if self.num_values == 0:
-            return 1 #TODO What to do here
-        #TODO Check float
-        #return len(self.values_table[0]) #Length of any coordinate tuple
-        return 1
+        return self._dim_codomain
 
+    #TODO Remove CoordinateIterator in an appropiate way
     @property
     def coordinates(self: T) -> _CoordinateIterator[T]:
-        #TODO Does it even make sense to do this? Maybe it requires an specific _SparseCoordinateIterator over the structure
+        #TODO Does it even make sense to do this? Maybe it requires an specific _IrregularCoordinateIterator over the structure
         pass
 
     @property
     def n_samples(self) -> int:
-        return self.num_values
+        return self.num_functions
 
     @property
     def sample_range(self) -> DomainRange:
@@ -370,9 +379,20 @@ class FDataSparse(FData):  # noqa: WPS214
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
         #TODO This should be easy to implement, using the add_function methods
         pass
+    
+    def plot(self, *args: Any, **kwargs: Any) -> Figure:
+        from ..exploratory.visualization.representation import LinearPlotIrregular
+
+        return LinearPlotIrregular(self, *args, **kwargs).plot()
 
     def scatter(self, *args: Any, **kwargs: Any) -> Figure:
-        #TODO Maybe transform in full blown sparse FDataGrid and then scatter
+        from ..exploratory.visualization.representation import ScatterPlotIrregular
+
+        return ScatterPlotIrregular(self, *args, **kwargs).plot()
+        pass
+    
+    def plot_and_scatter(self, *args: Any, **kwargs: Any) -> Figure:
+        #TODO Concatenate all of the points and plot with scatter
         pass
 
     def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
@@ -445,10 +465,10 @@ class FDataSparse(FData):  # noqa: WPS214
     def __repr__(self) -> str:
         """Return repr(self)."""
         return (
-            f"FDataSparse("  # noqa: WPS221
-            f"\nlookup_table={self.lookup_table!r},"
-            f"\ncoordinates_table={self.coordinates_table!r},"
-            f"\nvalues_table={self.values_table!r},"
+            f"FDataIrregular("  # noqa: WPS221
+            f"\nfunction_indices={self.function_indices!r},"
+            f"\nfunction_arguments={self.function_arguments!r},"
+            f"\nfunction_values={self.function_values!r},"
             #f"\ndomain_range={self.domain_range!r},"
             f"\ndataset_name={self.dataset_name!r},"
             f"\nargument_names={self.argument_names!r},"
@@ -573,6 +593,6 @@ class FDataSparse(FData):  # noqa: WPS214
         )
 
 
-#TODO Do i need a FDataSparseDType?
+#TODO Do i need a FDataIrregularDType?
 
 #TODO Do I need a _CoordinateIterator?

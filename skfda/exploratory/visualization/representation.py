@@ -22,6 +22,7 @@ from typing_extensions import Protocol
 from ..._utils import _to_grid_points, constants
 from ...misc.validation import validate_domain_range
 from ...representation._functional_data import FData
+from ...representation.irregular import FDataIrregular
 from ...typing._base import DomainRangeLike, GridPointsLike
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _set_labels
@@ -543,6 +544,228 @@ class ScatterPlot(BasePlot):
                         picker=True,
                         pickradius=2,
                     )
+
+        _set_labels(self.fdata, fig, axes, self.patches)
+
+
+class PlotIrregular(BasePlot):
+    """
+    Class used to plot a FDataIrregular object.
+
+    Args:
+        fdata: FDataIrregular object set that we want to plot.
+        chart: figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If None and ax is also None, the figure is
+            initialized.
+        fig: figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes: axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols: designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
+        domain_range: Range where the
+            function will be plotted. In objects with unidimensional domain
+            the domain range should be a tuple with the bounds of the
+            interval; in the case of surfaces a list with 2 tuples with
+            the ranges for each dimension. Default uses the domain range
+            of the functional object.
+        group: contains integers from [0 to number of
+            labels) indicating to which group each sample belongs to. Then,
+            the samples with the same label are plotted in the same color.
+            If None, the default value, each sample is plotted in the color
+            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+        group_colors: colors in which groups are
+            represented, there must be one for each group. If None, each
+            group is shown with distict colors in the "Greys" colormap.
+        group_names: name of each of the groups which appear
+            in a legend, there must be one for each one. Defaults to None
+            and the legend is not shown. Implies `legend=True`.
+        legend: if `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
+        kwargs: if dim_domain is 1, keyword arguments to be passed to
+            the matplotlib.pyplot.plot function; if dim_domain is 2,
+            keyword arguments to be passed to the
+            matplotlib.pyplot.plot_surface function.
+    """
+
+    def __init__(
+        self,
+        fdata: FDataIrregular,
+        chart: Figure | Axes | None = None,
+        *,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
+        domain_range: Tuple[int, int] | DomainRangeLike | None = None,
+        group: Sequence[K] | None = None,
+        group_colors: Indexable[K, ColorLike] | None = None,
+        group_names: Indexable[K, str] | None = None,
+        legend: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.fdata = fdata
+
+        # There may be different points for each function
+        self.grid_points = []
+        self.evaluated_points = []
+        for index_start, index_end in zip(list(self.fdata.function_indices), 
+                                          list(self.fdata.function_indices[1:])):
+            self.grid_points.append(
+                self.fdata.function_arguments[index_start:index_end])
+            self.evaluated_points.append(
+                self.fdata.function_values[index_start:index_end])
+        # Dont forget to add the last one
+        self.grid_points.append(self.fdata.function_arguments[index_end:])
+        self.evaluated_points.append(self.fdata.function_values[index_end:])
+
+        self.domain_range = domain_range
+        self.group = group
+        self.group_colors = group_colors
+        self.group_names = group_names
+        self.legend = legend
+
+        if self.domain_range is None:
+            self.domain_range = self.fdata.domain_range
+        else:
+            self.domain_range = validate_domain_range(self.domain_range)
+
+        sample_colors, patches = _get_color_info(
+            self.fdata,
+            self.group,
+            self.group_names,
+            self.group_colors,
+            self.legend,
+            kwargs,
+        )
+        self.sample_colors = sample_colors
+        self.patches = patches
+
+    @property
+    def dim(self) -> int:
+        return self.fdata.dim_domain + 1
+
+    @property
+    def n_subplots(self) -> int:
+        return self.fdata.dim_codomain
+
+    @property
+    def n_samples(self) -> int:
+        return self.fdata.n_samples
+
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
+        # Implement in subclasses
+        pass 
+        
+        
+class LinearPlotIrregular(PlotIrregular):
+    """
+    Class used to plot the individual curves of a FDataIrregular object
+    using linear interpolation between the points.
+    """
+
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
+        """
+        Plot the individual curves of a FDataIrregular object.
+
+        Returns:
+        fig: figure object in which the graphs are plotted.
+        """
+        self.artists = np.zeros(
+            (self.n_samples, self.fdata.dim_codomain),
+            dtype=Artist,
+        )
+
+        color_dict: Dict[str, ColorLike | None] = {}
+
+        if self.fdata.dim_domain == 1:
+            for j in range(self.fdata.n_samples):
+
+                set_color_dict(self.sample_colors, j, color_dict)
+
+                self.artists[j, 0] = axes[0].plot(
+                    np.matrix.flatten(self.grid_points[j]),
+                    np.matrix.flatten(self.evaluated_points[j]),
+                    **color_dict,
+                    picker=True,
+                    pickradius=2,
+                )
+
+        else:
+
+            # TODO Implementar para multidimension. Como hacer mesh?
+            import warnings
+            warnings.warn("Not implemented")
+
+        _set_labels(self.fdata, fig, axes, self.patches)
+        
+        
+class ScatterPlotIrregular(PlotIrregular):
+    """
+    Class used to scatter a FDataIrregular object.
+    
+    """
+
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
+        """
+        Scatter FDataIrregular object.
+
+        Returns:
+        fig: figure object in which the graphs are plotted.
+        """
+        self.artists = np.zeros(
+            (self.n_samples, self.fdata.dim_codomain),
+            dtype=Artist,
+        )
+
+        color_dict: Dict[str, ColorLike | None] = {}
+
+        if self.fdata.dim_domain == 1:
+
+            for j in range(self.fdata.n_samples):
+
+                set_color_dict(self.sample_colors, j, color_dict)
+
+                self.artists[j, 0] = axes[0].scatter(
+                    self.grid_points[j],
+                    self.evaluated_points[j],
+                    **color_dict,
+                    picker=True,
+                    pickradius=2,
+                )
+
+        else:
+
+            # TODO Implement for multidimensional
+            import warnings
+            warnings.warn("Not implemented")
 
         _set_labels(self.fdata, fig, axes, self.patches)
 

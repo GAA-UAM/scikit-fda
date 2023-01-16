@@ -53,9 +53,6 @@ T = TypeVar("T", bound='FDataIrregular')
 
 class FDataIrregular(FData):  # noqa: WPS214
    # TODO Docstring
-   # TODO 1. Scatter
-   # TODO 2. Fix the input to fix domain, codomain and all dimensions (hard lock array size)
-   # TODO 3. Plot and PlotAndScatter
 
     def __init__(  # noqa: WPS211
         self,
@@ -389,11 +386,10 @@ class FDataIrregular(FData):  # noqa: WPS214
         from ..exploratory.visualization.representation import ScatterPlotIrregular
 
         return ScatterPlotIrregular(self, *args, **kwargs).plot()
-        pass
     
     def plot_and_scatter(self, *args: Any, **kwargs: Any) -> Figure:
-        #TODO Concatenate all of the points and plot with scatter
-        pass
+        fig = self.scatter(*args, **kwargs)
+        self.plot(fig=fig, *args, **kwargs)
 
     def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
         #TODO Use BasisSmoother to return basis?
@@ -469,7 +465,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             f"\nfunction_indices={self.function_indices!r},"
             f"\nfunction_arguments={self.function_arguments!r},"
             f"\nfunction_values={self.function_values!r},"
-            #f"\ndomain_range={self.domain_range!r},"
+            f"\ndomain_range={self.domain_range!r},"
             f"\ndataset_name={self.dataset_name!r},"
             f"\nargument_names={self.argument_names!r},"
             f"\ncoordinate_names={self.coordinate_names!r},"

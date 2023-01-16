@@ -104,11 +104,11 @@ class MahalanobisDistance(BaseEstimator):
 
         if self.eigenvalues is None or self.eigenvectors is None:
             fpca = FPCA(
-                self.n_components,
-                self.centering,
-                self.regularization,
-                self.components_basis,
-                self.weights,
+                n_components=self.n_components,
+                centering=self.centering,
+                regularization=self.regularization,
+                component_basis=self.components_basis,
+                weights=self.weights,
             )
             fpca.fit(X)
             self.eigenvalues_ = fpca.explained_variance_

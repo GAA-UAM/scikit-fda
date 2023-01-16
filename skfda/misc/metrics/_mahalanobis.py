@@ -107,7 +107,7 @@ class MahalanobisDistance(BaseEstimator):
                 n_components=self.n_components,
                 centering=self.centering,
                 regularization=self.regularization,
-                component_basis=self.components_basis,
+                components_basis=self.components_basis,
                 weights=self.weights,
             )
             fpca.fit(X)

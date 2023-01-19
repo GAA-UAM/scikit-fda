@@ -1,6 +1,4 @@
-"""
-Implementation of soft Dynamic-Time-Warping (sDTW) divergence.
-"""
+""" Implementation ofsoft Dynamic-Time-Warping (sDTW) divergence."""
 from __future__ import annotations
 
 from typing import Optional, Union, Callable, Tuple, Any
@@ -83,8 +81,6 @@ def _check_input_fdata(
             "fdata1 and fdata2 must be FDataGrid objects."
         )
 
-    # dim_codomain can be higher than one,
-    # but dim_domain must be one
     if not fdata1.dim_domain == 1:
         raise ValueError(
             "fdata1 and fdata2 must have their domain dimension equal to one"

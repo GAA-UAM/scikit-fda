@@ -10,10 +10,9 @@ from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
 from ...misc.regularization import L2Regularization
 from ...preprocessing.dim_reduction import FPCA
 from ...representation import FData
-from ...representation.basis import Basis
-
-from ...representation.basis import FDataBasis, CustomBasis
+from ...representation.basis import Basis, CustomBasis, FDataBasis
 from ._linear_regression import LinearRegression
+
 FPCARegressionSelf = TypeVar("FPCARegressionSelf", bound="FPCARegression")
 
 

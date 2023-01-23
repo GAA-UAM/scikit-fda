@@ -124,7 +124,7 @@ class FPCARegressionTestCase(unittest.TestCase):
 
         predictions = fpca_regression.predict(X_test)
 
-        np.testing.assert_allclose(r_predictions,predictions, rtol=0.01)
+        np.testing.assert_allclose(r_predictions, predictions, rtol=0.01)
 
     def test_fpca_reg_against_fda_usc_reg(self) -> None:
         """Check that the results obtained are similar to those of fda.usc.
@@ -186,7 +186,6 @@ class FPCARegressionTestCase(unittest.TestCase):
         predictions = fpca_regression.predict(X_test)
 
         np.testing.assert_allclose(r_predictions, predictions, rtol=0.01)
-
 
 
 if __name__ == "__main__":

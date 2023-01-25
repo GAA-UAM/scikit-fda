@@ -8,17 +8,22 @@ import scipy.integrate
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
-from ...representation import FData, FDataGrid
+from ...representation import FData, FDataGrid, FDataBasis
 from ...representation.basis import (
     Basis,
     BSplineBasis,
     ConstantBasis,
+    CustomBasis,
     FourierBasis,
     MonomialBasis,
 )
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
-from ._operators import Operator, gram_matrix_optimization
+from ._operators import (
+    Operator,
+    gram_matrix_numerical,
+    gram_matrix_optimization,
+)
 
 Order = int
 
@@ -603,3 +608,36 @@ def fdatagrid_penalty_matrix_optimized(
     matrix[(indices[1], indices[0])] = triang_vec
 
     return matrix
+
+
+@gram_matrix_optimization.register
+def custombasis_penalty_matrix_optimized(
+    linear_operator: LinearDifferentialOperator,
+    basis: FDataBasis,
+) -> NDArrayFloat:
+    """Optimized version for CustomBasis."""
+    underlying_basis = basis.basis
+    if not isinstance(underlying_basis, CustomBasis):
+        return gram_matrix_numerical(linear_operator, basis)
+
+
+    basis = basis.basis
+    underlying_fdata = basis.fdata
+
+    if isinstance(underlying_fdata, FDataGrid):
+        identity_basis = FDataGrid(
+            np.identity(underlying_fdata.data_matrix.shape[1]),
+            underlying_fdata.grid_points,
+        )
+        inner_mat = fdatagrid_penalty_matrix_optimized(
+            linear_operator, identity_basis,
+        )
+        data_matrix = underlying_fdata.data_matrix[..., 0]
+        pen_mat = data_matrix @ inner_mat @ data_matrix.T
+        return data_matrix @ inner_mat @ data_matrix.T
+
+    inner_mat = gram_matrix_optimization(
+        linear_operator, underlying_fdata.basis,
+    )
+    data_matrix = underlying_fdata.coefficients
+    return data_matrix @ inner_mat @ data_matrix.T

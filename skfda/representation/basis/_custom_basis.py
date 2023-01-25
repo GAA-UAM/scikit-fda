@@ -7,6 +7,7 @@ from typing import Any, Tuple, TypeVar
 import multimethod
 import numpy as np
 
+from ...misc._math import inner_product_matrix
 from ...typing._numpy import NDArrayFloat
 from .._functional_data import FData
 from ..grid import FDataGrid
@@ -194,6 +195,24 @@ class CustomBasis(Basis):
         eval_points: NDArrayFloat,
     ) -> NDArrayFloat:
         return self.fdata(eval_points)
+
+    def _gram_matrix(self) -> NDArrayFloat:
+        """
+        Compute the Gram matrix.
+
+        Subclasses may override this method for improving computation
+        of the Gram matrix.
+
+        """
+        if isinstance(self.fdata, FDataBasis):
+            basis_gram = self.fdata.basis.gram_matrix()
+            coefficients = self.fdata.coefficients
+            res = coefficients @ basis_gram @ coefficients.T
+
+        res = inner_product_matrix(self.fdata, self.fdata)
+        #print(res - self._gram_matrix_numerical())
+        return res
+
 
     def __len__(self) -> int:
         return self.n_basis

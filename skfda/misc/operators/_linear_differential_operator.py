@@ -620,7 +620,7 @@ def custombasis_penalty_matrix_optimized(
     if not isinstance(underlying_basis, CustomBasis):
         return gram_matrix_numerical(linear_operator, basis)
 
-    underlying_fdata = basis.basis.fdata
+    underlying_fdata = underlying_basis.fdata
 
     if isinstance(underlying_fdata, FDataGrid):
         identity_basis = FDataGrid(

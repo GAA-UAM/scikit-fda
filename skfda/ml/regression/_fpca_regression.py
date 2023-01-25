@@ -118,7 +118,7 @@ class FPCARegression(
         else:
             self.use_sklearn = (
                 self.pca_regularization is None
-                or self.regression_regularization is None
+                and self.regression_regularization is None
             )
 
         if self.use_sklearn:

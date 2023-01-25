@@ -8,7 +8,7 @@ import scipy.integrate
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
-from ...representation import FData, FDataGrid, FDataBasis
+from ...representation import FData, FDataBasis, FDataGrid
 from ...representation.basis import (
     Basis,
     BSplineBasis,
@@ -620,9 +620,7 @@ def custombasis_penalty_matrix_optimized(
     if not isinstance(underlying_basis, CustomBasis):
         return gram_matrix_numerical(linear_operator, basis)
 
-
-    basis = basis.basis
-    underlying_fdata = basis.fdata
+    underlying_fdata = basis.basis.fdata
 
     if isinstance(underlying_fdata, FDataGrid):
         identity_basis = FDataGrid(
@@ -633,7 +631,6 @@ def custombasis_penalty_matrix_optimized(
             linear_operator, identity_basis,
         )
         data_matrix = underlying_fdata.data_matrix[..., 0]
-        pen_mat = data_matrix @ inner_mat @ data_matrix.T
         return data_matrix @ inner_mat @ data_matrix.T
 
     inner_mat = gram_matrix_optimization(

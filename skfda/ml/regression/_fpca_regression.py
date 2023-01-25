@@ -47,8 +47,6 @@ class FPCARegression(
             each of the selected components.
         explained\_variance\_ratio\_: Percentage of variance
             explained by each of the selected components.
-        singular\_values\_: Singular values associated to each
-            of the selected components.
 
     Examples:
         Using the Berkeley Growth Study dataset, we can fit the model.
@@ -114,14 +112,14 @@ class FPCARegression(
         # carried out by sklearn.
 
         if self._force_functional_regression:
-            self.use_sklearn = False
+            self._use_sklearn = False
         else:
-            self.use_sklearn = (
+            self._use_sklearn = (
                 self.pca_regularization is None
                 and self.regression_regularization is None
             )
 
-        if self.use_sklearn:
+        if self._use_sklearn:
             self._linear_model = sk_LinearRegression(
                 fit_intercept=self.intercept,
             )
@@ -143,7 +141,6 @@ class FPCARegression(
         self.components_ = self._fpca.components_
         self.explained_variance_ = self._fpca.explained_variance_
         self.explained_variance_ratio_ = self._fpca.explained_variance_ratio_
-        self.singular_values_ = self._fpca.singular_values_
 
         return self
 
@@ -163,7 +160,7 @@ class FPCARegression(
         check_is_fitted(self, ["_fpca", "_linear_model"])
 
         X_transformed = self._fpca.transform(X)
-        if self.use_sklearn is False:
+        if self._use_sklearn is False:
             X_transformed = FDataBasis(
                 basis=CustomBasis(
                     fdata=self._fpca.components_,

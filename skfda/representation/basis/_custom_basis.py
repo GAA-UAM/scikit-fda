@@ -209,9 +209,7 @@ class CustomBasis(Basis):
             coefficients = self.fdata.coefficients
             res = coefficients @ basis_gram @ coefficients.T
 
-        res = inner_product_matrix(self.fdata, self.fdata)
-        #print(res - self._gram_matrix_numerical())
-        return res
+        return inner_product_matrix(self.fdata, self.fdata)
 
 
     def __len__(self) -> int:

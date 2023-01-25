@@ -7,7 +7,6 @@ from typing import Any, Tuple, TypeVar
 import multimethod
 import numpy as np
 
-from ...misc._math import inner_product_matrix
 from ...typing._numpy import NDArrayFloat
 from .._functional_data import FData
 from ..grid import FDataGrid

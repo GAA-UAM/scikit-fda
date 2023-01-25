@@ -30,9 +30,12 @@ class FPCARegression(
         n_components: Number of principal components to keep.
         intercept: If True, the linear model is calculated with an intercept.
             Defaults to ``True``.
-        regularization: Regularization parameter for the principal component
-            analysis. If None then no regularization is applied. Defaults to
-            ``None``.
+        pca_regularization: Regularization parameter for the principal
+            component extraction. If None then no regularization is applied.
+            Defaults to ``None``.
+        regression_regularization: Regularization parameter for the linear
+            regression. If None then no regularization is applied.
+            Defaults to ``None``.
         components_basis: Basis used for the principal components. If None
             then the basis of the input data is used. Defaults to None.
             It is only used if the input data is a FDataBasis object.
@@ -69,15 +72,17 @@ class FPCARegression(
         self,
         n_components: int = 2,
         intercept: bool = True,
-        regularization: L2Regularization[FData] | None = None,
+        pca_regularization: L2Regularization | None = None,
+        regression_regularization: L2Regularization | None = None,
         components_basis: Basis | None = None,
-        use_sklearn: bool | None = None,
+        _force_functional_regression: bool = False,
     ) -> None:
         self.n_components = n_components
         self.intercept = intercept
-        self.regularization = regularization
+        self.pca_regularization = pca_regularization
+        self.regression_regularization = regression_regularization
         self.components_basis = components_basis
-        self.use_sklearn = use_sklearn if use_sklearn is not None else False
+        self._force_functional_regression = _force_functional_regression
 
     def fit(
         self,
@@ -97,14 +102,24 @@ class FPCARegression(
         self._fpca = FPCA(
             n_components=self.n_components,
             centering=True,
-            regularization=self.regularization,
+            regularization=self.pca_regularization,
             components_basis=self.components_basis,
         )
 
         X_transformed = self._fpca.fit_transform(X)
 
-        # If the variables are not centered, an intercept term has to be
-        # calculated
+        # If there is no regularization, the components are
+        # orthonormal, and the functional regression can be
+        # simplified to a multivariate regression, which is
+        # carried out by sklearn.
+
+        if self._force_functional_regression:
+            self.use_sklearn = False
+        else:
+            self.use_sklearn = (
+                self.pca_regularization is None
+                or self.regression_regularization is None
+            )
 
         if self.use_sklearn:
             self._linear_model = sk_LinearRegression(
@@ -119,7 +134,7 @@ class FPCARegression(
             )
             self._linear_model = LinearRegression(
                 fit_intercept=self.intercept,
-                regularization=self.regularization,
+                regularization=self.regression_regularization,
             )
 
         self._linear_model.fit(X_transformed, y)

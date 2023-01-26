@@ -33,6 +33,5 @@ with open(
 setup(
     name="scikit-fda",
     version=version,
-    include_package_data=True,
-    packages=find_packages(),
+    packages=["skfda"],
 )

@@ -29,6 +29,11 @@ import sphinx_gallery.binder
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 from sphinx.ext.napoleon.docstring import GoogleDocstring
 
+import skfda.datasets
+
+print(skfda.datasets)
+
+
 try:
     release = pkg_resources.get_distribution('scikit-fda').version
 except pkg_resources.DistributionNotFound:
@@ -56,7 +61,6 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.napoleon',
               'sphinx.ext.mathjax',
-              'sphinx_rtd_theme',
               'sphinx_gallery.gen_gallery',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest',

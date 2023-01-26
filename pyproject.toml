@@ -29,7 +29,6 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-	"cython",
 	"dcor",
 	"fdasrsf>=2.2.0",
 	"findiff",

@@ -87,6 +87,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def __init__(
         self,
         n_components: int = 3,
+        *,
         centering: bool = True,
         regularization: Optional[L2Regularization[FData]] = None,
         components_basis: Optional[Basis] = None,

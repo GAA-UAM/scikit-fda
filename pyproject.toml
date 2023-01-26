@@ -60,8 +60,8 @@ repository = "https://github.com/GAA-UAM/scikit-fda"
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["skfda"]
+[tool.setuptools.packages.find]
+include = ["skfda*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "skfda.__version__"}

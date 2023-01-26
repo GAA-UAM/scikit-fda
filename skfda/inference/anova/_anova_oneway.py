@@ -214,8 +214,8 @@ def _anova_bootstrap(
     else:
         # Estimating covariances for each group
         k_est = [
-            fd.cov().to_grid().data_matrix[0, ..., 0]
-            for fd in fd_grouped
+            fdg.cov().to_grid().data_matrix[0, ..., 0]
+            for fdg in fd_grouped
         ]
 
     # Simulating n_reps observations for each of the n_groups gaussian

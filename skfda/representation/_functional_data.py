@@ -819,17 +819,45 @@ class FData(  # noqa: WPS214
 
         return self
 
+    @overload
+    def cov(
+        self: T,
+        s_points: NDArrayFloat,
+        t_points: NDArrayFloat,
+    ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def cov(
+        self: T,
+    ) -> T:
+        pass
+
     @abstractmethod
-    def cov(self: T) -> T:
+    def cov(
+        self: T,
+        s_points: Optional[NDArrayFloat] = None,
+        t_points: Optional[NDArrayFloat] = None,
+    ) -> Union[NDArrayFloat, T]:
         """Compute the covariance of the functional data object.
 
         Calculates the unbiased sample covariance function of the data.
         This is expected to be only defined for univariate functions.
         The resulting covariance function is defined in the cartesian
         product of the domain of the functions.
+        If s_points and t_points are not provided, this method returns
+        the FData object representing the covariance function.
+        If s_points and t_points are provided, this method returns the
+        evaluation of the covariance function at the grid formed by the
+        cartesian product of the points in s_points and t_points.
+
+        Args:
+            s_points: Points where the covariance function is evaluated.
+            t_points: Points where the covariance function is evaluated.
 
         Returns:
             Covariance function.
+
         """
         pass
 

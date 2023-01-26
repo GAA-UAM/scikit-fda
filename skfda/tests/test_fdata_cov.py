@@ -1,5 +1,4 @@
 """Test the covariance method of FData."""
-import random
 from typing import Any, Callable, Tuple
 
 import numpy as np
@@ -173,25 +172,17 @@ def test_fdatabasis_covariance(
     objects is equal to the covariance function calculated for the grid
     representation of the same data.
     """
-    data_in_grid = data_in_basis.to_grid()
+    # Select grid points before converting to grid
+    # Rename evaluation points as (s, t)
+    # Use grid=True to get evaluation matrix using two parameters.
+    domain_range = data_in_basis.domain_range[0]
+    grid_points = np.linspace(domain_range[0], domain_range[1], 100)
+    data_in_grid = data_in_basis.to_grid(grid_points)
 
-    cov_basis = data_in_basis.cov()
-    cov_grid = data_in_grid.cov()
-
-    grid_points = cov_grid.grid_points
-
-    # Select a random sample of evaluation points
-    x_coordinates = random.sample(list(grid_points[0]), 10)
-    y_coordinates = random.sample(list(grid_points[1]), 10)
-    evaluation_points = np.array([
-        [x, y] for x in x_coordinates for y in y_coordinates
-    ])
-
-    # Check that the domain range is the same
-    np.testing.assert_equal(cov_grid.domain_range, cov_basis.domain_range)
+    s_grid, t_grid = grid_points, grid_points
 
     # Check that the covariance functions are equal
     np.testing.assert_allclose(
-        cov_basis(evaluation_points),
-        cov_grid(evaluation_points),
+        data_in_basis.cov(s_grid, t_grid),
+        data_in_grid.cov(s_grid, t_grid),
     )

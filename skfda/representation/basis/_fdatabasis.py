@@ -12,6 +12,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import numpy as np
@@ -461,18 +462,47 @@ class FDataBasis(FData):  # noqa: WPS214
         """
         return self.to_grid(eval_points).var().to_basis(self.basis)
 
-    def cov(self: T) -> T:
+    @overload
+    def cov(
+        self: T,
+        s_points: NDArrayFloat,
+        t_points: NDArrayFloat,
+    ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def cov(
+        self: T,
+    ) -> T:
+        pass
+
+    def cov(
+        self: T,
+        s_points: Optional[NDArrayFloat] = None,
+        t_points: Optional[NDArrayFloat] = None,
+    ) -> Union[T, NDArrayFloat]:
         """Compute the covariance of the functional data object.
 
         Calculates the unbiased sample covariance function of the data.
+        This is expected to be only defined for univariate functions.
         This is a function defined over the basis consisting of the tensor
         product of the original basis with itself. The resulting covariance
         function is then represented as an FDataBasis object with one
         sample with such tensor basis with the coefficients being the
         flattened covariance matrix of the original coefficients.
 
+        If s_points and t_points are not provided, this method returns
+        the FData object representing the covariance function.
+        If s_points and t_points are provided, this method returns the
+        evaluation of the covariance function at the grid formed by the
+        cartesian product of the points in s_points and t_points.
+
+        Args:
+            s_points: Points where the covariance function is evaluated.
+            t_points: Points where the covariance function is evaluated.
+
         Returns:
-            Covariance function in the tensor basis.
+            Covariance function.
 
         """
         # import TensorBasis here to avoid circular dependencies
@@ -486,13 +516,17 @@ class FDataBasis(FData):  # noqa: WPS214
         basis = TensorBasis([self.basis, self.basis])
         coefficients = np.cov(self.coefficients, rowvar=False).flatten()
 
-        return FDataBasis(
+        covariance_function = FDataBasis(
             basis=basis,
             coefficients=coefficients,
             dataset_name=dataset_name,
             argument_names=self.argument_names * 2,
             sample_names=("covariance",),
         )
+
+        if s_points is not None and t_points is not None:
+            return covariance_function([s_points, t_points], grid=True)
+        return covariance_function
 
     def to_grid(
         self,

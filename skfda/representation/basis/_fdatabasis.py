@@ -525,7 +525,10 @@ class FDataBasis(FData):  # noqa: WPS214
         )
 
         if s_points is not None and t_points is not None:
-            return covariance_function([s_points, t_points], grid=True)
+            return covariance_function(
+                [s_points, t_points],
+                grid=True,
+            )[0, ..., 0]
         return covariance_function
 
     def to_grid(

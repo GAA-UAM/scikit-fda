@@ -22,7 +22,6 @@ from ...typing._numpy import NDArrayFloat
 from ._operators import (
     Operator,
     gram_matrix,
-    gram_matrix_numerical,
     gram_matrix_optimization,
 )
 
@@ -632,7 +631,7 @@ def fdatagrid_penalty_matrix_optimized(
 def fdatabasis_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     fdatabasis: FDataBasis,
-):
+) -> NDArrayFloat:
     """Optimized version for FDataBasis."""
     # By calculating the gram matrix of the basis first, we can
     # take advantage of the optimized implementations for

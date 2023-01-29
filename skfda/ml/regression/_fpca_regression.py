@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TypeVar
 
 import numpy as np
-from sklearn.linear_model import LinearRegression as sk_LinearRegression
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin

@@ -23,10 +23,8 @@ from typing import (
     cast,
 )
 
-import findiff
 import numpy as np
 import pandas.api.extensions
-import scipy.integrate
 import scipy.stats.mstats
 from matplotlib.figure import Figure
 
@@ -53,13 +51,12 @@ T = TypeVar("T", bound='FDataIrregular')
 
 class FDataIrregular(FData):  # noqa: WPS214
    # TODO Docstring
-
-    def __init__(  # noqa: WPS211
+   
+    def __init__(
         self,
-        input_dataframe: pandas.DataFrame,
-        id_name: str,
-        argument_names: LabelTupleLike,
-        coordinate_names: LabelTupleLike,
+        function_indices: ArrayLike,
+        function_arguments: ArrayLike,
+        function_values: ArrayLike,
         *,
         dim_domain: Optional[int] = 1,
         dim_codomain: Optional[int] = 1,
@@ -67,28 +64,25 @@ class FDataIrregular(FData):  # noqa: WPS214
         dataset_name: Optional[str] = None,
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
-    ):
+        argument_names: Optional[LabelTupleLike] = None,
+        coordinate_names: Optional[LabelTupleLike] = None
+        ):
         """Construct a FDataIrregular object."""
+            
         # Set dimensions
         # TODO Check dimensions against num of arguments and coordinates?
         self._dim_domain = dim_domain
         self._dim_codomain = dim_codomain
         
-        # Accept stringsd but ensure the column names are tuples
-        _is_str = isinstance(argument_names, str)
-        argument_names = [argument_names] if _is_str else argument_names
+        # Set structure to given data
+        self.num_functions = function_indices.shape[0]
         
-        _is_str = isinstance(coordinate_names, str)
-        coordinate_names = [coordinate_names]  if _is_str else coordinate_names
+        assert function_arguments.shape[0] == function_values.shape[0]
+        self.num_observations = function_arguments.shape[0]
         
-        #TODO Add long/wide differentiation, matrix loading
-        
-        self._load_long_dataframe(
-            input_dataframe,
-            id_name,
-            argument_names,
-            coordinate_names,
-            )
+        self.set_function_indices(function_indices)
+        self.set_function_arguments(function_arguments)
+        self.set_function_values(function_values)
         
         #TODO Fix for higher dimensions
         i=0
@@ -115,53 +109,73 @@ class FDataIrregular(FData):  # noqa: WPS214
             coordinate_names=coordinate_names,
             sample_names=sample_names,
         )
-    
-    #TODO Fix for higher dimensions
-    #TODO Check typing
-    def _load_long_dataframe(
-        self,
+   
+    @classmethod
+    def from_dataframe(
+        cls,
+        *, 
         dataframe: pandas.DataFrame,
         id_column: str,
         argument_columns: LabelTupleLike,
         coordinate_columns: LabelTupleLike,
-        ) -> None:
+        **kwargs
+        ) -> FDataIrregular:
+        
+        # Accept strings but ensure the column names are tuples
+        _is_str = isinstance(argument_columns, str)
+        argument_columns = [argument_columns] if _is_str else argument_columns
+        
+        _is_str = isinstance(coordinate_columns, str)
+        coordinate_columns = [coordinate_columns]  if _is_str else coordinate_columns
         
         # Obtain num functions and num observations from data
         num_observations = dataframe.shape[0]
         num_functions = dataframe[id_column].nunique()
         
         # Create data structure of function pointers and coordinates
-        self.num_functions = num_functions
-        self.num_observations = num_observations
-        
-        self.function_indices = np.zeros((self.num_functions, ), 
-                                         dtype=np.uint32)
-        self.function_arguments = np.zeros((self.num_observations, 
-                                            self.dim_domain))
-        self.function_values = np.zeros((self.num_observations, 
-                                         self.dim_codomain))
+        function_indices = np.zeros((num_functions, ), 
+                                     dtype=np.uint32)
+        function_arguments = np.zeros((num_observations, 
+                                       len(argument_columns)))
+        function_values = np.zeros((num_observations,
+                                    len(coordinate_columns)))
         
         head = 0
         index = 0
         for _, f_values in dataframe.groupby(id_column):
-            self.function_indices[index] = head
+            function_indices[index] = head
             num_values = f_values.shape[0]
             
             # Insert in order
             f_values = f_values.sort_values(argument_columns)
             
             new_args = f_values[argument_columns].values
-            self.function_arguments[head:head+num_values, :] = new_args
+            function_arguments[head:head+num_values, :] = new_args
             
             new_coords = f_values[coordinate_columns].values
-            self.function_values[head:head+num_values, :] = new_coords
+            function_values[head:head+num_values, :] = new_coords
             
             # Update head and index
             head += num_values
             index += 1
-
-
-    def round(  # noqa: WPS125
+        
+        return cls(
+            function_indices, 
+            function_arguments, 
+            function_values, 
+            **kwargs
+            )
+    
+    def set_function_indices(self, function_indices):
+        self.function_indices = function_indices.copy()
+    
+    def set_function_arguments(self, function_arguments):
+        self.function_arguments = function_arguments.copy()
+        
+    def set_function_values(self, function_values):
+        self.function_values = function_values.copy()
+        
+    def round(
         self,
         decimals: int = 0,
         out: Optional[FDataIrregular] = None,

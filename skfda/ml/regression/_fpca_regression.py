@@ -73,14 +73,12 @@ class FPCARegression(
         pca_regularization: L2Regularization | None = None,
         regression_regularization: L2Regularization | None = None,
         components_basis: Basis | None = None,
-        _force_functional_regression: bool = False,
     ) -> None:
         self.n_components = n_components
         self.intercept = intercept
         self.pca_regularization = pca_regularization
         self.regression_regularization = regression_regularization
         self.components_basis = components_basis
-        self._force_functional_regression = _force_functional_regression
 
     def fit(
         self,
@@ -103,38 +101,22 @@ class FPCARegression(
             regularization=self.pca_regularization,
             components_basis=self.components_basis,
         )
+        self._linear_model = LinearRegression(
+            fit_intercept=self.intercept,
+            regularization=self.regression_regularization,
+        )
+        self._fpca.fit(X)
 
-        X_transformed = self._fpca.fit_transform(X)
+        # The linear model is fitted with the observations expressed in the
+        # basis of the principal components.
+        self.fpca_basis = CustomBasis(
+            fdata=self._fpca.components_,
+        )
 
-        # If there is no regularization, the components are
-        # orthonormal, and the functional regression can be
-        # simplified to a multivariate regression, which is
-        # carried out by sklearn.
-
-        if self._force_functional_regression:
-            self._use_sklearn = False
-        else:
-            self._use_sklearn = (
-                self.pca_regularization is None
-                and self.regression_regularization is None
-            )
-
-        if self._use_sklearn:
-            self._linear_model = sk_LinearRegression(
-                fit_intercept=self.intercept,
-            )
-        else:
-            X_transformed = FDataBasis(
-                basis=CustomBasis(
-                    fdata=self._fpca.components_,
-                ),
-                coefficients=self._fpca.transform(X),
-            )
-            self._linear_model = LinearRegression(
-                fit_intercept=self.intercept,
-                regularization=self.regression_regularization,
-            )
-
+        X_transformed = FDataBasis(
+            basis=self.fpca_basis,
+            coefficients=self._fpca.transform(X),
+        )
         self._linear_model.fit(X_transformed, y)
 
         self.n_components_ = self.n_components
@@ -159,13 +141,9 @@ class FPCARegression(
         """
         check_is_fitted(self, ["_fpca", "_linear_model"])
 
-        X_transformed = self._fpca.transform(X)
-        if self._use_sklearn is False:
-            X_transformed = FDataBasis(
-                basis=CustomBasis(
-                    fdata=self._fpca.components_,
-                ),
-                coefficients=self._fpca.transform(X),
-            )
+        X_transformed = FDataBasis(
+            basis=self.fpca_basis,
+            coefficients=self._fpca.transform(X),
+        )
 
         return self._linear_model.predict(X_transformed)

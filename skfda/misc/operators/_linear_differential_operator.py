@@ -19,11 +19,7 @@ from ...representation.basis import (
 )
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
-from ._operators import (
-    Operator,
-    gram_matrix,
-    gram_matrix_optimization,
-)
+from ._operators import Operator, gram_matrix, gram_matrix_optimization
 
 Order = int
 

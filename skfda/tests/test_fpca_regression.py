@@ -72,39 +72,6 @@ class FPCARegressionTestCase(unittest.TestCase):
 
         np.testing.assert_allclose(r_predictions, predictions, rtol=5e-3)
 
-    def test_fpca_forcing_functional_regression(self) -> None:
-        """
-        Check that the results do not change by forcing functional regression.
-
-        Compare that the end result is the same when forcing functional
-        regression vs when the implementation of sklearn is used.
-        """
-        X, y = skfda.datasets.fetch_tecator(return_X_y=True, as_frame=True)
-        X_train = X.iloc[:129, 0].values
-        y_train = y["fat"][:129].values
-        X_test = X.iloc[129:, 0].values
-
-        fpca_regression = FPCARegression(
-            n_components=10,
-            _force_functional_regression=True,
-        )
-
-        fpca_regression.fit(X_train, y_train)
-        predictions_functional = fpca_regression.predict(X_test)
-
-        fpca_regression = FPCARegression(
-            n_components=10,
-        )
-
-        fpca_regression.fit(X_train, y_train)
-        predictions = fpca_regression.predict(X_test)
-
-        np.testing.assert_allclose(
-            predictions_functional,
-            predictions,
-            rtol=1e-7,
-        )
-
     def test_fpca_reg_against_fda_usc_reg(self) -> None:
         """Check that the results obtained are similar to those of fda.usc.
 

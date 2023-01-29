@@ -164,10 +164,22 @@ class FDataIrregular(FData):  # noqa: WPS214
     def round(  # noqa: WPS125
         self,
         decimals: int = 0,
-        out: Optional[FDataGrid] = None,
-    ) -> FDataGrid:
-        #TODO Implement when attributes are done. Round the values probably
-        pass
+        out: Optional[FDataIrregular] = None,
+    ) -> FDataIrregular:
+        rounded_arguments = self.function_arguments.round(decimals=decimals)
+        rounded_values = self.function_values.round(decimals=decimals)
+        
+        if out is not None and isinstance(out, FDataIrregular):
+            out.function_indices = self.function_indices
+            out.function_arguments = rounded_arguments
+            out.function_values = rounded_values
+            
+            return out
+        
+        return self.copy(
+            function_arguments=rounded_arguments, 
+            function_values=rounded_values
+            )
 
     @property
     def sample_points(self) -> GridPoints:
@@ -238,7 +250,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         aligned: bool = True,
     ) -> NDArrayFloat:
 
-        #TODO Implement when attributes are done
+        #TODO
         pass
 
     def derivative(
@@ -247,7 +259,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         order: int = 1,
         method: Optional[Basis] = None,
     ) -> T:
-        #TODO Implement when attributes are done
+        #TODO
         pass
 
     def integrate(
@@ -255,12 +267,14 @@ class FDataIrregular(FData):  # noqa: WPS214
         *,
         domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
-        #TODO Implement when attributes are done
+        #TODO
         pass
 
     def _check_same_dimensions(self: T, other: T) -> None:
-        #TODO Implement when attributes are done
-        pass
+        if self.dim_codomain != other.dim_codomain:
+            raise ValueError("Dimension mismatch in coordinates")
+        if self.dim_domain != other.dim_domain:
+            raise ValueError("Dimension mismatch in arguments")
 
     def sum(  # noqa: WPS125
         self: T,
@@ -274,12 +288,62 @@ class FDataIrregular(FData):  # noqa: WPS214
         #TODO Implement when attributes are done
         pass
     
+    def mean(self: T) -> T:
+        """Compute the mean pointwise for a sparse dataset.
+        
+        Note that, for irregular data, points may be represented in few
+        or even an only curve.
+
+        Returns:
+            A FDataIrregular object with just one sample representing the
+            mean of all curves the across each value.
+
+        """
+        
+        # Find all distinct arguments (ordered) and corresponding values
+        distinct_args = np.unique(np.matrix.flatten(self.function_arguments))
+        values = [np.matrix.flatten(self.function_values[np.where(self.function_arguments == arg)[0]])
+                    for arg in distinct_args]
+        
+        # Obtain mean of all available values for each argument point
+        vars = np.array([np.mean(vals) for vals in values])
+        
+        # Create a FDataGrid object with only 1 curve, the mean curve
+        return FDataGrid(
+            grid_points=distinct_args,
+            data_matrix=np.array([vars]),
+            sample_names=("mean",),
+        )
+    
     def var(self: T) -> T:
-        #TODO Implement when attributes are done
-        pass
+        """Compute the variance pointwise for a sparse dataset.
+        
+        Note that, for irregular data, points may be represented in few
+        or even an only curve.
+
+        Returns:
+            A FDataIrregular object with just one sample representing the
+            variance of all curves the across each value.
+
+        """
+        
+        # Find all distinct arguments (ordered) and corresponding values
+        distinct_args = np.unique(np.matrix.flatten(self.function_arguments))
+        values = [np.matrix.flatten(self.function_values[np.where(self.function_arguments == arg)[0]])
+                    for arg in distinct_args]
+        
+        # Obtain variance of all available values for each argument point
+        vars = np.array([np.var(vals) for vals in values])
+        
+        # Create a FDataGrid object with only 1 curve, the variance curve
+        return FDataGrid(
+            grid_points=distinct_args,
+            data_matrix=np.array([vars]),
+            sample_names=("variance",),
+        )
 
     def cov(self: T) -> T:
-        #TODO Implement when attributes are done
+        #TODO Implementation to be decided
         pass
 
     def gmean(self: T) -> T:
@@ -287,12 +351,12 @@ class FDataIrregular(FData):  # noqa: WPS214
         pass
 
     def equals(self, other: object) -> bool:
-        """Comparison of FDataGrid objects."""
+        """Comparison of FDataSparse objects."""
         #TODO Implement when attributes are done
         pass
 
     def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
-        """Elementwise equality of FDataGrid."""
+        """Elementwise equality of FDataSparse."""
         #TODO Implement when attributes are done
         pass
 
@@ -374,7 +438,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         pass
 
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
-        #TODO This should be easy to implement, using the add_function methods
+        #TODO Implement allocing memory only once
         pass
     
     def plot(self, *args: Any, **kwargs: Any) -> Figure:
@@ -402,26 +466,23 @@ class FDataIrregular(FData):  # noqa: WPS214
         sample_points: Optional[GridPointsLike] = None,
     ) -> T:
 
-        #TODO Return list of data grids
+        #TODO Return list of data grids? Data grid with holes?
         pass
 
     def copy(  # noqa: WPS211
         self: T,
-        *,
         deep: bool = False,  # For Pandas compatibility
-        data_matrix: Optional[ArrayLike] = None,
-        grid_points: Optional[GridPointsLike] = None,
-        sample_points: Optional[GridPointsLike] = None,
-        domain_range: Optional[DomainRangeLike] = None,
-        dataset_name: Optional[str] = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
+        dim_domain: Optional[int] = 1,
+        dim_codomain: Optional[int] = 1,
+        domain_range: Optional[DomainRangeLike] = None,
+        dataset_name: Optional[str] = None,
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
-        interpolation: Optional[Evaluator] = None,
     ) -> T:
         
-        #TODO Define copy after all attributes are locked
+        #TODO Should allow to copy directly from FDataIrregular, not from dataframe
         pass
 
     def restrict(
@@ -465,7 +526,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             f"\nfunction_indices={self.function_indices!r},"
             f"\nfunction_arguments={self.function_arguments!r},"
             f"\nfunction_values={self.function_values!r},"
-            f"\ndomain_range={self.domain_range!r},"
+            #f"\ndomain_range={self.domain_range!r},"
             f"\ndataset_name={self.dataset_name!r},"
             f"\nargument_names={self.argument_names!r},"
             f"\ncoordinate_names={self.coordinate_names!r},"

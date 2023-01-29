@@ -21,6 +21,7 @@ from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._operators import (
     Operator,
+    gram_matrix,
     gram_matrix_numerical,
     gram_matrix_optimization,
 )
@@ -586,7 +587,24 @@ def fdatagrid_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: FDataGrid,
 ) -> NDArrayFloat:
-    """Optimized version for FDatagrid."""
+    """
+    Optimized version for FDatagrid.
+
+    If the data_matrix of the FDataGrid is the identity, the resulting
+    matrix will be the gram matrix for functions discretized in the
+    given grid points. That is to say, in order to calculate the norm
+    of the linear operator applied to functions discretized in the given
+    grid points, it is enough to multiply the returned matrix by the
+    values in the points of the grid on both sides.
+
+    If the data_matrix of the FDataGrid is not the identity, the resulting
+    matrix will be the gram matrix for functions expressed as a combination
+    of the given set of functions (the entries of the fdatagrid). The
+    intended use is to calculate the norm of the linear operator for
+    functions expressed in a basis that is a FDataGrid (see CustomBasis).
+
+    Note that the first case is a particular case of the second one.
+    """
     evaluated_basis = sum(
         w(basis.grid_points[0]) if callable(w) else w
         * basis.derivative(order=i)(basis.grid_points[0])
@@ -611,30 +629,30 @@ def fdatagrid_penalty_matrix_optimized(
 
 
 @gram_matrix_optimization.register
+def fdatabasis_penalty_matrix_optimized(
+    linear_operator: LinearDifferentialOperator,
+    fdatabasis: FDataBasis,
+):
+    """Optimized version for FDataBasis."""
+    # By calculating the gram matrix of the basis first, we can
+    # take advantage of the optimized implementations for
+    # several basis types.
+    # Then we can calculate the penalty matrix using the
+    # coefficients of the functions in the basis
+    # and the penalty matrix of the basis.
+    basis_pen_matrix = gram_matrix(
+        linear_operator,
+        fdatabasis.basis,
+    )
+
+    coef_matrix = fdatabasis.coefficients
+    return coef_matrix @ basis_pen_matrix @ coef_matrix.T
+
+
+@gram_matrix_optimization.register
 def custombasis_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
-    basis: FDataBasis,
+    basis: CustomBasis,
 ) -> NDArrayFloat:
     """Optimized version for CustomBasis."""
-    underlying_basis = basis.basis
-    if not isinstance(underlying_basis, CustomBasis):
-        return gram_matrix_numerical(linear_operator, basis)
-
-    underlying_fdata = underlying_basis.fdata
-
-    if isinstance(underlying_fdata, FDataGrid):
-        identity_basis = FDataGrid(
-            np.identity(underlying_fdata.data_matrix.shape[1]),
-            underlying_fdata.grid_points,
-        )
-        inner_mat = fdatagrid_penalty_matrix_optimized(
-            linear_operator, identity_basis,
-        )
-        data_matrix = underlying_fdata.data_matrix[..., 0]
-        return data_matrix @ inner_mat @ data_matrix.T
-
-    inner_mat = gram_matrix_optimization(
-        linear_operator, underlying_fdata.basis,
-    )
-    data_matrix = underlying_fdata.coefficients
-    return data_matrix @ inner_mat @ data_matrix.T
+    return gram_matrix(linear_operator, basis.fdata)

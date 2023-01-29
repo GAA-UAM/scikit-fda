@@ -173,8 +173,6 @@ def test_fdatabasis_covariance(
     representation of the same data.
     """
     # Select grid points before converting to grid
-    # Rename evaluation points as (s, t)
-    # Use grid=True to get evaluation matrix using two parameters.
     domain_range = data_in_basis.domain_range[0]
     grid_points = np.linspace(domain_range[0], domain_range[1], 100)
     data_in_grid = data_in_basis.to_grid(grid_points)

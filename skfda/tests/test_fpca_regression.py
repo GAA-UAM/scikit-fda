@@ -132,14 +132,38 @@ class FPCARegressionTestCase(unittest.TestCase):
         X_train = X.iloc[:129, 0].values
         y_train = y["fat"][:129].values
         X_test = X.iloc[129:, 0].values
+        pen_order = 2
+
+        # Two correction factors are needed to obtain the same results as
+        # fda.usc
+
+        # The first factor compensates for the fact that the difference
+        # matrices in fda.usc are scaled by the mean of the deltas
+        # between grid points. This diference is introduced in
+        # the function D.penalty (fdata2pc.R:479) in fda.usc.
+        grid_points = X_test[0].grid_points[0]
+        grid_step = np.mean(np.diff(grid_points))
+        factor1 = grid_step**(2 * pen_order - 1)
+
+        # The second factor compensates a scaling done to the final
+        # regularization matrix in fda.usc. This scaling is introduced
+        # in the function fregre.pc (fregre.pc.R:165) in fda.usc.
+        factor2 = np.diff(X_train.domain_range[0]) / len(grid_points)
+        factor2 **= (2 * pen_order + 1)
+
+        # The total factor that we need to apply to the regularization
+        # parameter of the regression is the product of the two factors
+        total_factor = factor1 * factor2
 
         fpca_regression = FPCARegression(
             n_components=10,
             pca_regularization=L2Regularization(
-                LinearDifferentialOperator(2), regularization_parameter=1.0,
+                LinearDifferentialOperator(pen_order),
+                regularization_parameter=1.0,
             ),
             regression_regularization=L2Regularization(
-                LinearDifferentialOperator(2), regularization_parameter=1.0,
+                LinearDifferentialOperator(pen_order),
+                regularization_parameter=1.0 * total_factor,  # noqa: WPS345
             ),
         )
 
@@ -167,8 +191,12 @@ class FPCARegressionTestCase(unittest.TestCase):
 
         predictions = fpca_regression.predict(X_test)
 
-        # TODO: Find the difference with fda.usc's implementation
-        np.testing.assert_allclose(r_predictions, predictions, rtol=1000000)
+        # The tolerance is not lower because the results are not
+        # exactly the same as in fda.usc. The components calculated
+        # by fda.usc are not exactly the same (they are orthogonal).
+        # Additionaly, the penalization matrices are calculated using
+        # a different method.
+        np.testing.assert_allclose(r_predictions, predictions, rtol=1.5e-2)
 
     def test_fpca_reg_basis_vs_grid(self):
         """

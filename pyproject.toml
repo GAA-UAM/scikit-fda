@@ -29,7 +29,6 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-	"cython",
 	"dcor",
 	"fdasrsf>=2.2.0",
 	"findiff",
@@ -58,5 +57,11 @@ documentation = "https://fda.readthedocs.io"
 repository = "https://github.com/GAA-UAM/scikit-fda"
 
 [build-system]
-# Minimum requirements for the build system to execute.
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["skfda*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "skfda.__version__"}

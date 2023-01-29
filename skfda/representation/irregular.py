@@ -113,11 +113,10 @@ class FDataIrregular(FData):  # noqa: WPS214
     @classmethod
     def from_dataframe(
         cls,
-        *, 
         dataframe: pandas.DataFrame,
         id_column: str,
         argument_columns: LabelTupleLike,
-        coordinate_columns: LabelTupleLike,
+        coordinate_columns: LabelTupleLike, 
         **kwargs
         ) -> FDataIrregular:
         
@@ -165,7 +164,54 @@ class FDataIrregular(FData):  # noqa: WPS214
             function_values, 
             **kwargs
             )
-    
+        
+    @classmethod
+    def from_FDataGrid(
+        cls,
+        f_data: FDataGrid,
+        **kwargs
+        ) -> FDataIrregular:
+        
+        # Obtain num functions and num observations from data
+        num_observations = np.sum(~np.isnan(f_data.data_matrix))
+        num_functions = f_data.data_matrix.shape[0]
+
+        # Create data structure of function pointers and coordinates
+        function_indices = np.zeros((num_functions, ), 
+                                        dtype=np.uint32)
+        function_arguments = np.zeros((num_observations, 
+                                       f_data.dim_domain))
+        function_values = np.zeros((num_observations, 
+                                    f_data.dim_codomain))
+
+        head = 0
+        for i in range(num_functions):
+            function_indices[i] = head
+            num_values = 0
+
+            for j in range(f_data.data_matrix.shape[1]):
+                if np.isnan(f_data.data_matrix[i][j]):
+                    continue
+                
+                arg = [f_data.grid_points[dim][j] for dim 
+                       in range(f_data.dim_domain)]
+                function_arguments[head+num_values, :] = arg
+                
+                value = [f_data.data_matrix[i,j,dim] for dim 
+                         in range(f_data.dim_codomain)]
+                function_values[head+num_values, :] = value
+
+                num_values += 1
+                
+            head += num_values
+        
+        return cls(
+            function_indices, 
+            function_arguments, 
+            function_values, 
+            **kwargs
+            )
+        
     def set_function_indices(self, function_indices):
         self.function_indices = function_indices.copy()
     

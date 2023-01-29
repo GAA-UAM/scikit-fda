@@ -6,7 +6,7 @@ package. FDataBasis and FDataGrid.
 """
 import warnings
 from builtins import isinstance
-from typing import Any, Callable, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Optional, Sequence, TypeVar, Union, cast
 
 import multimethod
 import numpy as np
@@ -511,7 +511,7 @@ def _inner_product_integrate(
 def weighted_inner_product_integrate(
     arg1: Union[FDataBasis, Basis],
     arg2: Union[FDataBasis, Basis],
-    arg3: Union[FDataBasis, NDArrayFloat],
+    arg3: Sequence[Union[FDataBasis, NDArrayFloat]],
     arg4: Union[FDataBasis, NDArrayFloat],
 ) -> NDArrayFloat:
     r"""
@@ -550,7 +550,7 @@ def weighted_inner_product_integrate(
     ):
         raise ValueError("Domain range for basis objects must be equal")
 
-    """
+    """ TODO
     if not isinstance(arg3, type(arg4)):
         raise ValueError("Weights types must be equal")
 
@@ -569,16 +569,16 @@ def weighted_inner_product_integrate(
         if isinstance(arg3, FData):
             f3 = arg3(args)[:, 0, :]
         else:
-            f3 = arg3
+            f3 = arg3.T
 
         if isinstance(arg4, FData):
             f4 = arg4(args)[:, 0, :]
         else:
-            f4 = arg4
+            f4 = arg4.T
 
-        weight = f3 * f4
+        weight = np.dot(f3.T, f4)
 
-        return f1 * f2.T * np.sum(weight)
+        return f1 * f2.T * weight
 
     return nquad_vec(
         integrand,

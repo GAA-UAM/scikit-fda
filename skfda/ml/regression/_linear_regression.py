@@ -275,6 +275,8 @@ class LinearRegression(
             left_inner_products_list = []
             right_inner_products_list = []
 
+            Xt = self._make_transpose(X_new)
+
             for i in enumerate(self.coef_basis):
                 coef_lengths.append(i[1].n_basis)
                 row = []
@@ -282,7 +284,7 @@ class LinearRegression(
                     weighted_inner_product_integrate(
                         i[1],
                         ConstantBasis(),
-                        X_new[i[0]],
+                        Xt[i[0]],
                         y,
                     ),
                 )
@@ -291,8 +293,8 @@ class LinearRegression(
                         weighted_inner_product_integrate(
                             i[1],
                             j[1],
-                            X_new[i[0]],
-                            X_new[j[0]],
+                            Xt[i[0]],
+                            Xt[j[0]],
                         ),
                     )
                 left_inner_products_list.append(row)
@@ -393,15 +395,24 @@ class LinearRegression(
         elif isinstance(X, pd.DataFrame):
             X = self._dataframe_conversion(X)
 
-        X = [
+        return ([
             x if isinstance(x, FData)
             else self._check_and_convert(x) for x in X
-        ]
+        ])
 
-        if all(not isinstance(i, FData) for i in X):
-            warnings.warn("All the covariates are scalar.")
+    def _make_transpose(
+        self,
+        X: Sequence[AcceptedDataType],
+    ) -> Sequence[AcceptedDataType]:
+        Xt = []
+        for x in X:
+            if isinstance(x, FData):
+                Xt.append(x)
+            else:
+                x_new = self._check_and_convert(x)
+                Xt.extend(np.split(x_new.T, x_new.shape[1]))
 
-        return X
+        return Xt
 
     def _check_and_convert(
         self,

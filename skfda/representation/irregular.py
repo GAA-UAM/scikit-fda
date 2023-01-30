@@ -527,8 +527,55 @@ class FDataIrregular(FData):  # noqa: WPS214
         return self.copy(function_values=-self.function_values)
 
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
-        #TODO Implement allocing memory only once
-        pass
+        if as_coordinates:
+            raise NotImplementedError(
+                "Not implemented for as_coordinates = True",
+            )
+        
+        # Verify that dimensions are compatible
+        
+        assert len(others) > 0
+        self._check_same_dimensions(others[0])
+        
+        if len(others) > 1:
+            for x, y in zip(others, others[1:]):
+                x._check_same_dimensions(y)
+        
+        # Allocate all required memory
+        
+        total_functions = self.num_functions + sum([o.num_functions for o in others])
+        total_values = self.num_observations + sum([o.num_observations for o in others])
+        total_sample_names = []
+        
+        function_indices = np.zeros((total_functions, ), 
+                                     dtype=np.uint32)
+        function_arguments = np.zeros((total_values, 
+                                       self.dim_domain))
+        function_values = np.zeros((total_values,
+                                    self.dim_codomain))
+        
+        index = 0
+        head = 0
+        
+        # Add samples sequentially
+        for f_data in [self] + list(others):
+            function_indices[index:index+f_data.num_functions] = f_data.function_indices
+            function_arguments[head:head+f_data.num_observations] = f_data.function_arguments
+            function_values[head:head+f_data.num_observations] = f_data.function_values
+            
+            # Adjust pointers to the concatenated array
+            function_indices[index:index+f_data.num_functions] += head
+            
+            index += f_data.num_functions
+            head += f_data.num_observations
+            total_sample_names = total_sample_names + list(f_data.sample_names)
+        
+        return self.copy(
+            function_indices, 
+            function_arguments, 
+            function_values, 
+            sample_names = total_sample_names
+            )
     
     def plot(self, *args: Any, **kwargs: Any) -> Figure:
         from ..exploratory.visualization.representation import LinearPlotIrregular
@@ -556,10 +603,10 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def copy(  # noqa: WPS211
         self: T,
-        deep: bool = False,  # For Pandas compatibility
         function_indices: Optional[ArrayLike] = None,
         function_arguments: Optional[ArrayLike] = None,
         function_values: Optional[ArrayLike] = None,
+        deep: bool = False,  # For Pandas compatibility
         dim_domain: Optional[int] = None,
         dim_codomain: Optional[int] = None,
         domain_range: Optional[DomainRangeLike] = None,

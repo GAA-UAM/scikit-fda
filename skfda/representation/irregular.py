@@ -510,10 +510,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         from ..exploratory.visualization.representation import ScatterPlotIrregular
 
         return ScatterPlotIrregular(self, *args, **kwargs).plot()
-    
-    def plot_and_scatter(self, *args: Any, **kwargs: Any) -> Figure:
-        fig = self.scatter(*args, **kwargs)
-        self.plot(fig=fig, *args, **kwargs)
 
     def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
         #TODO Use BasisSmoother to return basis?

@@ -8,7 +8,7 @@ like depth measures.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Sequence, Sized, Tuple, TypeVar
+from typing import Any, Dict, Sequence, Sized, Tuple, TypeVar, Optional
 
 import matplotlib.cm
 import matplotlib.patches
@@ -610,6 +610,7 @@ class PlotIrregular(BasePlot):
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,
         legend: bool = False,
+        marker: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -639,6 +640,7 @@ class PlotIrregular(BasePlot):
         self.group_colors = group_colors
         self.group_names = group_names
         self.legend = legend
+        self.marker = marker
 
         if self.domain_range is None:
             self.domain_range = self.fdata.domain_range
@@ -712,6 +714,7 @@ class LinearPlotIrregular(PlotIrregular):
                     **color_dict,
                     picker=True,
                     pickradius=2,
+                    marker=self.marker
                 )
 
         else:
@@ -759,6 +762,7 @@ class ScatterPlotIrregular(PlotIrregular):
                     **color_dict,
                     picker=True,
                     pickradius=2,
+                    marker=self.marker,
                 )
 
         else:

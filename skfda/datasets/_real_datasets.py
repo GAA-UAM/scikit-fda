@@ -12,6 +12,7 @@ from typing_extensions import Literal
 import rdata
 
 from ..representation import FDataGrid
+from ..representation.irregular import FDataIrregular
 from ..typing._numpy import NDArrayFloat, NDArrayInt
 
 
@@ -1541,3 +1542,55 @@ if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
         cite=":footcite:`ruiz++_2003_cariporide`",
         bibliography=".. footbibliography::",
     ) + _param_descr
+
+
+def _fetch_loon_data(name: str) -> Any:
+    return _fetch_cran_no_encoding_warning(
+        name,
+        "loon.data",
+        version="0.1.3",
+    )
+    
+_bone_density_descr = """
+    The Bone Density dataset is a study of bone density in boys and girls aged 8-17.
+    It contains data from 423 individuals, measured irregularly in different times,
+    with an average of ~3 points per individual.
+
+    References:
+"""
+    
+def fetch_bone_density(
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
+    """
+    Load the Bone Density dataset. This is an irregular dataset.
+
+    The data is obtained from the R package 'loon.data', which compiles several
+    irregular datasets. Sources to be determined.
+
+    """
+    descr = _bone_density_descr
+
+    raw_dataset = _fetch_loon_data("bone_ext")
+
+    data = raw_dataset["bone_ext"]
+
+    curve_name = "idnum"
+    argument_name = "age"
+    target_name = "spnbmd"
+
+    curves = FDataIrregular.from_dataframe(
+        data,
+        id_column=curve_name,
+        argument_columns=argument_name,
+        coordinate_columns=target_name,
+        argument_names=[argument_name],
+        coordinate_names=[target_name],
+        dataset_name="bone_ext"
+    )
+
+    return Bunch(
+        data=curves,
+        feature_names=[argument_name],
+        target_names=[target_name],
+        DESCR=descr,
+    )

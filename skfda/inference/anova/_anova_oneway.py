@@ -190,6 +190,7 @@ def _anova_bootstrap(
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
+    default_n_features: int = 501,
 ) -> NDArrayFloat:
 
     n_groups = len(fd_grouped)
@@ -203,28 +204,34 @@ def _anova_bootstrap(
             )
 
     # List with sizes of each group
-    sizes = [fd.n_samples for fd in fd_grouped]
+    sizes = [fdg.n_samples for fdg in fd_grouped]
 
     # Instance a random state object in case random_state is an int
     random_state = validate_random_state(random_state)
-
-    if equal_var:
-        k_est = concatenate(fd_grouped).cov().to_grid().data_matrix[0, ..., 0]
-        k_est = [k_est] * len(fd_grouped)
-    else:
-        # Estimating covariances for each group
-        k_est = [
-            fdg.cov().to_grid().data_matrix[0, ..., 0]
-            for fdg in fd_grouped
-        ]
 
     # Simulating n_reps observations for each of the n_groups gaussian
     # processes
     grid_points = getattr(fd_grouped[0], "grid_points", None)
     if grid_points is None:
         start, stop = fd_grouped[0].domain_range[0]
-        n_features = k_est[0].shape[0]
+        n_features = default_n_features
         grid_points = np.linspace(start, stop, n_features)
+
+    if equal_var:
+        cov_est = concatenate(fd_grouped).cov(
+            s_points=grid_points,
+            t_points=grid_points,
+        )
+        k_est = [cov_est] * len(fd_grouped)
+    else:
+        # Estimating covariances for each group
+        k_est = [
+            fdg.cov(
+                s_points=grid_points,
+                t_points=grid_points,
+            )
+            for fdg in fd_grouped
+        ]
 
     sim = [
         make_gaussian(

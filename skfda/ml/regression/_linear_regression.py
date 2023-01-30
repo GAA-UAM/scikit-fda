@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 from sklearn.utils.validation import check_is_fitted
 
+from ..._utils import nquad_vec
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
-from ...misc._math import weighted_inner_product_integrate
 from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
-from ...representation import FData
+from ...representation import FData, FDataBasis
 from ...representation.basis import Basis, ConstantBasis
 from ...typing._numpy import NDArrayFloat
 from ._coefficients import CoefficientInfo, coefficient_info_from_covariate
@@ -277,24 +277,24 @@ class LinearRegression(
 
             Xt = self._make_transpose(X_new)
 
-            for i in enumerate(self.coef_basis):
-                coef_lengths.append(i[1].n_basis)
+            for i, basis_i in enumerate(self.coef_basis):
+                coef_lengths.append(basis_i.n_basis)
                 row = []
                 right_inner_products_list.append(
-                    weighted_inner_product_integrate(
-                        i[1],
+                    self._weighted_inner_product_integrate(
+                        basis_i,
                         ConstantBasis(),
-                        Xt[i[0]],
+                        Xt[i],
                         y,
                     ),
                 )
-                for j in enumerate(self.coef_basis):
+                for j, basis_j in enumerate(self.coef_basis):
                     row.append(
-                        weighted_inner_product_integrate(
-                            i[1],
-                            j[1],
-                            Xt[i[0]],
-                            Xt[j[0]],
+                        self._weighted_inner_product_integrate(
+                            basis_i,
+                            basis_j,
+                            Xt[i],
+                            Xt[j],
                         ),
                     )
                 left_inner_products_list.append(row)
@@ -399,6 +399,86 @@ class LinearRegression(
             x if isinstance(x, FData)
             else self._check_and_convert(x) for x in X
         ])
+
+    def _weighted_inner_product_integrate(
+        self,
+        basis: Union[FDataBasis, Basis],
+        transposed_basis: Union[FDataBasis, Basis],
+        transposed_weight: Union[FDataBasis, NDArrayFloat],
+        weight: Union[FDataBasis, NDArrayFloat],
+    ) -> NDArrayFloat:
+        r"""
+        Return the weighted inner product matrix between its arguments.
+
+        For two basis (:math:\theta_1) and (:math:\theta_2) the weighted
+        inner product is defined as:
+
+        . math::
+            \int \boldsymbol{\theta}_1 (t) \boldsymbol{\theta}^T_2 (t) w(t) dt
+
+        where w(t) is defined by a functional vectors product:
+
+        . math::
+            \boldsymbol{w}^T_1 (t) \boldsymbol{w}_2 (t)
+
+        Args:
+            basis: Vertical basis vector.
+            transposed_basis: Horizontal basis vector.
+            transposed_weight: First weight, horizontal functional vector.
+            weight: Second weight, vertical functional vector.
+
+        Returns:
+            Inner product matrix between basis and weight.
+
+        """
+        if isinstance(basis, Basis):
+            basis = basis.to_basis()
+
+        if isinstance(transposed_basis, Basis):
+            transposed_basis = transposed_basis.to_basis()
+
+        if not np.array_equal(
+            basis.domain_range,
+            transposed_basis.domain_range,
+        ):
+            raise ValueError("Domain range for basis objects must be equal")
+
+        if isinstance(transposed_weight, FData) and not np.array_equal(
+            basis.domain_range,
+            transposed_weight.domain_range,
+        ):
+            raise ValueError("Domain range for weight and basis must be equal")
+
+        if isinstance(weight, FData) and not np.array_equal(
+            basis.domain_range,
+            weight.domain_range,
+        ):
+            raise ValueError("Domain range for weight and basis must be equal")
+
+        domain_range = basis.domain_range
+
+        def integrand(args):  # noqa: WPS430
+            eval_basis = basis(args)[:, 0, :]
+            eval_transposed_basis = transposed_basis(args)[:, 0, :]
+
+            if isinstance(transposed_weight, FData):
+                eval_transposed_weight = transposed_weight(args)[:, 0, :]
+            else:
+                eval_transposed_weight = transposed_weight.T
+
+            if isinstance(weight, FData):
+                eval_weight = weight(args)[:, 0, :]
+            else:
+                eval_weight = weight.T
+
+            return eval_basis * eval_transposed_basis.T * np.dot(
+                eval_transposed_weight.T, eval_weight,
+            )
+
+        return nquad_vec(
+            integrand,
+            domain_range,
+        )  # type: ignore[no-any-return]
 
     def _make_transpose(
         self,

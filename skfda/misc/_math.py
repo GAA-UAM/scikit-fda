@@ -6,7 +6,7 @@ package. FDataBasis and FDataGrid.
 """
 import warnings
 from builtins import isinstance
-from typing import Any, Callable, Optional, Sequence, TypeVar, Union, cast
+from typing import Any, Callable, Optional, TypeVar, Union, cast
 
 import multimethod
 import numpy as np
@@ -506,84 +506,6 @@ def _inner_product_integrate(
         summation = summation.reshape((len_arg1, len_arg2))
 
     return summation  # type: ignore[no-any-return]
-
-
-def weighted_inner_product_integrate(
-    arg1: Union[FDataBasis, Basis],
-    arg2: Union[FDataBasis, Basis],
-    arg3: Sequence[Union[FDataBasis, NDArrayFloat]],
-    arg4: Union[FDataBasis, NDArrayFloat],
-) -> NDArrayFloat:
-    r"""
-    Return the weighted inner product matrix between its arguments.
-
-    For two basis (:math:\theta_1) and (:math:\theta_2) the weighted
-    inner product is defined as:
-
-    . math::
-        \int \boldsymbol{\theta}_1 (t) \boldsymbol{\theta}^T_2 (t) w(t) dt
-
-    where w(t) is defined by a functional vectors product:
-
-    . math::
-        \boldsymbol{w}^T_1 (t) \boldsymbol{w}_2 (t)
-
-    Args:
-        arg1: First basis.
-        arg2: Second basis.
-        arg3: First weight, functional vector.
-        arg4: Second weight, functional vector.
-
-    Returns:
-        Inner product matrix between basis and weight.
-
-    """
-    if isinstance(arg1, Basis):
-        arg1 = arg1.to_basis()
-
-    if isinstance(arg2, Basis):
-        arg2 = arg2.to_basis()
-
-    if not np.array_equal(
-        arg1.domain_range,
-        arg2.domain_range,
-    ):
-        raise ValueError("Domain range for basis objects must be equal")
-
-    """ TODO
-    if not isinstance(arg3, type(arg4)):
-        raise ValueError("Weights types must be equal")
-
-    if isinstance(arg3, FData) and not np.array_equal(
-        arg3.domain_range,
-        arg4.domain_range,
-    ):
-        raise ValueError("Domain range for weight objects must be equal")
-    """
-    domain_range = arg1.domain_range
-
-    def integrand(args):  # noqa: WPS430
-        f1 = arg1(args)[:, 0, :]
-        f2 = arg2(args)[:, 0, :]
-
-        if isinstance(arg3, FData):
-            f3 = arg3(args)[:, 0, :]
-        else:
-            f3 = arg3.T
-
-        if isinstance(arg4, FData):
-            f4 = arg4(args)[:, 0, :]
-        else:
-            f4 = arg4.T
-
-        weight = np.dot(f3.T, f4)
-
-        return f1 * f2.T * weight
-
-    return nquad_vec(
-        integrand,
-        domain_range,
-    )  # type: ignore[no-any-return]
 
 
 def inner_product_matrix(

@@ -71,7 +71,7 @@ def gmean(X: FDataGrid) -> FDataGrid:
     return X.gmean()
 
 
-def cov(X: FData) -> FDataGrid:
+def cov(X: F) -> F:
     """
     Compute the covariance.
 
@@ -86,7 +86,7 @@ def cov(X: FData) -> FDataGrid:
         :term:`functional data object` with just one sample.
 
     """
-    return X.cov()  # type: ignore[no-any-return]
+    return X.cov()
 
 
 def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:

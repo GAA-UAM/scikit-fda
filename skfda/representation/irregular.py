@@ -345,8 +345,17 @@ class FDataIrregular(FData):  # noqa: WPS214
         skipna: bool = False,
         min_count: int = 0,
     ) -> T:
-        #TODO Implement when attributes are done
-        pass
+        super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
+        
+        data = (
+            np.nansum(self.function_values, axis=0, keepdims=True) if skipna
+            else np.sum(self.function_values, axis=0, keepdims=True)
+        )
+
+        return FDataGrid(
+            data_matrix=data,
+            sample_names=(None,),
+        )
     
     def mean(self: T) -> T:
         """Compute the mean pointwise for a sparse dataset.
@@ -407,18 +416,38 @@ class FDataIrregular(FData):  # noqa: WPS214
         pass
 
     def gmean(self: T) -> T:
-        #TODO Implement when attributes are done
-        pass
+        return FDataGrid(
+            data_matrix=[
+                scipy.stats.mstats.gmean(self.function_values, 0),
+            ],
+            sample_names=("geometric mean",),
+        )
 
     def equals(self, other: object) -> bool:
-        """Comparison of FDataSparse objects."""
-        #TODO Implement when attributes are done
-        pass
+        """Comparison of FDataIrregular objects."""
+        if not super().equals(other):
+            return False
+
+        other = cast(FDataIrregular, other)
+
+        if not self._eq_elemenwise(other):
+            return False
+
+        # Comparison of the domain
+        if not np.array_equal(self.domain_range, other.domain_range):
+            return False
+
+        #TODO interpolation/extrapolation when implemented
+        
+        return True
 
     def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
-        """Elementwise equality of FDataSparse."""
-        #TODO Implement when attributes are done
-        pass
+        """Elementwise equality of FDataIrregular."""
+        return np.all(
+            [(self.function_indices == other.function_indices).all(),
+             (self.function_arguments == other.function_arguments).all(),
+             (self.function_values == other.function_values).all()]
+        )
 
     def _get_op_matrix(
         self,
@@ -493,9 +522,9 @@ class FDataIrregular(FData):  # noqa: WPS214
         pass
 
     def __neg__(self: T) -> T:
-        """Negation of FData object."""
-        #TODO Should be easy to implement, just negating the values
-        pass
+        """Negation of FDataIrregular object."""
+        
+        return self.copy(function_values=-self.function_values)
 
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
         #TODO Implement allocing memory only once
@@ -528,18 +557,75 @@ class FDataIrregular(FData):  # noqa: WPS214
     def copy(  # noqa: WPS211
         self: T,
         deep: bool = False,  # For Pandas compatibility
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        dim_domain: Optional[int] = 1,
-        dim_codomain: Optional[int] = 1,
+        function_indices: Optional[ArrayLike] = None,
+        function_arguments: Optional[ArrayLike] = None,
+        function_values: Optional[ArrayLike] = None,
+        dim_domain: Optional[int] = None,
+        dim_codomain: Optional[int] = None,
         domain_range: Optional[DomainRangeLike] = None,
         dataset_name: Optional[str] = None,
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
+        argument_names: Optional[LabelTupleLike] = None,
+        coordinate_names: Optional[LabelTupleLike] = None,
     ) -> T:
         
-        #TODO Should allow to copy directly from FDataIrregular, not from dataframe
-        pass
+        """
+        Return a copy of the FDataIrregular.
+
+        If an argument is provided the corresponding attribute in the new copy
+        is updated.
+
+        """
+        if function_indices is None:
+            function_indices = self.function_indices
+        
+        if function_arguments is None:
+            function_arguments = self.function_arguments
+        
+        if function_values is None:
+            function_values = self.function_values
+            
+        if dim_domain is None:
+            dim_domain = self.dim_domain
+        
+        if dim_codomain is None:
+            dim_codomain = self.dim_codomain
+
+        if domain_range is None:
+            domain_range = copy.deepcopy(self.domain_range)
+
+        if dataset_name is None:
+            dataset_name = self.dataset_name
+
+        if argument_names is None:
+            # Tuple, immutable
+            argument_names = self.argument_names
+
+        if coordinate_names is None:
+            # Tuple, immutable
+            coordinate_names = self.coordinate_names
+
+        if sample_names is None:
+            # Tuple, immutable
+            sample_names = self.sample_names
+
+        if extrapolation is None:
+            extrapolation = self.extrapolation
+
+        return FDataIrregular(
+            function_indices,
+            function_arguments,
+            function_values,
+            dim_domain=dim_domain,
+            dim_codomain=dim_codomain,
+            domain_range=domain_range,
+            dataset_name=dataset_name,
+            argument_names=argument_names,
+            coordinate_names=coordinate_names,
+            sample_names=sample_names,
+            extrapolation=extrapolation,
+        )
 
     def restrict(
         self: T,

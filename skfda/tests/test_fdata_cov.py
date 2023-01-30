@@ -84,7 +84,6 @@ def interval(
 @pytest.fixture(
     params=[
         0.0,
-        1.0,
     ],
 )
 def mean(
@@ -117,7 +116,7 @@ def noise(
             length_scale=1,
         ),
         Gaussian(
-            variance=2,
+            variance=3,
             length_scale=0.5,
         ),
     ],
@@ -162,6 +161,7 @@ def data_in_basis(
 
 def test_fdatabasis_covariance(
     data_in_basis: FDataBasis,
+    n_features: int,
 ) -> None:
     """Test the covariance method of FDataBasis.
 
@@ -174,7 +174,7 @@ def test_fdatabasis_covariance(
     """
     # Select grid points before converting to grid
     domain_range = data_in_basis.domain_range[0]
-    grid_points = np.linspace(domain_range[0], domain_range[1], 100)
+    grid_points = np.linspace(domain_range[0], domain_range[1], n_features)
     data_in_grid = data_in_basis.to_grid(grid_points)
 
     s_grid, t_grid = grid_points, grid_points

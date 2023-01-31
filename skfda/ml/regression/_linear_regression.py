@@ -335,10 +335,7 @@ class LinearRegression(
         basiscoef_list = np.split(basiscoefs, coef_start)
 
         # Express the coefficients in functional form
-        coefs = [
-            c.convert_from_constant_coefs(bcoefs)
-            for c, bcoefs in zip(coef_info, basiscoef_list)
-        ]
+        coefs = self._convert_from_constant_coefs(basiscoef_list, coef_info)
 
         if self.fit_intercept:
             self.intercept_ = coefs[0]
@@ -510,6 +507,22 @@ class LinearRegression(
         if len(new_X.shape) == 1:
             new_X = new_X[:, np.newaxis]
         return new_X
+
+    def _convert_from_constant_coefs(
+        self,
+        coef_list: Sequence[NDArrayFloat],
+        coef_info: Sequence[AcceptedDataCoefsType],
+    ) -> Sequence[FDataBasis]:
+        # TODO
+        if self.functional_response:
+            return [
+                FDataBasis(self.coef_basis[i], coef_list[i].T)
+                for i in range(len(self.coef_basis))
+            ]
+        return [
+            c.convert_from_constant_coefs(bcoefs)
+            for c, bcoefs in zip(coef_info, coef_list)
+        ]
 
     def _argcheck_X_y(  # noqa: N802
         self,

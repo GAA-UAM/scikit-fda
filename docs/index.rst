@@ -52,7 +52,8 @@ The stable version can be installed via
    pip install scikit-fda
 
 It is also available from conda-forge:
-.. code::
+
+.. code-block:: bash
 
     conda install -c conda-forge scikit-fda
 

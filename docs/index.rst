@@ -42,14 +42,19 @@ An exhaustive list of all the contents of the package can be found in the
 Installation
 ------------
 
-Currently, scikit-fda is available in Python 3.6 and 3.7, regardless of the
-platform. The stable version can be installed via
+Currently, *scikit-fda* is available in Python versions above 3.8, regardless of the
+platform.
+The stable version can be installed via
 `PyPI <https://pypi.org/project/scikit-fda/>`_:
 
 .. code-block:: bash
 
    pip install scikit-fda
 
+It is also available from conda-forge:
+.. code::
+
+    conda install -c conda-forge scikit-fda
 
 It is possible to install the latest version of the package, available in
 the develop branch, by cloning this repository and doing a manual installation.

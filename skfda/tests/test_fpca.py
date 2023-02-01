@@ -17,7 +17,7 @@ class FPCATestCase(unittest.TestCase):
 
     def test_basis_fpca_fit_exceptions(self) -> None:
         """Check that invalid arguments in fit raise exception for basis."""
-        fpca = FPCA()
+        fpca = FPCA(n_components=3)
         with self.assertRaises(AttributeError):
             fpca.fit(None)  # type: ignore[arg-type]
 
@@ -36,7 +36,7 @@ class FPCATestCase(unittest.TestCase):
 
     def test_discretized_fpca_fit_exceptions(self) -> None:
         """Check that invalid arguments in fit raise exception for grid."""
-        fpca = FPCA()
+        fpca = FPCA(n_components=3)
         with self.assertRaises(AttributeError):
             fpca.fit(None)  # type: ignore[arg-type]
 

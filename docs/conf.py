@@ -132,6 +132,12 @@ html_theme_options = {
             "icon": "https://avatars.githubusercontent.com/u/2964877",
             "type": "url",
         },
+        {
+            "name": "Anaconda",
+            "url": "https://anaconda.org/conda-forge/scikit-fda",
+            "icon": "https://avatars.githubusercontent.com/u/3571983",
+            "type": "url",
+        },
     ],
     "logo": {
         "image_light": "logo.png",

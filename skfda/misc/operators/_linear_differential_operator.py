@@ -608,17 +608,34 @@ def fdatagrid_penalty_matrix_optimized(
     assert not isinstance(evaluated_basis, int)
 
     indices = np.triu_indices(basis.n_samples)
-    product = evaluated_basis[indices[0]] * evaluated_basis[indices[1]]
+    x_indeces = indices[0]
+    y_indeces = indices[1]
+
+    # Only compute the values for the points that are close enough.
+    # This is done to avoid computing the integral for the product of
+    # two fuctions with a disjoined support.
+    indices_difference = np.abs(x_indeces - y_indeces).astype(int)
+
+    # The support of the result of applying the linear operator
+    # can be at most the order of the linear operator plus one.
+    # Therefore, if the difference between the indeces is greater
+    # twice the order of the linear operator plus one, the two
+    # functions are disjoined.
+    spread = 2 * (len(linear_operator.weights) + 1)
+    x_indeces = x_indeces[indices_difference < spread]
+    y_indeces = y_indeces[indices_difference < spread]
+
+    product = evaluated_basis[x_indeces] * evaluated_basis[y_indeces]
 
     triang_vec = scipy.integrate.simps(product[..., 0], x=basis.grid_points)
 
-    matrix = np.empty((basis.n_samples, basis.n_samples))
+    matrix = np.zeros((basis.n_samples, basis.n_samples))
 
     # Set upper matrix
-    matrix[indices] = triang_vec
+    matrix[(x_indeces, y_indeces)] = triang_vec.flatten()
 
     # Set lower matrix
-    matrix[(indices[1], indices[0])] = triang_vec
+    matrix[(y_indeces, x_indeces)] = triang_vec.flatten()
 
     return matrix
 

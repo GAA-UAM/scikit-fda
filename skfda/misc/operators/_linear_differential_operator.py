@@ -3,6 +3,7 @@ from __future__ import annotations
 import numbers
 from typing import Callable, Sequence, Union
 
+import findiff
 import numpy as np
 import scipy.integrate
 from numpy import polyder, polyint, polymul, polyval
@@ -577,6 +578,40 @@ def bspline_penalty_matrix_optimized(
     return penalty_matrix
 
 
+def _optimized_operator_evaluation_in_grid(
+    linear_operator: LinearDifferentialOperator,
+    grid_points: NDArrayFloat,
+) -> NDArrayFloat:
+    n_points = grid_points.shape[0]
+    diff_coefficients = np.zeros((n_points, n_points))
+    for dif_order, w in enumerate(linear_operator.weights):
+        if w == 0:
+            continue
+        for point_index in range(n_points):
+            finate_dif = findiff.coefs.coefficients_non_uni(
+                deriv=dif_order,
+                acc=2,
+                coords=grid_points,
+                idx=point_index,
+            )
+            # The offsets are the relative positions of the
+            # points where each coefficient is applied
+            offsets = finate_dif["offsets"]
+            coefficients = finate_dif["coefficients"]
+
+            # Add the position of the point where the finite
+            # difference is calculated to get the absolute position
+            # of the points where each coefficient is applied
+            offsets += point_index
+            if callable(w):
+                coefficients *= w(grid_points[offsets])
+                diff_coefficients[point_index, offsets] += coefficients
+            else:
+                diff_coefficients[point_index, offsets] += w * coefficients
+
+    return diff_coefficients.T
+
+
 @gram_matrix_optimization.register
 def fdatagrid_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
@@ -600,21 +635,10 @@ def fdatagrid_penalty_matrix_optimized(
 
     Note that the first case is a particular case of the second one.
     """
-    evaluated_basis = sum(
-        w(basis.grid_points[0]) if callable(w) else w
-        * basis.derivative(order=i)(basis.grid_points[0])
-        for i, w in enumerate(linear_operator.weights)
+    evaluated_basis = _optimized_operator_evaluation_in_grid(
+        linear_operator,
+        basis.grid_points[0],
     )
-    assert not isinstance(evaluated_basis, int)
-
-    indices = np.triu_indices(basis.n_samples)
-    x_indeces = indices[0]
-    y_indeces = indices[1]
-
-    # Only compute the values for the points that are close enough.
-    # This is done to avoid computing the integral for the product of
-    # two fuctions with a disjoined support.
-    indices_difference = np.abs(x_indeces - y_indeces).astype(int)
 
     # The support of the result of applying the linear operator
     # can be at most the order of the linear operator plus one.
@@ -622,22 +646,44 @@ def fdatagrid_penalty_matrix_optimized(
     # twice the order of the linear operator plus one, the two
     # functions are disjoined.
     spread = 2 * (len(linear_operator.weights) + 1)
-    x_indeces = x_indeces[indices_difference < spread]
-    y_indeces = y_indeces[indices_difference < spread]
 
-    product = evaluated_basis[x_indeces] * evaluated_basis[y_indeces]
+    # Add a border to avoid problems with the integration weights
+    # at the edges of the interval
+    border_distance = 5
 
-    triang_vec = scipy.integrate.simps(product[..., 0], x=basis.grid_points)
+    n_points = basis.grid_points[0].shape[0]
+    product_matrix = np.zeros((basis.n_samples, basis.n_samples))
+    for i in range(n_points):
+        for j in range(i, min(i + spread, n_points)):
+            left_lim = max(0, i - spread - border_distance)
+            right_lim = min(n_points, j + spread + border_distance)
 
-    matrix = np.zeros((basis.n_samples, basis.n_samples))
+            # Simpson's rule requires an even number of intervals.
+            # If that is not the case, scipy applies a correction
+            # (see simpson docstring). This correction can lead to
+            # different results when the interval of integration is
+            # changed. To avoid this, we add a point to the left or
+            # to the right of the interval.
+            if (right_lim - left_lim) % 2 == 1:
+                if right_lim < n_points:
+                    right_lim += 1
+                elif left_lim > 0:
+                    left_lim -= 1
 
-    # Set upper matrix
-    matrix[(x_indeces, y_indeces)] = triang_vec.flatten()
+            # Limit both the multiplication and the integration to
+            # the interval where the functions are not 0.
+            operator_product = (
+                evaluated_basis[i, left_lim:right_lim]
+                * evaluated_basis[j, left_lim:right_lim]
+            )
+            sub_points = basis.grid_points[0][left_lim:right_lim]
+            product_matrix[i, j] = scipy.integrate.simpson(
+                operator_product,
+                sub_points,
+            )
+            product_matrix[j, i] = product_matrix[i, j]
 
-    # Set lower matrix
-    matrix[(y_indeces, x_indeces)] = triang_vec.flatten()
-
-    return matrix
+    return product_matrix
 
 
 @gram_matrix_optimization.register
@@ -667,4 +713,21 @@ def custombasis_penalty_matrix_optimized(
     basis: CustomBasis,
 ) -> NDArrayFloat:
     """Optimized version for CustomBasis."""
+    if isinstance(basis.fdata, FDataGrid):
+        product_matrix = np.empty((basis.n_basis, basis.n_basis))
+        operator_evaluated = linear_operator(basis.fdata)(
+            basis.fdata.grid_points[0],
+        )
+
+        # Discard last dimension
+        operator_evaluated = operator_evaluated[..., 0]
+        for i in range(basis.n_basis):
+            for j in range(i, basis.n_basis):
+                product_matrix[i, j] = scipy.integrate.simps(
+                    operator_evaluated[i, :] * operator_evaluated[j, :],
+                    x=basis.fdata.grid_points[0],
+                )
+                product_matrix[j, i] = product_matrix[i, j]
+        return product_matrix
+
     return gram_matrix(linear_operator, basis.fdata)

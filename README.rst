@@ -4,7 +4,7 @@
 scikit-fda: Functional Data Analysis in Python
 ===================================================
 
-|python|_ |build-status| |docs| |Codecov|_ |PyPIBadge|_ |license|_ |doi|
+|python|_ |build-status| |docs| |Codecov|_ |PyPIBadge|_ |conda| |license|_ |doi|
 
 Functional Data Analysis, or FDA, is the field of Statistics that analyses
 data that depend on a continuous parameter.
@@ -30,13 +30,18 @@ version of the package, can be found at
 
 Installation
 ============
-Currently, *scikit-fda* is available in Python 3.6 and 3.7, regardless of the
+Currently, *scikit-fda* is available in Python versions above 3.8, regardless of the
 platform.
 The stable version can be installed via PyPI_:
 
 .. code::
 
     pip install scikit-fda
+
+It is also available from conda-forge:
+.. code::
+
+    conda install -c conda-forge scikit-fda
 
 Installation from source
 ------------------------
@@ -50,18 +55,17 @@ develop branch,  by cloning this repository and doing a manual installation.
     pip install ./scikit-fda
 
 Make sure that your default Python version is currently supported, or change
-the python and pip commands by specifying a version, such as ``python3.6``:
+the python and pip commands by specifying a version, such as ``python3.8``:
 
 .. code:: bash
 
     git clone https://github.com/GAA-UAM/scikit-fda.git
-    python3.6 -m pip install ./scikit-fda
+    python3.8 -m pip install ./scikit-fda
 
 Requirements
 ------------
 *scikit-fda* depends on the following packages:
 
-* `cython <https://github.com/cython/cython>`_ - Python to C compiler
 * `fdasrsf <https://github.com/jdtuck/fdasrsf_python>`_ - SRSF framework
 * `findiff <https://github.com/maroba/findiff>`_ - Finite differences
 * `matplotlib <https://github.com/matplotlib/matplotlib>`_ - Plotting with Python
@@ -100,6 +104,7 @@ license_ can be found along with the code.
 
 .. _examples: https://fda.readthedocs.io/en/latest/auto_examples/index.html
 .. _PyPI: https://pypi.org/project/scikit-fda/
+.. _conda-forge: https://anaconda.org/conda-forge/scikit-fda/
 
 .. |python| image:: https://img.shields.io/pypi/pyversions/scikit-fda.svg
 .. _python: https://badge.fury.io/py/scikit-fda
@@ -119,6 +124,11 @@ license_ can be found along with the code.
 
 .. |PyPIBadge| image:: https://badge.fury.io/py/scikit-fda.svg
 .. _PyPIBadge: https://badge.fury.io/py/scikit-fda
+
+.. |conda| image:: https://img.shields.io/conda/vn/conda-forge/scikit-fda
+    :alt: Available in Conda
+    :scale: 100%
+    :target: https://anaconda.org/conda-forge/scikit-fda
 
 .. |license| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
 .. _license: https://github.com/GAA-UAM/scikit-fda/blob/master/LICENSE.txt

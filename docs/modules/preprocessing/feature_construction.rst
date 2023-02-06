@@ -36,8 +36,18 @@ data of a particular class.
 Functional features
 -------------------
 
-The following transformers can be used to extract specific functional features
-for each functional datum, which can then be used for prediction.
+The following functions can be used to create new features from functional data.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.exploratory.stats.modified_epigraph_index
+   skfda.preprocessing.feature_construction.local_averages
+   skfda.preprocessing.feature_construction.occupation_measure
+   skfda.preprocessing.feature_construction.number_crossings
+
+Some of them are also available as transformers that can be directly used in a
+pipeline: 
 
 .. autosummary::
    :toctree: autosummary
@@ -45,5 +55,4 @@ for each functional datum, which can then be used for prediction.
    skfda.preprocessing.feature_construction.LocalAveragesTransformer
    skfda.preprocessing.feature_construction.OccupationMeasureTransformer
    skfda.preprocessing.feature_construction.NumberCrossingsTransformer
-   
    

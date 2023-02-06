@@ -6,7 +6,7 @@ import numpy as np
 
 from skfda import FDataBasis, FDataGrid
 from skfda.datasets import make_sinusoidal_process
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 from skfda.representation.extrapolation import (
     BoundaryExtrapolation,
     ExceptionExtrapolation,
@@ -21,13 +21,13 @@ class TestExtrapolation(unittest.TestCase):
     def setUp(self) -> None:
         """Create example data."""
         self.grid = make_sinusoidal_process(n_samples=2, random_state=0)
-        self.basis = self.grid.to_basis(Fourier())
+        self.basis = self.grid.to_basis(FourierBasis())
         self.dummy_data = [[1, 2, 3], [2, 3, 4]]
 
     def test_constructor_fdatabasis_setting(self) -> None:
         """Check argument normalization in constructor for FDataBasis."""
         coeff = self.dummy_data
-        basis = Fourier(n_basis=3)
+        basis = FourierBasis(n_basis=3)
 
         a = FDataBasis(basis, coeff)
         self.assertEqual(a.extrapolation, None)

@@ -8,7 +8,11 @@ import skfda
 from skfda._utils import _pairwise_symmetric
 from skfda.datasets import make_gaussian_process
 from skfda.misc.covariances import Gaussian
-from skfda.representation.basis import Monomial, Tensor, VectorValued
+from skfda.representation.basis import (
+    MonomialBasis,
+    TensorBasis,
+    VectorValuedBasis,
+)
 
 
 def _ndm(
@@ -45,10 +49,10 @@ class InnerProductTest(unittest.TestCase):
             grid_points=grid_points,
         )
 
-        basis = Tensor([
-            Monomial(n_basis=5, domain_range=(0, 1)),
-            Monomial(n_basis=5, domain_range=(0, 2)),
-            Monomial(n_basis=5, domain_range=(0, 3)),
+        basis = TensorBasis([
+            MonomialBasis(n_basis=5, domain_range=(0, 1)),
+            MonomialBasis(n_basis=5, domain_range=(0, 2)),
+            MonomialBasis(n_basis=5, domain_range=(0, 3)),
         ])
 
         fd_basis = fd.to_basis(basis)
@@ -89,9 +93,9 @@ class InnerProductTest(unittest.TestCase):
             grid_points=grid_points,
         )
 
-        basis = VectorValued([
-            Monomial(n_basis=5),
-            Monomial(n_basis=5),
+        basis = VectorValuedBasis([
+            MonomialBasis(n_basis=5),
+            MonomialBasis(n_basis=5),
         ])
 
         fd_basis = fd.to_basis(basis)
@@ -111,7 +115,7 @@ class InnerProductTest(unittest.TestCase):
 
     def test_matrix(self) -> None:
         """Test inner_product_matrix function."""
-        basis = skfda.representation.basis.BSpline(n_basis=12)
+        basis = skfda.representation.basis.BSplineBasis(n_basis=12)
 
         X = make_gaussian_process(
             n_samples=10,

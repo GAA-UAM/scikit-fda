@@ -17,7 +17,7 @@ from skfda.ml.classification import (
 from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
 from skfda.representation import FDataBasis, FDataGrid
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import FourierBasis
 
 
 class TestNeighbors(unittest.TestCase):
@@ -250,7 +250,9 @@ class TestNeighbors(unittest.TestCase):
             FDataGrid,
             FDataGrid,
         ](weights=self._weights, n_neighbors=5)
-        response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
+        response = self.X.to_basis(
+            FourierBasis(domain_range=(-1, 1), n_basis=10),
+        )
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -287,7 +289,9 @@ class TestNeighbors(unittest.TestCase):
             FDataGrid,
             FDataBasis,
         ](weights='distance', n_neighbors=5)
-        response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
+        response = self.X.to_basis(
+            FourierBasis(domain_range=(-1, 1), n_basis=10),
+        )
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -360,7 +364,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_almost_equal(r, 0.65599399478951)
 
         # Weighted case and basis form
-        y = y.to_basis(Fourier(domain_range=y.domain_range[0], n_basis=5))
+        y = y.to_basis(FourierBasis(domain_range=y.domain_range[0], n_basis=5))
         neigh.fit(self.X, y)
 
         r = neigh.score(

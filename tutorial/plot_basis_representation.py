@@ -132,7 +132,7 @@ plt.show()
 # .. math::
 #     x(t) = 3 + 2t - 4t^2 + t^3
 
-basis = skfda.representation.basis.Monomial(
+basis = skfda.representation.basis.MonomialBasis(
     n_basis=4,
     domain_range=(-10, 10),
 )
@@ -182,7 +182,7 @@ X.plot()
 fig, axes = plt.subplots(nrows=3, ncols=3)
 
 for n_basis in range(1, max_basis + 1):
-    basis = skfda.representation.basis.Monomial(n_basis=n_basis)
+    basis = skfda.representation.basis.MonomialBasis(n_basis=n_basis)
     X_basis = X.to_basis(basis)
 
     ax = axes.ravel()[n_basis - 1]
@@ -243,7 +243,7 @@ plt.show()
 ##############################################################################
 # Here we show the first five elements of the monomial basis.
 
-basis = skfda.representation.basis.Monomial(n_basis=5)
+basis = skfda.representation.basis.MonomialBasis(n_basis=5)
 basis.plot()
 plt.show()
 
@@ -278,7 +278,7 @@ plt.show()
 ##############################################################################
 # Here we show the first five elements of a Fourier basis.
 
-basis = skfda.representation.basis.Fourier(n_basis=5)
+basis = skfda.representation.basis.FourierBasis(n_basis=5)
 basis.plot()
 plt.show()
 
@@ -314,7 +314,7 @@ plt.show()
 ##############################################################################
 # Here we show the first five elements of a B-spline basis.
 
-basis = skfda.representation.basis.BSpline(n_basis=5)
+basis = skfda.representation.basis.BSplineBasis(n_basis=5)
 basis.plot()
 plt.show()
 
@@ -365,12 +365,12 @@ X = X.reshape(-1, 8, 8)
 
 fd = skfda.FDataGrid(X)
 
-basis = skfda.representation.basis.Tensor([
-    skfda.representation.basis.Fourier(  # X axis
+basis = skfda.representation.basis.TensorBasis([
+    skfda.representation.basis.FourierBasis(  # X axis
         n_basis=5,
         domain_range=fd.domain_range[0],
     ),
-    skfda.representation.basis.BSpline(  # Y axis
+    skfda.representation.basis.BSplineBasis(  # Y axis
         n_basis=6,
         domain_range=fd.domain_range[1],
     ),
@@ -435,7 +435,7 @@ plt.show()
 ##############################################################################
 # We now represent the digits dataset in this basis.
 
-basis = skfda.representation.basis.FiniteElement(
+basis = skfda.representation.basis.FiniteElementBasis(
     vertices=vertices,
     cells=cells,
 )
@@ -475,12 +475,12 @@ plt.show()
 # are now expressed in a Fourier basis, while we express precipitations as
 # B-splines.
 
-basis = skfda.representation.basis.VectorValued([
-    skfda.representation.basis.Fourier(  # First coordinate function
+basis = skfda.representation.basis.VectorValuedBasis([
+    skfda.representation.basis.FourierBasis(  # First coordinate function
         n_basis=5,
         domain_range=X.domain_range,
     ),
-    skfda.representation.basis.BSpline(  # Second coordinate function
+    skfda.representation.basis.BSplineBasis(  # Second coordinate function
         n_basis=10,
         domain_range=X.domain_range,
     ),

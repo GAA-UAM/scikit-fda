@@ -6,15 +6,11 @@ from typing import Optional, Sequence, Tuple
 from typing_extensions import Literal
 
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
-from ...exploratory.stats._functional_transformers import (
-    local_averages,
-    number_crossings,
-    occupation_measure,
-)
 from ...representation import FData
 from ...representation.grid import FDataGrid
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import ArrayLike, NDArrayFloat, NDArrayInt
+from ._functions import local_averages, number_crossings, occupation_measure
 
 
 class LocalAveragesTransformer(

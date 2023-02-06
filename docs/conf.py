@@ -115,17 +115,36 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 
-html_logo = "logos/notitle_logo/notitle_logo.png"
+html_logo = "logo.png"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
 html_theme_options = {
-    'logo_only': True,
-    'style_nav_header_background': 'Gainsboro',
+    "use_edit_page_button": True,
+    "github_url": "https://github.com/GAA-UAM/scikit-fda",
+    "icon_links": [
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/scikit-fda",
+            "icon": "https://avatars.githubusercontent.com/u/2964877",
+            "type": "url",
+        },
+    ],
+    "logo": {
+        "image_light": "logo.png",
+        "image_dark": "logo.png",
+    },
+}
+
+html_context = {
+    "github_user": "GAA-UAM",
+    "github_repo": "scikit-fda",
+    "github_version": "develop",
+    "doc_path": "docs",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -135,18 +154,6 @@ html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
-#
-# This is required for the alabaster theme
-# refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'relations.html',  # needs 'show_related': True theme option to display
-        'searchbox.html',
-        'donate.html',
-    ]
-}
 
 # -- Options for HTMLHelp output ------------------------------------------
 
@@ -269,9 +276,9 @@ branch = "master" if rtd_version == "stable" else "develop"
 
 sphinx_gallery_conf = {
     # path to your examples scripts
-    'examples_dirs': ['../examples', '../tutorial', '../full_examples'],
+    'examples_dirs': ['../examples', '../tutorial'],
     # path where to save gallery generated examples
-    'gallery_dirs': ['auto_examples', 'auto_tutorial', 'auto_full_examples'],
+    'gallery_dirs': ['auto_examples', 'auto_tutorial'],
     'reference_url': {
         # The module you locally document uses None
         'skfda': None,

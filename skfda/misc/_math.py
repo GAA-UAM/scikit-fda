@@ -675,4 +675,3 @@ def cosine_similarity_matrix(
     return _clip_cosine(
         inner_matrix / norm1[:, np.newaxis] / norm2[np.newaxis, :],
     )
-        

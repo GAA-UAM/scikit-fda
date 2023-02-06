@@ -1,9 +1,14 @@
 import numpy as np
 from numba import njit
+from ...typing._numpy import NDArrayFloat
 
 
 @njit(cache=True, fastmath=True)
-def _soft_min_argmin(x, y, z):
+def _soft_min_argmin(
+    x: float,
+    y: float,
+    z: float
+) -> float:
     """soft-min of three real numbers"""
 
     min_xyz = np.minimum(x, np.minimum(y, z))
@@ -15,7 +20,10 @@ def _soft_min_argmin(x, y, z):
 
 
 @njit(cache=True)
-def _sdtw(cost_mat, gamma=1.0):
+def _sdtw(
+    cost_mat: NDArrayFloat,
+    gamma: float = 1.0
+) -> float:
     """soft-dtw divergence with dynamic recursion"""
 
     len_x = cost_mat.shape[0]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import numbers
 from typing import Callable, Sequence, Union
 
@@ -581,6 +582,7 @@ def bspline_penalty_matrix_optimized(
 def _optimized_operator_evaluation_in_grid(
     linear_operator: LinearDifferentialOperator,
     grid_points: NDArrayFloat,
+    findiff_accuracy: int,
 ) -> NDArrayFloat:
     n_points = grid_points.shape[0]
     diff_coefficients = np.zeros((n_points, n_points))
@@ -588,16 +590,16 @@ def _optimized_operator_evaluation_in_grid(
         if w == 0:
             continue
         for point_index in range(n_points):
-            finate_dif = findiff.coefs.coefficients_non_uni(
+            finite_diff = findiff.coefs.coefficients_non_uni(
                 deriv=dif_order,
-                acc=2,
+                acc=findiff_accuracy,
                 coords=grid_points,
                 idx=point_index,
             )
             # The offsets are the relative positions of the
             # points where each coefficient is applied
-            offsets = finate_dif["offsets"]
-            coefficients = finate_dif["coefficients"]
+            offsets = finite_diff["offsets"]
+            coefficients = finite_diff["coefficients"]
 
             # Add the position of the point where the finite
             # difference is calculated to get the absolute position
@@ -635,28 +637,41 @@ def fdatagrid_penalty_matrix_optimized(
 
     Note that the first case is a particular case of the second one.
     """
+    max_deriv = len(linear_operator.weights) - 1
+    n_points = basis.grid_points[0].shape[0]
+    findiff_accuracy = 2
+
     evaluated_basis = _optimized_operator_evaluation_in_grid(
         linear_operator,
         basis.grid_points[0],
+        findiff_accuracy=findiff_accuracy,
     )
 
     # The support of the result of applying the linear operator
-    # can be at most the order of the linear operator plus one.
-    # Therefore, if the difference between the indeces is greater
-    # twice the order of the linear operator plus one, the two
-    # functions are disjoined.
-    spread = 2 * (len(linear_operator.weights) + 1)
+    # is a small subset of the grid points. We calculate the
+    # maximum number of points to the left and right of the
+    # point where the linear operator is applied that can be
+    # different from zero.
 
-    # Add a border to avoid problems with the integration weights
-    # at the edges of the interval
-    border_distance = 5
+    # Formula derived from the definition of coefficients_not_uni
+    # in findiff
+    spread = 2 * math.floor((max_deriv + 1) / 2) - 1
+    # The accuracy parameter in findiff increases the number of
+    # points considered to the left and the right
+    spread += findiff_accuracy + 1
 
-    n_points = basis.grid_points[0].shape[0]
     product_matrix = np.zeros((basis.n_samples, basis.n_samples))
     for i in range(n_points):
-        for j in range(i, min(i + spread, n_points)):
-            left_lim = max(0, i - spread - border_distance)
-            right_lim = min(n_points, j + spread + border_distance)
+        look_ahead_limit = min(n_points, i + 2 * spread)
+
+        for j in range(i, look_ahead_limit):
+            left_lim = i - spread
+            right_lim = j + spread
+            # The right limit of the interval is excluded when slicing
+            right_lim += 1
+
+            left_lim = max(0, left_lim)
+            right_lim = min(n_points, right_lim)
 
             # Simpson's rule requires an even number of intervals.
             # If that is not the case, scipy applies a correction
@@ -676,10 +691,10 @@ def fdatagrid_penalty_matrix_optimized(
                 evaluated_basis[i, left_lim:right_lim]
                 * evaluated_basis[j, left_lim:right_lim]
             )
-            sub_points = basis.grid_points[0][left_lim:right_lim]
+            restricted_grid = basis.grid_points[0][left_lim:right_lim]
             product_matrix[i, j] = scipy.integrate.simpson(
                 operator_product,
-                sub_points,
+                restricted_grid,
             )
             product_matrix[j, i] = product_matrix[i, j]
 

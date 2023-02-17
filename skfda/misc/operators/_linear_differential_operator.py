@@ -584,8 +584,19 @@ def _optimized_operator_evaluation_in_grid(
     grid_points: NDArrayFloat,
     findiff_accuracy: int,
 ) -> NDArrayFloat:
+    """
+    Compute the linear operator applied to the delta basis of the grid.
+
+    The delta basis is the basis where the i-th basis function is 1 in the
+    i-th point and 0 in the rest of points. The matrix returned by this
+    function is the matrix where the i-th row contians the values of the
+    linear operator applied to the i-th basis function of the delta basis.
+    """
     n_points = grid_points.shape[0]
     diff_coefficients = np.zeros((n_points, n_points))
+
+    # The desired matrix can be obtained by appending the coefficients
+    # of the finite differences for each point column-wise.
     for dif_order, w in enumerate(linear_operator.weights):
         if w == 0:
             continue
@@ -611,6 +622,8 @@ def _optimized_operator_evaluation_in_grid(
             else:
                 diff_coefficients[point_index, offsets] += w * coefficients
 
+    # Finally, transpose the matrix so that the i-th row contains
+    # the values of the linear operator applied to the i-th delta function.
     return diff_coefficients.T
 
 
@@ -622,20 +635,13 @@ def fdatagrid_penalty_matrix_optimized(
     """
     Optimized version for FDatagrid.
 
-    If the data_matrix of the FDataGrid is the identity, the resulting
-    matrix will be the gram matrix for functions discretized in the
-    given grid points. That is to say, in order to calculate the norm
+    The datamatrix of the given FDataGrid has to be the identity matrix,
+    the resulting matrix will be the gram matrix for functions discretized
+    in the given grid points. That is to say, in order to calculate the norm
     of the linear operator applied to functions discretized in the given
     grid points, it is enough to multiply the returned matrix by the
     values in the points of the grid on both sides.
 
-    If the data_matrix of the FDataGrid is not the identity, the resulting
-    matrix will be the gram matrix for functions expressed as a combination
-    of the given set of functions (the entries of the fdatagrid). The
-    intended use is to calculate the norm of the linear operator for
-    functions expressed in a basis that is a FDataGrid (see CustomBasis).
-
-    Note that the first case is a particular case of the second one.
     """
     max_deriv = len(linear_operator.weights) - 1
     n_points = basis.grid_points[0].shape[0]
@@ -654,7 +660,7 @@ def fdatagrid_penalty_matrix_optimized(
     # different from zero.
 
     # Formula derived from the definition of coefficients_not_uni
-    # in findiff
+    # in findiff.
     spread = 2 * math.floor((max_deriv + 1) / 2) - 1
     # The accuracy parameter in findiff increases the number of
     # points considered to the left and the right

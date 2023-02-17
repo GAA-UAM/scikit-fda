@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Callable, Optional, TypeVar, Union
+from typing import Callable, TypeVar
 
 import numpy as np
 import scipy.integrate
@@ -34,10 +34,13 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
     Parameters:
         n_components: Number of principal components to keep from
-            functional principal component analysis. In future versions, it
-            will default to the maximum number of components that can
-            be extracted. Currently, it still defaults to 3 but do not
-            assume this behavior as it will change.
+            functional principal component analysis.
+
+            .. versionchanged:: 0.9
+               In future versions, it will default to the maximum number
+               of components that can be extracted.
+               Currently, it still defaults to 3 but do not assume this
+               behavior as it will change.
         centering: Set to ``False`` when the functional data is already known
             to be centered and there is no need to center it. Otherwise,
             the mean of the functional data object is calculated and the data
@@ -89,12 +92,12 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
     def __init__(
         self,
-        n_components: Optional[int] = None,
+        n_components: int | None = None,
         *,
         centering: bool = True,
-        regularization: Optional[L2Regularization[FData]] = None,
-        components_basis: Optional[Basis] = None,
-        _weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
+        regularization: L2Regularization[FData] | None = None,
+        components_basis: Basis | None = None,
+        _weights: ArrayLike | WeightsCallable | None = None,
     ) -> None:
 
         if n_components is None:

@@ -30,6 +30,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         ],
         "_mahalanobis": ["MahalanobisDistance"],
         "_parse": ["PRECOMPUTED"],
+        "_sdtw_distances": ["sdtwDivergence"],
         "_utils": [
             "NormInducedMetric",
             "PairwiseMetric",
@@ -63,6 +64,7 @@ if TYPE_CHECKING:
     )
     from ._mahalanobis import MahalanobisDistance as MahalanobisDistance
     from ._parse import PRECOMPUTED as PRECOMPUTED
+    from ._sdtw_distances import sdtwDivergence
     from ._utils import (
         NormInducedMetric as NormInducedMetric,
         PairwiseMetric as PairwiseMetric,

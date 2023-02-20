@@ -327,7 +327,7 @@ def inner_product(
         )
     elif isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
         return (  # type: ignore[no-any-return]
-            np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
+            np.dot(arg1, arg2.T)
             if _matrix else (arg1 * arg2).sum(axis=-1)
         )
 

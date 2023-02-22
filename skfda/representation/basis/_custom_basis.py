@@ -208,14 +208,8 @@ class CustomBasis(Basis):
             coefficients = self.fdata.coefficients
             return coefficients @ basis_gram @ coefficients.T
 
-        # TODO: It would be better to call inner_product_matrix but that
-        # introduces a circular dependency
-        gram_matrix = np.empty((self.n_basis, self.n_basis))
-        for i in range(self.n_basis):
-            for j in range(i, self.n_basis):
-                gram_matrix[i, j] = (self.fdata[i] * self.fdata[j]).integrate()
-                gram_matrix[j, i] = gram_matrix[i, j]
-        return gram_matrix
+        from ...misc import inner_product_matrix
+        return inner_product_matrix(self.fdata)
 
     def __len__(self) -> int:
         return self.n_basis

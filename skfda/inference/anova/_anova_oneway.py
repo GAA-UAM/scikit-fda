@@ -5,6 +5,7 @@ from typing import Sequence, Tuple, TypeVar, overload
 import numpy as np
 from typing_extensions import Literal
 
+from ..._utils import constants
 from ...datasets import make_gaussian
 from ...misc.metrics import lp_distance
 from ...misc.validation import validate_random_state
@@ -190,7 +191,7 @@ def _anova_bootstrap(
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
-    default_n_features: int = 501,
+    default_n_features: int = constants.N_POINTS_FINE_MESH,
 ) -> NDArrayFloat:
 
     n_groups = len(fd_grouped)

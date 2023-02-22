@@ -3,14 +3,13 @@ from typing import TYPE_CHECKING
 
 import lazy_loader as lazy
 
-from ._fpca_regression import FPCARegression
-
 __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
     submod_attrs={
         "_historical_linear_model": ["HistoricalLinearRegression"],
         "_kernel_regression": ["KernelRegression"],
         "_linear_regression": ["LinearRegression"],
+        "_fpca_regression": ["FPCARegression"],
         "_neighbors_regression": [
             "KNeighborsRegressor",
             "RadiusNeighborsRegressor",
@@ -19,6 +18,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
+    from ._fpca_regression import FPCARegression
     from ._historical_linear_model import (
         HistoricalLinearRegression as HistoricalLinearRegression,
     )

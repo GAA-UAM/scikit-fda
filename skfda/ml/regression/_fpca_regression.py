@@ -42,6 +42,7 @@ class FPCARegression(
     Attributes:
         n\_components\_: Number of principal components used.
         components\_: Principal components.
+        cofficents\_: Coefficients of the linear regression model.
         explained\_variance\_: Amount of variance explained by
             each of the selected components.
         explained\_variance\_ratio\_: Percentage of variance
@@ -120,6 +121,7 @@ class FPCARegression(
 
         self.n_components_ = self.n_components
         self.components_ = self._fpca.components_
+        self.coefficients_ = self._linear_model.coef_
         self.explained_variance_ = self._fpca.explained_variance_
         self.explained_variance_ratio_ = self._fpca.explained_variance_ratio_
 

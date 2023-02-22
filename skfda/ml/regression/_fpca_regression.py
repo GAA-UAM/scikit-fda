@@ -104,7 +104,7 @@ class FPCARegression(
             fit_intercept=self.intercept,
             regularization=self.regression_regularization,
         )
-        self._fpca.fit(X)
+        transformed_coefficients = self._fpca.fit_transform(X)
 
         # The linear model is fitted with the observations expressed in the
         # basis of the principal components.
@@ -114,7 +114,7 @@ class FPCARegression(
 
         X_transformed = FDataBasis(
             basis=self.fpca_basis,
-            coefficients=self._fpca.transform(X),
+            coefficients=transformed_coefficients,
         )
         self._linear_model.fit(X_transformed, y)
 

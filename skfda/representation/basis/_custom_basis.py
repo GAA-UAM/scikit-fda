@@ -203,12 +203,13 @@ class CustomBasis(Basis):
         of the Gram matrix.
 
         """
+        from ...misc import inner_product_matrix
+
         if isinstance(self.fdata, FDataBasis):
             basis_gram = self.fdata.basis.gram_matrix()
             coefficients = self.fdata.coefficients
             return coefficients @ basis_gram @ coefficients.T
 
-        from ...misc import inner_product_matrix
         return inner_product_matrix(self.fdata)
 
     def __len__(self) -> int:

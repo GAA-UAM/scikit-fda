@@ -26,7 +26,7 @@ class FPCARegression(
     to relate the transformed data to a scalar value.
 
     Args:
-        n_components: Number of principal components to keep.
+        n_components: Number of principal components to keep. Defaults to 5.
         fit\_intercept: If True, the linear model is calculated with an
             intercept.  Defaults to ``True``.
         pca_regularization: Regularization parameter for the principal
@@ -70,7 +70,7 @@ class FPCARegression(
 
     def __init__(
         self,
-        n_components: int = 2,
+        n_components: int = 5,
         fit_intercept: bool = True,
         pca_regularization: L2Regularization | None = None,
         regression_regularization: L2Regularization | None = None,

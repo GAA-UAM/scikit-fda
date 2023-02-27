@@ -57,7 +57,7 @@ class FPCARegression(
         >>> y = dataset["target"]
         >>> reg = skfda.ml.regression.FPCARegression(n_components=2)
         >>> reg.fit(fd, y)
-        FPCARegression()
+        FPCARegression(n_components=2)
 
         Then, we can predict the target values and calculate the
         score.

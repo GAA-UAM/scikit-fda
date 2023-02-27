@@ -61,7 +61,7 @@ class FPCARegression(
 
         Then, we can predict the target values and calculate the
         score.
-        
+
         >>> score = reg.score(fd, y)
         >>> reg.predict(fd) # doctest:+ELLIPSIS
         array([...])

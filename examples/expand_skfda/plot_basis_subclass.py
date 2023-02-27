@@ -17,8 +17,9 @@ from skfda.representation.basis import Basis
 
 # %%
 # In this example, we want to showcase how it is possible to make new
-# functional basis compatible with :class:`~skfda.FDataBasis`, by
-# subclassing the :class:`Basis` class.
+# functional basis compatible with
+# :class:`~skfda.representation.basis.FDataBasis`, by subclassing the
+# :class:`~skfda.representation.basis.Basis` class.
 #
 # Suppose that we already know that our data belongs to (or can be
 # reasonably approximated in) the functional space spanned by the basis
@@ -36,13 +37,15 @@ def g(t):
 
 
 # %%
-# Lets now define the functional basis. We create a subclass of :class:`Basis`
-# containing the definition of our desired basis. We need to overload the
-# ``__init__`` method in order to add the necessary parameters for the creation
-# of the basis. :class:`Basis` requires both the domain range and the number of
-# elements in the basis in order to work. As this particular basis has fixed
-# size, we only expose the ``domain_range`` parameter in the constructor, but
-# we still pass the fixed size to the parent class constructor.
+# Lets now define the functional basis. We create a subclass of
+# :class:`~skfda.representation.basis.Basis` containing the definition of our
+# desired basis. We need to overload the ``__init__`` method in order to add
+# the necessary parameters for the creation of the basis.
+# :class:`~skfda.representation.basis.Basis` requires both the domain range and
+# the number of elements in the basis in order to work. As this particular
+# basis has fixed size, we only expose the ``domain_range`` parameter in the
+# constructor, but we still pass the fixed size to the parent class
+# constructor.
 #
 # It is also necessary to override the protected ``_evaluate`` method, that
 # defines the evaluation of the basis elements.
@@ -82,7 +85,8 @@ plt.show()
 #
 # In this particular case, we are not interested in the derivatives, only in
 # correct representation and evaluation. We can now test the conversion from
-# :class:`FDataGrid` to :class:`~skfda.FDataBasis` for elements in this space.
+# :class:`~skfda.representation.grid.FDataGrid` to
+# :class:`~skfda.representation.basis.FDataBasis` for elements in this space.
 
 # %%
 # We first define a (discretized) function in the space spanned by :math:`f`

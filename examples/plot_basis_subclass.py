@@ -1,3 +1,4 @@
+# type: ignore
 """
 Creating a new basis
 ====================

@@ -39,9 +39,8 @@ class CustomBasis(Basis):
             domain_range=fdata.domain_range,
             n_basis=fdata.n_samples,
         )
-        self._check_linearly_independent(fdata)
-
         self.fdata = fdata
+        self._check_linearly_independent(fdata)
 
     @multimethod.multidispatch
     def _check_linearly_independent(self, fdata: FData) -> None:

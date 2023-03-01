@@ -142,7 +142,7 @@ class FPCARegression(
             Target values.
 
         """
-        check_is_fitted(self, ["_fpca", "_linear_model"])
+        check_is_fitted(self)
 
         X_transformed = FDataBasis(
             basis=self.fpca_basis,

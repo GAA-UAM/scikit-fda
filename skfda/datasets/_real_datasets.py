@@ -1558,8 +1558,10 @@ _bone_density_descr = """
 
     References:
 """
-    
+
 def fetch_bone_density(
+    return_X_y: Literal[True],
+    as_frame: bool = False,
 ) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
     """
     Load the Bone Density dataset. This is an irregular dataset.
@@ -1576,21 +1578,44 @@ def fetch_bone_density(
 
     curve_name = "idnum"
     argument_name = "age"
-    target_name = "spnbmd"
+    target_name = "sex"
+    coordinate_name = "spnbmd"
 
     curves = FDataIrregular.from_dataframe(
         data,
         id_column=curve_name,
         argument_columns=argument_name,
-        coordinate_columns=target_name,
+        coordinate_columns=coordinate_name,
         argument_names=[argument_name],
-        coordinate_names=[target_name],
+        coordinate_names=[coordinate_name],
         dataset_name="bone_ext"
     )
+    
+    target = pd.Series(
+        data.drop_duplicates(subset=["idnum"])['sex'],
+        name="group",
+    )
+    
+    feature_name = curves.dataset_name.lower()
+    target_names = target.values.tolist()
+    
+    if as_frame:
+        #TODO Arreglar problemas que tiene esto con dtype
+        #curves = pd.DataFrame({feature_name: curves})
+        curves = pd.DataFrame({feature_name: curves.to_grid()})
+        frame = pd.concat([curves, target], axis=1)
+    else:
+        target = target.values.codes
+
+    if return_X_y:
+        return curves, target
 
     return Bunch(
         data=curves,
+        target=target,
+        frame=frame,
+        categories={},
         feature_names=[argument_name],
-        target_names=[target_name],
+        target_names=target_names,
         DESCR=descr,
     )

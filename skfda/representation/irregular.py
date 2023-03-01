@@ -64,6 +64,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         dataset_name: Optional[str] = None,
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
+        interpolation: Optional[Evaluator] = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None
         ):
@@ -101,6 +102,8 @@ class FDataIrregular(FData):  # noqa: WPS214
             # the first and last element of each list of the grid_points.
 
         self._domain_range = validate_domain_range(domain_range)
+        
+        self.interpolation = interpolation
 
         super().__init__(
             extrapolation=extrapolation,
@@ -308,8 +311,11 @@ class FDataIrregular(FData):  # noqa: WPS214
         aligned: bool = True,
     ) -> NDArrayFloat:
 
-        #TODO
-        pass
+        return self.interpolation(
+            self.to_grid(), #TODO Create native interpolation to irregular type
+            eval_points,
+            aligned=aligned,
+        )
 
     def derivative(
         self: T,
@@ -440,6 +446,9 @@ class FDataIrregular(FData):  # noqa: WPS214
             return False
 
         #TODO interpolation/extrapolation when implemented
+        
+        if self.interpolation != other.interpolation:
+            return False
         
         return True
 
@@ -666,6 +675,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         dataset_name: Optional[str] = None,
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
+        interpolation: Optional[Evaluator] = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
     ) -> T:
@@ -712,6 +722,9 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         if extrapolation is None:
             extrapolation = self.extrapolation
+            
+        if interpolation is None:
+            interpolation = self.interpolation
 
         return FDataIrregular(
             function_indices,
@@ -725,6 +738,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             coordinate_names=coordinate_names,
             sample_names=sample_names,
             extrapolation=extrapolation,
+            interpolation=interpolation,
         )
 
     def restrict(
@@ -768,12 +782,12 @@ class FDataIrregular(FData):  # noqa: WPS214
             f"\nfunction_indices={self.function_indices!r},"
             f"\nfunction_arguments={self.function_arguments!r},"
             f"\nfunction_values={self.function_values!r},"
-            #f"\ndomain_range={self.domain_range!r},"
+            f"\ndomain_range={self.domain_range!r},"
             f"\ndataset_name={self.dataset_name!r},"
             f"\nargument_names={self.argument_names!r},"
             f"\ncoordinate_names={self.coordinate_names!r},"
             f"\nextrapolation={self.extrapolation!r},"
-            #f"\ninterpolation={self.interpolation!r})"
+            f"\ninterpolation={self.interpolation!r})"
         ).replace(
             '\n',
             '\n    ',

@@ -88,8 +88,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         i = 0
         self._sample_range = list()
         for f in self.function_indices[1:]:
-            self._sample_range.append((self.function_arguments[i][0], 
-                                      self.function_arguments[f-1][0]))
+            self._sample_range.append(tuple((self.function_arguments[i][0], 
+                                      self.function_arguments[f-1][0])))
             i = f
         self._sample_range.append((self.function_arguments[i][0], 
                                    self.function_arguments[-1][0]))
@@ -98,7 +98,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if domain_range is None:
             domain_range = self.sample_range
             # Default value for domain_range is a list of tuples with
-            # the first and last element of each list of the grid_points.
+            # the first and last arguments of each curve
 
         self._domain_range = validate_domain_range(domain_range)
         
@@ -662,7 +662,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         self: T,
         key: Union[int, slice, NDArrayInt, NDArrayBool],
     ) -> T:
-        required_items = []
+        required_slices = []
         key = _check_array_key(self.function_indices, key)
         indices = range(self.num_functions)
         required_indices = indices[key]
@@ -670,14 +670,23 @@ class FDataIrregular(FData):  # noqa: WPS214
             next_index = self.function_indices[i + 1] if i + 1 < \
                 self.num_functions else -1
             s = slice(self.function_indices[i], next_index)
+            required_slices.append(s)
             
-            required_items.append(self.copy(
-                function_indices=np.array([0]),
-                function_arguments=self.function_arguments[s],
-                function_values=self.function_values[s],
-                sample_names=list(np.array(self.sample_names)[key]),
-            ))
-        return required_items
+        arguments = np.concatenate([self.function_arguments[s] 
+                                    for s in required_slices])
+        values = np.concatenate([self.function_values[s] 
+                                 for s in required_slices])
+        
+        chunk_sizes = np.array([s.stop-s.start for s in required_slices])
+        indices = np.cumsum(chunk_sizes) - chunk_sizes[0]
+        
+        return self.copy(
+            function_indices=indices.astype(int),
+            function_arguments=arguments,
+            function_values=values,
+            sample_names=self.sample_names[key],
+            domain_range=self.sample_names[key],
+        )
     #####################################################################
     # Numpy methods
     #####################################################################

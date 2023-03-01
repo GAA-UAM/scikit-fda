@@ -1536,7 +1536,6 @@ def fetch_mco(
         DESCR=descr,
     )
 
-
 if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
     fetch_mco.__doc__ += _mco_descr_template.format(
         cite=":footcite:`ruiz++_2003_cariporide`",
@@ -1550,14 +1549,17 @@ def _fetch_loon_data(name: str) -> Any:
         "loon.data",
         version="0.1.3",
     )
-    
+
+
 _bone_density_descr = """
-    The Bone Density dataset is a study of bone density in boys and girls aged 8-17.
-    It contains data from 423 individuals, measured irregularly in different times,
+    The Bone Density dataset is a study of bone density 
+    in boys and girls aged 8-17. It contains data from 423
+    individuals, measured irregularly in different times,
     with an average of ~3 points per individual.
 
     References:
 """
+
 
 def fetch_bone_density(
     return_X_y: bool = False,
@@ -1593,7 +1595,7 @@ def fetch_bone_density(
     )
     
     target = pd.Series(
-        data.drop_duplicates(subset=["idnum"])['sex'],
+        data.drop_duplicates(subset=["idnum"])[target_name],
         name="group",
     )
     

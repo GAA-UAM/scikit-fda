@@ -714,22 +714,19 @@ class LinearPlotIrregular(PlotIrregular):
                     **color_dict,
                     picker=True,
                     pickradius=2,
-                    marker=self.marker
+                    marker=self.marker,
                 )
-
         else:
-
             # TODO Implementar para multidimension. Como hacer mesh?
             import warnings
             warnings.warn("Not implemented")
 
         _set_labels(self.fdata, fig, axes, self.patches)
-        
-        
+
+     
 class ScatterPlotIrregular(PlotIrregular):
     """
     Class used to scatter a FDataIrregular object.
-    
     """
 
     def _plot(

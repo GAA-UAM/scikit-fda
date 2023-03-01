@@ -115,7 +115,7 @@ class FDataIrregular(FData):  # noqa: WPS214
    
     @classmethod
     def from_dataframe(
-        cls,
+        cls: Type[T],
         dataframe: pandas.DataFrame,
         id_column: str,
         argument_columns: LabelTupleLike,
@@ -170,7 +170,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         
     @classmethod
     def from_datagrid(
-        cls,
+        cls: Type[T],
         f_data: FDataGrid,
         **kwargs
         ) -> FDataIrregular:
@@ -215,13 +215,13 @@ class FDataIrregular(FData):  # noqa: WPS214
             **kwargs
             )
         
-    def set_function_indices(self, function_indices):
+    def set_function_indices(self, function_indices) -> ArrayLike:
         self.function_indices = function_indices.copy()
     
-    def set_function_arguments(self, function_arguments):
+    def set_function_arguments(self, function_arguments) -> ArrayLike:
         self.function_arguments = function_arguments.copy()
         
-    def set_function_values(self, function_values):
+    def set_function_values(self, function_values) -> ArrayLike:
         self.function_values = function_values.copy()
         
     def round(
@@ -472,7 +472,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-
         #TODO Implement when attributes are done
         pass
 

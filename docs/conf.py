@@ -26,8 +26,10 @@ import pkg_resources
 # Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
 # repository
 import sphinx_gallery.binder
+from sphinx.errors import ConfigError
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 from sphinx.ext.napoleon.docstring import GoogleDocstring
+from sphinx_gallery.sorting import ExampleTitleSortKey, ExplicitOrder
 
 try:
     release = pkg_resources.get_distribution('scikit-fda').version
@@ -130,6 +132,12 @@ html_theme_options = {
             "name": "PyPI",
             "url": "https://pypi.org/project/scikit-fda",
             "icon": "https://avatars.githubusercontent.com/u/2964877",
+            "type": "url",
+        },
+        {
+            "name": "Anaconda",
+            "url": "https://anaconda.org/conda-forge/scikit-fda",
+            "icon": "https://avatars.githubusercontent.com/u/3571983",
             "type": "url",
         },
     ],
@@ -257,17 +265,18 @@ class SkfdaExplicitSubOrder(object):
     """
 
     def __init__(self, src_dir: str) -> None:
-        self.src_dir = src_dir  # src_dir is unused here
-        self.ordered_list = tutorial_list
+        self.tutorial_order = ExplicitOrder(tutorial_list)
+        self.title_order = ExampleTitleSortKey(src_dir)
 
     def __call__(self, filename: str) -> str:
         """Return a string determining the sort order."""
-        if filename in self.ordered_list:
-            ind = self.ordered_list.index(filename)
-            return f"{ind:04d}"
+        try:
+            return self.tutorial_order(filename)
+        except ConfigError:
+            return self.title_order(filename)
 
-        # ensure not explicitly listed items come last.
-        return f"zzz{filename}"
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
 
 
 rtd_version = os.environ.get("READTHEDOCS_VERSION", "latest")

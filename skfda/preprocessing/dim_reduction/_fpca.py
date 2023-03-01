@@ -1,8 +1,8 @@
 """Functional Principal Component Analysis Module."""
-
 from __future__ import annotations
 
-from typing import Callable, Optional, TypeVar, Union
+import warnings
+from typing import Callable, TypeVar
 
 import numpy as np
 import scipy.integrate
@@ -34,7 +34,13 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
     Parameters:
         n_components: Number of principal components to keep from
-            functional principal component analysis. Defaults to 3.
+            functional principal component analysis.
+
+            .. versionchanged:: 0.9
+               In future versions, it will default to the maximum number
+               of components that can be extracted.
+               Currently, it still defaults to 3 but do not assume this
+               behavior as it will change.
         centering: Set to ``False`` when the functional data is already known
             to be centered and there is no need to center it. Otherwise,
             the mean of the functional data object is calculated and the data
@@ -86,13 +92,23 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
     def __init__(
         self,
-        n_components: int = 3,
+        n_components: int | None = None,
         *,
         centering: bool = True,
-        regularization: Optional[L2Regularization[FData]] = None,
-        components_basis: Optional[Basis] = None,
-        _weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
+        regularization: L2Regularization[FData] | None = None,
+        components_basis: Basis | None = None,
+        _weights: ArrayLike | WeightsCallable | None = None,
     ) -> None:
+
+        if n_components is None:
+            warnings.warn(
+                "The default value of n_components will change in a future "
+                "version to the maximum number of components that can be "
+                "extracted. Update your code to specify explicitly the "
+                "number of components to avoid this warning.",
+                DeprecationWarning,
+            )
+            n_components = 3
         self.n_components = n_components
         self.centering = centering
         self.regularization = regularization

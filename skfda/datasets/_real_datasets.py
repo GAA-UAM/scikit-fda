@@ -1536,6 +1536,7 @@ def fetch_mco(
         DESCR=descr,
     )
 
+
 if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
     fetch_mco.__doc__ += _mco_descr_template.format(
         cite=":footcite:`ruiz++_2003_cariporide`",

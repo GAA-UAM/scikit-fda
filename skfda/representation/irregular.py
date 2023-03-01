@@ -38,7 +38,7 @@ from ..typing._base import (
 )
 from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from ._functional_data import FData
-from .grid import FDataGrid
+from .grid import FDataGrid, FDataGridDType
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike
 from .interpolation import SplineInterpolation
@@ -166,7 +166,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             )
         
     @classmethod
-    def from_FDataGrid(
+    def from_datagrid(
         cls,
         f_data: FDataGrid,
         **kwargs
@@ -590,16 +590,67 @@ class FDataIrregular(FData):  # noqa: WPS214
     def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
         #TODO Use BasisSmoother to return basis?
         pass
+    
+    def to_matrix(self, **kwargs: Any) -> ArrayLike:
+        #Convert FDataIrregular to matrix of all points
+        #with NaN in undefined values
+        
+        if self.dim_domain > 1:
+            warnings.warn(f"Not implemented for domain dimension > 1, \
+                          currently {self.dim_domain}")
+        
+        # Find the grid points and values for each function
+        grid_points = []
+        evaluated_points = []
+        for index_start, index_end in zip(list(self.function_indices), 
+                                          list(self.function_indices[1:])):
+            grid_points.append(
+                [x[0] for x in self.function_arguments[index_start:index_end]])
+            evaluated_points.append(
+                self.function_values[index_start:index_end])
+            
+        # Dont forget to add the last one
+        grid_points.append([x[0] for x in self.function_arguments[index_end:]])
+        evaluated_points.append(self.function_values[index_end:])
+        
+        # Aggregate into a complete data matrix
+        from functools import reduce
+        unified_grid_points = reduce(
+            lambda x,y: set(list(y)).union(list(x)),
+            grid_points,
+            )
+        
+        unified_grid_points = sorted(unified_grid_points)
+        
+        # Fill matrix with known values, leave unknown as NA
+        num_curves = len(grid_points)
+        num_points = len(unified_grid_points)
+        
+        unified_matrix = np.empty((num_curves, num_points, self.dim_codomain))
+        unified_matrix.fill(np.nan)
+        
+        for curve in range(num_curves):
+            for point in range(len(grid_points[curve])):
+                for dimension in range(self.dim_codomain):
+                    point_index = unified_grid_points.index(grid_points[curve][point])
+                    unified_matrix[curve, point_index, dimension] = evaluated_points[curve][point][dimension]
 
+        return unified_matrix, unified_grid_points
+        
     def to_grid(  # noqa: D102
         self: T,
-        grid_points: Optional[GridPointsLike] = None,
-        *,
-        sample_points: Optional[GridPointsLike] = None,
     ) -> T:
-
-        #TODO Return list of data grids? Data grid with holes?
-        pass
+        
+        data_matrix, grid_points = self.to_matrix()
+        
+        return FDataGrid(
+            data_matrix=data_matrix,
+            grid_points=grid_points,
+            dataset_name=self.dataset_name,
+            argument_names=self.argument_names,
+            coordinate_names=self.coordinate_names,
+            extrapolation=self.extrapolation,
+        )
 
     def copy(  # noqa: WPS211
         self: T,
@@ -810,12 +861,9 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     @property
     def dtype(self) -> FDataGridDType:
+        #TODO Do this natively?
         """The dtype for this extension array, FDataGridDType"""
-        return FDataGridDType(
-            grid_points=self.grid_points,
-            domain_range=self.domain_range,
-            dim_codomain=self.dim_codomain,
-        )
+        return self.to_grid().dtype
 
     @property
     def nbytes(self) -> int:

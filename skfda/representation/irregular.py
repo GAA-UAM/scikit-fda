@@ -226,18 +226,17 @@ class FDataIrregular(FData):  # noqa: WPS214
         decimals: int = 0,
         out: Optional[FDataIrregular] = None,
     ) -> FDataIrregular:
-        rounded_arguments = self.function_arguments.round(decimals=decimals)
+        # Arguments are not rounded due to possibility of
+        # coalescing various arguments to the same rounded value
         rounded_values = self.function_values.round(decimals=decimals)
         
         if out is not None and isinstance(out, FDataIrregular):
             out.function_indices = self.function_indices
-            out.function_arguments = rounded_arguments
             out.function_values = rounded_values
             
             return out
         
         return self.copy(
-            function_arguments=rounded_arguments, 
             function_values=rounded_values
             )
 
@@ -889,4 +888,29 @@ class FDataIrregular(FData):  # noqa: WPS214
 
 #TODO Do i need a FDataIrregularDType?
 
-#TODO Do I need a _CoordinateIterator?
+class _IrregularCoordinateIterator(Sequence[T]):
+    """Internal class to iterate through the image coordinates."""
+
+    def __init__(self, fdatairregular: T) -> None:
+        """Create an iterator through the image coordinates."""
+        self._fdatairregular = fdatairregular
+
+    def __getitem__(
+        self,
+        key: Union[int, slice, NDArrayInt, NDArrayBool],
+    ) -> T:
+        """Get a specific coordinate."""
+        s_key = key
+        if isinstance(s_key, int):
+            s_key = slice(s_key, s_key + 1)
+
+        coordinate_names = np.array(self._fdatairregular.coordinate_names)[s_key]
+
+        return self._fdatairregular.copy(
+            function_coordinates=self._fdatairregular.function_coordinates[..., key],
+            coordinate_names=tuple(coordinate_names),
+        )
+
+    def __len__(self) -> int:
+        """Return the number of coordinates."""
+        return self._fdatairregular.dim_codomain

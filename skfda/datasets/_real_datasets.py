@@ -1560,7 +1560,7 @@ _bone_density_descr = """
 """
 
 def fetch_bone_density(
-    return_X_y: Literal[True],
+    return_X_y: bool = False,
     as_frame: bool = False,
 ) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
     """
@@ -1571,6 +1571,7 @@ def fetch_bone_density(
 
     """
     descr = _bone_density_descr
+    frame = None
 
     raw_dataset = _fetch_loon_data("bone_ext")
 

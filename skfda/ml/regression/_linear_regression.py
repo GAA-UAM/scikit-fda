@@ -446,12 +446,6 @@ class LinearRegression(
         ):
             raise ValueError("Domain range for weight and basis must be equal")
 
-        if isinstance(weight, FData) and not np.array_equal(
-            basis.domain_range,
-            weight.domain_range,
-        ):
-            raise ValueError("Domain range for weight and basis must be equal")
-
         domain_range = basis.domain_range
 
         def integrand(args):  # noqa: WPS430

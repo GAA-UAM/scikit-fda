@@ -259,9 +259,8 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     #TODO Remove CoordinateIterator in an appropiate way
     @property
-    def coordinates(self: T) -> _CoordinateIterator[T]:
-        #TODO Does it even make sense to do this? Maybe it requires an specific _IrregularCoordinateIterator over the structure
-        pass
+    def coordinates(self: T) -> _IrregularCoordinateIterator[T]:
+        return _IrregularCoordinateIterator(self)
 
     @property
     def n_samples(self) -> int:
@@ -351,9 +350,11 @@ class FDataIrregular(FData):  # noqa: WPS214
             else np.sum(self.function_values, axis=0, keepdims=True)
         )
 
-        return FDataGrid(
-            data_matrix=data,
-            sample_names=(None,),
+        return FDataIrregular(
+            function_indices=np.array([0]),
+            function_arguments=np.array(np.zeros((1, self.dim_domain))),
+            function_values=data,
+            sample_names=("sum",),
         )
     
     def mean(self: T) -> T:
@@ -374,12 +375,13 @@ class FDataIrregular(FData):  # noqa: WPS214
                     for arg in distinct_args]
         
         # Obtain mean of all available values for each argument point
-        vars = np.array([np.mean(vals) for vals in values])
+        means = np.array([np.mean(vals) for vals in values])
         
-        # Create a FDataGrid object with only 1 curve, the mean curve
-        return FDataGrid(
-            grid_points=distinct_args,
-            data_matrix=np.array([vars]),
+        # Create a FDataIrregular object with only 1 curve, the mean curve
+        return FDataIrregular(
+            function_indices=np.array([0]),
+            function_arguments=distinct_args.reshape(-1,1),
+            function_values=means.reshape(-1,1),
             sample_names=("mean",),
         )
     
@@ -403,11 +405,12 @@ class FDataIrregular(FData):  # noqa: WPS214
         # Obtain variance of all available values for each argument point
         vars = np.array([np.var(vals) for vals in values])
         
-        # Create a FDataGrid object with only 1 curve, the variance curve
-        return FDataGrid(
-            grid_points=distinct_args,
-            data_matrix=np.array([vars]),
-            sample_names=("variance",),
+        # Create a FDataIrregular object with only 1 curve, the variance curve
+        return FDataIrregular(
+            function_indices=np.array([0]),
+            function_arguments=distinct_args.reshape(-1,1),
+            function_values=vars.reshape(-1,1),
+            sample_names=("var",),
         )
 
     def cov(self: T) -> T:
@@ -415,10 +418,10 @@ class FDataIrregular(FData):  # noqa: WPS214
         pass
 
     def gmean(self: T) -> T:
-        return FDataGrid(
-            data_matrix=[
-                scipy.stats.mstats.gmean(self.function_values, 0),
-            ],
+        return FDataIrregular(
+            function_indices=np.array([0]),
+            function_arguments=np.array(np.zeros((1, self.dim_domain))),
+            function_values=scipy.stats.mstats.gmean(self.function_values, 0),
             sample_names=("geometric mean",),
         )
 
@@ -739,7 +742,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         restrict_domain: bool = False,
         extrapolation: Optional[ExtrapolationLike] = None,
         grid_points: Optional[GridPointsLike] = None,
-    ) -> FDataGrid:
+    ) -> FDataIrregular:
         #TODO Is this possible with this structure?
         pass
 
@@ -907,7 +910,7 @@ class _IrregularCoordinateIterator(Sequence[T]):
         coordinate_names = np.array(self._fdatairregular.coordinate_names)[s_key]
 
         return self._fdatairregular.copy(
-            function_coordinates=self._fdatairregular.function_coordinates[..., key],
+            function_values=self._fdatairregular.function_values[..., key],
             coordinate_names=tuple(coordinate_names),
         )
 

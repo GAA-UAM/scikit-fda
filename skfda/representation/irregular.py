@@ -827,7 +827,37 @@ class FDataIrregular(FData):  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid_points: Optional[GridPointsLike] = None,
     ) -> FDataIrregular:
-        #TODO Is this possible with this structure?
+        r"""
+        Perform a shift of the curves.
+
+        The i-th shifted function :math:`y_i` has the form
+
+        .. math::
+            y_i(t) = x_i(t + \delta_i)
+
+        where :math:`x_i` is the i-th original function and :math:`delta_i` is
+        the shift performed for that function, that must be a vector in the
+        domain space.
+
+        Note that a positive shift moves the graph of the function in the
+        negative direction and vice versa.
+
+        Args:
+            shifts: List with the shifts
+                corresponding for each sample or numeric with the shift to
+                apply to all samples.
+            restrict_domain: If True restricts the domain to avoid the
+                evaluation of points outside the domain using extrapolation.
+                Defaults uses extrapolation.
+            extrapolation: Controls the
+                extrapolation mode for elements outside the domain range.
+                By default uses the method defined in fd. See extrapolation to
+                more information.
+
+        Returns:
+            Shifted functions.
+        """
+        #TODO build based in above
         pass
 
     def compose(
@@ -842,8 +872,13 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def __str__(self) -> str:
         """Return str(self)."""
-        #TODO Define str method after all attributes are locked
-        pass
+        return (
+            f"Data set:    {self.data_matrix}\n"
+            f"function indices:    {self.function_indices}\n"
+            f"function arguments:    {self.function_arguments}\n"
+            f"function values:    {self.function_values}\n"
+            f"time range:    {self.domain_range}"
+        )
 
     def __repr__(self) -> str:
         """Return repr(self)."""

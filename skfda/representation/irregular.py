@@ -495,8 +495,23 @@ class FDataIrregular(FData):  # noqa: WPS214
                     (slice(None),) + (np.newaxis,)
                     * (self.function_values.ndim - 1)
                 )
+                
+                other_vector = other[other_index]
+                
+                # Must expand for the number of values in each curve
+                values_after = np.concatenate((self.function_indices, 
+                                               np.array([self.num_observations]))
+                                              )
+                
+                values_before = np.concatenate((np.array([0]), 
+                                                self.function_indices)
+                                               )
+                
+                values_curve = (values_after-values_before)[1:]
 
-                return other[other_index]
+                # Repeat the other value for each curve as many times 
+                # as values inside the curve
+                return np.repeat(other_vector, values_curve)
             elif other.shape == (
                 self.n_samples,
                 self.dim_codomain,
@@ -507,7 +522,22 @@ class FDataIrregular(FData):  # noqa: WPS214
                     + (slice(None),)
                 )
 
-                return other[other_index]
+                other_vector = other[other_index]
+                
+                # Must expand for the number of values in each curve
+                values_after = np.concatenate((self.function_indices, 
+                                               np.array([self.num_observations]))
+                                              )
+                
+                values_before = np.concatenate((np.array([0]), 
+                                                self.function_indices)
+                                               )
+                
+                values_curve = (values_after-values_before)[1:]
+
+                # Repeat the other value for each curve as many times 
+                # as values inside the curve
+                return np.repeat(other_vector, values_curve, axis=0)
 
             raise ValueError(
                 f"Invalid dimensions in operator between FDataGrid and Numpy "
@@ -1015,26 +1045,30 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         for i in inputs:
             if (
-                isinstance(i, FDataGrid)
-                and not np.array_equal(i.grid_points, self.grid_points)
+                isinstance(i, FDataIrregular)
+                and not np.array_equal(i.function_arguments, 
+                                       self.function_arguments
+                                       )
             ):
                 return NotImplemented
 
         new_inputs = [
-            i.data_matrix if isinstance(i, FDataGrid)
-            else self._get_op_matrix(i) for i in inputs
+            self._get_op_matrix(i) for i in inputs
         ]
 
         outputs = kwargs.pop('out', None)
         if outputs:
             new_outputs = [
-                o.data_matrix if isinstance(o, FDataGrid)
+                o.function_values if isinstance(o, FDataIrregular)
                 else o for o in outputs
             ]
             kwargs['out'] = tuple(new_outputs)
         else:
             new_outputs = (None,) * ufunc.nout
 
+        print(kwargs)
+        print()
+        print(new_inputs)
         results = getattr(ufunc, method)(*new_inputs, **kwargs)
         if results is NotImplemented:
             return NotImplemented
@@ -1047,7 +1081,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             for result, output in zip(results, new_outputs)
         )
 
-        results = [self.copy(data_matrix=r) for r in results]
+        results = [self.copy(function_values=r) for r in results]
 
         return results[0] if len(results) == 1 else results
 

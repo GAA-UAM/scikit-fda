@@ -485,55 +485,130 @@ class FDataIrregular(FData):  # noqa: WPS214
         self,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> Union[None, float, NDArrayFloat, NDArrayInt]:
-        pass
+        if isinstance(other, numbers.Real):
+            return float(other)
+        elif isinstance(other, np.ndarray):
+            if other.shape in {(), (1,)}:
+                return other
+            elif other.shape == (self.n_samples,):
+                other_index = (
+                    (slice(None),) + (np.newaxis,)
+                    * (self.function_values.ndim - 1)
+                )
+
+                return other[other_index]
+            elif other.shape == (
+                self.n_samples,
+                self.dim_codomain,
+            ):
+                other_index = (
+                    (slice(None),) + (np.newaxis,)
+                    * (self.function_values.ndim - 2)
+                    + (slice(None),)
+                )
+
+                return other[other_index]
+
+            raise ValueError(
+                f"Invalid dimensions in operator between FDataGrid and Numpy "
+                f"array: {other.shape}"
+            )
+
+        elif isinstance(other, FDataIrregular):
+            #TODO What to do with different arguments?
+            return None
+
+        return None
 
     def __add__(
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-        pass
+        function_values = self._get_op_matrix(other)
+        if function_values is None:
+            return NotImplemented
+
+        return self._copy_op(other,
+                             function_values=self.function_values +
+                             function_values
+                             )
 
     def __radd__(
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-        pass
+        return self.__add__(other)
 
     def __sub__(
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-        pass
+        function_values = self._get_op_matrix(other)
+        if function_values is None:
+            return NotImplemented
+
+        return self._copy_op(other,
+                             function_values=self.function_values -
+                             function_values
+                             )
 
     def __rsub__(
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-        pass
+        function_values = self._get_op_matrix(other)
+        if function_values is None:
+            return NotImplemented
+
+        return self._copy_op(other,
+                             function_values=function_values -
+                             self.function_values
+                             )
 
     def __mul__(
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-        pass
+        function_values = self._get_op_matrix(other)
+        if function_values is None:
+            return NotImplemented
+
+        return self._copy_op(other,
+                             function_values=self.function_values *
+                             function_values
+                             )
 
     def __rmul__(
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-        pass
+        return self.__mul__(other)
 
     def __truediv__(
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-        pass
+        function_values = self._get_op_matrix(other)
+        if function_values is None:
+            return NotImplemented
+
+        return self._copy_op(other,
+                             function_values=self.function_values /
+                             function_values
+                             )
 
     def __rtruediv__(
         self: T,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> T:
-        pass
+        function_values = self._get_op_matrix(other)
+        if function_values is None:
+            return NotImplemented
+
+        return self._copy_op(other,
+                             function_values=function_values /
+                             self.function_values
+                             )
 
     def __neg__(self: T) -> T:
         """Negation of FDataIrregular object."""
@@ -759,7 +834,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         # Eliminate points outside the new range.
         # Must also modify function indices to point to new array
-        i=-1
+        i = -1
         for i, index in enumerate(self.function_indices[1:]):
             prev_index = self.function_indices[i]
             s = slice(prev_index, index)

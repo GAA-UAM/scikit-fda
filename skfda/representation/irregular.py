@@ -139,15 +139,15 @@ class FDataIrregular(FData):  # noqa: WPS214
         argument_columns: LabelTupleLike,
         coordinate_columns: LabelTupleLike, 
         **kwargs
-        ) -> FDataIrregular:
-
+    ) -> FDataIrregular:
+        
         # Accept strings but ensure the column names are tuples
         _is_str = isinstance(argument_columns, str)
         argument_columns = [argument_columns] if _is_str else \
             argument_columns
 
         _is_str = isinstance(coordinate_columns, str)
-        coordinate_columns = [coordinate_columns]  if _is_str else \
+        coordinate_columns = [coordinate_columns] if _is_str else \
             coordinate_columns
 
         # Obtain num functions and num observations from data
@@ -194,7 +194,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         f_data: FDataGrid,
         **kwargs
     ) -> FDataIrregular:
-
+        
         # Obtain num functions and num observations from data
         num_observations = np.sum(~np.isnan(f_data.data_matrix))
         num_functions = f_data.data_matrix.shape[0]
@@ -219,7 +219,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                 arg = [f_data.grid_points[dim][j] for dim 
                        in range(f_data.dim_domain)]
                 function_arguments[head+num_values, :] = arg
-
+                             
                 value = [f_data.data_matrix[i, j, dim] for dim 
                          in range(f_data.dim_codomain)]
                 function_values[head+num_values, :] = value
@@ -266,7 +266,7 @@ class FDataIrregular(FData):  # noqa: WPS214
     @property
     def sample_points(self) -> GridPoints:
         warnings.warn(
-            "Parameter sample_points is deprecated. Use the " \
+            "Parameter sample_points is deprecated. Use the "
             "parameter grid_points instead.",
             DeprecationWarning,
         )
@@ -280,7 +280,6 @@ class FDataIrregular(FData):  # noqa: WPS214
     def dim_codomain(self) -> int:
         return self._dim_codomain
 
-    # TODO Remove CoordinateIterator in an appropiate way
     @property
     def coordinates(self: T) -> _IrregularCoordinateIterator[T]:
         return _IrregularCoordinateIterator(self)
@@ -367,15 +366,82 @@ class FDataIrregular(FData):  # noqa: WPS214
         skipna: bool = False,
         min_count: int = 0,
     ) -> T:
-        pass
+        super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
+        
+        data = (
+            np.nansum(self.function_values, axis=0, keepdims=True) if skipna
+            else np.sum(self.function_values, axis=0, keepdims=True)
+        )
 
+        return FDataIrregular(
+            function_indices=np.array([0]),
+            function_arguments=np.array(np.zeros((1, self.dim_domain))),
+            function_values=data,
+            sample_names=("sum",),
+        )
+    
     def mean(self: T) -> T:
-        pass
+        """Compute the mean pointwise for a sparse dataset.
+        
+        Note that, for irregular data, points may be represented in few
+        or even an only curve.
 
+        Returns:
+            A FDataIrregular object with just one sample representing the
+            mean of all curves the across each value.
+
+        """
+        
+        # Find all distinct arguments (ordered) and corresponding values
+        distinct_args = np.unique(np.matrix.flatten(self.function_arguments))
+        values = [np.matrix.flatten(self.function_values[
+            np.where(self.function_arguments == arg)[0]
+            ])
+                    for arg in distinct_args]
+        
+        # Obtain mean of all available values for each argument point
+        means = np.array([np.mean(vals) for vals in values])
+        
+        # Create a FDataIrregular object with only 1 curve, the mean curve
+        return FDataIrregular(
+            function_indices=np.array([0]),
+            function_arguments=distinct_args.reshape(-1, 1),
+            function_values=means.reshape(-1, 1),
+            sample_names=("mean",),
+        )
+    
     def var(self: T) -> T:
-        pass
+        """Compute the variance pointwise for a sparse dataset.
+        
+        Note that, for irregular data, points may be represented in few
+        or even an only curve.
+
+        Returns:
+            A FDataIrregular object with just one sample representing the
+            variance of all curves the across each value.
+
+        """
+        
+        # Find all distinct arguments (ordered) and corresponding values
+        distinct_args = np.unique(np.matrix.flatten(self.function_arguments))
+        values = [np.matrix.flatten(self.function_values[
+            np.where(self.function_arguments == arg)[0]
+            ])
+                    for arg in distinct_args]
+        
+        # Obtain variance of all available values for each argument point
+        vars = np.array([np.var(vals) for vals in values])
+        
+        # Create a FDataIrregular object with only 1 curve, the variance curve
+        return FDataIrregular(
+            function_indices=np.array([0]),
+            function_arguments=distinct_args.reshape(-1, 1),
+            function_values=vars.reshape(-1, 1),
+            sample_names=("var",),
+        )
 
     def cov(self: T) -> T:
+        # TODO Implementation to be decided
         pass
 
     def gmean(self: T) -> T:
@@ -470,12 +536,61 @@ class FDataIrregular(FData):  # noqa: WPS214
         pass
 
     def __neg__(self: T) -> T:
-        pass
+        """Negation of FDataIrregular object."""
+        
+        return self.copy(function_values=-self.function_values)
 
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
-        pass
-
+        if as_coordinates:
+            raise NotImplementedError(
+                "Not implemented for as_coordinates = True",
+            )
+        # Verify that dimensions are compatible
+        assert len(others) > 0
+        self._check_same_dimensions(others[0])
+        if len(others) > 1:
+            for x, y in zip(others, others[1:]):
+                x._check_same_dimensions(y)
+                
+        # Allocate all required memory
+        total_functions = self.num_functions + sum([o.num_functions 
+                                                    for o in others])
+        total_values = self.num_observations + sum([o.num_observations 
+                                                    for o in others])
+        total_sample_names = []
+        function_indices = np.zeros((total_functions, ), 
+                                    dtype=np.uint32)
+        function_args = np.zeros((total_values, 
+                                  self.dim_domain))
+        function_values = np.zeros((total_values,
+                                    self.dim_codomain))
+        index = 0
+        head = 0
+        
+        # Add samples sequentially
+        for f_data in [self] + list(others):
+            function_indices[index:index +
+                             f_data.num_functions] = f_data.function_indices
+            function_args[head:head +
+                          f_data.num_observations] = f_data.function_args
+            function_values[head:head +
+                            f_data.num_observations] = f_data.function_values
+            # Adjust pointers to the concatenated array
+            function_indices[index:index+f_data.num_functions] += head
+            index += f_data.num_functions
+            head += f_data.num_observations
+            total_sample_names = total_sample_names + list(f_data.sample_names)
+        
+        return self.copy(
+            function_indices, 
+            function_args, 
+            function_values, 
+            sample_names=total_sample_names,
+            )
+    
     def plot(self, *args: Any, **kwargs: Any) -> Figure:
+        from ..exploratory.visualization.representation \
+            import LinearPlotIrregular
         from ..exploratory.visualization.representation \
             import LinearPlotIrregular
 
@@ -484,10 +599,13 @@ class FDataIrregular(FData):  # noqa: WPS214
     def scatter(self, *args: Any, **kwargs: Any) -> Figure:
         from ..exploratory.visualization.representation \
             import ScatterPlotIrregular
+        from ..exploratory.visualization.representation \
+            import ScatterPlotIrregular
 
         return ScatterPlotIrregular(self, *args, **kwargs).plot()
 
     def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
+        # TODO Use BasisSmoother to return basis?
         pass
 
     def to_matrix(self, **kwargs: Any) -> ArrayLike:
@@ -497,7 +615,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if self.dim_domain > 1:
             warnings.warn(f"Not implemented for domain dimension > 1, \
                           currently {self.dim_domain}")
-
+            
         # Find the grid points and values for each function
         grid_points = []
         evaluated_points = []
@@ -531,8 +649,11 @@ class FDataIrregular(FData):  # noqa: WPS214
         for curve in range(num_curves):
             for point in range(len(grid_points[curve])):
                 for dimension in range(self.dim_codomain):
-                    point_index = unified_grid_points.index(grid_points[curve][point])
-                    unified_matrix[curve, point_index, dimension] = evaluated_points[curve][point][dimension]
+                    point_index = unified_grid_points.index(
+                        grid_points[curve][point]
+                        )
+                    unified_matrix[curve, point_index, dimension] = \
+                        evaluated_points[curve][point][dimension]
 
         return unified_matrix, unified_grid_points
 
@@ -623,6 +744,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         self: T,
         domain_range: DomainRangeLike,
     ) -> T:
+        
+        #TODO Is this possible with this structure
         pass
 
     def shift(
@@ -631,7 +754,9 @@ class FDataIrregular(FData):  # noqa: WPS214
         *,
         restrict_domain: bool = False,
         extrapolation: Optional[ExtrapolationLike] = None,
+        grid_points: Optional[GridPointsLike] = None,
     ) -> FDataIrregular:
+        #TODO Is this possible with this structure?
         pass
 
     def compose(
@@ -640,16 +765,14 @@ class FDataIrregular(FData):  # noqa: WPS214
         *,
         eval_points: Optional[GridPointsLike] = None,
     ) -> T:
+        
+        #TODO Is this possible with this structure?
         pass
 
     def __str__(self) -> str:
         """Return str(self)."""
-        return (
-            f"function_indices:    {self.function_indices}\n"
-            f"function_arguments:    {self.function_arguments}\n"
-            f"function_values:    {self.function_values}\n"
-            f"time range:    {self.domain_range}"
-        )
+        #TODO Define str method after all attributes are locked
+        pass
 
     def __repr__(self) -> str:
         """Return repr(self)."""

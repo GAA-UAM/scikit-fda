@@ -537,7 +537,6 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def __neg__(self: T) -> T:
         """Negation of FDataIrregular object."""
-        
         return self.copy(function_values=-self.function_values)
 
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
@@ -572,7 +571,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             function_indices[index:index +
                              f_data.num_functions] = f_data.function_indices
             function_args[head:head +
-                          f_data.num_observations] = f_data.function_args
+                          f_data.num_observations] = f_data.function_arguments
             function_values[head:head +
                             f_data.num_observations] = f_data.function_values
             # Adjust pointers to the concatenated array
@@ -744,9 +743,81 @@ class FDataIrregular(FData):  # noqa: WPS214
         self: T,
         domain_range: DomainRangeLike,
     ) -> T:
+        from ..misc.validation import validate_domain_range
+
+        domain_range = validate_domain_range(domain_range)
+        assert all(
+            c <= a < b <= d  # noqa: WPS228
+            for ((a, b), (c, d)) in zip(domain_range, self.domain_range)
+        )
+
+        head = 0
+        indices = []
+        arguments = []
+        values = []
+        sample_names = []
+
+        # Eliminate points outside the new range.
+        # Must also modify function indices to point to new array
+        i=-1
+        for i, index in enumerate(self.function_indices[1:]):
+            prev_index = self.function_indices[i]
+            s = slice(prev_index, index)
+            masks = set()
+            for dr in domain_range:
+                dr_start, dr_end = dr
+                select_mask = np.where(
+                    (dr_start <= self.function_arguments[s]) &
+                    (self.function_arguments[s] <= dr_end)
+                )
+                
+                # Must be union, it is valid if it is in any interval
+                masks = masks.union(set(select_mask[0]))
+            
+            # TODO Keep functions with no values?
+            masks = list(masks)
+            if len(masks) > 1:
+                indices.append(head)
+                arguments.append(self.function_arguments[s][masks, :])
+                values.append(self.function_values[s][masks, :])
+                sample_names.append(self.sample_names[i])
+                head += len(masks)
         
-        #TODO Is this possible with this structure
-        pass
+        # Last index
+        i += 1
+        prev_index = self.function_indices[i]
+        s = slice(prev_index, None)
+        masks = set()
+        for dr in domain_range:
+            dr_start, dr_end = dr
+            select_mask = np.where(
+                (dr_start <= self.function_arguments[s]) &
+                (self.function_arguments[s] <= dr_end)
+            )
+            
+            # Must be union, it is valid if it is in any interval
+            masks = masks.union(set(select_mask[0]))
+            
+        # TODO Keep functions with no values?
+        masks = list(masks)
+        if len(masks) > 0:
+            indices.append(head)
+            arguments.append(self.function_arguments[s][masks, :])
+            values.append(self.function_values[s][masks, :])
+            sample_names.append(self.sample_names[i])
+            head += len(masks)
+        
+        function_indices = np.array(indices)
+        function_arguments = np.concatenate(arguments)
+        function_values = np.concatenate(values)
+            
+        return self.copy(
+            function_indices=function_indices,
+            function_arguments=function_arguments,
+            function_values=function_values,
+            sample_names=sample_names,
+            domain_range=domain_range,
+        )
 
     def shift(
         self,

@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import math
 import numbers
-from typing import Callable, Sequence, Union
+from ast import operator
+from typing import Callable, Sequence, Tuple, Union
 
 import findiff
 import numpy as np
 import scipy.integrate
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
+from sympy import N, product
 
+from ...misc import inner_product_matrix
 from ...representation import FData, FDataBasis, FDataGrid
 from ...representation.basis import (
     Basis,
@@ -20,7 +23,7 @@ from ...representation.basis import (
     MonomialBasis,
 )
 from ...typing._base import DomainRangeLike
-from ...typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ._operators import Operator, gram_matrix, gram_matrix_optimization
 
 Order = int
@@ -583,17 +586,30 @@ def _optimized_operator_evaluation_in_grid(
     linear_operator: LinearDifferentialOperator,
     grid_points: NDArrayFloat,
     findiff_accuracy: int,
-) -> NDArrayFloat:
+) -> Tuple[NDArrayFloat, NDArrayInt]:
     """
     Compute the linear operator applied to the delta basis of the grid.
 
     The delta basis is the basis where the i-th basis function is 1 in the
-    i-th point and 0 in the rest of points. The matrix returned by this
-    function is the matrix where the i-th row contians the values of the
-    linear operator applied to the i-th basis function of the delta basis.
+    i-th point and 0 in the rest of points.
+
+    Returns:
+     - A matrix where the i-th row contians the values of the linear operator
+        applied to the i-th basis function of the delta basis.
+
+    - The domain limits of each basis function of the delta basis. Outside
+        these limits, the result of applying the linear operator to the
+        given basis function is zero.
     """
     n_points = grid_points.shape[0]
     diff_coefficients = np.zeros((n_points, n_points))
+
+    domain_limits = np.hstack(
+        [
+            np.ones((n_points, 1)) * n_points,
+            np.zeros((n_points, 1)),
+        ],
+    ).astype(int)
 
     # The desired matrix can be obtained by appending the coefficients
     # of the finite differences for each point column-wise.
@@ -601,30 +617,48 @@ def _optimized_operator_evaluation_in_grid(
         if w == 0:
             continue
         for point_index in range(n_points):
+            # Calculate the finite differences coefficients
+            # the point point_index. These coefficients express the
+            # contribution of a function in each of the points in the
+            # grid to the value of the operator applied to the function
+            # in the point point_index.
             finite_diff = findiff.coefs.coefficients_non_uni(
                 deriv=dif_order,
                 acc=findiff_accuracy,
                 coords=grid_points,
                 idx=point_index,
             )
+
             # The offsets are the relative positions of the
-            # points where each coefficient is applied
+            # points for which the coefficients are being
+            # calculated
             offsets = finite_diff["offsets"]
             coefficients = finite_diff["coefficients"]
 
             # Add the position of the point where the finite
             # difference is calculated to get the absolute position
             # of the points where each coefficient is applied
-            offsets += point_index
-            if callable(w):
-                coefficients *= w(grid_points[offsets])
-                diff_coefficients[point_index, offsets] += coefficients
-            else:
-                diff_coefficients[point_index, offsets] += w * coefficients
+            positions = offsets + point_index
 
-    # Finally, transpose the matrix so that the i-th row contains
-    # the values of the linear operator applied to the i-th delta function.
-    return diff_coefficients.T
+            # If the coefficients for calculating the value of
+            # the operator in this point (point_index)
+            # include a coefficient for the i-th point,
+            # then the i-th basis function contains the point point_index
+            # in its domain.
+            # (by definition that fuction is 1 in the i-th point).
+            domain_limits[positions, 0] = np.minimum(
+                domain_limits[positions, 0],
+                np.ones(positions.shape) * point_index,
+            )
+            domain_limits[positions, 1] = np.maximum(
+                domain_limits[positions, 1],
+                np.ones(positions.shape) * point_index,
+            )
+
+            w_eval = w(grid_points[point_index]) if callable(w) else w
+            diff_coefficients[positions, point_index] += w_eval * coefficients
+
+    return (diff_coefficients, domain_limits)
 
 
 @gram_matrix_optimization.register
@@ -643,11 +677,10 @@ def fdatagrid_penalty_matrix_optimized(
     values in the points of the grid on both sides.
 
     """
-    max_deriv = len(linear_operator.weights) - 1
     n_points = basis.grid_points[0].shape[0]
     findiff_accuracy = 2
 
-    evaluated_basis = _optimized_operator_evaluation_in_grid(
+    evaluated_basis, domain_limits = _optimized_operator_evaluation_in_grid(
         linear_operator,
         basis.grid_points[0],
         findiff_accuracy=findiff_accuracy,
@@ -659,37 +692,37 @@ def fdatagrid_penalty_matrix_optimized(
     # point where the linear operator is applied that can be
     # different from zero.
 
-    # Formula derived from the definition of coefficients_not_uni
-    # in findiff.
-    spread = 2 * math.floor((max_deriv + 1) / 2) - 1
-    # The accuracy parameter in findiff increases the number of
-    # points considered to the left and the right
-    spread += findiff_accuracy + 1
+    max_domain_width = np.max(
+        np.abs(domain_limits[:, 0] - domain_limits[:, 1]),
+    )
+
+    # Precompute the simpson quadrature for the entire domain.
+    # This is done to avoid computing it for each subinterval of integration.
+    quadrature = scipy.integrate.simpson(
+        np.identity(n_points),
+        basis.grid_points[0],
+    )
 
     product_matrix = np.zeros((basis.n_samples, basis.n_samples))
     for i in range(n_points):
-        look_ahead_limit = min(n_points, i + 2 * spread)
+        # Maximum index of another function with not-disjoint support
+        max_no_disjoint_index = min(n_points, i + 2 * max_domain_width)
 
-        for j in range(i, look_ahead_limit):
-            left_lim = i - spread
-            right_lim = j + spread
+        for j in range(i, max_no_disjoint_index):
+            if domain_limits[i, 1] < domain_limits[j, 0]:
+                continue
+
+            left_lim = min(
+                domain_limits[i, 0],
+                domain_limits[j, 0],
+            )
+            right_lim = max(
+                domain_limits[i, 1],
+                domain_limits[j, 1],
+            )
+
             # The right limit of the interval is excluded when slicing
             right_lim += 1
-
-            left_lim = max(0, left_lim)
-            right_lim = min(n_points, right_lim)
-
-            # Simpson's rule requires an even number of intervals.
-            # If that is not the case, scipy applies a correction
-            # (see simpson docstring). This correction can lead to
-            # different results when the interval of integration is
-            # changed. To avoid this, we add a point to the left or
-            # to the right of the interval.
-            if (right_lim - left_lim) % 2 == 1:
-                if right_lim < n_points:
-                    right_lim += 1
-                elif left_lim > 0:
-                    left_lim -= 1
 
             # Limit both the multiplication and the integration to
             # the interval where the functions are not 0.
@@ -697,11 +730,9 @@ def fdatagrid_penalty_matrix_optimized(
                 evaluated_basis[i, left_lim:right_lim]
                 * evaluated_basis[j, left_lim:right_lim]
             )
-            restricted_grid = basis.grid_points[0][left_lim:right_lim]
-            product_matrix[i, j] = scipy.integrate.simpson(
-                operator_product,
-                restricted_grid,
-            )
+            sub_quadrature = quadrature[left_lim:right_lim]
+
+            product_matrix[i, j] = np.dot(operator_product, sub_quadrature)
             product_matrix[j, i] = product_matrix[i, j]
 
     return product_matrix

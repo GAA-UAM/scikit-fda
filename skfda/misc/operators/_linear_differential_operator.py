@@ -9,7 +9,6 @@ import scipy.integrate
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
-from ...misc import inner_product_matrix
 from ...representation import FData, FDataBasis, FDataGrid
 from ...representation.basis import (
     Basis,
@@ -762,6 +761,8 @@ def custombasis_penalty_matrix_optimized(
     basis: CustomBasis,
 ) -> NDArrayFloat:
     """Optimized version for CustomBasis."""
+    from ...misc import inner_product_matrix
+
     if isinstance(basis.fdata, FDataGrid):
         operator_evaluated = linear_operator(basis.fdata)(
             basis.fdata.grid_points[0],

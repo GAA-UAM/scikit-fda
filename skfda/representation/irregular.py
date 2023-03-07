@@ -86,19 +86,39 @@ class FDataIrregular(FData):  # noqa: WPS214
         
         # TODO Fix for higher dimensions
         i = 0
+        dim_ranges = list()
+        for dim in range(self.dim_domain):
+            dim_sample_ranges = list()
+            for f in self.function_indices[1:]:
+                dim_sample_ranges.append(tuple((self.function_arguments[i][dim], 
+                                        self.function_arguments[f-1][dim])))
+                i = f
+            dim_sample_ranges.append((self.function_arguments[i][dim], 
+                                    self.function_arguments[-1][dim]))
+            dim_ranges.append(dim_sample_ranges)
+            
         self._sample_range = list()
-        for f in self.function_indices[1:]:
-            self._sample_range.append(tuple((self.function_arguments[i][0], 
-                                      self.function_arguments[f-1][0])))
-            i = f
-        self._sample_range.append((self.function_arguments[i][0], 
-                                   self.function_arguments[-1][0]))
+        for sample in range(len(dim_sample_ranges)):
+            self._sample_range.append(
+                tuple([dim_ranges[dim][sample] for dim in range(self.dim_domain)])
+                )
+            
+        # Default value for sample_range is a list of tuples with
+        # the first and last arguments of each curve for each dimension
         
         from ..misc.validation import validate_domain_range
         if domain_range is None:
-            domain_range = self.sample_range
+            ranges = list()
+            for dim in range(self.dim_domain):
+                min_argument = min([x[dim][0] for x in self._sample_range])
+                max_argument = max([x[dim][1] for x in self._sample_range])
+                ranges.append((min_argument, max_argument))
+            
+            domain_range = tuple(ranges)
+            
             # Default value for domain_range is a list of tuples with
-            # the first and last arguments of each curve
+            # the minimum and maximum value of the arguments for each
+            # dimension
 
         self._domain_range = validate_domain_range(domain_range)
         

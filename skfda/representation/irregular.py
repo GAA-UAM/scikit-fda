@@ -545,8 +545,8 @@ class FDataIrregular(FData):  # noqa: WPS214
             )
 
         elif isinstance(other, FDataIrregular):
-            #TODO What to do with different arguments?
-            return None
+            # TODO What to do with different arguments?
+            return other.function_values
 
         return None
 
@@ -1066,9 +1066,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         else:
             new_outputs = (None,) * ufunc.nout
 
-        print(kwargs)
-        print()
-        print(new_inputs)
         results = getattr(ufunc, method)(*new_inputs, **kwargs)
         if results is NotImplemented:
             return NotImplemented

@@ -735,20 +735,14 @@ def custombasis_penalty_matrix_optimized(
 ) -> NDArrayFloat:
     """Optimized version for CustomBasis."""
     if isinstance(basis.fdata, FDataGrid):
-        product_matrix = np.empty((basis.n_basis, basis.n_basis))
         operator_evaluated = linear_operator(basis.fdata)(
             basis.fdata.grid_points[0],
         )
 
-        # Discard last dimension
-        operator_evaluated = operator_evaluated[..., 0]
-        for i in range(basis.n_basis):
-            for j in range(i, basis.n_basis):
-                product_matrix[i, j] = scipy.integrate.simps(
-                    operator_evaluated[i, :] * operator_evaluated[j, :],
-                    x=basis.fdata.grid_points[0],
-                )
-                product_matrix[j, i] = product_matrix[i, j]
-        return product_matrix
+        fdatagrid = FDataGrid(
+            data_matrix=operator_evaluated[..., 0],
+            grid_points=basis.fdata.grid_points[0],
+        )
+        return inner_product_matrix(fdatagrid)
 
     return gram_matrix(linear_operator, basis.fdata)

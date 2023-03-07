@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import math
 import numbers
-from ast import operator
 from typing import Callable, Sequence, Tuple, Union
 
 import findiff
@@ -10,7 +8,6 @@ import numpy as np
 import scipy.integrate
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
-from sympy import N, product
 
 from ...misc import inner_product_matrix
 from ...representation import FData, FDataBasis, FDataGrid

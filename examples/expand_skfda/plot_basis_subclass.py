@@ -1,9 +1,14 @@
+# fmt: off
 # type: ignore
 """
 Creating a new basis
 ====================
 
 Shows how to add new bases for FDataBasis by creating subclasses.
+
+.. Disable isort
+    isort:skip_file
+
 """
 
 # Author: Carlos Ramos Carreño
@@ -12,12 +17,9 @@ Shows how to add new bases for FDataBasis by creating subclasses.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skfda.representation import FDataGrid
-from skfda.representation.basis import Basis
-
 # %%
 # In this example, we want to showcase how it is possible to make new
-# functional basis compatible with
+# functional bases compatible with
 # :class:`~skfda.representation.basis.FDataBasis`, by subclassing the
 # :class:`~skfda.representation.basis.Basis` class.
 #
@@ -50,7 +52,11 @@ def g(t):
 # It is also necessary to override the protected ``_evaluate`` method, that
 # defines the evaluation of the basis elements.
 
+from skfda.representation.basis import Basis
+
+
 class MyBasis(Basis):
+    """Basis of f and g."""
 
     def __init__(
         self,
@@ -92,6 +98,8 @@ plt.show()
 # We first define a (discretized) function in the space spanned by :math:`f`
 # and :math:`g`.
 
+from skfda.representation import FDataGrid
+
 t = np.linspace(0, 1, 100)
 data_matrix = [
     2 * f(t) + 3 * g(t),
@@ -114,3 +122,70 @@ plt.show()
 # If we inspect the coefficients, we can finally guarantee that they are the
 # ones used in the initial definition.
 X_basis.coefficients
+
+# %%
+# Lets consider a more complex example.
+# Suppose that we want to create a basis adapted to the data using the
+# principal components.
+# One approach could be creating a basis that computes FPCA and uses the
+# components obtained.
+# Note that equality should be overriden as it is no longer true that two
+# instances of this basis with the same domain and number of elements are
+# equal.
+
+from skfda.preprocessing.dim_reduction import FPCA
+
+
+class FPCABasis(Basis):
+    """Basis of principal components."""
+
+    def __init__(
+        self,
+        *,
+        X,
+        n_basis=1,
+    ):
+        super().__init__(domain_range=X.domain_range, n_basis=n_basis)
+
+        self._fpca = FPCA(n_components=n_basis)
+        self._fpca.fit(X)
+
+    def _evaluate(
+        self,
+        eval_points,
+    ):
+        return self._fpca.components_(eval_points)
+
+    def __eq__(self, other):
+        return (
+            super().__eq__(self, other)
+            and self._fpca.components_ == other._fpca.components_
+        )
+
+
+# %%
+# We now load the temperatures from the Canadian Weather dataset
+# and plot them.
+
+from skfda.datasets import fetch_weather
+
+X, y = fetch_weather(return_X_y=True)
+X = X.coordinates[0]
+X.plot()
+plt.show()
+
+# %%
+# We construct the new FPCA basis from the data, using 4 basis elements.
+# We plot the basis elements, which correspond with the first 4 principal
+# components of the data.
+
+basis = FPCABasis(X=X, n_basis=4)
+basis.plot()
+plt.show()
+
+# %%
+# We can now represent the original data using this basis.
+
+X_basis = X.to_basis(basis)
+X_basis.plot()
+plt.show()

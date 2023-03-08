@@ -1604,7 +1604,7 @@ def fetch_bone_density(
     target_names = target.values.tolist()
     
     if as_frame:
-        #TODO Arreglar problemas que tiene esto con dtype
+        #TODO Fix dtype problems
         #curves = pd.DataFrame({feature_name: curves})
         curves = pd.DataFrame({feature_name: curves.to_grid()})
         frame = pd.concat([curves, target], axis=1)

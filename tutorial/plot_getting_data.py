@@ -151,8 +151,9 @@ plt.show()
 # an experiment, that have been stored in some file format, such as
 # comma-separated values (CSV), attribute-relation file format (ARFF) or
 # Matlab and R formats.
-# There is currently no standard format for functional data, so the user should
-# know the format of the files that he uses and process them accordingly.
+# Users should know the particular layout used for representing functional data
+# on their files, as there is currently no standard format for storing this
+# kind of data.
 
 # %%
 # .. note::

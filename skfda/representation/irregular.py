@@ -514,7 +514,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve
-                return np.repeat(other_vector, values_curve)
+                return np.repeat(other_vector, values_curve).reshape(-1,1)
             elif other.shape == (
                 self.n_samples,
                 self.dim_codomain,

@@ -444,10 +444,11 @@ class FDataIrregular(FData):  # noqa: WPS214
         return None
 
     def gmean(self: T) -> T:
+        _gmean = scipy.stats.mstats.gmean(self.function_values, axis=0)
         return FDataIrregular(
             function_indices=np.array([0]),
             function_arguments=np.array(np.zeros((1, self.dim_domain))),
-            function_values=scipy.stats.mstats.gmean(self.function_values, 0),
+            function_values=_gmean.reshape(-1, 1),
             sample_names=("geometric mean",),
         )
 

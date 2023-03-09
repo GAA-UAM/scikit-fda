@@ -58,8 +58,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         function_arguments: ArrayLike,
         function_values: ArrayLike,
         *,
-        dim_domain: Optional[int] = 1,
-        dim_codomain: Optional[int] = 1,
         domain_range: Optional[DomainRangeLike] = None,
         dataset_name: Optional[str] = None,
         sample_names: Optional[LabelTupleLike] = None,
@@ -71,8 +69,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         """Construct a FDataIrregular object."""
 
         # Set dimensions
-        self._dim_domain = dim_domain
-        self._dim_codomain = dim_codomain
+        self._dim_domain = function_arguments.shape[1]
+        self._dim_codomain = function_values.shape[1]
 
         # Set structure to given data
         self.num_functions = function_indices.shape[0]
@@ -202,11 +200,11 @@ class FDataIrregular(FData):  # noqa: WPS214
         num_functions = f_data.data_matrix.shape[0]
 
         # Create data structure of function pointers and coordinates
-        function_indices = np.zeros((num_functions, ), 
+        function_indices = np.zeros((num_functions, ),
                                     dtype=np.uint32)
-        function_arguments = np.zeros((num_observations, 
+        function_arguments = np.zeros((num_observations,
                                        f_data.dim_domain))
-        function_values = np.zeros((num_observations, 
+        function_values = np.zeros((num_observations,
                                     f_data.dim_codomain))
 
         head = 0
@@ -215,14 +213,14 @@ class FDataIrregular(FData):  # noqa: WPS214
             num_values = 0
 
             for j in range(f_data.data_matrix.shape[1]):
-                if np.isnan(f_data.data_matrix[i][j]):
+                if np.all(np.isnan(f_data.data_matrix[i, j])):
                     continue
 
                 arg = [f_data.grid_points[dim][j] for dim 
                        in range(f_data.dim_domain)]
                 function_arguments[head+num_values, :] = arg
 
-                value = [f_data.data_matrix[i,j,dim] for dim 
+                value = [f_data.data_matrix[i, j, dim] for dim 
                          in range(f_data.dim_codomain)]
                 function_values[head+num_values, :] = value
 
@@ -559,8 +557,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         function_arguments: Optional[ArrayLike] = None,
         function_values: Optional[ArrayLike] = None,
         deep: bool = False,  # For Pandas compatibility
-        dim_domain: Optional[int] = None,
-        dim_codomain: Optional[int] = None,
         domain_range: Optional[DomainRangeLike] = None,
         dataset_name: Optional[str] = None,
         sample_names: Optional[LabelTupleLike] = None,
@@ -585,12 +581,6 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         if function_values is None:
             function_values = self.function_values
-
-        if dim_domain is None:
-            dim_domain = self.dim_domain
-
-        if dim_codomain is None:
-            dim_codomain = self.dim_codomain
 
         if domain_range is None:
             domain_range = copy.deepcopy(self.domain_range)
@@ -620,8 +610,6 @@ class FDataIrregular(FData):  # noqa: WPS214
             function_indices,
             function_arguments,
             function_values,
-            dim_domain=dim_domain,
-            dim_codomain=dim_codomain,
             domain_range=domain_range,
             dataset_name=dataset_name,
             argument_names=argument_names,
@@ -708,7 +696,6 @@ class FDataIrregular(FData):  # noqa: WPS214
             function_arguments=arguments,
             function_values=values,
             sample_names=self.sample_names[key],
-            domain_range=self.sample_names[key],
         )
     #####################################################################
     # Numpy methods
@@ -831,7 +818,9 @@ class _IrregularCoordinateIterator(Sequence[T]):
         if isinstance(s_key, int):
             s_key = slice(s_key, s_key + 1)
 
-        coordinate_names = np.array(self._fdatairregular.coordinate_names)[s_key]
+        coordinate_names = np.array(
+            self._fdatairregular.coordinate_names
+            )[s_key]
 
         return self._fdatairregular.copy(
             function_values=self._fdatairregular.function_values[..., key],

@@ -980,7 +980,6 @@ class FDataIrregular(FData):  # noqa: WPS214
     def __str__(self) -> str:
         """Return str(self)."""
         return (
-            f"Data set:    {self.data_matrix}\n"
             f"function indices:    {self.function_indices}\n"
             f"function arguments:    {self.function_arguments}\n"
             f"function values:    {self.function_values}\n"

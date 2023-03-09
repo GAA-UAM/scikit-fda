@@ -1,6 +1,8 @@
 """Test the basic methods of the FDataIrregular structure"""
+from typing import Tuple
 from ..typing._numpy import ArrayLike
 import numpy as np
+import pandas
 import pytest
 
 from skfda.datasets._real_datasets import _fetch_loon_data
@@ -28,7 +30,7 @@ COPY_KWARGS = [
 
 @pytest.fixture()
 def input_arrays(
-) -> ArrayLike:
+) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
     """
     Generate three unidimensional arrays describing a
     FDataIrregular structure
@@ -53,7 +55,7 @@ def input_arrays(
 
 @pytest.fixture()
 def input_arrays_multidimensional(
-) -> ArrayLike:
+) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
     """
     Generate three multidimensional arrays
     describing a FDataIrregular structure
@@ -78,7 +80,7 @@ def input_arrays_multidimensional(
 
 @pytest.fixture()
 def fdatagrid(
-) -> ArrayLike:
+) -> FDataGrid:
     """Generate FDataGrid"""
     # TODO Make editable with pytest
     num_values_per_curve = np.random.randint(1,
@@ -96,7 +98,7 @@ def fdatagrid(
 
 @pytest.fixture()
 def fdatagrid_multidimensional(
-) -> ArrayLike:
+) -> FDataGrid:
     """Generate multidimensional FDataGrid"""
     # TODO Make editable with pytest
     num_values_per_curve = np.random.randint(1,
@@ -114,7 +116,7 @@ def fdatagrid_multidimensional(
 
 @pytest.fixture()
 def dataframe(
-) -> ArrayLike:
+) -> pandas.DataFrame:
     """Generate long dataframe for testing"""
     raw_dataset = _fetch_loon_data("bone_ext")
     data = raw_dataset["bone_ext"]

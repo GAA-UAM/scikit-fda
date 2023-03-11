@@ -1,18 +1,21 @@
 """Defines methods for the validation of the smoothing."""
-from typing import Callable, Iterable, Optional, Tuple, Union
+from __future__ import annotations
+
+from typing import Any, Callable, Iterable, Tuple
 
 import numpy as np
 import sklearn
 from sklearn.model_selection import GridSearchCV
 
-from skfda import FDataGrid
-from skfda.preprocessing.smoothing._linear import _LinearSmoother
+from ...representation import FDataGrid
+from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ._linear import _LinearSmoother
 
 
 def _get_input_estimation_and_matrix(
     estimator: _LinearSmoother,
     X: FDataGrid,
-) -> Tuple[FDataGrid, np.ndarray]:
+) -> Tuple[FDataGrid, NDArrayFloat]:
     """Return the smoothed data evaluated at the input points & the matrix."""
     if estimator.output_points is not None:
         estimator = sklearn.base.clone(estimator)
@@ -23,6 +26,9 @@ def _get_input_estimation_and_matrix(
     hat_matrix = estimator.hat_matrix_
 
     return y_est, hat_matrix
+
+
+Scorer = Callable[[_LinearSmoother, FDataGrid, FDataGrid], float]
 
 
 class LinearSmootherLeaveOneOutScorer:
@@ -66,11 +72,13 @@ class LinearSmootherLeaveOneOutScorer:
         """Calculate Leave-One-Out score for linear smoothers."""
         y_est, hat_matrix = _get_input_estimation_and_matrix(estimator, X)
 
-        return -np.mean(
-            (
-                (y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
-                / (1 - hat_matrix.diagonal())
-            ) ** 2,
+        return -float(
+            np.mean(
+                (
+                    (y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
+                    / (1 - hat_matrix.diagonal())
+                ) ** 2,
+            ),
         )
 
 
@@ -107,7 +115,7 @@ class LinearSmootherGeneralizedCVScorer:
 
     def __init__(
         self,
-        penalization_function: Callable[[np.ndarray], float] = None,
+        penalization_function: Callable[[NDArrayFloat], float] | None = None,
     ):
         self.penalization_function = penalization_function
 
@@ -123,17 +131,19 @@ class LinearSmootherGeneralizedCVScorer:
         if self.penalization_function is None:
             self.penalization_function = _default_penalization_function
 
-        return -(
+        return -float(
             np.mean(
                 (
                     (y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
                     / (1 - hat_matrix.diagonal())
                 ) ** 2,
-            ) * self.penalization_function(hat_matrix)
+            ) * self.penalization_function(hat_matrix),
         )
 
 
-class SmoothingParameterSearch(GridSearchCV):
+class SmoothingParameterSearch(
+    GridSearchCV,  # type: ignore[misc]
+):
     """Chooses the best smoothing parameter and performs smoothing.
 
     Performs the smoothing of a FDataGrid object choosing the best
@@ -299,14 +309,14 @@ class SmoothingParameterSearch(GridSearchCV):
     def __init__(
         self,
         estimator: _LinearSmoother,
-        param_values: Iterable,
+        param_values: Iterable[float],
         *,
         param_name: str = 'smoothing_parameter',
-        scoring: Optional[Callable] = None,
-        n_jobs: Optional[int] = None,
+        scoring: Scorer | None = None,
+        n_jobs: int | None = None,
         verbose: int = 0,
-        pre_dispatch: Optional[Union[int, str]] = '2*n_jobs',
-        error_score: Union[str, float] = np.nan,
+        pre_dispatch: int | str | None = '2*n_jobs',
+        error_score: str | float = np.nan,
     ):
         super().__init__(
             estimator=estimator,
@@ -324,22 +334,23 @@ class SmoothingParameterSearch(GridSearchCV):
 
     def fit(  # noqa: D102
         self,
-        X,
-        y=None,
-        groups=None,
-        **fit_params,
-    ):
+        X: FDataGrid,
+        y: FDataGrid | None = None,
+        groups: NDArrayInt | None = None,
+        **fit_params: Any,
+    ) -> SmoothingParameterSearch:
         if y is None:
             y = X
 
-        return super().fit(X, y=y, groups=groups, **fit_params)
+        super().fit(X, y=y, groups=groups, **fit_params)
+        return self
 
 
-def _default_penalization_function(hat_matrix: np.ndarray) -> float:
-    return (1 - hat_matrix.diagonal().mean()) ** -2
+def _default_penalization_function(hat_matrix: NDArrayFloat) -> float:
+    return float(1 - hat_matrix.diagonal().mean()) ** -2
 
 
-def akaike_information_criterion(hat_matrix: np.ndarray) -> float:
+def akaike_information_criterion(hat_matrix: NDArrayFloat) -> float:
     r"""Akaike's information criterion for cross validation
     :footcite:`febrero-bande+oviedo_2012_fda.usc`.
 
@@ -356,10 +367,10 @@ def akaike_information_criterion(hat_matrix: np.ndarray) -> float:
     .. footbibliography::
 
     """
-    return np.exp(2 * hat_matrix.diagonal().mean())
+    return float(np.exp(2 * hat_matrix.diagonal().mean()))
 
 
-def finite_prediction_error(hat_matrix: np.ndarray) -> float:
+def finite_prediction_error(hat_matrix: NDArrayFloat) -> float:
     r"""Finite prediction error for cross validation
     :footcite:`febrero-bande+oviedo_2012_fda.usc`.
 
@@ -377,13 +388,13 @@ def finite_prediction_error(hat_matrix: np.ndarray) -> float:
     .. footbibliography::
 
     """
-    return (
+    return float(
         (1 + hat_matrix.diagonal().mean())
         / (1 - hat_matrix.diagonal().mean())
     )
 
 
-def shibata(hat_matrix: np.ndarray) -> float:
+def shibata(hat_matrix: NDArrayFloat) -> float:
     r"""Shibata's model selector for cross validation
     :footcite:`febrero-bande+oviedo_2012_fda.usc`.
 
@@ -400,10 +411,10 @@ def shibata(hat_matrix: np.ndarray) -> float:
     .. footbibliography::
 
     """
-    return 1 + 2 * hat_matrix.diagonal().mean()
+    return float(1 + 2 * hat_matrix.diagonal().mean())
 
 
-def rice(hat_matrix: np.ndarray) -> float:
+def rice(hat_matrix: NDArrayFloat) -> float:
     r"""Rice's bandwidth selector for cross validation
     :footcite:`febrero-bande+oviedo_2012_fda.usc`.
 
@@ -420,4 +431,4 @@ def rice(hat_matrix: np.ndarray) -> float:
     .. footbibliography::
 
     """
-    return (1 - 2 * hat_matrix.diagonal().mean()) ** -1
+    return float(1 - 2 * hat_matrix.diagonal().mean()) ** -1

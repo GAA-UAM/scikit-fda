@@ -1,24 +1,15 @@
+from __future__ import annotations
+
 import copy
 import itertools
 from functools import partial
-from typing import (
-    Generator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import Generator, List, Sequence, Tuple, Type, cast
 
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
-from matplotlib.backend_bases import Event, LocationEvent, MouseEvent
-from matplotlib.collections import PathCollection
+from matplotlib.backend_bases import Event
 from matplotlib.figure import Figure
-from matplotlib.text import Annotation
 from matplotlib.widgets import Slider, Widget
 
 from ._baseplot import BasePlot
@@ -67,13 +58,13 @@ class MultipleDisplay:
 
     def __init__(
         self,
-        displays: Union[BasePlot, Sequence[BasePlot]],
-        criteria: Union[Sequence[float], Sequence[Sequence[float]]] = (),
-        sliders: Union[Type[Widget], Sequence[Type[Widget]]] = (),
-        label_sliders: Union[str, Sequence[str], None] = None,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
+        displays: BasePlot | Sequence[BasePlot],
+        criteria: Sequence[float] | Sequence[Sequence[float]] = (),
+        sliders: Type[Widget] | Sequence[Type[Widget]] = (),
+        label_sliders: str | Sequence[str] | None = None,
+        chart: Figure | Axes | None = None,
+        fig: Figure | None = None,
+        axes: Sequence[Axes] | None = None,
     ):
         if isinstance(displays, BasePlot):
             displays = (displays,)
@@ -86,9 +77,10 @@ class MultipleDisplay:
             if d.n_samples is not None
         )
         self.sliders: List[Widget] = []
-        self.selected_sample: Optional[int] = None
+        self.selected_sample: int | None = None
 
         if len(criteria) != 0 and not isinstance(criteria[0], Sequence):
+            criteria = cast(Sequence[float], criteria)
             criteria = (criteria,)
 
         criteria = cast(Sequence[Sequence[float]], criteria)
@@ -121,10 +113,10 @@ class MultipleDisplay:
 
     def _init_axes(
         self,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
+        fig: Figure | None = None,
+        axes: Sequence[Axes] | None = None,
         extra: int = 0,
     ) -> None:
         """
@@ -178,7 +170,7 @@ class MultipleDisplay:
         *,
         criteria: Sequence[Sequence[float]],
         sliders: Sequence[Type[Widget]],
-        label_sliders: Optional[Sequence[str]] = None,
+        label_sliders: Sequence[str] | None = None,
     ) -> None:
         """
         Create the sliders with the criteria selected.
@@ -267,7 +259,7 @@ class MultipleDisplay:
             else:
                 self._select_sample(selected_sample)
 
-    def _sample_from_artist(self, artist: Artist) -> Optional[int]:
+    def _sample_from_artist(self, artist: Artist) -> int | None:
         """Return the sample corresponding to an artist."""
         for d in self.displays:
 
@@ -277,9 +269,13 @@ class MultipleDisplay:
             for i, a in enumerate(d.axes_):
                 if a == artist.axes:
                     if len(d.axes_) == 1:
-                        return np.where(d.artists == artist)[0][0]
+                        return np.where(  # type: ignore[no-any-return]
+                            d.artists == artist,
+                        )[0][0]
                     else:
-                        return np.where(d.artists[:, i] == artist)[0][0]
+                        return np.where(  # type: ignore[no-any-return]
+                            d.artists[:, i] == artist,
+                        )[0][0]
 
         return None
 
@@ -316,7 +312,7 @@ class MultipleDisplay:
         axes: Axes,
         criterion: Sequence[float],
         widget_class: Type[Widget] = Slider,
-        label: Optional[str] = None,
+        label: str | None = None,
     ) -> None:
         """
         Add the slider to the MultipleDisplay object.

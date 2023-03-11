@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 import matplotlib
 import matplotlib.patches as mpatches
@@ -18,9 +18,9 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Protocol
 
-from ..._utils import _check_compatible_fdata
+from ...misc.validation import check_fdata_same_dimensions
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _darken, _set_labels
 
@@ -55,12 +55,12 @@ class FuzzyClusteringEstimator(ClusteringEstimator, Protocol):
 def _plot_clustering_checks(
     estimator: ClusteringEstimator,
     fdata: FData,
-    sample_colors: Optional[Sequence[ColorLike]],
-    sample_labels: Optional[Sequence[str]],
-    cluster_colors: Optional[Sequence[ColorLike]],
-    cluster_labels: Optional[Sequence[str]],
-    center_colors: Optional[Sequence[ColorLike]],
-    center_labels: Optional[Sequence[str]],
+    sample_colors: Sequence[ColorLike] | None,
+    sample_labels: Sequence[str] | None,
+    cluster_colors: Sequence[ColorLike] | None,
+    cluster_labels: Sequence[str] | None,
+    center_colors: Sequence[ColorLike] | None,
+    center_labels: Sequence[str] | None,
 ) -> None:
     """Check the arguments."""
     if (
@@ -113,9 +113,9 @@ def _plot_clustering_checks(
 
 
 def _get_labels(
-    x_label: Optional[str],
-    y_label: Optional[str],
-    title: Optional[str],
+    x_label: str | None,
+    y_label: str | None,
+    title: str | None,
     xlabel_str: str,
 ) -> Tuple[str, str, str]:
     """
@@ -195,16 +195,16 @@ class ClusterPlot(BasePlot):
         self,
         estimator: ClusteringEstimator,
         fdata: FDataGrid,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-        sample_labels: Optional[Sequence[str]] = None,
-        cluster_colors: Optional[Sequence[ColorLike]] = None,
-        cluster_labels: Optional[Sequence[str]] = None,
-        center_colors: Optional[Sequence[ColorLike]] = None,
-        center_labels: Optional[Sequence[str]] = None,
+        chart: Figure | Axes | None = None,
+        fig: Figure | None = None,
+        axes: Axes | Sequence[Axes] | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
+        sample_labels: Sequence[str] | None = None,
+        cluster_colors: Sequence[ColorLike] | None = None,
+        cluster_labels: Sequence[str] | None = None,
+        center_colors: Sequence[ColorLike] | None = None,
+        center_labels: Sequence[str] | None = None,
         center_width: int = 3,
         colormap: matplotlib.colors.Colormap = None,
     ) -> None:
@@ -278,7 +278,7 @@ class ClusterPlot(BasePlot):
                 f'$CENTER: {i}$' for i in range(self.estimator.n_clusters)
             ]
 
-        colors_by_cluster = self.cluster_colors[self.labels]
+        colors_by_cluster = np.asarray(self.cluster_colors)[self.labels]
 
         patches = [
             mpatches.Patch(
@@ -325,7 +325,7 @@ class ClusterPlot(BasePlot):
 
         try:
             check_is_fitted(self.estimator)
-            _check_compatible_fdata(
+            check_fdata_same_dimensions(
                 self.estimator.cluster_centers_,
                 self.fdata,
             )
@@ -372,16 +372,16 @@ class ClusterMembershipLinesPlot(BasePlot):
         estimator: FuzzyClusteringEstimator,
         fdata: FDataGrid,
         *,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
-        sample_colors: Optional[Sequence[ColorLike]] = None,
-        sample_labels: Optional[Sequence[str]] = None,
-        cluster_labels: Optional[Sequence[str]] = None,
+        chart: Figure | Axes | None = None,
+        fig: Figure | None = None,
+        axes: Axes | Sequence[Axes] | None = None,
+        sample_colors: Sequence[ColorLike] | None = None,
+        sample_labels: Sequence[str] | None = None,
+        cluster_labels: Sequence[str] | None = None,
         colormap: matplotlib.colors.Colormap = None,
-        x_label: Optional[str] = None,
-        y_label: Optional[str] = None,
-        title: Optional[str] = None,
+        x_label: str | None = None,
+        y_label: str | None = None,
+        title: str | None = None,
     ) -> None:
 
         if colormap is None:
@@ -414,7 +414,7 @@ class ClusterMembershipLinesPlot(BasePlot):
 
         try:
             check_is_fitted(self.estimator)
-            _check_compatible_fdata(
+            check_fdata_same_dimensions(
                 self.estimator.cluster_centers_,
                 self.fdata,
             )
@@ -514,18 +514,18 @@ class ClusterMembershipPlot(BasePlot):
         self,
         estimator: FuzzyClusteringEstimator,
         fdata: FData,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
+        fig: Figure | None = None,
+        axes: Axes | Sequence[Axes] | None = None,
         sort: int = -1,
-        sample_labels: Optional[Sequence[str]] = None,
-        cluster_colors: Optional[Sequence[ColorLike]] = None,
-        cluster_labels: Optional[Sequence[str]] = None,
+        sample_labels: Sequence[str] | None = None,
+        cluster_colors: Sequence[ColorLike] | None = None,
+        cluster_labels: Sequence[str] | None = None,
         colormap: matplotlib.colors.Colormap = None,
-        x_label: Optional[str] = None,
-        y_label: Optional[str] = None,
-        title: Optional[str] = None,
+        x_label: str | None = None,
+        y_label: str | None = None,
+        title: str | None = None,
     ) -> None:
 
         if colormap is None:
@@ -539,7 +539,11 @@ class ClusterMembershipPlot(BasePlot):
         self.fdata = fdata
         self.estimator = estimator
         self.sample_labels = sample_labels
-        self.cluster_colors = cluster_colors
+        self.cluster_colors = (
+            None
+            if cluster_colors is None
+            else list(cluster_colors)
+        )
         self.cluster_labels = cluster_labels
         self.x_label = x_label
         self.y_label = y_label
@@ -565,7 +569,7 @@ class ClusterMembershipPlot(BasePlot):
 
         try:
             check_is_fitted(self.estimator)
-            _check_compatible_fdata(
+            check_fdata_same_dimensions(
                 self.estimator.cluster_centers_,
                 self.fdata,
             )
@@ -599,12 +603,18 @@ class ClusterMembershipPlot(BasePlot):
         )
 
         if self.sample_labels is None:
-            self.sample_labels = np.arange(self.fdata.n_samples)
+            self.sample_labels = list(
+                np.arange(
+                    self.fdata.n_samples,
+                ).astype(np.str_),
+            )
 
         if self.cluster_colors is None:
-            self.cluster_colors = self.colormap(
-                np.arange(self.estimator.n_clusters)
-                / (self.estimator.n_clusters - 1),
+            self.cluster_colors = list(
+                self.colormap(
+                    np.arange(self.estimator.n_clusters)
+                    / (self.estimator.n_clusters - 1),
+                ),
             )
 
         if self.cluster_labels is None:
@@ -625,16 +635,20 @@ class ClusterMembershipPlot(BasePlot):
             labels_dim = membership
         else:
             sample_indices = np.argsort(-membership[:, self.sort])
-            self.sample_labels = np.copy(self.sample_labels[sample_indices])
+            self.sample_labels = list(
+                np.array(self.sample_labels)[sample_indices],
+            )
             labels_dim = np.copy(membership[sample_indices])
 
             temp_labels = np.copy(labels_dim[:, 0])
             labels_dim[:, 0] = labels_dim[:, self.sort]
             labels_dim[:, self.sort] = temp_labels
 
-            temp_color = np.copy(self.cluster_colors[0])
-            self.cluster_colors[0] = self.cluster_colors[self.sort]
-            self.cluster_colors[self.sort] = temp_color
+            # Swap
+            self.cluster_colors[0], self.cluster_colors[self.sort] = (
+                self.cluster_colors[self.sort],
+                self.cluster_colors[0],
+            )
 
         conc = np.zeros((self.fdata.n_samples, 1))
         labels_dim = np.concatenate((conc, labels_dim), axis=-1)

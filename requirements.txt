@@ -2,7 +2,6 @@ matplotlib
 numpy
 scipy
 setuptools
-Cython
-sklearn
+scikit-learn
 multimethod>=1.2
 findiff

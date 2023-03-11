@@ -19,16 +19,17 @@ The Berkeley Growth Study dataset is used as input data.
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from GPy.kern import RBF
 from sklearn.model_selection import train_test_split
 
 from skfda.datasets import fetch_growth
 from skfda.exploratory.depth import ModifiedBandDepth
+from skfda.exploratory.stats.covariance import ParametricGaussianCovariance
+from skfda.misc.covariances import Gaussian
 from skfda.ml.classification import (
     KNeighborsClassifier,
     MaximumDepthClassifier,
     NearestCentroid,
-    ParameterizedFunctionalQDA,
+    QuadraticDiscriminantAnalysis,
 )
 
 ##############################################################################
@@ -69,7 +70,7 @@ X_test.plot().show()
 # :class:`~skfda.ml.classification.MaximumDepthClassifier`,
 # :class:`~skfda.ml.classification.KNeighborsClassifier`,
 # :class:`~skfda.ml.classification.NearestCentroid` and
-# :class:`~skfda.ml.classification.ParameterizedFunctionalQDA`
+# :class:`~skfda.ml.classification.QuadraticDiscriminantAnalysis`
 
 
 ##############################################################################
@@ -109,35 +110,39 @@ print('The score of Nearest Centroid Classifier is {0:2.2%}'.format(
 
 
 ##############################################################################
-# The fourth method considered is a Parameterized functional quadratic
-# discriminant.
-# We have selected a gaussian kernel with initial parameters: variance=6 and
-# mean=1. The selection of the initial parameters does not really affect the
-# results as the algorithm will automatically optimize them.
+# The fourth method considered is a functional quadratic discriminant, where
+# the covariance is assumed as having a parametric form, specified with a
+# kernel, or covariance function.
+#
+# We have selected a Gaussian kernel with initial hyperparameters: variance=6
+# and lengthscale=1. The selection of the initial parameters does not really
+# affect the results as the algorithm will automatically optimize them.
 # As regularizer a small value 0.05 has been chosen.
 
-pfqda = ParameterizedFunctionalQDA(
-    kernel=RBF(input_dim=1, variance=6, lengthscale=1),
+qda = QuadraticDiscriminantAnalysis(
+    ParametricGaussianCovariance(
+        Gaussian(variance=6, length_scale=1),
+    ),
     regularizer=0.05,
 )
-pfqda.fit(X_train, y_train)
-pfqda_pred = pfqda.predict(X_test)
-print(pfqda_pred)
-print('The score of Parameterized Functional QDA is {0:2.2%}'.format(
-    pfqda.score(X_test, y_test),
+qda.fit(X_train, y_train)
+qda_pred = qda.predict(X_test)
+print(qda_pred)
+print('The score of functional QDA is {0:2.2%}'.format(
+    qda.score(X_test, y_test),
 ))
 
 
 ##############################################################################
 # As it can be seen, the classifier with the lowest score is the Maximum
 # Depth Classifier. It obtains a 82.14% accuracy for the test set.
-# KNN and Parameterized Functional QDA can be seen as the best classifiers
+# KNN and the functional QDA can be seen as the best classifiers
 # for this problem, with an accuracy of 96.43%.
 # Instead, the Nearest Centroid Classifier is not as good as the others.
 # However, it obtains an accuracy of 85.71% for the test set.
 # It can be concluded that all classifiers work well for this problem, as they
 # achieve more than an 80% of score, but the most robust ones are KNN and
-# Parameterized Functional QDA.
+# functional QDA.
 
 accuracies = pd.DataFrame({
     'Classification methods':
@@ -145,7 +150,7 @@ accuracies = pd.DataFrame({
             'Maximum Depth Classifier',
             'K-Nearest-Neighbors',
             'Nearest Centroid Classifier',
-            'Parameterized Functional QDA',
+            'Functional QDA',
         ],
     'Accuracy':
         [
@@ -159,7 +164,7 @@ accuracies = pd.DataFrame({
                 centroid.score(X_test, y_test),
             ),
             '{0:2.2%}'.format(
-                pfqda.score(X_test, y_test),
+                qda.score(X_test, y_test),
             ),
         ],
 })
@@ -185,7 +190,7 @@ axs[0][0].set_title('Maximum Depth Classifier', loc='left')
 X_test.plot(group=knn_pred, group_names=categories, axes=axs[1][0])
 axs[1][0].set_title('KNN', loc='left')
 
-X_test.plot(group=pfqda_pred, group_names=categories, axes=axs[1][1])
-axs[1][1].set_title('Parameterized Functional QDA', loc='left')
+X_test.plot(group=qda_pred, group_names=categories, axes=axs[1][1])
+axs[1][1].set_title('Functional QDA', loc='left')
 
 plt.show()

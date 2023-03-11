@@ -7,7 +7,7 @@ import numpy as np
 import scipy.linalg
 from typing_extensions import Final, Literal
 
-from ..representation._typing import NDArrayFloat
+from ..typing._numpy import NDArrayFloat
 
 LstsqMethodCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 LstsqMethodName = Literal["cholesky", "qr", "svd"]
@@ -21,7 +21,11 @@ def lstsq_cholesky(
     """Solve OLS problem using a Cholesky decomposition."""
     left = coefs.T @ coefs
     right = coefs.T @ result
-    return scipy.linalg.solve(left, right, assume_a="pos")
+    return scipy.linalg.solve(  # type: ignore[no-any-return]
+        left,
+        right,
+        assume_a="pos",
+    )
 
 
 def lstsq_qr(
@@ -29,7 +33,11 @@ def lstsq_qr(
     result: NDArrayFloat,
 ) -> NDArrayFloat:
     """Solve OLS problem using a QR decomposition."""
-    return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsy")[0]
+    return scipy.linalg.lstsq(  # type: ignore[no-any-return]
+        coefs,
+        result,
+        lapack_driver="gelsy",
+    )[0]
 
 
 def lstsq_svd(
@@ -37,7 +45,11 @@ def lstsq_svd(
     result: NDArrayFloat,
 ) -> NDArrayFloat:
     """Solve OLS problem using a SVD decomposition."""
-    return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsd")[0]
+    return scipy.linalg.lstsq(  # type: ignore[no-any-return]
+        coefs,
+        result,
+        lapack_driver="gelsd",
+    )[0]
 
 
 method_dict: Final = {
@@ -83,11 +95,12 @@ def solve_regularized_weighted_lstsq(
 
             if weights.ndim == 1:
                 weights_chol = np.diag(np.sqrt(weights))
+                coefs = weights_chol * coefs
+                result = weights_chol * result
             else:
                 weights_chol = scipy.linalg.cholesky(weights)
-
-            coefs = weights_chol @ coefs
-            result = weights_chol @ result
+                coefs = weights_chol @ coefs
+                result = weights_chol @ result
 
         return lstsq_method(coefs, result)
 
@@ -102,4 +115,8 @@ def solve_regularized_weighted_lstsq(
     if penalty_matrix is not None:
         left += penalty_matrix
 
-    return scipy.linalg.solve(left, right, assume_a="pos")
+    return scipy.linalg.solve(  # type: ignore[no-any-return]
+        left,
+        right,
+        assume_a="pos",
+    )

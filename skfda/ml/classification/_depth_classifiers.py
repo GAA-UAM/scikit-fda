@@ -1,32 +1,71 @@
 """Depth-based models for supervised classification."""
 from __future__ import annotations
 
+from collections import defaultdict
+from contextlib import suppress
 from itertools import combinations
-from typing import Generic, Optional, Sequence, TypeVar, Union
+from typing import (
+    DefaultDict,
+    Dict,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
 from scipy.interpolate import lagrange
-from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.base import clone
 from sklearn.metrics import accuracy_score
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import FeatureUnion, make_pipeline
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ..._utils import _classifier_fit_depth_methods, _classifier_get_classes
+from ..._utils import _classifier_get_classes
+from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...preprocessing.feature_construction._per_class_transformer import (
     PerClassTransformer,
 )
-from ...representation._typing import NDArrayFloat, NDArrayInt
-from ...representation.grid import FData
+from ...representation import FData
+from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
-T = TypeVar("T", bound=FData)
+Input = TypeVar("Input", bound=FData)
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
+
+
+def _classifier_get_depth_methods(
+    classes: NDArrayInt | NDArrayStr,
+    X: Input,
+    y_ind: NDArrayInt,
+    depth_methods: Sequence[Depth[Input]],
+) -> Sequence[Depth[Input]]:
+    return [
+        clone(depth_method).fit(X[y_ind == cur_class])
+        for cur_class in range(len(classes))
+        for depth_method in depth_methods
+    ]
+
+
+def _classifier_fit_depth_methods(
+    X: Input,
+    y: NDArrayInt | NDArrayStr,
+    depth_methods: Sequence[Depth[Input]],
+) -> Tuple[NDArrayStr | NDArrayInt, Sequence[Depth[Input]]]:
+    classes, y_ind = _classifier_get_classes(y)
+
+    class_depth_methods_ = _classifier_get_depth_methods(
+        classes, X, y_ind, depth_methods,
+    )
+
+    return classes, class_depth_methods_
 
 
 class DDClassifier(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
-    Generic[T],
+    BaseEstimator,
+    ClassifierMixin[Input, Target],
 ):
     """Depth-versus-depth (DD) classifer for functional data.
 
@@ -87,12 +126,12 @@ class DDClassifier(
     def __init__(
         self,
         degree: int,
-        depth_method: Optional[Depth[T]] = None,
+        depth_method: Optional[Depth[Input]] = None,
     ) -> None:
         self.depth_method = depth_method
         self.degree = degree
 
-    def fit(self, X: T, y: NDArrayInt) -> DDClassifier[T]:
+    def fit(self, X: Input, y: Target) -> DDClassifier[Input, Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -109,10 +148,10 @@ class DDClassifier(
             X, y, [self.depth_method],
         )
 
-        self._classes = classes
+        self.classes_ = classes
         self.class_depth_methods_ = class_depth_methods
 
-        if (len(self._classes) != 2):
+        if (len(self.classes_) != 2):
             raise ValueError("DDClassifier only accepts two classes.")
 
         dd_coordinates = [
@@ -137,7 +176,7 @@ class DDClassifier(
 
             predicted_values = np.polyval(poly, dd_coordinates[0])
 
-            y_pred = self._classes[(
+            y_pred = self.classes_[(
                 dd_coordinates[1] > predicted_values
             ).astype(int)
             ]
@@ -150,7 +189,7 @@ class DDClassifier(
 
         return self
 
-    def predict(self, X: T) -> NDArrayInt:
+    def predict(self, X: Input) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -169,16 +208,15 @@ class DDClassifier(
 
         predicted_values = np.polyval(self.poly_, dd_coordinates[0])
 
-        return self._classes[(
+        return self.classes_[(  # type: ignore[no-any-return]
             dd_coordinates[1] > predicted_values
         ).astype(int)
         ]
 
 
 class DDGClassifier(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
-    Generic[T],
+    BaseEstimator,
+    ClassifierMixin[Input, Target],
 ):
     r"""Generalized depth-versus-depth (DD) classifer for functional data.
 
@@ -214,18 +252,26 @@ class DDGClassifier(
 
         >>> from skfda.datasets import fetch_growth
         >>> from sklearn.model_selection import train_test_split
+
         >>> dataset = fetch_growth()
         >>> fd = dataset['data']
         >>> y = dataset['target']
         >>> X_train, X_test, y_train, y_test = train_test_split(
         ...     fd, y, test_size=0.25, stratify=y, random_state=0)
 
+        >>> from skfda.exploratory.depth import (
+        ...     ModifiedBandDepth,
+        ...     IntegratedDepth,
+        ... )
         >>> from sklearn.neighbors import KNeighborsClassifier
 
         We will fit a DDG-classifier using KNN
 
         >>> from skfda.ml.classification import DDGClassifier
-        >>> clf = DDGClassifier(KNeighborsClassifier())
+        >>> clf = DDGClassifier(
+        ...     depth_method=ModifiedBandDepth(),
+        ...     multivariate_classifier=KNeighborsClassifier(),
+        ... )
         >>> clf.fit(X_train, y_train)
         DDGClassifier(...)
 
@@ -237,6 +283,24 @@ class DDGClassifier(
 
         Finally, we calculate the mean accuracy for the test data
 
+        >>> clf.score(X_test, y_test)
+        0.875
+
+        It is also possible to use several depth functions to increase the
+        number of features available to the classifier
+
+        >>> clf = DDGClassifier(
+        ...     depth_method=[
+        ...         ("mbd", ModifiedBandDepth()),
+        ...         ("id", IntegratedDepth()),
+        ...     ],
+        ...     multivariate_classifier=KNeighborsClassifier(),
+        ... )
+        >>> clf.fit(X_train, y_train)
+        DDGClassifier(...)
+        >>> clf.predict(X_test)
+        array([1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
+               1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
         >>> clf.score(X_test, y_test)
         0.875
 
@@ -256,16 +320,94 @@ class DDGClassifier(
 
     def __init__(  # noqa: WPS234
         self,
-        multivariate_classifier: ClassifierMixin = None,
-        depth_method: Union[Depth[T], Sequence[Depth[T]], None] = None,
+        *,
+        multivariate_classifier: ClassifierMixin[
+            NDArrayFloat,
+            NDArrayInt,
+        ] | None = None,
+        depth_method: Depth[Input] | Sequence[
+            Tuple[str, Depth[Input]]
+        ] | None = None,
     ) -> None:
         self.multivariate_classifier = multivariate_classifier
-        if depth_method is None:
-            self.depth_method = ModifiedBandDepth()
-        else:
-            self.depth_method = depth_method
+        self.depth_method = depth_method
 
-    def fit(self, X: T, y: NDArrayInt) -> DDGClassifier[T]:
+    def get_params(self, deep: bool = True) -> Mapping[str, object]:
+        params = BaseEstimator.get_params(self, deep=deep)
+        if deep and isinstance(self.depth_method, Sequence):
+            for name, depth in self.depth_method:
+                depth_params = depth.get_params(deep=deep)
+
+                for key, value in depth_params.items():
+                    params[f"depth_method__{name}__{key}"] = value
+
+        return params  # type: ignore[no-any-return]
+
+    # Copied from scikit-learn's _BaseComposition with minor modifications
+    def _set_params(
+        self,
+        attr: str,
+        **params: object,
+    ) -> DDGClassifier[Input, Target]:
+        # Ensure strict ordering of parameter setting:
+        # 1. All steps
+        if attr in params:
+            setattr(self, attr, params.pop(attr))
+        # 2. Replace items with estimators in params
+        items = getattr(self, attr)
+        if isinstance(items, list) and items:
+            # Get item names used to identify valid names in params
+            # `zip` raises a TypeError when `items` does not contains
+            # elements of length 2
+            with suppress(TypeError):
+                item_names, _ = zip(*items)
+                item_params: DefaultDict[
+                    str,
+                    Dict[str, object],
+                ] = defaultdict(dict)
+                for name in list(params.keys()):
+                    if name.startswith(f"{attr}__"):
+                        key, delim, sub_key = name.partition("__")
+                        if "__" not in sub_key and sub_key in item_names:
+                            self._replace_estimator(
+                                attr,
+                                sub_key,
+                                params.pop(name),
+                            )
+                        else:
+                            key, delim, sub_key = sub_key.partition("__")
+                            item_params[key][sub_key] = params.pop(name)
+
+                for name, estimator in items:
+                    estimator.set_params(**item_params[name])
+
+        # 3. Step parameters and other initialisation arguments
+        super().set_params(**params)
+        return self
+
+    # Copied from scikit-learn's _BaseComposition
+    def _replace_estimator(
+        self,
+        attr: str,
+        name: str,
+        new_val: object,
+    ) -> None:
+        # assumes `name` is a valid estimator name
+        new_estimators = list(getattr(self, attr))
+        for i, (estimator_name, _) in enumerate(new_estimators):
+            if estimator_name == name:
+                new_estimators[i] = (name, new_val)
+                break
+        setattr(self, attr, new_estimators)
+
+    def set_params(
+        self,
+        **params: object,
+    ) -> DDGClassifier[Input, Target]:
+
+        return self._set_params("depth_method", **params)
+
+    def fit(self, X: Input, y: Target) -> DDGClassifier[Input, Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -275,16 +417,31 @@ class DDGClassifier(
         Returns:
             self
         """
+        depth_method = (
+            ModifiedBandDepth()
+            if self.depth_method is None
+            else self.depth_method
+        )
+
+        if isinstance(depth_method, Sequence):
+            transformer = FeatureUnion([
+                (name, PerClassTransformer(depth))
+                for name, depth in depth_method
+            ])
+        else:
+            transformer = PerClassTransformer(depth_method)
+
         self._pipeline = make_pipeline(
-            PerClassTransformer(self.depth_method),
+            transformer,
             clone(self.multivariate_classifier),
         )
 
         self._pipeline.fit(X, y)
+        self.classes_ = _classifier_get_classes(y)[0]
 
         return self
 
-    def predict(self, X: T) -> NDArrayInt:
+    def predict(self, X: Input) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -294,12 +451,12 @@ class DDGClassifier(
             Array of shape (n_samples) with class labels
                 for each data sample.
         """
-        return self._pipeline.predict(X)
+        return self._pipeline.predict(X)  # type: ignore[no-any-return]
 
 
 class _ArgMaxClassifier(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
+    BaseEstimator,
+    ClassifierMixin[NDArrayFloat, Target],
 ):
     r"""Arg max classifier for multivariate data.
 
@@ -325,7 +482,7 @@ class _ArgMaxClassifier(
         array([1, 0, 0])
     """
 
-    def fit(self, X: NDArrayFloat, y: NDArrayInt) -> _ArgMaxClassifier:
+    def fit(self, X: NDArrayFloat, y: Target) -> _ArgMaxClassifier[Target]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -336,10 +493,10 @@ class _ArgMaxClassifier(
             self
         """
         classes, _ = _classifier_get_classes(y)
-        self._classes = classes
+        self.classes_ = classes
         return self
 
-    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> NDArrayInt:
+    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> Target:
         """Predict the class labels for the provided data.
 
         Args:
@@ -351,10 +508,12 @@ class _ArgMaxClassifier(
         """
         if isinstance(X, pd.DataFrame):
             X = X.to_numpy()
-        return self._classes[np.argmax(X, axis=1)]
+        return self.classes_[  # type: ignore[no-any-return]
+            np.argmax(X, axis=1)
+        ]
 
 
-class MaximumDepthClassifier(DDGClassifier[T]):
+class MaximumDepthClassifier(DDGClassifier[Input, Target]):
     """Maximum depth classifier for functional data.
 
     Test samples are classified to the class where they are deeper.
@@ -402,5 +561,8 @@ class MaximumDepthClassifier(DDGClassifier[T]):
         related classifiers. Scandinavian Journal of Statistics, 32, 327–350.
     """
 
-    def __init__(self, depth_method: Optional[Depth[T]] = None) -> None:
-        super().__init__(_ArgMaxClassifier(), depth_method)
+    def __init__(self, depth_method: Depth[Input] | None = None) -> None:
+        super().__init__(
+            multivariate_classifier=_ArgMaxClassifier(),
+            depth_method=depth_method,
+        )

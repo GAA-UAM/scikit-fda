@@ -125,7 +125,7 @@ the following class is implemented:
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.visualization.fpca.FPCAPlot
+   skfda.exploratory.visualization.FPCAPlot
 
 See the example :ref:`sphx_glr_auto_examples_plot_fpca.py` for detailed
 explanation.

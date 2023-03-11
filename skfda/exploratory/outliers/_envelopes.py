@@ -6,7 +6,7 @@ from typing import Tuple
 import numpy as np
 
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayBool, NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayBool, NDArrayFloat, NDArrayInt
 
 
 def compute_region(
@@ -44,11 +44,11 @@ def predict_outliers(
 
     or_axes = tuple(i for i in range(1, fdatagrid.data_matrix.ndim))
 
-    below_outliers = np.any(
+    below_outliers: NDArrayBool = np.any(
         fdatagrid.data_matrix < min_threshold,
         axis=or_axes,
     )
-    above_outliers = np.any(
+    above_outliers: NDArrayBool = np.any(
         fdatagrid.data_matrix > max_threshold,
         axis=or_axes,
     )

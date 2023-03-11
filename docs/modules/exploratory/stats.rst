@@ -32,16 +32,3 @@ statistics can be used.
    skfda.exploratory.stats.cov
    skfda.exploratory.stats.var
 
-Additional statistics
----------------------
-
-The following statistics can be used to estimate additional properties of the data.
-
-.. autosummary::
-   :toctree: autosummary
-
-   skfda.exploratory.stats.modified_epigraph_index
-   skfda.exploratory.stats.local_averages
-   skfda.exploratory.stats.occupation_measure
-   skfda.exploratory.stats.number_up_crossings
-

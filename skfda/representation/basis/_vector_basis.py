@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Tuple, TypeVar, Union
+import warnings
+from typing import Any, Iterable, Tuple, TypeVar, Union
 
 import numpy as np
 import scipy.linalg
 
-from ..._utils import _same_domain
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
-if TYPE_CHECKING:
-    from .. import FDataBasis
-
-T = TypeVar("T", bound='VectorValued')
+T = TypeVar("T", bound="VectorValuedBasis")
 
 
-class VectorValued(Basis):
+class VectorValuedBasis(Basis):
     r"""Vector-valued basis.
 
     Basis for :term:`vector-valued functions <vector-valued function>`
@@ -36,12 +34,13 @@ class VectorValued(Basis):
 
             1 \vec{i}, t \vec{i}, t^2 \vec{i}, 1 \vec{j}, t \vec{j}
 
-        >>> from skfda.representation.basis import VectorValued, Monomial
+        >>> from skfda.representation.basis import VectorValuedBasis
+        >>> from skfda.representation.basis import MonomialBasis
         >>>
-        >>> basis_x = Monomial(domain_range=(0,5), n_basis=3)
-        >>> basis_y = Monomial(domain_range=(0,5), n_basis=2)
+        >>> basis_x = MonomialBasis(domain_range=(0,5), n_basis=3)
+        >>> basis_y = MonomialBasis(domain_range=(0,5), n_basis=2)
         >>>
-        >>> basis = VectorValued([basis_x, basis_y])
+        >>> basis = VectorValuedBasis([basis_x, basis_y])
 
 
         And evaluates all the functions in the basis in a list of descrete
@@ -67,6 +66,7 @@ class VectorValued(Basis):
     """
 
     def __init__(self, basis_list: Iterable[Basis]) -> None:
+        from ..._utils import _same_domain
 
         basis_list = tuple(basis_list)
 
@@ -104,12 +104,12 @@ class VectorValued(Basis):
     def dim_codomain(self) -> int:
         return len(self.basis_list)
 
-    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
+    def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))
 
         n_basis_eval = 0
 
-        basis_evaluations = [b.evaluate(eval_points) for b in self.basis_list]
+        basis_evaluations = [b(eval_points) for b in self.basis_list]
 
         for i, ev in enumerate(basis_evaluations):
 
@@ -120,9 +120,9 @@ class VectorValued(Basis):
 
     def _derivative_basis_and_coefs(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
 
         n_basis_list = [b.n_basis for b in self.basis_list]
         indexes = np.cumsum(n_basis_list)
@@ -141,17 +141,19 @@ class VectorValued(Basis):
 
         return new_basis, new_coefs
 
-    def _gram_matrix(self) -> np.ndarray:
+    def _gram_matrix(self) -> NDArrayFloat:
 
         gram_matrices = [b.gram_matrix() for b in self.basis_list]
 
-        return scipy.linalg.block_diag(*gram_matrices)
+        return scipy.linalg.block_diag(  # type: ignore[no-any-return]
+            *gram_matrices,
+        )
 
     def _coordinate_nonfull(
         self,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         key: Union[int, slice],
-    ) -> Tuple[Basis, np.ndarray]:
+    ) -> Tuple[Basis, NDArrayFloat]:
 
         basis_sizes = [b.n_basis for b in self.basis_list]
         basis_indexes = np.cumsum(basis_sizes)
@@ -159,7 +161,7 @@ class VectorValued(Basis):
 
         new_basis = self.basis_list[key]
         if not isinstance(new_basis, Basis):
-            new_basis = VectorValued(new_basis)
+            new_basis = VectorValuedBasis(new_basis)
 
         new_coefs = coef_splits[key]
         if not isinstance(new_coefs, np.ndarray):
@@ -169,13 +171,78 @@ class VectorValued(Basis):
 
     def __repr__(self) -> str:
         """Representation of a Basis object."""
-        return (
-            f"{self.__class__.__name__}("
-            f"basis_list={self.basis_list})"
-        )
+        return f"{self.__class__.__name__}(" f"basis_list={self.basis_list})"
 
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other) and self.basis_list == other.basis_list
 
     def __hash__(self) -> int:
         return hash((super().__hash__(), self.basis_list))
+
+
+class VectorValued(VectorValuedBasis):
+    r"""Vector-valued basis.
+
+    Basis for :term:`vector-valued functions <vector-valued function>`
+    constructed from scalar-valued bases.
+
+    For each dimension in the :term:`codomain`, it uses a scalar-valued basis
+    multiplying each basis by the corresponding unitary vector.
+
+    .. deprecated:: 0.8
+        Use :class:`~skfda.representation.basis.VectorValuedBasis` instead.
+
+    Attributes:
+        domain_range (tuple): a tuple of length ``dim_domain`` containing
+            the range of input values for each dimension.
+        n_basis (int): number of functions in the basis.
+
+    Examples:
+        Defines a vector-valued base over the interval :math:`[0, 5]`
+        consisting on the functions
+
+        .. math::
+
+            1 \vec{i}, t \vec{i}, t^2 \vec{i}, 1 \vec{j}, t \vec{j}
+
+        >>> from skfda.representation.basis import VectorValued
+        >>> from skfda.representation.basis import Monomial
+        >>>
+        >>> basis_x = Monomial(domain_range=(0,5), n_basis=3)
+        >>> basis_y = Monomial(domain_range=(0,5), n_basis=2)
+        >>>
+        >>> basis = VectorValued([basis_x, basis_y])
+
+
+        And evaluates all the functions in the basis in a list of descrete
+        values.
+
+        >>> basis([0., 1., 2.])
+        array([[[ 1.,  0.],
+                [ 1.,  0.],
+                [ 1.,  0.]],
+               [[ 0.,  0.],
+                [ 1.,  0.],
+                [ 2.,  0.]],
+               [[ 0.,  0.],
+                [ 1.,  0.],
+                [ 4.,  0.]],
+               [[ 0.,  1.],
+                [ 0.,  1.],
+                [ 0.,  1.]],
+               [[ 0.,  0.],
+                [ 0.,  1.],
+                [ 0.,  2.]]])
+
+    """
+
+    def __init__(self, basis_list: Iterable[Basis]) -> None:
+        super().__init__(
+            basis_list=basis_list,
+        )
+
+        warnings.warn(
+            "The VectorValued class is deprecated. "
+            "Use VectorValuedBasis instead.",
+            DeprecationWarning,
+        )

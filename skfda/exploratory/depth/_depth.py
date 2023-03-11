@@ -8,16 +8,17 @@ from the center (larger values) outwards(smaller ones).
 from __future__ import annotations
 
 import itertools
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import scipy.integrate
 
-from ... import FDataGrid
-from ...misc.metrics import Metric, l2_distance
+from ..._utils._sklearn_adapter import BaseEstimator
+from ...misc.metrics import l2_distance
 from ...misc.metrics._utils import _fit_metric
-from ...representation import FData
-from ...representation._typing import NDArrayFloat
+from ...representation import FData, FDataGrid
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayFloat
 from .multivariate import Depth, SimplicialDepth, _UnivariateFraimanMuniz
 
 T = TypeVar("T", bound=FData)
@@ -57,17 +58,17 @@ class IntegratedDepth(Depth[FDataGrid]):
     def __init__(
         self,
         *,
-        multivariate_depth: Optional[Depth[np.ndarray]] = None,
+        multivariate_depth: Depth[NDArrayFloat] | None = None,
     ) -> None:
         self.multivariate_depth = multivariate_depth
 
     def fit(  # noqa: D102
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> IntegratedDepth:
 
-        self.multivariate_depth_: Depth[np.ndarray]
+        self.multivariate_depth_: Depth[NDArrayFloat]
 
         if self.multivariate_depth is None:
             self.multivariate_depth_ = _UnivariateFraimanMuniz()
@@ -79,7 +80,7 @@ class IntegratedDepth(Depth[FDataGrid]):
         self.multivariate_depth_.fit(X.data_matrix)
         return self
 
-    def transform(self, X: FDataGrid) -> np.ndarray:  # noqa: D102
+    def transform(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102
 
         pointwise_depth = self.multivariate_depth_.transform(X.data_matrix)
 
@@ -101,15 +102,15 @@ class IntegratedDepth(Depth[FDataGrid]):
 
         return integrand
 
-    @property  # noqa: WPS125
-    def max(self) -> float:  # noqa: WPS125
+    @property
+    def max(self) -> float:
         if self.multivariate_depth is None:
             return 1
 
         return self.multivariate_depth.max
 
-    @property  # noqa: WPS125
-    def min(self) -> float:  # noqa: WPS125
+    @property
+    def min(self) -> float:
         if self.multivariate_depth is None:
             return 1 / 2
 
@@ -182,7 +183,7 @@ class BandDepth(Depth[FDataGrid]):
 
     """
 
-    def fit(self, X: FDataGrid, y: None = None) -> BandDepth:  # noqa: D102
+    def fit(self, X: FDataGrid, y: object = None) -> BandDepth:  # noqa: D102
 
         if X.dim_codomain != 1:
             raise NotImplementedError(
@@ -192,9 +193,9 @@ class BandDepth(Depth[FDataGrid]):
         self._distribution = X
         return self
 
-    def transform(self, X: FDataGrid) -> np.ndarray:  # noqa: D102
+    def transform(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102
 
-        num_in = 0
+        num_in = np.zeros(shape=len(X), dtype=X.data_matrix.dtype)
         n_total = 0
 
         for f1, f2 in itertools.combinations(self._distribution, 2):
@@ -219,13 +220,14 @@ class BandDepth(Depth[FDataGrid]):
         return num_in / n_total
 
 
-class DistanceBasedDepth(Depth[FDataGrid]):
+class DistanceBasedDepth(Depth[FDataGrid], BaseEstimator):
     r"""
     Functional depth based on a metric.
 
     Parameters:
         metric:
             The metric to use as M in the following depth calculation
+
             .. math::
                 D(x) = [1 + M(x, \mu)]^{-1}.
 
@@ -258,7 +260,7 @@ class DistanceBasedDepth(Depth[FDataGrid]):
     def fit(  # noqa: D102
         self,
         X: T,
-        y: None = None,
+        y: object = None,
     ) -> DistanceBasedDepth:
         """Fit the model using X as training data.
 

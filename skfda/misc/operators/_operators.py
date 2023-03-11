@@ -4,19 +4,21 @@ import abc
 from typing import Any, Callable, TypeVar, Union
 
 import multimethod
-import numpy as np
 from typing_extensions import Protocol
 
 from ...representation import FData
 from ...representation.basis import Basis
+from ...typing._numpy import NDArrayFloat
+
+InputType = Union[NDArrayFloat, FData, Basis]
 
 OperatorInput = TypeVar(
     "OperatorInput",
-    bound=Union[np.ndarray, FData, Basis],
+    bound=InputType,
     contravariant=True,
 )
 
-OutputType = Union[np.ndarray, Callable[[np.ndarray], np.ndarray]]
+OutputType = Union[NDArrayFloat, Callable[[NDArrayFloat], NDArrayFloat]]
 
 OperatorOutput = TypeVar(
     "OperatorOutput",
@@ -35,26 +37,26 @@ class Operator(Protocol[OperatorInput, OperatorOutput]):
 
 
 @multimethod.multidispatch
-def gramian_matrix_optimization(
+def gram_matrix_optimization(
     linear_operator: Any,
     basis: OperatorInput,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
-    Efficient implementation of gramian_matrix.
+    Efficient implementation of gram_matrix.
 
     Generic function that can be subclassed for different combinations of
     operator and basis in order to provide a more efficient implementation
-    for the gramian matrix.
+    for the gram matrix.
     """
     return NotImplemented
 
 
-def gramian_matrix_numerical(
+def gram_matrix_numerical(
     linear_operator: Operator[OperatorInput, OutputType],
     basis: OperatorInput,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
-    Return the gramian matrix given a basis, computed numerically.
+    Return the gram matrix given a basis, computed numerically.
 
     This method should work for every linear operator.
 
@@ -68,19 +70,19 @@ def gramian_matrix_numerical(
     return inner_product_matrix(evaluated_basis, _domain_range=domain_range)
 
 
-def gramian_matrix(
+def gram_matrix(
     linear_operator: Operator[OperatorInput, OutputType],
     basis: OperatorInput,
-) -> np.ndarray:
+) -> NDArrayFloat:
     r"""
-    Return the gramian matrix given a basis.
+    Return the gram matrix given a basis.
 
-    The gramian operator of a linear operator :math:`\Gamma` is
+    The gram operator of a linear operator :math:`\Gamma` is
 
     .. math::
         G = \Gamma*\Gamma
 
-    This method evaluates that gramian operator in a given basis,
+    This method evaluates that gram operator in a given basis,
     which is necessary for performing Tikhonov regularization,
     among other things.
 
@@ -89,14 +91,14 @@ def gramian_matrix(
 
     """
     # Try to use a more efficient implementation
-    matrix = gramian_matrix_optimization(linear_operator, basis)
+    matrix = gram_matrix_optimization(linear_operator, basis)
     if matrix is not NotImplemented:
         return matrix
 
-    return gramian_matrix_numerical(linear_operator, basis)
+    return gram_matrix_numerical(linear_operator, basis)
 
 
-class MatrixOperator(Operator[np.ndarray, np.ndarray]):
+class MatrixOperator(Operator[NDArrayFloat, NDArrayFloat]):
     """Linear operator for finite spaces.
 
     Between finite dimensional spaces, every linear operator can be expressed
@@ -107,8 +109,8 @@ class MatrixOperator(Operator[np.ndarray, np.ndarray]):
 
     """
 
-    def __init__(self, matrix: np.ndarray) -> None:
+    def __init__(self, matrix: NDArrayFloat) -> None:
         self.matrix = matrix
 
-    def __call__(self, f: np.ndarray) -> np.ndarray:  # noqa: D102
+    def __call__(self, f: NDArrayFloat) -> NDArrayFloat:  # noqa: D102
         return self.matrix @ f

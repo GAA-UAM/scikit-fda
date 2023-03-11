@@ -56,11 +56,11 @@ Classifier based on logistic regression.
 
    skfda.ml.classification.LogisticRegression
 
-Parameterized functional quadratic discriminant analysis
---------------------------------------------------------
+Functional quadratic discriminant analysis
+------------------------------------------
 Classifier based on the quadratic discriminant analysis.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.ml.classification.ParameterizedFunctionalQDA
+   skfda.ml.classification.QuadraticDiscriminantAnalysis

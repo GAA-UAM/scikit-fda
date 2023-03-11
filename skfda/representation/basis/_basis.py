@@ -5,16 +5,16 @@ from __future__ import annotations
 import copy
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Tuple, TypeVar
 
 import numpy as np
 from matplotlib.figure import Figure
 
-from ..._utils import _reshape_eval_points, _same_domain, _to_domain_range
-from .._typing import ArrayLike, DomainRange, DomainRangeLike
+from ...typing._base import DomainRange, DomainRangeLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
-    from . import FDataBasis
+    from ._fdatabasis import FDataBasis
 
 T = TypeVar("T", bound='Basis')
 
@@ -32,13 +32,15 @@ class Basis(ABC):
     def __init__(
         self,
         *,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: DomainRangeLike | None = None,
         n_basis: int = 1,
     ) -> None:
         """Basis constructor."""
+        from ...misc.validation import validate_domain_range
+
         if domain_range is not None:
 
-            domain_range = _to_domain_range(domain_range)
+            domain_range = validate_domain_range(domain_range)
 
         if n_basis < 1:
             raise ValueError(
@@ -55,7 +57,7 @@ class Basis(ABC):
         eval_points: ArrayLike,
         *,
         derivative: int = 0,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Evaluate Basis objects.
 
         Evaluates the basis functions at a list of given values.
@@ -74,7 +76,28 @@ class Basis(ABC):
             eval_points.
 
         """
-        return self.evaluate(eval_points, derivative=derivative)
+        from ...misc.validation import validate_evaluation_points
+
+        if derivative < 0:
+            raise ValueError("derivative only takes non-negative values.")
+        elif derivative != 0:
+            warnings.warn(
+                "Parameter derivative is deprecated. Use the "
+                "derivative method instead.",
+                DeprecationWarning,
+            )
+            return self.derivative(order=derivative)(eval_points)
+
+        eval_points = validate_evaluation_points(
+            eval_points,
+            aligned=True,
+            n_samples=self.n_basis,
+            dim_domain=self.dim_domain,
+        )
+
+        return self._evaluate(eval_points).reshape(
+            (self.n_basis, len(eval_points), self.dim_codomain),
+        )
 
     @property
     def dim_domain(self) -> int:
@@ -89,7 +112,7 @@ class Basis(ABC):
     @property
     def domain_range(self) -> DomainRange:
         if self._domain_range is None:
-            return ((0, 1),) * self.dim_domain
+            return ((0.0, 1.0),) * self.dim_domain
 
         return self._domain_range
 
@@ -114,8 +137,8 @@ class Basis(ABC):
     @abstractmethod
     def _evaluate(
         self,
-        eval_points: np.ndarray,
-    ) -> np.ndarray:
+        eval_points: NDArrayFloat,
+    ) -> NDArrayFloat:
         """
         Evaluate Basis object.
 
@@ -129,10 +152,14 @@ class Basis(ABC):
         eval_points: ArrayLike,
         *,
         derivative: int = 0,
-    ) -> np.ndarray:
-        """Evaluate Basis objects and its derivatives.
+    ) -> NDArrayFloat:
+        """
+        Evaluate Basis objects and its derivatives.
 
         Evaluates the basis functions at a list of given values.
+
+        ..  deprecated:: 0.8
+            Use normal calling notation instead.
 
         Args:
             eval_points: List of points where the basis is
@@ -148,25 +175,17 @@ class Basis(ABC):
             eval_points.
 
         """
-        if derivative < 0:
-            raise ValueError("derivative only takes non-negative values.")
-        elif derivative != 0:
-            warnings.warn(
-                "Parameter derivative is deprecated. Use the "
-                "derivative method instead.",
-                DeprecationWarning,
-            )
-            return self.derivative(order=derivative)(eval_points)
-
-        eval_points = _reshape_eval_points(
-            eval_points,
-            aligned=True,
-            n_samples=self.n_basis,
-            dim_domain=self.dim_domain,
+        warnings.warn(
+            "The method 'evaluate' is deprecated. "
+            "Please use the normal calling notation on the basis "
+            "object instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
 
-        return self._evaluate(eval_points).reshape(
-            (self.n_basis, len(eval_points), self.dim_codomain),
+        return self(
+            eval_points=eval_points,
+            derivative=derivative,
         )
 
     def __len__(self) -> int:
@@ -186,9 +205,9 @@ class Basis(ABC):
 
     def _derivative_basis_and_coefs(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
         """
         Return basis and coefficients of the derivative.
 
@@ -209,9 +228,9 @@ class Basis(ABC):
 
     def derivative_basis_and_coefs(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
         """
         Return basis and coefficients of the derivative.
 
@@ -242,9 +261,9 @@ class Basis(ABC):
 
     def _coordinate_nonfull(
         self,
-        coefs: np.ndarray,
-        key: Union[int, slice],
-    ) -> Tuple[Basis, np.ndarray]:
+        coefs: NDArrayFloat,
+        key: int | slice,
+    ) -> Tuple[Basis, NDArrayFloat]:
         """
         Return a basis and coefficients for the indexed coordinate functions.
 
@@ -255,9 +274,9 @@ class Basis(ABC):
 
     def coordinate_basis_and_coefs(
         self,
-        coefs: np.ndarray,
-        key: Union[int, slice],
-    ) -> Tuple[Basis, np.ndarray]:
+        coefs: NDArrayFloat,
+        key: int | slice,
+    ) -> Tuple[Basis, NDArrayFloat]:
         """Return a fdatabasis for the coordinate functions indexed by key."""
         # Raises error if not in range and normalize key
         r_key = range(self.dim_codomain)[key]
@@ -277,7 +296,7 @@ class Basis(ABC):
             key=key,
         )
 
-    def rescale(self: T, domain_range: Optional[DomainRangeLike] = None) -> T:
+    def rescale(self: T, domain_range: DomainRangeLike | None = None) -> T:
         """
         Return a copy of the basis with a new :term:`domain` range.
 
@@ -292,12 +311,14 @@ class Basis(ABC):
         """
         return self.copy(domain_range=domain_range)
 
-    def copy(self: T, domain_range: Optional[DomainRangeLike] = None) -> T:
+    def copy(self: T, domain_range: DomainRangeLike | None = None) -> T:
         """Basis copy."""
+        from ...misc.validation import validate_domain_range
+
         new_copy = copy.deepcopy(self)
 
         if domain_range is not None:
-            domain_range = _to_domain_range(domain_range)
+            domain_range = validate_domain_range(domain_range)
 
             new_copy._domain_range = domain_range  # noqa: WPS437
 
@@ -312,7 +333,7 @@ class Basis(ABC):
             as observations.
 
         """
-        from . import FDataBasis
+        from . import FDataBasis  # noqa: WPS442
         return FDataBasis(self.copy(), np.identity(self.n_basis))
 
     def _to_R(self) -> str:  # noqa: N802
@@ -320,8 +341,8 @@ class Basis(ABC):
 
     def inner_product_matrix(
         self,
-        other: Optional[Basis] = None,
-    ) -> np.ndarray:
+        other: Basis | None = None,
+    ) -> NDArrayFloat:
         r"""
         Return the Inner Product Matrix of a pair of basis.
 
@@ -351,13 +372,13 @@ class Basis(ABC):
 
         return inner_product_matrix(self, other)
 
-    def _gram_matrix_numerical(self) -> np.ndarray:
+    def _gram_matrix_numerical(self) -> NDArrayFloat:
         """Compute the Gram matrix numerically."""
         from ...misc import inner_product_matrix
 
         return inner_product_matrix(self, force_numerical=True)
 
-    def _gram_matrix(self) -> np.ndarray:
+    def _gram_matrix(self) -> NDArrayFloat:
         """
         Compute the Gram matrix.
 
@@ -367,7 +388,7 @@ class Basis(ABC):
         """
         return self._gram_matrix_numerical()
 
-    def gram_matrix(self) -> np.ndarray:
+    def gram_matrix(self) -> NDArrayFloat:
         r"""
         Return the Gram Matrix of a basis.
 
@@ -393,12 +414,12 @@ class Basis(ABC):
 
     def _mul_constant(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         other: float,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
         coefs = coefs.copy()
-        other = np.atleast_2d(other).reshape(-1, 1)
-        coefs *= other
+        other_array = np.atleast_2d(other).reshape(-1, 1)
+        coefs *= other_array
 
         return self.copy(), coefs
 
@@ -412,6 +433,7 @@ class Basis(ABC):
 
     def __eq__(self, other: Any) -> bool:
         """Test equality of Basis."""
+        from ..._utils import _same_domain
         return (
             isinstance(other, type(self))
             and _same_domain(self, other)

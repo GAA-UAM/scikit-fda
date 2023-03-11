@@ -11,12 +11,10 @@ Shows the usage of the nearest neighbors regressor with functional response.
 # sphinx_gallery_thumbnail_number = 4
 
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 
 import skfda
 from skfda.ml.regression import KNeighborsRegressor
-from skfda.representation.basis import Fourier
-
+from skfda.representation.basis import FourierBasis
 
 ##############################################################################
 #
@@ -32,7 +30,7 @@ from skfda.representation.basis import Fourier
 # precipitation at 35 different locations in Canada averaged over 1960 to 1994.
 # The following figure shows the different temperature and precipitation
 # curves.
-#
+
 data = skfda.datasets.fetch_weather()
 fd = data['data']
 
@@ -55,9 +53,8 @@ y.plot()
 # We will try to predict the precipitation curves. First of all we are going
 # to make a smoothing of the precipitation curves using a basis
 # representation, employing for it a fourier basis with 5 elements.
-#
 
-y = y.to_basis(Fourier(n_basis=5))
+y = y.to_basis(FourierBasis(n_basis=5))
 
 y.plot()
 
@@ -66,10 +63,13 @@ y.plot()
 # We will split the dataset in two partitions, for training and test,
 # using the sklearn function
 # :func:`~sklearn.model_selection.train_test_split`.
-#
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.1,
-                                                    random_state=28)
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.1,
+    random_state=28,
+)
 
 ##############################################################################
 #
@@ -77,8 +77,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.1,
 # distance. In this case, to calculate
 # the response we will use a mean of the response, weighted by their distance
 # to the test sample.
-#
-
 
 knn = KNeighborsRegressor(n_neighbors=5, weights='distance')
 knn.fit(X_train, y_train)
@@ -89,7 +87,6 @@ knn.fit(X_train, y_train)
 # :meth:`~skfda.ml.regression.KNeighborsFunctionalRegressor.predict`. The
 # following figure shows the real precipitation curves, in dashed line, and
 # the predicted ones.
-#
 
 y_pred = knn.predict(X_test)
 
@@ -126,4 +123,3 @@ print(score)
 #
 #  * Ramsay, James O., and Silverman, Bernard W. (2002). Applied Functional
 #    Data Analysis, Springer, New York\n'
-#

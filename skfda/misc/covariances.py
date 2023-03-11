@@ -9,11 +9,13 @@ import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
 from scipy.special import gamma, kv
 
-from ..representation._typing import ArrayLike, NDArrayFloat
+from ..typing._numpy import ArrayLike, NDArrayFloat
 
 
 def _squared_norms(x: NDArrayFloat, y: NDArrayFloat) -> NDArrayFloat:
-    return ((x[np.newaxis, :, :] - y[:, np.newaxis, :]) ** 2).sum(2)
+    return (  # type: ignore[no-any-return]
+        (x[:, np.newaxis, :] - y[np.newaxis, :, :]) ** 2
+    ).sum(2)
 
 
 CovarianceLike = Union[
@@ -25,7 +27,7 @@ CovarianceLike = Union[
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     """Transform 1d arrays in column vectors."""
-    t = np.asarray(t)
+    t = np.asfarray(t)
 
     dim = len(t.shape)
     assert dim <= 2
@@ -254,7 +256,9 @@ class Brownian(Covariance):
             axis=-1,
         )
 
-        return self.variance * (sum_norms - norm_sub) / 2
+        return (  # type: ignore[no-any-return]
+            self.variance * (sum_norms - norm_sub) / 2
+        )
 
 
 class Linear(Covariance):
@@ -713,7 +717,7 @@ class Matern(Covariance):
             power_list = np.full(shape=(p,) + body.shape, fill_value=2 * body)
             power_list = np.cumprod(power_list, axis=0)
             power_list = np.concatenate(
-                (power_list[::-1], [np.ones_like(body)]),
+                (power_list[::-1], np.asarray([np.ones_like(body)])),
             )
             power_list = np.moveaxis(power_list, 0, -1)
             numerator = np.cumprod(np.arange(p, 0, -1))
@@ -724,9 +728,15 @@ class Matern(Covariance):
             denom2 = np.concatenate(([1], denom2))
 
             sum_terms = power_list * numerator / (denom1 * denom2)
-            return self.variance * exponential * np.sum(sum_terms, axis=-1)
+            return (  # type: ignore[no-any-return]
+                self.variance * exponential * np.sum(sum_terms, axis=-1)
+            )
         elif self.nu == np.inf:
-            return self.variance * np.exp(-x_y_squared / (2 * self.length_scale ** 2))
+            return (
+                self.variance * np.exp(
+                    -x_y_squared / (2 * self.length_scale ** 2),
+                )
+            )
         else:
             # General formula
             scaling = 2**(1 - self.nu) / gamma(self.nu)
@@ -738,7 +748,10 @@ class Matern(Covariance):
                 eval_cov = self.variance * scaling * power * bessel
 
             # Values with nan are where the distance is 0
-            return np.nan_to_num(eval_cov, nan=self.variance)
+            return np.nan_to_num(  # type: ignore[no-any-return]
+                eval_cov,
+                nan=self.variance,
+            )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         return (

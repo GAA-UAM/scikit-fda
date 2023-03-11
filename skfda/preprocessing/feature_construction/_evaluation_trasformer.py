@@ -1,27 +1,28 @@
 """Evaluation Transformer Module."""
 from __future__ import annotations
 
-from typing import Optional, TypeVar, Union, overload
+from typing import TypeVar, overload
 
-import numpy as np
-from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Literal
 
-from ..._utils import TransformerMixin
+from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation._functional_data import FData
-from ...representation._typing import ArrayLike, GridPointsLike, NDArrayInt
 from ...representation.extrapolation import ExtrapolationLike
 from ...representation.grid import FDataGrid
+from ...typing._base import GridPointsLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
-Input = TypeVar("Input")
-Output = TypeVar("Output")
-Target = TypeVar("Target", bound=NDArrayInt)
+Input = TypeVar("Input", bound=FData)
+SelfType = TypeVar(
+    "SelfType",
+    bound="EvaluationTransformer",  # type: ignore[type-arg]
+)
 
 
 class EvaluationTransformer(
-    BaseEstimator,  # type:ignore
-    TransformerMixin[Input, Output, Target],
+    BaseEstimator,
+    InductiveTransformerMixin[Input, NDArrayFloat, object],
 ):
     r"""
     Transformer returning the evaluations of FData objects as a matrix.
@@ -50,7 +51,7 @@ class EvaluationTransformer(
         >>> from skfda.preprocessing.feature_construction import (
         ...     EvaluationTransformer,
         ... )
-        >>> from skfda.representation.basis import Monomial
+        >>> from skfda.representation.basis import MonomialBasis
 
         Functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
@@ -90,7 +91,7 @@ class EvaluationTransformer(
 
         Evaluation of a functional data object at several points.
 
-        >>> basis = Monomial(n_basis=4)
+        >>> basis = MonomialBasis(n_basis=4)
         >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
         >>> fd = FDataBasis(basis, coefficients)
         >>>
@@ -103,10 +104,19 @@ class EvaluationTransformer(
 
     @overload
     def __init__(
+        self: EvaluationTransformer[FDataGrid],
+        eval_points: None = None,
+        *,
+        extrapolation: ExtrapolationLike | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
         self,
         eval_points: ArrayLike,
         *,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: ExtrapolationLike | None = None,
         grid: Literal[False] = False,
     ) -> None:
         pass
@@ -116,27 +126,27 @@ class EvaluationTransformer(
         self,
         eval_points: GridPointsLike,
         *,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: ExtrapolationLike | None = None,
         grid: Literal[True],
     ) -> None:
         pass
 
     def __init__(
         self,
-        eval_points: Union[ArrayLike, GridPointsLike, None] = None,
+        eval_points: ArrayLike | GridPointsLike | None = None,
         *,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: ExtrapolationLike | None = None,
         grid: bool = False,
-    ):
+    ) -> None:
         self.eval_points = eval_points
         self.extrapolation = extrapolation
         self.grid = grid
 
-    def fit(
-        self,
+    def fit(  # noqa: D102
+        self: SelfType,
         X: FData,
-        y: None = None,
-    ) -> EvaluationTransformer:
+        y: object = None,
+    ) -> SelfType:
         if self.eval_points is None and not isinstance(X, FDataGrid):
             raise ValueError(
                 "If no eval_points are passed, the functions "
@@ -147,17 +157,18 @@ class EvaluationTransformer(
 
         return self
 
-    def transform(
+    def transform(  # noqa: D102
         self,
         X: FData,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         check_is_fitted(self, '_is_fitted')
 
         if self.eval_points is None:
+            assert isinstance(X, FDataGrid)
             evaluation = X.data_matrix.copy()
         else:
-            evaluation = X(  # type: ignore
+            evaluation = X(
                 self.eval_points,
                 extrapolation=self.extrapolation,
                 grid=self.grid,

@@ -577,6 +577,8 @@ def fetch_tecator(
 
     curves = data['absorp.fdata']
     target = data['y'].rename(columns=str.lower)
+    # Wavelength units are wrongly labeled as mm
+    curves.argument_names = [curves.argument_names[0].replace("mm", "nm")]
     feature_name = curves.dataset_name.lower()
     target_names = target.columns.values.tolist()
 

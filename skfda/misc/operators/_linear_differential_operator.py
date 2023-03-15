@@ -659,31 +659,14 @@ def _optimized_operator_evaluation_in_grid(
 
 
 @gram_matrix_optimization.register
-def fdatagrid_penalty_matrix_optimized(
-    linear_operator: LinearDifferentialOperator,
-    basis: FDataGrid,
-) -> NDArrayFloat:
-    return gridbasis_penalty_matrix_optimized(
-        linear_operator,
-        GridBasis(grid_points=basis.grid_points),
-    )
-
-
-@gram_matrix_optimization.register
 def gridbasis_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: GridBasis,
 ) -> NDArrayFloat:
     """
-    Optimized version for FDatagrid.
+    Optimized version for GridBasis.
 
-    The datamatrix of the given FDataGrid has to be the identity matrix,
-    the resulting matrix will be the gram matrix for functions discretized
-    in the given grid points. That is to say, in order to calculate the norm
-    of the linear operator applied to functions discretized in the given
-    grid points, it is enough to multiply the returned matrix by the
-    values in the points of the grid on both sides.
-
+    It evaluates the operator in the grid points.
     """
     n_points = basis.grid_points[0].shape[0]
     findiff_accuracy = 2

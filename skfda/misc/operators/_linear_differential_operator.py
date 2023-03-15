@@ -17,6 +17,7 @@ from ...representation.basis import (
     CustomBasis,
     FourierBasis,
     MonomialBasis,
+    GridBasis,
 )
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat, NDArrayInt
@@ -662,6 +663,17 @@ def fdatagrid_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: FDataGrid,
 ) -> NDArrayFloat:
+    return gridbasis_penalty_matrix_optimized(
+        linear_operator,
+        GridBasis(grid_points=basis.grid_points),
+    )
+
+
+@gram_matrix_optimization.register
+def gridbasis_penalty_matrix_optimized(
+    linear_operator: LinearDifferentialOperator,
+    basis: GridBasis,
+) -> NDArrayFloat:
     """
     Optimized version for FDatagrid.
 
@@ -699,7 +711,7 @@ def fdatagrid_penalty_matrix_optimized(
         basis.grid_points[0],
     )
 
-    product_matrix = np.zeros((basis.n_samples, basis.n_samples))
+    product_matrix = np.zeros((basis.n_basis, basis.n_basis))
     for i in range(n_points):
         # Maximum index of another function with not-disjoint support
         max_no_disjoint_index = min(n_points, i + 2 * max_domain_width)

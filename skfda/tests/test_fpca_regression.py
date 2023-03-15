@@ -209,4 +209,6 @@ class FPCARegressionTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    #test = FPCARegressionTestCase()
+    #test.test_fpca_reg_basis_vs_grid()
     unittest.main()

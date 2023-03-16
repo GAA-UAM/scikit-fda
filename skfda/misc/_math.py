@@ -476,9 +476,11 @@ def _inner_product_integrate(
         len_arg1 = len(arg1(left_domain))
         len_arg2 = len(arg2(left_domain))
 
-    def integrand(args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
-        f1 = arg1(args)[:, 0, :]
-        f2 = arg2(args)[:, 0, :]
+    def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+        f_args = cast(NDArrayFloat, args)
+
+        f1 = arg1(f_args)[:, 0, :]
+        f2 = arg2(f_args)[:, 0, :]
 
         if _matrix:
             ret = np.einsum('n...,m...->nm...', f1, f2)

@@ -6,7 +6,8 @@ from scipy.interpolate.interpnd import LinearNDInterpolator
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation import FDataGrid
-from ...representation._typing import GridPoints, NDArrayFloat, NDArrayInt
+from ...typing._base import GridPoints
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 T = TypeVar("T", bound=FDataGrid)
 

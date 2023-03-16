@@ -70,6 +70,42 @@ class InnerProductTest(unittest.TestCase):
             rtol=1e-4,
         )
 
+    def test_mixed_several_variables(self) -> None:
+        """Test inner_product with basis and grid multivariable functions."""
+        def f(  # noqa: WPS430
+            x: np.typing.NDArray[np.float_],
+            y: np.typing.NDArray[np.float_],
+        ) -> np.typing.NDArray[np.float_]:
+            return x + y
+
+        t = np.linspace(0, 1, 50)
+
+        x2, y2 = _ndm(t, 2 * t)
+
+        data_matrix = f(x2, y2)
+
+        grid_points = [t, 2 * t]
+
+        fd = skfda.FDataGrid(
+            data_matrix[np.newaxis, ...],
+            grid_points=grid_points,
+        )
+
+        basis = TensorBasis([
+            MonomialBasis(n_basis=5, domain_range=(0, 1)),
+            MonomialBasis(n_basis=5, domain_range=(0, 2)),
+        ])
+
+        fd_basis = fd.to_basis(basis)
+
+        res = 16 / 3
+
+        np.testing.assert_allclose(
+            skfda.misc.inner_product(fd, fd_basis),
+            res,
+            rtol=1e-4,
+        )
+
     def test_vector_valued(self) -> None:
         """Test inner_product with vector valued functions."""
         def f(  # noqa: WPS430

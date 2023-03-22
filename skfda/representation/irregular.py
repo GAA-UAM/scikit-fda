@@ -81,16 +81,24 @@ class FDataIrregular(FData):  # noqa: WPS214
         self.set_function_values(function_values)
 
         # TODO Fix for higher dimensions
-        i = 0
         dim_ranges = list()
         for dim in range(self.dim_domain):
+            i = 0
             dim_sample_ranges = list()
             for f in self.function_indices[1:]:
-                dim_sample_ranges.append(tuple((self.function_arguments[i][dim], 
-                                                self.function_arguments[f-1][dim])))
+                min_argument = min([self.function_arguments[j][dim] for j in range(i, f)])
+                max_argument = max([self.function_arguments[j][dim] for j in range(i, f)])
+                dim_sample_ranges.append(tuple((min_argument, 
+                                                max_argument))
+                                         )
                 i = f
-            dim_sample_ranges.append((self.function_arguments[i][dim],
-                                      self.function_arguments[-1][dim]))
+                
+            min_argument = min([self.function_arguments[f + j][dim] 
+                                for j in range(self.function_arguments.shape[0] - f)])
+            max_argument = max([self.function_arguments[f + j][dim] 
+                                for j in range(self.function_arguments.shape[0] - f)])
+            dim_sample_ranges.append((min_argument,
+                                      max_argument))
             dim_ranges.append(dim_sample_ranges)
 
         self._sample_range = list()
@@ -651,6 +659,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         return self.copy(function_values=-self.function_values)
 
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
+        #TODO As coordinates
         if as_coordinates:
             raise NotImplementedError(
                 "Not implemented for as_coordinates = True",
@@ -718,35 +727,35 @@ class FDataIrregular(FData):  # noqa: WPS214
         # Convert FDataIrregular to matrix of all points
         # with NaN in undefined values
 
-        if self.dim_domain > 1:
-            warnings.warn(f"Not implemented for domain dimension > 1, \
-                          currently {self.dim_domain}")
-
         # Find the grid points and values for each function
-        grid_points = []
+        grid_points = [[]]*self.dim_domain
         evaluated_points = []
         for index_start, index_end in zip(list(self.function_indices),
                                           list(self.function_indices[1:])):
-            grid_points.append(
-                [x[0] for x in self.function_arguments[index_start:index_end]])
+            for dim in range(self.dim_domain):
+                grid_points[dim].append(
+                    [x[dim] for x in self.function_arguments[index_start:index_end]])
+                
             evaluated_points.append(
                 self.function_values[index_start:index_end])
 
         # Dont forget to add the last one
-        grid_points.append([x[0] for x in self.function_arguments[index_end:]])
+        for dim in range(self.dim_domain):
+            grid_points[dim].append([x for x in self.function_arguments[index_end:]])
         evaluated_points.append(self.function_values[index_end:])
 
         # Aggregate into a complete data matrix
+        unified_grid_points = []*self.dim_domain
         from functools import reduce
-        unified_grid_points = reduce(
-            lambda x, y: set(list(y)).union(list(x)),
-            grid_points,
-            )
-
-        unified_grid_points = sorted(unified_grid_points)
+        for dim in range(self.dim_domain):
+            _unified_points = reduce(
+                lambda x, y: set(list(y)).union(list(x)),
+                grid_points[dim],
+                )
+            unified_grid_points[dim] = sorted(_unified_points)
 
         # Fill matrix with known values, leave unknown as NA
-        num_curves = len(grid_points)
+        num_curves = len(grid_points[0])
         num_points = len(unified_grid_points)
 
         unified_matrix = np.empty((num_curves, num_points, self.dim_codomain))
@@ -755,8 +764,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         for curve in range(num_curves):
             for point in range(len(grid_points[curve])):
                 for dimension in range(self.dim_codomain):
-                    point_index = unified_grid_points.index(
-                        grid_points[curve][point]
+                    point_index = unified_grid_points[0].index(
+                        grid_points[curve][point][0]
                         )
                     unified_matrix[curve, point_index, dimension] = \
                         evaluated_points[curve][point][dimension]

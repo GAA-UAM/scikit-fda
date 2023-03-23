@@ -9,15 +9,18 @@ from skfda.representation import FDataIrregular, FDataGrid
 from skfda.representation.interpolation import SplineInterpolation
 
 ############
-# FIXTURES
+# MACROS
 ############
 
 NUM_CURVES = 10
-MAX_VALUES_PER_CURVE = 99
+MAX_VALUES_PER_CURVE = 100
 DIMENSIONS = 2
 
 random_state = np.random.RandomState(seed=14)
 
+############
+# FIXTURES
+############
 
 @pytest.fixture()
 def input_arrays(
@@ -66,49 +69,92 @@ def input_arrays_2D(
 
     return indices, values, arguments
 
-
-@pytest.fixture()
+@pytest.fixture(params=["single_curve", "multiple_curves"])
 def fdatairregular1D(
+    request: Any,
     input_arrays: Tuple[ArrayLike, ArrayLike, ArrayLike],
 ) -> FDataIrregular:
-    """
-    Generate three multidimensional arrays
-    describing a FDataIrregular structure
-    """
-    return FDataIrregular(*input_arrays)
-
-
-@pytest.fixture()
+    """Return FDataIrregular with only 1 curve or NUM_CURVES as requested."""
+    indices, arguments, values = input_arrays
+    f_data_irreg = FDataIrregular(
+        function_indices=indices,
+        function_arguments=arguments,
+        function_values=values,
+    )
+    
+    if request.param == "single_curve":
+        return f_data_irreg[0]
+    elif request.param == "multiple_curves":
+        return f_data_irreg
+    
+@pytest.fixture(params=["single_curve", "multiple_curves"])
 def fdatairregular2D(
+    request: Any,
     input_arrays_2D: Tuple[ArrayLike, ArrayLike, ArrayLike],
 ) -> FDataIrregular:
-    """
-    Generate three multidimensional arrays
-    describing a FDataIrregular structure
-    """
-    return FDataIrregular(*input_arrays_2D)
+    """Return FDataIrregular with only 1 curve or NUM_CURVES as requested."""
+    indices, arguments, values = input_arrays_2D
+    f_data_irreg = FDataIrregular(
+        function_indices=indices,
+        function_arguments=arguments,
+        function_values=values,
+    )
+    
+    if request.param == "single_curve":
+        return f_data_irreg[0]
+    elif request.param == "multiple_curves":
+        return f_data_irreg
+
+@pytest.fixture(params=["fdatairregular1D", "fdatairregular2D"])
+def fdatairregular(
+    request: Any,
+    fdatairregular1D: FDataIrregular,
+    fdatairregular2D: FDataIrregular,
+) -> FDataIrregular:
+    """Return 'fdatairregular1D' or 'fdatairregular2D'."""
+    if request.param == "fdatairregular1D":
+        return fdatairregular1D
+    elif request.param == "fdatairregular2D":
+        return fdatairregular2D
+
+@pytest.fixture(params=["scalar", "vector", "matrix", "fdatairregular"])
+def other_1D(
+    request: Any,
+    fdatairregular1D: FDataIrregular,
+) -> FDataIrregular:
+    """Return an operator for testing FDataIrregular operations."""
+    if request.param == "scalar":
+        return 2
+    elif request.param == "vector":
+        return 2*np.ones(NUM_CURVES)
+    elif request.param == "matrix":
+        return 2*np.ones((NUM_CURVES, 1))
+    elif request.param == "fdatairregular":
+        return fdatairregular1D
+    
+@pytest.fixture(params=["scalar", "vector", "matrix", "fdatairregular"])
+def other_2D(
+    request: Any,
+    fdatairregular2D: FDataIrregular,
+) -> FDataIrregular:
+    """Return an operator for testing FDataIrregular operations."""
+    if request.param == "scalar":
+        return 2
+    elif request.param == "vector":
+        return 2*np.ones(NUM_CURVES)
+    elif request.param == "matrix":
+        return 2*np.ones((NUM_CURVES, DIMENSIONS))
+    elif request.param == "fdatairregular":
+        return fdatairregular2D
 
 ############
 # TESTS
 ############
-
-
-@pytest.mark.parametrize(
-    ("fdatairregular", "other"),
-    [
-        ("fdatairregular1D", 2),
-        ("fdatairregular1D", 2*np.ones(NUM_CURVES)),
-        ("fdatairregular1D", 2*np.ones((NUM_CURVES, 1))),
-        ("fdatairregular1D", "fdatairregular1D"),
-        ("fdatairregular2D", 2),
-        ("fdatairregular2D", 2*np.ones(NUM_CURVES)),
-        ("fdatairregular2D", 2*np.ones((NUM_CURVES, 2))),
-        ("fdatairregular2D", "fdatairregular2D")
-    ],
-)
-
-class TestArithmeticOperations:
-    """Class which encapsulates the testing of basic arithmetic operations"""
+class TestArithmeticOperations1D:
+    """
+    Class which encapsulates the testing of basic arithmetic operations 
+    for unidimensional FDataIrregular
+    """
 
     def _take_first(
         self,
@@ -122,9 +168,8 @@ class TestArithmeticOperations:
 
     def test_fdatairregular_arithmetic_sum(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation fdatairregular + other
 
@@ -132,22 +177,22 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        f_data_sum = f_data_irreg + other
+        f_data_sum = fdatairregular1D + other_1D
 
         assert np.all(
             f_data_sum.function_values ==
-            f_data_irreg.function_values + self._take_first(other)
+            fdatairregular1D.function_values + self._take_first(other_1D)
             )
 
     def test_fdatairregular_arithmetic_rsum(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation other + fdatairregular
 
@@ -155,22 +200,22 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        f_data_sum = other + f_data_irreg
+        f_data_sum = other_1D + fdatairregular1D
 
         assert np.all(
             f_data_sum.function_values ==
-            self._take_first(other) + f_data_irreg.function_values
+            self._take_first(other_1D) + fdatairregular1D.function_values
             )
 
     def test_fdatairregular_arithmetic_sum_commutative(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation other + fdatairregular
 
@@ -178,17 +223,17 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        assert f_data_irreg + other == other + f_data_irreg
+        assert fdatairregular1D + other_1D == other_1D + fdatairregular1D
 
     def test_fdatairregular_arithmetic_sub(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation fdatairregular - other
 
@@ -196,22 +241,22 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        f_data_sum = f_data_irreg - other
+        f_data_sum = fdatairregular1D - other_1D
 
         assert np.all(
             f_data_sum.function_values ==
-            f_data_irreg.function_values - self._take_first(other)
+            fdatairregular1D.function_values - self._take_first(other_1D)
             )
 
     def test_fdatairregular_arithmetic_rsub(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation other - fdatairregular
 
@@ -219,22 +264,22 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        f_data_sum = other - f_data_irreg
+        f_data_sum = other_1D - fdatairregular1D
 
         assert np.all(
             f_data_sum.function_values ==
-            self._take_first(other) - f_data_irreg.function_values
+            self._take_first(other_1D) - fdatairregular1D.function_values
             )
 
     def test_fdatairregular_arithmetic_mul(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation fdatairregular * other
 
@@ -242,22 +287,22 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        f_data_mul = f_data_irreg * other
+        f_data_mul = fdatairregular1D * other_1D
 
         assert np.all(
             f_data_mul.function_values ==
-            f_data_irreg.function_values * self._take_first(other)
+            fdatairregular1D.function_values * self._take_first(other_1D)
             )
 
     def test_fdatairregular_arithmetic_rmul(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation other * fdatairregular
 
@@ -265,22 +310,22 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        f_data_mul = other * f_data_irreg
+        f_data_mul = other_1D * fdatairregular1D
 
         assert np.all(
             f_data_mul.function_values ==
-            self._take_first(other) * f_data_irreg.function_values
+            self._take_first(other_1D) * fdatairregular1D.function_values
             )
 
     def test_fdatairregular_arithmetic_mul_commutative(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation other * fdatairregular
 
@@ -288,17 +333,17 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        assert f_data_irreg * other == other * f_data_irreg
+        assert fdatairregular1D * other_1D == other_1D * fdatairregular1D
 
     def test_fdatairregular_arithmetic_div(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation fdatairregular / other
 
@@ -306,22 +351,22 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        f_data_div = f_data_irreg / other
+        f_data_div = fdatairregular1D / other_1D
 
         assert np.all(
             f_data_div.function_values ==
-            f_data_irreg.function_values / self._take_first(other)
+            fdatairregular1D.function_values / self._take_first(other_1D)
             )
 
     def test_fdatairregular_arithmetic_rdiv(
         self,
-        fdatairregular: str,
-        other: Any,
-        request,
+        fdatairregular1D: FDataIrregular,
+        other_1D: Any,
     ) -> None:
         """Tests the basic arithmetic operation other / fdatairregular
 
@@ -329,13 +374,250 @@ class TestArithmeticOperations:
             fdatairregular (FDataIrregular): FDataIrregular object to test
             other (Any): Scalar, vector, matrix or FDataIrregular
         """
-        f_data_irreg = request.getfixturevalue(fdatairregular)
-        if isinstance(other, str):
-            other = request.getfixturevalue(other)
+        # Account for single curve test
+        if isinstance(other_1D, np.ndarray) or isinstance(other_1D, FDataIrregular):
+            if len(fdatairregular1D) == 1:
+                other_1D = other_1D[0]
 
-        f_data_div = other / f_data_irreg
+        f_data_div = other_1D / fdatairregular1D
 
         assert np.all(
             f_data_div.function_values ==
-            self._take_first(other) / f_data_irreg.function_values
+            self._take_first(other_1D) / fdatairregular1D.function_values
+            )
+
+class TestArithmeticOperations2D:
+    """
+    Class which encapsulates the testing of basic arithmetic operations 
+    for multidimensional FDataIrregular
+    """
+
+    def _take_first(
+        self,
+        other,
+    ) -> float:
+        if isinstance(other, np.ndarray):
+            return other[0]
+        elif isinstance(other, FDataIrregular):
+            return other.function_values
+        return other
+
+    def test_fdatairregular_arithmetic_sum(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation fdatairregular + other
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        f_data_sum = fdatairregular2D + other_2D
+
+        assert np.all(
+            f_data_sum.function_values ==
+            fdatairregular2D.function_values + self._take_first(other_2D)
+            )
+
+    def test_fdatairregular_arithmetic_rsum(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation other + fdatairregular
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        f_data_sum = other_2D + fdatairregular2D
+
+        assert np.all(
+            f_data_sum.function_values ==
+            self._take_first(other_2D) + fdatairregular2D.function_values
+            )
+
+    def test_fdatairregular_arithmetic_sum_commutative(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation other + fdatairregular
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        assert fdatairregular2D + other_2D == other_2D + fdatairregular2D
+
+    def test_fdatairregular_arithmetic_sub(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation fdatairregular - other
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        f_data_sum = fdatairregular2D - other_2D
+
+        assert np.all(
+            f_data_sum.function_values ==
+            fdatairregular2D.function_values - self._take_first(other_2D)
+            )
+
+    def test_fdatairregular_arithmetic_rsub(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation other - fdatairregular
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        f_data_sum = other_2D - fdatairregular2D
+
+        assert np.all(
+            f_data_sum.function_values ==
+            self._take_first(other_2D) - fdatairregular2D.function_values
+            )
+
+    def test_fdatairregular_arithmetic_mul(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation fdatairregular * other
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        f_data_mul = fdatairregular2D * other_2D
+
+        assert np.all(
+            f_data_mul.function_values ==
+            fdatairregular2D.function_values * self._take_first(other_2D)
+            )
+
+    def test_fdatairregular_arithmetic_rmul(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation other * fdatairregular
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        f_data_mul = other_2D * fdatairregular2D
+
+        assert np.all(
+            f_data_mul.function_values ==
+            self._take_first(other_2D) * fdatairregular2D.function_values
+            )
+
+    def test_fdatairregular_arithmetic_mul_commutative(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation other * fdatairregular
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        assert fdatairregular2D * other_2D == other_2D * fdatairregular2D
+
+    def test_fdatairregular_arithmetic_div(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation fdatairregular / other
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        f_data_div = fdatairregular2D / other_2D
+
+        assert np.all(
+            f_data_div.function_values ==
+            fdatairregular2D.function_values / self._take_first(other_2D)
+            )
+
+    def test_fdatairregular_arithmetic_rdiv(
+        self,
+        fdatairregular2D: FDataIrregular,
+        other_2D: Any,
+    ) -> None:
+        """Tests the basic arithmetic operation other / fdatairregular
+
+        Args:
+            fdatairregular (FDataIrregular): FDataIrregular object to test
+            other (Any): Scalar, vector, matrix or FDataIrregular
+        """
+        # Account for single curve test
+        if isinstance(other_2D, np.ndarray) or isinstance(other_2D, FDataIrregular):
+            if len(fdatairregular2D) == 1:
+                other_2D = other_2D[:1]
+
+        f_data_div = other_2D / fdatairregular2D
+
+        assert np.all(
+            f_data_div.function_values ==
+            self._take_first(other_2D) / fdatairregular2D.function_values
             )

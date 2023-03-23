@@ -93,10 +93,10 @@ class FDataIrregular(FData):  # noqa: WPS214
                                          )
                 i = f
                 
-            min_argument = min([self.function_arguments[f + j][dim] 
-                                for j in range(self.function_arguments.shape[0] - f)])
-            max_argument = max([self.function_arguments[f + j][dim] 
-                                for j in range(self.function_arguments.shape[0] - f)])
+            min_argument = min([self.function_arguments[i + j][dim] 
+                                for j in range(self.function_arguments.shape[0] - i)])
+            max_argument = max([self.function_arguments[i + j][dim] 
+                                for j in range(self.function_arguments.shape[0] - i)])
             dim_sample_ranges.append((min_argument,
                                       max_argument))
             dim_ranges.append(dim_sample_ranges)
@@ -728,7 +728,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         # with NaN in undefined values
 
         # Find the grid points and values for each function
-        grid_points = [[]]*self.dim_domain
+        grid_points = [list() for i in range(self.dim_domain)]
         evaluated_points = []
         for index_start, index_end in zip(list(self.function_indices),
                                           list(self.function_indices[1:])):
@@ -741,11 +741,11 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         # Dont forget to add the last one
         for dim in range(self.dim_domain):
-            grid_points[dim].append([x for x in self.function_arguments[index_end:]])
+            grid_points[dim].append([x[dim] for x in self.function_arguments[index_end:]])
         evaluated_points.append(self.function_values[index_end:])
 
         # Aggregate into a complete data matrix
-        unified_grid_points = []*self.dim_domain
+        unified_grid_points = [list() for i in range(self.dim_domain)]
         from functools import reduce
         for dim in range(self.dim_domain):
             _unified_points = reduce(
@@ -756,18 +756,18 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         # Fill matrix with known values, leave unknown as NA
         num_curves = len(grid_points[0])
-        num_points = len(unified_grid_points)
+        num_points = len(unified_grid_points[0])
 
-        unified_matrix = np.empty((num_curves, num_points, self.dim_codomain))
+        unified_matrix = np.empty((num_curves, *(num_points,)*self.dim_domain , self.dim_codomain))
         unified_matrix.fill(np.nan)
 
         for curve in range(num_curves):
-            for point in range(len(grid_points[curve])):
+            #TODO Ensure that there is always at least one dimension
+            for point in range(len(grid_points[0][curve])):
                 for dimension in range(self.dim_codomain):
-                    point_index = unified_grid_points[0].index(
-                        grid_points[curve][point][0]
-                        )
-                    unified_matrix[curve, point_index, dimension] = \
+                    point_index = [unified_grid_points[i].index(grid_points[i][curve][point]) 
+                                   for i in range(self.dim_domain)]
+                    unified_matrix[(curve, *point_index, dimension)] = \
                         evaluated_points[curve][point][dimension]
 
         return unified_matrix, unified_grid_points
@@ -1023,7 +1023,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         required_indices = indices[key]
         for i in required_indices:
             next_index = self.function_indices[i + 1] if i + 1 < \
-                self.num_functions else -1
+                self.num_functions else None
             s = slice(self.function_indices[i], next_index)
             required_slices.append(s)
 
@@ -1032,7 +1032,10 @@ class FDataIrregular(FData):  # noqa: WPS214
         values = np.concatenate([self.function_values[s]
                                  for s in required_slices])
 
-        chunk_sizes = np.array([s.stop-s.start for s in required_slices])
+        chunk_sizes = np.array([s.stop-s.start if s.stop is not None 
+                                else self.num_observations - s.start 
+                                for s in required_slices])
+        
         indices = np.cumsum(chunk_sizes) - chunk_sizes[0]
 
         return self.copy(

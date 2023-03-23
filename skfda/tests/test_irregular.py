@@ -14,7 +14,6 @@ from skfda.representation.interpolation import SplineInterpolation
 ############
 
 NUM_CURVES = 10
-MAX_VALUES_PER_CURVE = 99
 DIMENSIONS = 2
 TEST_DECIMALS = range(10)
 COPY_KWARGS = [
@@ -36,16 +35,12 @@ def input_arrays(
     FDataIrregular structure
     """
     # TODO Make editable with pytest
-    num_values_per_curve = np.random.randint(1,
-                                             MAX_VALUES_PER_CURVE,
-                                             size=(NUM_CURVES, )
-                                             )
+    num_values_per_curve = np.array(range(NUM_CURVES)) + 1
 
     values_per_curve = [np.random.rand(num_values, 1)
                         for num_values in num_values_per_curve]
     args_per_curve = [np.random.rand(num_values, 1)
                       for num_values in num_values_per_curve]
-
     indices = np.cumsum(num_values_per_curve) - num_values_per_curve
     values = np.concatenate(values_per_curve)
     arguments = np.concatenate(args_per_curve)
@@ -61,10 +56,7 @@ def input_arrays_multidimensional(
     describing a FDataIrregular structure
     """
     # TODO Make editable with pytest
-    num_values_per_curve = np.random.randint(1,
-                                             MAX_VALUES_PER_CURVE,
-                                             size=(NUM_CURVES, )
-                                             )
+    num_values_per_curve = np.array(range(NUM_CURVES)) + 1
 
     values_per_curve = [np.random.rand(num_values, DIMENSIONS)
                         for num_values in num_values_per_curve]
@@ -83,9 +75,7 @@ def fdatagrid(
 ) -> FDataGrid:
     """Generate FDataGrid"""
     # TODO Make editable with pytest
-    num_values_per_curve = np.random.randint(1,
-                                             MAX_VALUES_PER_CURVE,
-                                             )
+    num_values_per_curve = NUM_CURVES
 
     data_matrix = np.random.rand(NUM_CURVES, num_values_per_curve, 1)
     # Grid points must be sorted
@@ -101,9 +91,7 @@ def fdatagrid_multidimensional(
 ) -> FDataGrid:
     """Generate multidimensional FDataGrid"""
     # TODO Make editable with pytest
-    num_values_per_curve = np.random.randint(1,
-                                             MAX_VALUES_PER_CURVE,
-                                             )
+    num_values_per_curve = NUM_CURVES
 
     data_matrix = np.random.rand(NUM_CURVES, num_values_per_curve, DIMENSIONS)
     # Grid points must be sorted
@@ -326,11 +314,11 @@ def test_fdatairregular_getitem(
 
     assert len(f_data_irreg[0]) == 1
     assert len(f_data_irreg[-1]) == 1
-    assert len(f_data_irreg[0:10]) == 10
+    assert len(f_data_irreg[0:NUM_CURVES]) == NUM_CURVES
     assert len(f_data_irreg[0:]) == len(f_data_irreg)
-    assert len(f_data_irreg[:10]) == 10
-    assert len(f_data_irreg[0:10:2]) == 5
-    assert len(f_data_irreg[0:10:2]) == 5
+    assert len(f_data_irreg[:NUM_CURVES]) == NUM_CURVES
+    assert len(f_data_irreg[0:NUM_CURVES:2]) == NUM_CURVES/2
+    assert len(f_data_irreg[0:NUM_CURVES:2]) == NUM_CURVES/2
 
 
 def test_fdatairregular_coordinates(

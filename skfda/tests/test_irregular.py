@@ -378,3 +378,41 @@ def test_fdatairregular_round(
         f_data_irreg.round(decimals).function_values ==
         np.round(f_data_irreg.function_values, decimals)
         )
+
+def test_fdatairregular_equals(
+    input_arrays: ArrayLike,
+    input_arrays_multidimensional: ArrayLike,
+) -> None:
+    """Test for equals method, which in turn uses _eq_elementwise
+    to verify equality in every index, argument and value
+
+    Args:
+        input_arrays (ArrayLike): tuple of three arrays required for
+        FDataIrregular
+        input_arrays_multidimensional (ArrayLike): tuple of three arrays required for
+        FDataIrregular, with multiple dimensions
+            indices: Array of pointers to the beginning of the arguments and
+            values of each curve
+            arguments: Array of each of the points of the domain
+            values: Array of each of the coordinates of the codomain
+    """
+    indices, arguments, values = input_arrays_multidimensional
+
+    f_data_irreg_multidimensional = FDataIrregular(
+        indices,
+        arguments,
+        values,
+        )
+    
+    indices, arguments, values = input_arrays
+    
+    f_data_irreg = FDataIrregular(
+        indices,
+        arguments,
+        values,
+        )
+    
+    assert f_data_irreg.equals(f_data_irreg)
+    assert f_data_irreg_multidimensional.equals(f_data_irreg_multidimensional)
+    assert not f_data_irreg.equals(f_data_irreg_multidimensional)
+    assert f_data_irreg.equals(f_data_irreg.copy())

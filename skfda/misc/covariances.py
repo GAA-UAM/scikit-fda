@@ -14,7 +14,7 @@ from ..typing._numpy import ArrayLike, NDArrayFloat
 
 def _squared_norms(x: NDArrayFloat, y: NDArrayFloat) -> NDArrayFloat:
     return (  # type: ignore[no-any-return]
-        (x[np.newaxis, :, :] - y[:, np.newaxis, :]) ** 2
+        (x[:, np.newaxis, :] - y[np.newaxis, :, :]) ** 2
     ).sum(2)
 
 

@@ -9,6 +9,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         '_basis': ["Basis"],
         "_bspline_basis": ["BSplineBasis", "BSpline"],
         "_constant_basis": ["ConstantBasis", "Constant"],
+        '_custom_basis': ["CustomBasis"],
         "_fdatabasis": ["FDataBasis", "FDataBasisDType"],
         "_finite_element_basis": ["FiniteElementBasis", "FiniteElement"],
         "_fourier_basis": ["FourierBasis", "Fourier"],
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
         Constant as Constant,
         ConstantBasis as ConstantBasis,
     )
+    from ._custom_basis import CustomBasis as CustomBasis
     from ._fdatabasis import (
         FDataBasis as FDataBasis,
         FDataBasisDType as FDataBasisDType,

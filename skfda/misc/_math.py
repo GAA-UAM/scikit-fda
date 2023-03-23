@@ -468,7 +468,7 @@ def _inner_product_integrate(
         len_arg2 = len(arg2)
     else:
         # If the arguments are callables, we need to pass the domain range
-        # explicitly. This is used internally for computing the gramian
+        # explicitly. This is used internally for computing the gram
         # matrix of operators.
         assert _domain_range is not None
         domain_range = _domain_range

@@ -195,6 +195,17 @@ class CustomBasis(Basis):
     ) -> NDArrayFloat:
         return self.fdata(eval_points)
 
+    def _gram_matrix(self) -> NDArrayFloat:
+        """
+        Compute the Gram matrix.
+
+        Subclasses may override this method for improving computation
+        of the Gram matrix.
+
+        """
+        from ...misc import inner_product_matrix
+        return inner_product_matrix(self.fdata)
+
     def __len__(self) -> int:
         return self.n_basis
 

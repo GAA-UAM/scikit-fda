@@ -16,6 +16,8 @@ NUM_CURVES = 10
 MAX_VALUES_PER_CURVE = 99
 DIMENSIONS = 2
 
+random_state = np.random.RandomState(seed=14)
+
 
 @pytest.fixture()
 def input_arrays(
@@ -29,9 +31,9 @@ def input_arrays(
     the parameters
     """
     num_values_per_curve = max_values_per_curve*np.ones(num_curves).astype(int)
-    values_per_curve = [np.random.rand(num_values, dimensions)
+    values_per_curve = [random_state.rand(num_values, dimensions)
                         for num_values in num_values_per_curve]
-    args_per_curve = [np.random.rand(num_values, dimensions)
+    args_per_curve = [random_state.rand(num_values, dimensions)
                       for num_values in num_values_per_curve]
 
     indices = np.cumsum(num_values_per_curve) - num_values_per_curve
@@ -53,9 +55,9 @@ def input_arrays_2D(
     the parameters
     """
     num_values_per_curve = max_values_per_curve*np.ones(num_curves).astype(int)
-    values_per_curve = [np.random.rand(num_values, dimensions)
+    values_per_curve = [random_state.rand(num_values, dimensions)
                         for num_values in num_values_per_curve]
-    args_per_curve = [np.random.rand(num_values, dimensions)
+    args_per_curve = [random_state.rand(num_values, dimensions)
                       for num_values in num_values_per_curve]
 
     indices = np.cumsum(num_values_per_curve) - num_values_per_curve

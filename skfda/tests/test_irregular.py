@@ -26,6 +26,7 @@ COPY_KWARGS = [
     {"coordinate_names": ("test",)},
 ]
 
+random_state = np.random.RandomState(seed=14)
 
 @pytest.fixture()
 def input_arrays(
@@ -37,9 +38,9 @@ def input_arrays(
     # TODO Make editable with pytest
     num_values_per_curve = np.array(range(NUM_CURVES)) + 1
 
-    values_per_curve = [np.random.rand(num_values, 1)
+    values_per_curve = [random_state.rand(num_values, 1)
                         for num_values in num_values_per_curve]
-    args_per_curve = [np.random.rand(num_values, 1)
+    args_per_curve = [random_state.rand(num_values, 1)
                       for num_values in num_values_per_curve]
     indices = np.cumsum(num_values_per_curve) - num_values_per_curve
     values = np.concatenate(values_per_curve)
@@ -58,9 +59,9 @@ def input_arrays_multidimensional(
     # TODO Make editable with pytest
     num_values_per_curve = np.array(range(NUM_CURVES)) + 1
 
-    values_per_curve = [np.random.rand(num_values, DIMENSIONS)
+    values_per_curve = [random_state.rand(num_values, DIMENSIONS)
                         for num_values in num_values_per_curve]
-    args_per_curve = [np.random.rand(num_values, DIMENSIONS)
+    args_per_curve = [random_state.rand(num_values, DIMENSIONS)
                       for num_values in num_values_per_curve]
 
     indices = np.cumsum(num_values_per_curve) - num_values_per_curve
@@ -77,9 +78,9 @@ def fdatagrid(
     # TODO Make editable with pytest
     num_values_per_curve = NUM_CURVES
 
-    data_matrix = np.random.rand(NUM_CURVES, num_values_per_curve, 1)
+    data_matrix = random_state.rand(NUM_CURVES, num_values_per_curve, 1)
     # Grid points must be sorted
-    grid_points = np.sort(np.random.rand(num_values_per_curve))
+    grid_points = np.sort(random_state.rand(num_values_per_curve))
 
     return FDataGrid(data_matrix=data_matrix,
                      grid_points=grid_points,
@@ -93,9 +94,9 @@ def fdatagrid_multidimensional(
     # TODO Make editable with pytest
     num_values_per_curve = NUM_CURVES
 
-    data_matrix = np.random.rand(NUM_CURVES, num_values_per_curve, DIMENSIONS)
+    data_matrix = random_state.rand(NUM_CURVES, num_values_per_curve, DIMENSIONS)
     # Grid points must be sorted
-    grid_points = np.sort(np.random.rand(num_values_per_curve))
+    grid_points = np.sort(random_state.rand(num_values_per_curve))
 
     return FDataGrid(data_matrix=data_matrix,
                      grid_points=grid_points,

@@ -80,7 +80,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         self.set_function_arguments(function_arguments)
         self.set_function_values(function_values)
 
-        # TODO Fix for higher dimensions
         dim_ranges = list()
         for dim in range(self.dim_domain):
             i = 0
@@ -559,7 +558,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             )
 
         elif isinstance(other, FDataIrregular):
-            # TODO What to do with different arguments?
+            # TODO What to do with different argument and value sizes?
             return other.function_values
 
         return None
@@ -728,6 +727,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         # with NaN in undefined values
 
         # Find the grid points and values for each function
+        index_end = 0
         grid_points = [list() for i in range(self.dim_domain)]
         evaluated_points = []
         for index_start, index_end in zip(list(self.function_indices),
@@ -762,7 +762,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         unified_matrix.fill(np.nan)
 
         for curve in range(num_curves):
-            #TODO Ensure that there is always at least one dimension
+            # There must always be one dimension, 
+            # and same size across all domain dimensions
             for point in range(len(grid_points[0][curve])):
                 for dimension in range(self.dim_codomain):
                     point_index = [unified_grid_points[i].index(grid_points[i][curve][point]) 
@@ -1122,7 +1123,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     @property
     def dtype(self) -> FDataGridDType:
-        # TODO Do this natively?
+        # TODO Do this natively? FDataIrregularDType?
         """The dtype for this extension array, FDataGridDType"""
         return self.to_grid().dtype
 
@@ -1146,9 +1147,6 @@ class FDataIrregular(FData):  # noqa: WPS214
             np.isnan(self.data_matrix),
             axis=tuple(range(1, self.data_matrix.ndim)),
         )
-
-
-# TODO FDataIrregularDType?
 
 class _IrregularCoordinateIterator(Sequence[T]):
     """Internal class to iterate through the image coordinates."""

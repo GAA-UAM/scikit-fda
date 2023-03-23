@@ -14,12 +14,12 @@ import skfda
 from skfda.misc.operators import (
     Identity,
     LinearDifferentialOperator,
-    gramian_matrix,
+    gram_matrix,
 )
 from skfda.misc.operators._linear_differential_operator import (
     _monomial_evaluate_constant_linear_diff_op,
 )
-from skfda.misc.operators._operators import gramian_matrix_numerical
+from skfda.misc.operators._operators import gram_matrix_numerical
 from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import LinearRegression
 from skfda.representation.basis import (
@@ -58,8 +58,8 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
         operator = LinearDifferentialOperator(linear_diff_op)
 
-        penalty = gramian_matrix(operator, basis)
-        numerical_penalty = gramian_matrix_numerical(operator, basis)
+        penalty = gram_matrix(operator, basis)
+        numerical_penalty = gram_matrix_numerical(operator, basis)
 
         np.testing.assert_allclose(
             penalty,
@@ -222,8 +222,8 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         ])
 
         operator = LinearDifferentialOperator(basis.order - 1)
-        penalty = gramian_matrix(operator, basis)
-        numerical_penalty = gramian_matrix_numerical(operator, basis)
+        penalty = gram_matrix(operator, basis)
+        numerical_penalty = gram_matrix_numerical(operator, basis)
 
         np.testing.assert_allclose(
             penalty,

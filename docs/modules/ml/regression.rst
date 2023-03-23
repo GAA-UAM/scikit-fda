@@ -45,3 +45,16 @@ non-parametric technique that uses :class:`~skfda.misc.hat_matrix.HatMatrix` obj
    :toctree: autosummary
 
     skfda.ml.regression.KernelRegression
+
+FPCA regression
+-----------------
+This module includes the implementation of FPCA (Functional Principal Component Analysis) 
+regression for FData with scalar response.  FPCA regression consists of two steps.
+Firstly, the principal component basis is created. Then a linear 
+regression is fitted using the coefficients of the functions in said basis.
+
+
+.. autosummary::
+   :toctree: autosummary
+
+    skfda.ml.regression.FPCARegression

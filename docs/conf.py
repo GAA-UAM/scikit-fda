@@ -26,8 +26,10 @@ import pkg_resources
 # Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
 # repository
 import sphinx_gallery.binder
+from sphinx.errors import ConfigError
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 from sphinx.ext.napoleon.docstring import GoogleDocstring
+from sphinx_gallery.sorting import ExampleTitleSortKey, ExplicitOrder
 
 try:
     release = pkg_resources.get_distribution('scikit-fda').version
@@ -56,7 +58,6 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.napoleon',
               'sphinx.ext.mathjax',
-              'sphinx_rtd_theme',
               'sphinx_gallery.gen_gallery',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest',
@@ -115,17 +116,42 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 
-html_logo = "logos/notitle_logo/notitle_logo.png"
+html_logo = "logo.png"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
 html_theme_options = {
-    'logo_only': True,
-    'style_nav_header_background': 'Gainsboro',
+    "use_edit_page_button": True,
+    "github_url": "https://github.com/GAA-UAM/scikit-fda",
+    "icon_links": [
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/scikit-fda",
+            "icon": "https://avatars.githubusercontent.com/u/2964877",
+            "type": "url",
+        },
+        {
+            "name": "Anaconda",
+            "url": "https://anaconda.org/conda-forge/scikit-fda",
+            "icon": "https://avatars.githubusercontent.com/u/3571983",
+            "type": "url",
+        },
+    ],
+    "logo": {
+        "image_light": "logo.png",
+        "image_dark": "logo.png",
+    },
+}
+
+html_context = {
+    "github_user": "GAA-UAM",
+    "github_repo": "scikit-fda",
+    "github_version": "develop",
+    "doc_path": "docs",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -135,18 +161,6 @@ html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
-#
-# This is required for the alabaster theme
-# refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'relations.html',  # needs 'show_related': True theme option to display
-        'searchbox.html',
-        'donate.html',
-    ]
-}
 
 # -- Options for HTMLHelp output ------------------------------------------
 
@@ -251,17 +265,18 @@ class SkfdaExplicitSubOrder(object):
     """
 
     def __init__(self, src_dir: str) -> None:
-        self.src_dir = src_dir  # src_dir is unused here
-        self.ordered_list = tutorial_list
+        self.tutorial_order = ExplicitOrder(tutorial_list)
+        self.title_order = ExampleTitleSortKey(src_dir)
 
     def __call__(self, filename: str) -> str:
         """Return a string determining the sort order."""
-        if filename in self.ordered_list:
-            ind = self.ordered_list.index(filename)
-            return f"{ind:04d}"
+        try:
+            return self.tutorial_order(filename)
+        except ConfigError:
+            return self.title_order(filename)
 
-        # ensure not explicitly listed items come last.
-        return f"zzz{filename}"
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
 
 
 rtd_version = os.environ.get("READTHEDOCS_VERSION", "latest")
@@ -269,9 +284,9 @@ branch = "master" if rtd_version == "stable" else "develop"
 
 sphinx_gallery_conf = {
     # path to your examples scripts
-    'examples_dirs': ['../examples', '../tutorial', '../full_examples'],
+    'examples_dirs': ['../examples', '../tutorial'],
     # path where to save gallery generated examples
-    'gallery_dirs': ['auto_examples', 'auto_tutorial', 'auto_full_examples'],
+    'gallery_dirs': ['auto_examples', 'auto_tutorial'],
     'reference_url': {
         # The module you locally document uses None
         'skfda': None,

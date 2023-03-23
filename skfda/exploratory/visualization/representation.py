@@ -226,9 +226,11 @@ class GraphPlot(BasePlot):
         if self.gradient_criteria is not None:
             if len(self.gradient_criteria) != fdata.n_samples:
                 raise ValueError(
-                    "The length of the gradient color",
-                    "list should be the same as the number",
-                    "of samples in fdata",
+                    f"The length of the gradient color list "
+                    f"({len(self.gradient_criteria)}) "
+                    f"should be the same as the number "
+                    f"of samples in fdata "
+                    f"({fdata.n_samples})",
                 )
 
             if min_grad is None:

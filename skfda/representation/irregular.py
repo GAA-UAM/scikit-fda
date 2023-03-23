@@ -381,7 +381,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         return FDataIrregular(
             function_indices=np.array([0]),
-            function_arguments=np.array(np.zeros((1, self.dim_domain))),
+            function_arguments=np.zeros((1, self.dim_domain)),
             function_values=data,
             sample_names=("sum",),
         )
@@ -454,8 +454,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         _gmean = scipy.stats.mstats.gmean(self.function_values, axis=0)
         return FDataIrregular(
             function_indices=np.array([0]),
-            function_arguments=np.array(np.zeros((1, self.dim_domain))),
-            function_values=_gmean.reshape(-1, 1),
+            function_arguments=np.zeros((1, self.dim_domain)),
+            function_values=np.array([_gmean]),
             sample_names=("geometric mean",),
         )
 

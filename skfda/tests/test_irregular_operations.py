@@ -146,10 +146,25 @@ def other_2D(
         return 2*np.ones((NUM_CURVES, DIMENSIONS))
     elif request.param == "fdatairregular":
         return fdatairregular2D
+    
+_all_numeric_reductions = [
+    "sum",
+    "var",
+    "mean",
+    "gmean",
+    #"cov",
+]
 
-############
-# TESTS
-############
+@pytest.fixture(params=_all_numeric_reductions)
+def all_numeric_reductions(request: Any) -> Any:
+    """
+    Fixture for numeric reduction names.
+    """
+    return request.param
+
+##################
+# TEST OPERATIONS
+##################
 class TestArithmeticOperations1D:
     """
     Class which encapsulates the testing of basic arithmetic operations 
@@ -621,3 +636,22 @@ class TestArithmeticOperations2D:
             f_data_div.function_values ==
             self._take_first(other_2D) / fdatairregular2D.function_values
             )
+
+
+##########################
+# TEST NUMERIC REDUCTIONS
+##########################
+
+class TestNumericReductions:
+    """
+    Class which encapsulates the testing of numeric reductions
+    (such as mean, std) for FDataIrregular objects
+    """
+    def test_fdatairregular_numeric_reduction(
+        self,
+        fdatairregular: FDataIrregular,
+        all_numeric_reductions: str,
+    ) -> None:
+    
+        reduction = getattr(fdatairregular, all_numeric_reductions)()
+        assert isinstance(reduction, FDataIrregular)

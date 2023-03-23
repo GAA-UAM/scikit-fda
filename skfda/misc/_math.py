@@ -477,7 +477,7 @@ def _inner_product_integrate(
         len_arg2 = len(arg2(left_domain))
 
     def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
-        f_args = cast(NDArrayFloat, args)
+        f_args = np.asarray(args)
 
         f1 = arg1(f_args)[:, 0, :]
         f2 = arg2(f_args)[:, 0, :]

@@ -25,7 +25,7 @@ import warnings
 import pkg_resources
 # Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
 # repository
-import sphinx_gallery.binder
+import sphinx_gallery.interactive_example
 from sphinx.errors import ConfigError
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 from sphinx.ext.napoleon.docstring import GoogleDocstring
@@ -365,11 +365,12 @@ GoogleDocstring._parse = patched_parse
 # Binder integration
 # Taken from
 # https://stanczakdominik.github.io/posts/simple-binder-usage-with-sphinx-gallery-through-jupytext/
-original_gen_binder_rst = sphinx_gallery.binder.gen_binder_rst
+original_gen_binder_rst = sphinx_gallery.interactive_example.gen_binder_rst
 
 
 def patched_gen_binder_rst(*args, **kwargs):
-    return original_gen_binder_rst(*args, **kwargs).replace(
+    original_rst = original_gen_binder_rst(*args, **kwargs)
+    return original_rst.replace(
         "../examples/auto_",
         "",
     ).replace(
@@ -381,4 +382,5 @@ def patched_gen_binder_rst(*args, **kwargs):
 #  # And then we finish our monkeypatching misdeed by redirecting
 
 # sphinx-gallery to use our function:
-sphinx_gallery.binder.gen_binder_rst = patched_gen_binder_rst
+sphinx_gallery.interactive_example.gen_binder_rst = patched_gen_binder_rst
+sphinx_gallery.gen_rst.gen_binder_rst = patched_gen_binder_rst

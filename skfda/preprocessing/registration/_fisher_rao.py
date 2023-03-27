@@ -132,21 +132,21 @@ class FisherRaoElasticRegistration(
         self.grid_dim = grid_dim
         self.derivative_method = derivative_method
 
-    def fit(self: SelfType, X: FDataGrid, y: object = None) -> SelfType:
-
-        # Points of discretization
-        self._output_points = (
-            X.grid_points[0]
-            if self.output_points is None
-            else np.asarray(self.output_points)
-        )
+    def fit(self: SelfType, X: FDataGrid | None, y: object = None) -> SelfType:
 
         if isinstance(self.template, FDataGrid):
             self.template_ = self.template  # Template already constructed
         else:
+            assert X is not None, "Cannot fit without any data or a template."
             self.template_ = self.template(X)
+            check_fdata_same_kind(X, self.template_)
 
-        check_fdata_same_kind(X, self.template_)
+        # Points of discretization
+        self._output_points = (
+            self.template_.grid_points[0]
+            if self.output_points is None
+            else np.asarray(self.output_points)
+        )
 
         # Constructs the SRSF of the template
         self._srsf = SRSF(

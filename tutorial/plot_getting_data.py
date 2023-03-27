@@ -339,8 +339,6 @@ plt.show()
 # :func:`skfda.datasets.make_gaussian` which can be used to generate Gaussian
 # processes and Gaussian fields with different covariance functions.
 
-import numpy as np
-
 cov = skfda.misc.covariances.Exponential(length_scale=0.1)
 
 fd = skfda.datasets.make_gaussian_process(
@@ -348,7 +346,7 @@ fd = skfda.datasets.make_gaussian_process(
     stop=4,
     n_samples=5,
     n_features=100,
-    mean=lambda t: np.power(t, 2),
+    mean=lambda t: t**2,
     cov=cov,
 )
 

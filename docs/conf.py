@@ -17,19 +17,25 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+from __future__ import annotations
 
+import inspect
 import os
 import sys
 import warnings
+from os.path import dirname, relpath
+from typing import Mapping
 
 import pkg_resources
 # Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
 # repository
-import sphinx_gallery.binder
+import sphinx_gallery.interactive_example
 from sphinx.errors import ConfigError
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 from sphinx.ext.napoleon.docstring import GoogleDocstring
 from sphinx_gallery.sorting import ExampleTitleSortKey, ExplicitOrder
+
+import skfda
 
 try:
     release = pkg_resources.get_distribution('scikit-fda').version
@@ -52,18 +58,20 @@ version = '.'.join(release.split('.')[:2])
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.todo',
-              'sphinx.ext.viewcode',
-              'sphinx.ext.napoleon',
-              'sphinx.ext.mathjax',
-              'sphinx_gallery.gen_gallery',
-              'sphinx.ext.intersphinx',
-              'sphinx.ext.doctest',
-              'jupyter_sphinx',
-              'sphinx.ext.autodoc.typehints',
-              'sphinxcontrib.bibtex']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.todo',
+    'sphinx.ext.linkcode',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.mathjax',
+    'sphinx_gallery.gen_gallery',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.doctest',
+    'jupyter_sphinx',
+    'sphinx.ext.autodoc.typehints',
+    'sphinxcontrib.bibtex',
+]
 
 bibtex_bibfiles = ['refs.bib']
 
@@ -74,6 +82,8 @@ doctest_global_setup = '''
 import numpy as np
 np.set_printoptions(legacy='1.13')
 '''
+
+github_url = "https://github.com/GAA-UAM/scikit-fda"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -126,7 +136,7 @@ html_logo = "logo.png"
 #
 html_theme_options = {
     "use_edit_page_button": True,
-    "github_url": "https://github.com/GAA-UAM/scikit-fda",
+    "github_url": github_url,
     "icon_links": [
         {
             "name": "PyPI",
@@ -365,11 +375,12 @@ GoogleDocstring._parse = patched_parse
 # Binder integration
 # Taken from
 # https://stanczakdominik.github.io/posts/simple-binder-usage-with-sphinx-gallery-through-jupytext/
-original_gen_binder_rst = sphinx_gallery.binder.gen_binder_rst
+original_gen_binder_rst = sphinx_gallery.interactive_example.gen_binder_rst
 
 
 def patched_gen_binder_rst(*args, **kwargs):
-    return original_gen_binder_rst(*args, **kwargs).replace(
+    original_rst = original_gen_binder_rst(*args, **kwargs)
+    return original_rst.replace(
         "../examples/auto_",
         "",
     ).replace(
@@ -381,4 +392,59 @@ def patched_gen_binder_rst(*args, **kwargs):
 #  # And then we finish our monkeypatching misdeed by redirecting
 
 # sphinx-gallery to use our function:
-sphinx_gallery.binder.gen_binder_rst = patched_gen_binder_rst
+sphinx_gallery.interactive_example.gen_binder_rst = patched_gen_binder_rst
+sphinx_gallery.gen_rst.gen_binder_rst = patched_gen_binder_rst
+
+
+def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
+    """
+    Resolve a link to source in the Github repo.
+
+    Based on the NumPy version.
+    """
+    if domain != 'py':
+        return None
+
+    modname = info['module']
+    fullname = info['fullname']
+
+    submod = sys.modules.get(modname)
+    if submod is None:
+        return None
+
+    obj = submod
+    for part in fullname.split('.'):
+        try:
+            obj = getattr(obj, part)
+        except Exception:
+            return None
+
+    fn = None
+    lineno = None
+
+    try:
+        fn = inspect.getsourcefile(obj)
+    except Exception:
+        fn = None
+    if not fn:
+        return None
+
+    # Ignore re-exports as their source files are not within the skfda repo
+    module = inspect.getmodule(obj)
+    if module is not None and not module.__name__.startswith("skfda"):
+        return None
+
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+        lineno_final = lineno + len(source) - 1
+    except Exception:
+        lineno_final = None
+
+    fn = relpath(fn, start=dirname(skfda.__file__))
+
+    if lineno:
+        linespec = f"#L{lineno}-L{lineno_final}"
+    else:
+        linespec = ""
+
+    return f"{github_url}/tree/{branch}/skfda/{fn}{linespec}"

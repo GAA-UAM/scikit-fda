@@ -157,8 +157,12 @@ def coefficient_info_from_covariate(
 def _coefficient_info_from_covariate_ndarray(  # type: ignore[misc]
     X: NDArrayFloat,
     y: NDArrayFloat,
+    basis: Basis = None,
     **_: Any,
 ) -> CoefficientInfo[NDArrayFloat]:
+    if basis:
+        return CoefficientInfoNdarray(basis=basis)
+
     return CoefficientInfoNdarray(basis=np.identity(X.shape[0], dtype=X.dtype))
 
 

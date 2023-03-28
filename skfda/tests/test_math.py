@@ -144,31 +144,6 @@ class InnerProductTest(unittest.TestCase):
             rtol=1e-5,
         )
 
-    def test_weighted_inner_product_integrate(self) -> None:
-        """Test weighted_inner_product_integrate function."""
-        basis = MonomialBasis(n_basis=2)
-        fd_basis = MonomialBasis(n_basis=3)
-        weight = FDataBasis(fd_basis, [[0, 1, 0], [0, 1, 0], [0, 0, 1]])
-
-        a = 1 / 5 + 2 / 3
-        b = 2 / 5 + 1 / 7
-        diag = 1 / 2 + 1 / 6
-
-        data_matrix = np.array([[a, diag], [diag, b]])
-
-        weighted_inner_product = skfda.misc.weighted_inner_product_integrate(
-            basis,
-            basis,
-            weight,
-            weight,
-        )
-
-        np.testing.assert_allclose(
-            weighted_inner_product,
-            data_matrix,
-            rtol=1e-5,
-        )
-
     def test_matrix(self) -> None:
         """Test inner_product_matrix function."""
         basis = skfda.representation.basis.BSplineBasis(n_basis=12)

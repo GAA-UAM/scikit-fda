@@ -24,7 +24,6 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "exp",
             "inner_product",
             "inner_product_matrix",
-            "weighted_inner_product_integrate",
             "log",
             "log2",
             "log10",

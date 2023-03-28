@@ -247,14 +247,7 @@ class LinearRegression(
 
         regularization: RegularizationIterableType = self.regularization
 
-        if self.fit_intercept:
-            new_x = np.ones((len(y), 1))
-            X_new = [new_x] + list(X_new)
-            new_coef_info_list: List[AcceptedDataCoefsType] = [
-                coefficient_info_from_covariate(new_x, y),
-            ]
-            coef_info = new_coef_info_list + list(coef_info)
-
+        if self.fit_intercept and not self.functional_response:
             if isinstance(regularization, Iterable):
                 regularization = itertools.chain([None], regularization)
             elif regularization is not None:
@@ -265,10 +258,6 @@ class LinearRegression(
             regularization_parameter=1,
             regularization=regularization,
         )
-
-        if self.fit_intercept and penalty_matrix is not None:
-            # Intercept is not penalized
-            penalty_matrix[0, 0] = 0
 
         if self.functional_response:
             coef_lengths = []
@@ -311,6 +300,10 @@ class LinearRegression(
                 right_inner_products,
             )
         else:
+            if self.fit_intercept and penalty_matrix is not None:
+                # Intercept is not penalized
+                penalty_matrix[0, 0] = 0
+
             inner_products_list = [
                 c.regression_matrix(x, y)  # type: ignore[arg-type]
                 for x, c in zip(X_new, coef_info)
@@ -528,6 +521,10 @@ class LinearRegression(
         """Do some checks to types and shapes."""
         new_X = self._argcheck_X(X)
 
+        if self.fit_intercept:
+            intercept = np.ones((len(y), 1))
+            new_X = [intercept] + list(new_X)
+
         len_new_X = len(new_X)
 
         if isinstance(y, FData):
@@ -551,6 +548,12 @@ class LinearRegression(
         if len(coef_basis) == 1 and len_new_X > 1:
             # we assume basis objects are inmmutable
             coef_basis = [coef_basis[0]] * len_new_X
+
+        if len_new_X != len(coef_basis):
+            raise ValueError(
+                "The number of covariates and coefficients "
+                "basis should be the same",
+            )
 
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)

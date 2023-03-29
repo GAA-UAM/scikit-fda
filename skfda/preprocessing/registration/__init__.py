@@ -18,6 +18,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "validation",
     ],
     submod_attrs={
+        "_base": [
+            "RegistrationTransformer",
+            "InductiveRegistrationTransformer",
+        ],
         "_fisher_rao": ["ElasticRegistration", "FisherRaoElasticRegistration"],
         "_landmark_registration": [
             "landmark_elastic_registration",
@@ -35,6 +39,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
+    from ._base import (
+        InductiveRegistrationTransformer as InductiveRegistrationTransformer,
+        RegistrationTransformer as RegistrationTransformer,
+    )
     from ._fisher_rao import (
         ElasticRegistration as ElasticRegistration,
         FisherRaoElasticRegistration as FisherRaoElasticRegistration,

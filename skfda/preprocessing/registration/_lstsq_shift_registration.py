@@ -15,7 +15,7 @@ from ...representation import FData, FDataGrid
 from ...representation.extrapolation import ExtrapolationLike
 from ...typing._base import GridPointsLike
 from ...typing._numpy import ArrayLike, NDArrayFloat
-from .base import InductiveRegistrationTransformer
+from ._base import InductiveRegistrationTransformer
 
 SelfType = TypeVar("SelfType", bound="LeastSquaresShiftRegistration[FData]")
 T = TypeVar("T", bound=FData)

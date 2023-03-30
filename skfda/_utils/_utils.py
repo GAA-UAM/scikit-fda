@@ -551,7 +551,11 @@ def _pairwise_symmetric(
 
 def _int_to_real(array: Union[NDArrayInt, NDArrayFloat]) -> NDArrayFloat:
     """Convert integer arrays to floating point."""
-    return array + 0.0
+    if np.issubdtype(array.dtype, np.integer):
+        return array.astype(np.float64)
+
+    assert np.issubdtype(array.dtype, np.floating)
+    return cast(NDArrayFloat, array)
 
 
 def _check_array_key(array: NDArrayAny, key: Any) -> Any:

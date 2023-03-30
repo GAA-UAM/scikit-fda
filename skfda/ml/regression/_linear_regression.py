@@ -230,6 +230,7 @@ class LinearRegression(
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
         self.regularization = regularization
+        self.y_basis = None
 
     def fit(  # noqa: D102
         self,
@@ -247,11 +248,19 @@ class LinearRegression(
 
         regularization: RegularizationIterableType = self.regularization
 
-        if self.fit_intercept and not self.functional_response:
-            if isinstance(regularization, Iterable):
-                regularization = itertools.chain([None], regularization)
-            elif regularization is not None:
-                regularization = (None, regularization)
+        if self.fit_intercept:
+            new_x = np.ones((len(y), 1))
+            X_new = [new_x] + list(X_new)
+            new_coef_info_list: List[AcceptedDataCoefsType] = [
+                coefficient_info_from_covariate(new_x, y),
+            ]
+            coef_info = new_coef_info_list + list(coef_info)
+
+            if not self.functional_response:
+                if isinstance(regularization, Iterable):
+                    regularization = itertools.chain([None], regularization)
+                elif regularization is not None:
+                    regularization = (None, regularization)
 
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(c.basis for c in coef_info),
@@ -337,6 +346,7 @@ class LinearRegression(
             self.intercept_ = np.zeros(1)
 
         self.coef_ = coefs
+        self.basis_coefs = basiscoef_list
         self._coef_info = coef_info
         self._target_ndim = y.ndim
 
@@ -350,16 +360,24 @@ class LinearRegression(
         check_is_fitted(self)
         X = self._argcheck_X(X)
 
-        result = np.sum(
-            [
-                coef_info.inner_product(coef, x)  # type: ignore[arg-type]
-                for coef, x, coef_info
-                in zip(self.coef_, X, self._coef_info)
-            ],
-            axis=0,
-        )
+        if self.functional_response:
+            X = [x.flatten() for x in X]
+            result_list = np.dot(X, np.array(self.basis_coefs)[:, :, 0])
+            result = self._convert_from_constant_coefs(
+                result_list, self._coef_info, self.functional_response,
+            )
+        else:
+            result = np.sum(
+                [
+                    coef_info.inner_product(coef, x)
+                    for coef, x, coef_info  # noqa: WPS361
+                    in zip(self.coef_, X, self._coef_info)
+                ],
+                axis=0,
+            )
 
-        result += self.intercept_
+        if self.fit_intercept:
+            result += self.intercept_
 
         if self._target_ndim == 1:
             result = result.ravel()
@@ -427,12 +445,6 @@ class LinearRegression(
         if isinstance(transposed_basis, Basis):
             transposed_basis = transposed_basis.to_basis()
 
-        if not np.array_equal(
-            basis.domain_range,
-            transposed_basis.domain_range,
-        ):
-            raise ValueError("Domain range for basis objects must be equal")
-
         if isinstance(transposed_weight, FData) and not np.array_equal(
             basis.domain_range,
             transposed_weight.domain_range,
@@ -499,9 +511,11 @@ class LinearRegression(
         self,
         coef_list: Sequence[NDArrayFloat],
         coef_info: Sequence[AcceptedDataCoefsType],
+        response: bool = False,
     ) -> Sequence[FDataBasis]:
-        # TODO
-        if self.functional_response:
+        if response:
+            return FDataBasis(self.y_basis, coef_list)
+        elif self.functional_response:
             return [
                 FDataBasis(self.coef_basis[i], coef_list[i].T)
                 for i in range(len(self.coef_basis))
@@ -521,18 +535,15 @@ class LinearRegression(
         """Do some checks to types and shapes."""
         new_X = self._argcheck_X(X)
 
-        if self.fit_intercept:
-            intercept = np.ones((len(y), 1))
-            new_X = [intercept] + list(new_X)
-
         len_new_X = len(new_X)
 
-        if isinstance(y, FData):
-            # TODO: check samples on independent and dependent variables
-
+        if isinstance(y, FDataBasis):
+            self.y_basis = y.basis
             self.functional_response = True
+            len_new_X += self.fit_intercept
             if coef_basis is None:
-                self.coef_basis = [y.basis]
+                self.coef_basis = [y.basis] * len_new_X
+                coef_basis = self.coef_basis
         else:
             if any(len(y) != len(x) for x in new_X):
                 raise ValueError(

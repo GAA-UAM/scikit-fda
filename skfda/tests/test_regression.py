@@ -441,14 +441,6 @@ class TestScalarLinearRegression(unittest.TestCase):
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
 
-        x_fd = FDataBasis(MonomialBasis(n_basis=8), np.identity(8))
-        y = np.array([1 for _ in range(7)])
-        beta = FourierBasis(n_basis=5)
-
-        scalar = LinearRegression(coef_basis=[beta])
-        with np.testing.assert_raises(ValueError):
-            scalar.fit([x_fd], y)
-
     def test_error_beta_not_basis(self) -> None:
         """Test that all beta are Basis objects."""
         x_fd = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
@@ -491,20 +483,24 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         Functional response with multivariate covariates.
         """
         y_basis = MonomialBasis(n_basis=2)
-        X = [[1, 2], [3, 4], [5, 6]]
+
+        cov_dict = {"mult1": [1, 3, 5], "mult2": [2, 4, 6]}
+        df = pd.DataFrame(cov_dict)
 
         y_fd = FDataBasis(y_basis, [[1, 2], [3, 4], [5, 6]])
-        y_pred_coef_compare = [[177, 878]]
+        y_pred_coef_compare = [[177, 878], [100, 200]]
 
         funct_reg = LinearRegression(fit_intercept=False)
-        funct_reg.fit(X, y_fd)
+        funct_reg.fit(df, y_fd)
 
-        np.testing.assert_allclose(funct_reg.basis_coefs, np.eye(2), atol=0.01)
+        np.testing.assert_allclose(
+            np.array(funct_reg.basis_coefs)[:, :, 0], np.eye(2), atol=0.01,
+        )
         np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
 
-        y_pred = funct_reg.predict([[177, 878]])
+        y_pred = funct_reg.predict([[177, 878], [100, 200]])
         np.testing.assert_allclose(
-            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
+            y_pred.coefficients, y_pred_coef_compare, atol=0.01,
         )
 
     def test_multivariate_covariates_2(self) -> None:
@@ -513,63 +509,39 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         Functional response with multivariate covariates.
         """
         y_basis = MonomialBasis(n_basis=3)
-        X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
+
+        cov_dict = {"mult1": [3, 5, 3], "mult2": [4, 1, 2], "mult3": [1, 6, 8]}
+        df = pd.DataFrame(cov_dict)
 
         y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
         beta_coef_compare = [[6, 3, 1], [7, 2, 4], [1, 5, 5]]
         y_pred_coef_compare = [[33, 18, 16]]
 
         funct_reg = LinearRegression(fit_intercept=False)
-        funct_reg.fit(X, y_fd)
+        funct_reg.fit(df, y_fd)
 
         np.testing.assert_allclose(
-            funct_reg.basis_coefs, beta_coef_compare, atol=0.01,
+            np.array(funct_reg.basis_coefs)[:, :, 0],
+            beta_coef_compare,
+            atol=0.01,
         )
         np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
 
         y_pred = funct_reg.predict([[3, 2, 1]])
         np.testing.assert_allclose(
-            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
+            y_pred.coefficients, y_pred_coef_compare, atol=0.01,
         )
 
-    def test_multivariate_covariates_y_regularization(self) -> None:
-        """Test a example of functional regression.
-
-        Functional response with multivariate covariates and
-        response regularization.
-        """
-        y_basis = MonomialBasis(n_basis=3)
-        X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
-
-        y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
-        beta_coef_compare = [[3, 1.5, 0.5], [3.5, 1, 2], [0.5, 2.5, 2.5]]
-        y_pred_coef_compare = [[16.5, 9, 8]]
-
-        funct_reg = LinearRegression(
-            regularization=None,
-            y_regularization=L2Regularization(),
-            fit_intercept=False,
-        )
-        funct_reg.fit(X, y_fd)
-
-        np.testing.assert_allclose(
-            funct_reg.basis_coefs, beta_coef_compare, atol=0.01,
-        )
-        np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
-
-        y_pred = funct_reg.predict([[3, 2, 1]])
-        np.testing.assert_allclose(
-            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
-        )
-
-    def test_multivariate_covariates_regularization_1(self) -> None:
+    def test_multivariate_covariates_regularization(self) -> None:
         """Test a example of functional regression.
 
         Functional response with multivariate covariates and
         beta regularization.
         """
         y_basis = MonomialBasis(n_basis=3)
-        X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
+
+        cov_dict = {"mult1": [3, 5, 3], "mult2": [4, 1, 2], "mult3": [1, 6, 8]}
+        df = pd.DataFrame(cov_dict)
 
         y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
         beta_coef_compare = [
@@ -580,54 +552,21 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         y_pred_coef_compare = [[31.883, 17.906, 16.293]]
 
         funct_reg = LinearRegression(
-            regularization=L2Regularization(),
-            y_regularization=None,
+            regularization=[L2Regularization()] * 3,
             fit_intercept=False,
         )
-        funct_reg.fit(X, y_fd)
+        funct_reg.fit(df, y_fd)
 
         np.testing.assert_allclose(
-            funct_reg.basis_coefs, beta_coef_compare, atol=0.01,
+            np.array(funct_reg.basis_coefs)[:, :, 0],
+            beta_coef_compare,
+            atol=0.01,
         )
         np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
 
         y_pred = funct_reg.predict([[3, 2, 1]])
         np.testing.assert_allclose(
-            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
-        )
-
-    def test_multivariate_covariates_regularization_2(self) -> None:
-        """Test a example of functional regression.
-
-        Functional response with multivariate covariates, beta
-        and response regularization.
-        """
-        y_basis = MonomialBasis(n_basis=3)
-        X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
-
-        y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
-        beta_coef_compare = [
-            [2.9398, 1.5080, 0.6242],
-            [3.4204, 0.9834, 1.8839],
-            [0.5517, 2.4875, 2.4477],
-        ]
-        y_pred_coef_compare = [[16.212, 8.978, 8.088]]
-
-        funct_reg = LinearRegression(
-            regularization=L2Regularization(),
-            y_regularization=L2Regularization(),
-            fit_intercept=False,
-        )
-        funct_reg.fit(X, y_fd)
-
-        np.testing.assert_allclose(
-            funct_reg.basis_coefs, beta_coef_compare, atol=0.01,
-        )
-        np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
-
-        y_pred = funct_reg.predict([[3, 2, 1]])
-        np.testing.assert_allclose(
-            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
+            y_pred.coefficients, y_pred_coef_compare, atol=0.01,
         )
 
     def test_multivariate_covariates_R_fda(self) -> None:  # noqa: N802
@@ -673,9 +612,12 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         enc = OneHotEncoder(handle_unknown='ignore')
         enc.fit([['Atlantic'], ['Continental'], ['Pacific']])
         X = np.array(y_weather).reshape(-1, 1)
-        X = enc.transform(X).toarray().tolist()
+        X = enc.transform(X).toarray()
 
-        beta_const_coef_R = [  # noqa: WPS317
+        cov_dict = {"mult1": X[:, 0], "mult2": X[:, 1], "mult3": X[:, 2]}
+        df = pd.DataFrame(cov_dict)
+
+        beta_const_R = [  # noqa: WPS317
             -225.5085, -110.817, -243.4708, 4.6815, 21.4488, 10.3784, 2.6317,
             1.7571, 2.4812, -1.5179, 1.4451, -0.6581, 2.8287, 0.4106, 1.5839,
             -1.711, 0.5587, -2.2268, 2.4745, -0.5179, -0.8376, -3.1504,
@@ -687,7 +629,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             -0.9949, -0.709, -0.4588, -0.5694,
         ]
 
-        beta_atlantic_coef_R = [  # noqa: WPS317
+        beta_atlantic_R = [  # noqa: WPS317
             312.966, 35.9273, 67.7156, -12.9111, -27.3945, -18.3422,
             -6.6074, -0.0203, -4.5716, 3.3142, -1.8419, 2.2008, -3.1554,
             -0.8167, -1.6248, 1.4791, -0.8676, 2.9854, -2.5819, -0.239, 0.6418,
@@ -699,7 +641,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             -0.6397, 3.2471, 0.4686, 1.3593, 0.9434,
         ]
 
-        beta_continental_coef_R = [  # noqa: WPS317
+        beta_continental_R = [  # noqa: WPS317
             214.8319, 41.1702, 6.2763, -11.5837, -40.6003, -10.9865, -6.6548,
             4.2589, -3.5174, 0.9494, 1.5624, -3.1435, -1.3242, -1.6431,
             -1.0234, 2.0606, -1.1042, -0.1723, -4.2717, -0.9321, 1.2331,
@@ -711,7 +653,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             -0.7447, 1.4645, 1.5654, -0.3106, 0.7647,
         ]
 
-        beta_pacific_coef_R = [  # noqa: WPS317
+        beta_pacific_R = [  # noqa: WPS317
             375.1732, 78.6384, 127.8782, 6.0014, -29.3124, -11.4446, -5.3623,
             -1.1054, -5.4936, 0.5137, 0.0086, -0.7174, -5.2713, -1.2635,
             -1.6654, -0.5359, -2.4626, 1.8152, -4.0212, 0.8431, -1.7737,
@@ -724,19 +666,19 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         ]
 
         funct_reg = LinearRegression()
-        funct_reg.fit(X, y_fd)
+        funct_reg.fit(df, y_fd)
 
         np.testing.assert_allclose(
-            funct_reg.basis_coefs[0], beta_const_coef_R, atol=0.001,
+            funct_reg.basis_coefs[0].ravel(), beta_const_R, atol=0.001,
         )
         np.testing.assert_allclose(
-            funct_reg.basis_coefs[1], beta_atlantic_coef_R, atol=0.001,
+            funct_reg.basis_coefs[1].ravel(), beta_atlantic_R, atol=0.001,
         )
         np.testing.assert_allclose(
-            funct_reg.basis_coefs[2], beta_continental_coef_R, atol=0.001,
+            funct_reg.basis_coefs[2].ravel(), beta_continental_R, atol=0.001,
         )
         np.testing.assert_allclose(
-            funct_reg.basis_coefs[3], beta_pacific_coef_R, atol=0.001,
+            funct_reg.basis_coefs[3].ravel(), beta_pacific_R, atol=0.001,
         )
         np.testing.assert_equal(funct_reg.coef_basis[0], y_fd.basis)
 

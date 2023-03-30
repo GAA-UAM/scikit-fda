@@ -57,13 +57,17 @@ class LinearRegression(
         NDArrayFloat,
     ],
 ):
-    r"""Linear regression with multivariate response.
+    r"""Linear regression with multivariate and functional response.
 
     This is a regression algorithm equivalent to multivariate linear
     regression, but accepting also functional data expressed in a basis
     expansion.
 
-    The model assumed by this method is:
+    Functional linear regression model is subdivided into three broad
+    categories, depending on whether the responses or the covariates,
+    or both, are curves.
+
+    Particulary, when the response is scalar, the model assumed is:
 
     .. math::
         y = w_0 + w_1 x_1 + \ldots + w_p x_p + \int w_{p+1}(t) x_{p+1}(t) dt \
@@ -72,24 +76,41 @@ class LinearRegression(
     where the covariates can be either multivariate or functional and the
     response is multivariate.
 
+    When the response is functional, the model assumed is:
+
+    .. math::
+        y(t) = \boldsymbol{X} \boldsymbol{\beta}(t)
+
+    where the covariates are multivariate and the response is functional; or:
+
+    .. math::
+        y(t) = \boldsymbol{X}(t) \boldsymbol{\beta}(t)
+
+    if the model covariates are also functional (concurrent).
+
+
     .. deprecated:: 0.8.
         Usage of arguments of type sequence of FData, ndarray is deprecated
         in methods fit, predict.
         Use covariate parameters of type pandas.DataFrame instead.
 
     .. warning::
-        For now, only scalar responses are supported.
+        For now, only multivariate and concurrent convariates are supported
+        when the response is functional.
 
     Args:
         coef_basis (iterable): Basis of the coefficient functions of the
-            functional covariates. If multivariate data is supplied, their
-            corresponding entries should be ``None``. If ``None`` is provided
-            for a functional covariate, the same basis is assumed. If this
-            parameter is ``None`` (the default), it is assumed that ``None``
-            is provided for all covariates.
+            functional covariates.
+            When the response is scalar, if multivariate data is supplied,
+            their corresponding entries should be ``None``. If ``None`` is
+            provided for a functional covariate, the same basis is assumed.
+            If this parameter is ``None`` (the default), it is assumed that
+            ``None`` is provided for all covariates.
         fit_intercept:  Whether to calculate the intercept for this
             model. If set to False, no intercept will be used in calculations
             (i.e. data is expected to be centered).
+            When the response is functional, a coef_basis for intercept must be
+            supplied.
         regularization (int, iterable or :class:`Regularization`): If it is
             not a :class:`Regularization` object, linear differential
             operator regularization is assumed. If it
@@ -105,8 +126,7 @@ class LinearRegression(
 
     Attributes:
         coef\_: A list containing the weight coefficient for each
-            covariate. For multivariate data, the covariate is a Numpy array.
-            For functional data, the covariate is a FDataBasis object.
+            covariate.
         intercept\_: Independent term in the linear model. Set to 0.0
             if `fit_intercept = False`.
 
@@ -162,6 +182,59 @@ class LinearRegression(
         array([ 1.])
         >>> linear.predict([x, x_fd])
         array([ 11.,  10.,  12.,   6.,  10.,  13.])
+
+        Response can be functional when covariates are multivariate:
+
+        >>> y_basis = MonomialBasis(n_basis=3)
+        >>> m1 = [3, 5, 3]
+        >>> m2 = [4, 1, 2]
+        >>> m3 = [1, 6, 8]
+        >>> cov_dict = {"mult1": m1, "mult2": m2, "mult3": m3}
+        >>> df = pd.DataFrame(cov_dict)
+        >>> y = FDataBasis(y_basis, [[47, 22, 24],
+        ...                          [43, 47, 39],
+        ...                          [40, 53, 51]])
+        >>> funct_linear = LinearRegression(
+        ...     regularization=None,
+        ...     fit_intercept=False,
+        ... )
+        >>> _ = funct_linear.fit(df, y)
+        >>> funct_linear.coef_[0]
+        FDataBasis(
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
+            coefficients=[[ 6.  3.  1.]],
+            ...)
+        >>> funct_linear.predict([[3, 4, 1]])
+        FDataBasis(
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
+            coefficients=[[ 47.  22.  24.]],
+            ...)
+
+        And also when multivariate are functional in a concurrent way:
+
+        >>> x_basis = MonomialBasis(n_basis=3)
+        >>> y_basis = MonomialBasis(n_basis=2)
+        >>> x_fd = FDataBasis(x_basis, [[0, 1, 0],
+        ...                             [0, 1, 0],
+        ...                             [0, 0, 1]])
+        >>> m1 = [3, 1, 4]
+        >>> m2 = [9, 2, 7]
+        >>> cov_dict = {"fd": x_fd, "mult1": m1, "mult2": m2}
+        >>> df = pd.DataFrame(cov_dict)
+        >>> y = FDataBasis(y_basis, [[1, 1],
+        ...                          [2, 1],
+        ...                          [3, 1]])
+        >>> funct_linear = LinearRegression(
+        ...     coef_basis=[y_basis, y_basis, y_basis],
+        ...     regularization=None,
+        ...     fit_intercept=False,
+        ... )
+        >>> _ = funct_linear.fit(df, y)
+        >>> funct_linear.coef_[0]
+        FDataBasis(
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=2),
+            coefficients=[[ 5.60825269 -2.86697618]],
+            ...)
 
         Funcionality with pandas Dataframe.
 
@@ -219,7 +292,6 @@ class LinearRegression(
         array([ 11.,  10.,  12.,   6.,  10.,  13.])
 
     """
-
     def __init__(
         self,
         *,

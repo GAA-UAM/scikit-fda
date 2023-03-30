@@ -682,6 +682,39 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         )
         np.testing.assert_equal(funct_reg.coef_basis[0], y_fd.basis)
 
+    def test_functional_convariates_concurrent(self) -> None:  # noqa: N802
+        """Test a example of functional regression.
+
+        Functional response with functional and multivariate covariates.
+        Concurrent model.
+        """
+        y_basis = MonomialBasis(n_basis=2)
+        x_basis = MonomialBasis(n_basis=3)
+
+        x_fd = FDataBasis(x_basis, [[0, 1, 0], [0, 1, 0], [0, 0, 1]])
+        y_fd = FDataBasis(y_basis, [[1, 1], [2, 1], [3, 1]])
+
+        cov_dict = {"fd": x_fd, "mult1": [3, 1, 4], "mult2": [9, 2, 7]}
+        df = pd.DataFrame(cov_dict)
+
+        beta_coef_compare = [
+            [5.608, -2.867],
+            [1.842, -0.508],
+            [-0.55, -0.033],
+        ]
+
+        funct_reg = LinearRegression(
+            coef_basis=[y_basis, y_basis, y_basis],
+            fit_intercept=False,
+        )
+        funct_reg.fit(df, y_fd)
+
+        np.testing.assert_allclose(
+            np.array(funct_reg.basis_coefs)[:, :, 0],
+            beta_coef_compare,
+            atol=0.01,
+        )
+
     def test_error_y_X_samples_different(self) -> None:  # noqa: N802
         """Number of response samples and explanatory samples are not different.
 

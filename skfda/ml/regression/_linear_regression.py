@@ -106,6 +106,8 @@ class LinearRegression(
             provided for a functional covariate, the same basis is assumed.
             If this parameter is ``None`` (the default), it is assumed that
             ``None`` is provided for all covariates.
+            When the response is functional, if ``None`` is provided, the
+            response basis is used for all covariates.
         fit_intercept:  Whether to calculate the intercept for this
             model. If set to False, no intercept will be used in calculations
             (i.e. data is expected to be centered).

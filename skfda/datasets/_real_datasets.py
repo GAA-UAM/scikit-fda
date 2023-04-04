@@ -1540,6 +1540,6 @@ def fetch_mco(
 
 if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
     fetch_mco.__doc__ += _mco_descr_template.format(
-        cite=":footcite:`ruiz++_2003_cariporide`",
+        cite=":footcite:`ruiz-meana++_2003_cariporide`",
         bibliography=".. footbibliography::",
     ) + _param_descr

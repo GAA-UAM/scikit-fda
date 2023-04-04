@@ -29,7 +29,7 @@ class SRSF(
     This representation it is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
     becomes the usual :math:`\mathbb{L}^2` distance between functions.
-    See :footcite:`srivastava+klassen_2016_analysis_square`.
+    See :footcite:`srivastava+klassen_2016_functionala`.
 
     The inverse SRSF transform is defined as
 
@@ -133,7 +133,7 @@ class SRSF(
 
         Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely
         continuous function, the SRSF transform is defined as
-        :footcite:`srivastava+klassen_2016_analysis_square`:
+        :footcite:`srivastava+klassen_2016_functionala`:
 
         .. math::
 
@@ -184,7 +184,7 @@ class SRSF(
         Compute the inverse SRSF transform.
 
         Given the srsf and the initial value the original function can be
-        obtained as :footcite:`srivastava+klassen_2016_analysis_square`:
+        obtained as :footcite:`srivastava+klassen_2016_functionala`:
 
         .. math::
             f(t) = f(a) + \int_{a}^t q(t)|q(t)|dt

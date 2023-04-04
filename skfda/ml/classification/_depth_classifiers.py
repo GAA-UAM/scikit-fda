@@ -218,11 +218,12 @@ class DDGClassifier(
     BaseEstimator,
     ClassifierMixin[Input, Target],
 ):
-    r"""Generalized depth-versus-depth (DD) classifer for functional data.
+    r"""
+    Generalized depth-versus-depth (DD) classifier for functional data.
 
     This classifier builds an interface around the DDGTransfomer.
-
-    The transformer takes a list of k depths and performs the following map:
+    The transformer takes a list of k depths and performs the following map
+    :footcite:p:`cuesta-albertos++_2017_ddgclassifier`:
 
     .. math::
         \mathcal{X} &\rightarrow \mathbb{R}^G \\
@@ -231,7 +232,6 @@ class DDGClassifier(
     Where :math:`D_i^j(x)` is the depth of the point :math:`x` with respect to
     the data in the :math:`i`-th group using the :math:`j`-th depth of the
     provided list.
-
     Note that :math:`\mathcal{X}` is possibly multivariate, that is,
     :math:`\mathcal{X} = \mathcal{X}_1 \times ... \times \mathcal{X}_p`.
 
@@ -310,12 +310,8 @@ class DDGClassifier(
         :class:`~skfda.preprocessing.dim_reduction.feature_extraction._ddg_transformer`
 
     References:
-        Li, J., Cuesta-Albertos, J. A., and Liu, R. Y. (2012). DD-classifier:
-        Nonparametric classification procedure based on DD-plot. Journal of
-        the American Statistical Association, 107(498):737-753.
+        .. footbibliography::
 
-        Cuesta-Albertos, J.A., Febrero-Bande, M. and Oviedo de la Fuente, M.
-        (2017) The DDG-classifier in the functional setting. TEST, 26. 119-142.
     """
 
     def __init__(  # noqa: WPS234
@@ -514,15 +510,18 @@ class _ArgMaxClassifier(
 
 
 class MaximumDepthClassifier(DDGClassifier[Input, Target]):
-    """Maximum depth classifier for functional data.
+    """
+    Maximum depth classifier for functional data.
 
-    Test samples are classified to the class where they are deeper.
+    Test samples are classified to the class where they are deeper
+    :footcite:p:`ghosh+chaudhuri_2005_maximum`.
 
     Parameters:
         depth_method:
             The depth class to use when calculating the depth of a test
             sample in a class. See the documentation of the depths module
             for a list of available depths. By default it is ModifiedBandDepth.
+
     Examples:
         Firstly, we will import and split the Berkeley Growth Study dataset
 
@@ -557,8 +556,8 @@ class MaximumDepthClassifier(DDGClassifier[Input, Target]):
         :class:`~skfda.ml.classification.DDGClassifier`
 
     References:
-        Ghosh, A. K. and Chaudhuri, P. (2005b). On maximum depth and
-        related classifiers. Scandinavian Journal of Statistics, 32, 327–350.
+        .. footbibliography::
+
     """
 
     def __init__(self, depth_method: Depth[Input] | None = None) -> None:

@@ -149,12 +149,12 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     For smoothing, :math:`\{x_1, ..., x_n\}` are the points with known value
     and :math:`\{x_1', ..., x_m'\}` are the points for which it is desired to
     estimate the smoothed value. The distance :math:`d` is the absolute value
-    function :footcite:`wasserman_2006_nonparametric_nw`.
+    function :footcite:`wasserman_2006_nonparametric`.
 
     For regression, :math:`\{x_1, ..., x_n\}` is the functional data and
     :math:`\{x_1', ..., x_m'\}` are the functions for which it is desired to
     estimate the scalar value. Here, :math:`d` is some functional distance
-    :footcite:`ferraty+vieu_2006_nonparametric_nw`.
+    :footcite:`ferraty+vieu_2006_functional`.
 
     In both cases :math:`K(\cdot)` is a kernel function and :math:`h` is the
     bandwidth.
@@ -224,7 +224,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     where :math:`\{t_1, t_2, ..., t_n\}` are points with known value and
     :math:`\{t_1', t_2', ..., t_m'\}` are the points for which it is
     desired to estimate the smoothed value
-    :footcite:`wasserman_2006_nonparametric_llr`.
+    :footcite:`wasserman_2006_nonparametric`.
 
     For **kernel regression** algorithm:
 
@@ -248,7 +248,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     Where :math:`c_{ik}^j` is the :math:`j`-th coefficient in a truncated basis
     expansion of :math:`X_i - X'_k = \sum_{j=1}^J c_{ik}^j` and :math:`d` some
-    functional distance :footcite:`baillo+grane_2008_llr`
+    functional distance :footcite:`baillo+grane_2009_local`
 
     For both cases, :math:`K(\cdot)` is a kernel function and :math:`h` the
     bandwidth.
@@ -431,7 +431,7 @@ class KNeighborsHatMatrix(HatMatrix):
     In both cases, :math:`K(\cdot)` is a kernel function and
     :math:`h_{i}` is calculated as the distance from :math:`x_i'` to its
     ``n_neighbors``-th nearest neighbor in :math:`\{x_1, ..., x_n\}`
-    :footcite:`ferraty+vieu_2006_nonparametric_knn`.
+    :footcite:`ferraty+vieu_2006_computational`.
 
     Used with the uniform kernel, it takes the average of the closest
     ``n_neighbors`` points to a given point.

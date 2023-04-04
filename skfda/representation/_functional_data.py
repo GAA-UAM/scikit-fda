@@ -1170,12 +1170,14 @@ class FData(  # noqa: WPS214
         Parameters:
             indices: Indices to be taken.
             allow_fill: How to handle negative values in `indices`.
+
                 * False: negative values in `indices` indicate positional
                   indices from the right (the default). This is similar to
                   :func:`numpy.take`.
                 * True: negative values in `indices` indicate
                   missing values. These values are set to `fill_value`. Any
                   other negative values raise a ``ValueError``.
+
             fill_value: Fill value to use for NA-indices
                 when `allow_fill` is True.
                 This may be ``None``, in which case the default NA value for

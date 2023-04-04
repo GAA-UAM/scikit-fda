@@ -31,8 +31,9 @@ class BSplineBasis(Basis):
 
     Implementation details: In order to allow a discontinuous behaviour at
     the boundaries of the domain it is necessary to placing m knots at the
-    boundaries [RS05]_. This is automatically done so that the user only has to
-    specify a single knot at the boundaries.
+    boundaries\ :footcite:p:`ramsay+silverman_2005_functionala`. This is
+    automatically done so that the user only has to specify a single knot
+    at the boundaries.
 
     Parameters:
         domain_range: A tuple of length 2 containing the initial and
@@ -85,8 +86,7 @@ class BSplineBasis(Basis):
                 [ 2.]]])
 
     References:
-        .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-            Analysis*. Springer. 50-51.
+        .. footbibliography::
 
     """
 
@@ -391,9 +391,9 @@ class BSpline(BSplineBasis):
 
     Implementation details: In order to allow a discontinuous behaviour at
     the boundaries of the domain it is necessary to placing m knots at the
-    boundaries [RS05]_. This is automatically done so that the user only has to
-    specify a single knot at the boundaries.
-
+    boundaries\ :footcite:p:`ramsay+silverman_2005_functionala`. This is
+    automatically done so that the user only has to specify a single knot
+    at the boundaries.
 
     Parameters:
         domain_range: A tuple of length 2 containing the initial and
@@ -446,8 +446,7 @@ class BSpline(BSplineBasis):
                 [ 2.]]])
 
     References:
-        .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-            Analysis*. Springer. 50-51.
+        .. footbibliography::
 
     """
 

@@ -1,3 +1,18 @@
+@article{bagnall++_2018_uea,
+  title = {The {{UEA}} Multivariate Time Series Classification Archive, 2018},
+  author = {Bagnall, Anthony and Dau, Hoang Anh and Lines, Jason and Flynn, Michael and Large, James and Bostrom, Aaron and Southam, Paul and Keogh, Eamonn},
+  year = {2018},
+  month = oct,
+  journal = {arXiv:1811.00075 [cs, stat]},
+  eprint = {1811.00075},
+  primaryclass = {cs, stat},
+  url = {http://arxiv.org/abs/1811.00075},
+  urldate = {2018-11-16},
+  abstract = {In 2002, the UCR time series classification archive was first released with sixteen datasets. It gradually expanded, until 2015 when it increased in size from 45 datasets to 85 datasets. In October 2018 more datasets were added, bringing the total to 128. The new archive contains a wide range of problems, including variable length series, but it still only contains univariate time series classification problems. One of the motivations for introducing the archive was to encourage researchers to perform a more rigorous evaluation of newly proposed time series classification (TSC) algorithms. It has worked: most recent research into TSC uses all 85 datasets to evaluate algorithmic advances. Research into multivariate time series classification, where more than one series are associated with each class label, is in a position where univariate TSC research was a decade ago. Algorithms are evaluated using very few datasets and claims of improvement are not based on statistical comparisons. We aim to address this problem by forming the first iteration of the MTSC archive, to be hosted at the website www.timeseriesclassification.com. Like the univariate archive, this formulation was a collaborative effort between researchers at the University of East Anglia (UEA) and the University of California, Riverside (UCR). The 2018 vintage consists of 30 datasets with a wide range of cases, dimensions and series lengths. For this first iteration of the archive we format all data to be of equal length, include no series with missing data and provide train/test splits.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Machine Learning,Statistics - Machine Learning}
+}
+
 @article{baillo+grane_2009_local,
   title = {Local Linear Regression for Functional Predictor and Scalar Response},
   author = {Ba{\'i}llo, Amparo and Gran{\'e}, Aurea},
@@ -138,6 +153,21 @@
   doi = {10.1080/10618600.2018.1473781},
   abstract = {This article proposes a new graphical tool, the magnitude-shape (MS) plot, for visualizing both the magnitude and shape outlyingness of multivariate functional data. The proposed tool builds on the recent notion of functional directional outlyingness, which measures the centrality of functional data by simultaneously considering the level and the direction of their deviation from the central region. The MS-plot intuitively presents not only levels but also directions of magnitude outlyingness on the horizontal axis or plane, and demonstrates shape outlyingness on the vertical axis. A dividing curve or surface is provided to separate nonoutlying data from the outliers. Both the simulated data and the practical examples confirm that the MS-plot is superior to existing tools for visualizing centrality and detecting outliers for functional data. Supplementary material for this article is available online.},
   keywords = {Data visualization,Directional outlyingness,Functional data,Graphical tool,Magnitude and shape,Outlier detection,Statistics - Computation,Statistics - Methodology}
+}
+
+@article{dau++_2019_ucr,
+  title = {The {{UCR}} Time Series Archive},
+  author = {Dau, Hoang Anh and Bagnall, Anthony and Kamgar, Kaveh and Yeh, Chin-Chia Michael and Zhu, Yan and Gharghabi, Shaghayegh and Ratanamahatana, Chotirat Ann and Keogh, Eamonn},
+  year = {2019},
+  month = nov,
+  journal = {IEEE/CAA Journal of Automatica Sinica},
+  volume = {6},
+  number = {6},
+  pages = {1293--1305},
+  issn = {2329-9274},
+  doi = {10.1109/JAS.2019.1911747},
+  abstract = {The UCR time series archive - introduced in 2002, has become an important resource in the time series data mining community, with at least one thousand published papers making use of at least one data set from the archive. The original incarnation of the archive had sixteen data sets but since that time, it has gone through periodic expansions. The last expansion took place in the summer of 2015 when the archive grew from 45 to 85 data sets. This paper introduces and will focus on the new data expansion from 85 to 128 data sets. Beyond expanding this valuable resource, this paper offers pragmatic advice to anyone who may wish to evaluate a new algorithm on the archive. Finally, this paper makes a novel and yet actionable claim: of the hundreds of papers that show an improvement over the standard baseline (1nearest neighbor classification), a fraction might be mis-attributing the reasons for their improvement. Moreover, the improvements claimed by these papers might have been achievable with a much simpler modification, requiring just a few lines of code.},
+  keywords = {Cameras,Computer Science - Machine Learning,data mining,Data mining,Error analysis,Euclidean distance,Microsoft Windows,Statistics - Machine Learning,Time series analysis,time series classification,Training,UCR time series archive}
 }
 
 @article{febrero++_2008_outlier,
@@ -337,7 +367,7 @@
 @inbook{ramsay+silverman_2005_functionala,
   title = {From Functional Data to Smooth Functions},
   booktitle = {Functional Data Analysis},
-  author = {Ramsay, James and Silverman, B. W.},
+  author = {Ramsay, James and Silverman, Bernard W.},
   year = {2005},
   series = {Springer {{Series}} in {{Statistics}}},
   edition = {Second},
@@ -347,7 +377,26 @@
   doi = {10.1007/b98888},
   url = {https://www.springer.com/gp/book/9780387400808},
   urldate = {2021-09-19},
-  collaborator = {Ramsay, James and Silverman, B. W.},
+  collaborator = {Ramsay, James and Silverman, Bernard W.},
+  isbn = {978-0-387-40080-8},
+  langid = {english},
+  keywords = {Multivariate analysis}
+}
+
+@inbook{ramsay+silverman_2005_introduction,
+  title = {Introduction},
+  booktitle = {Functional Data Analysis},
+  author = {Ramsay, James and Silverman, Bernard W.},
+  year = {2005},
+  series = {Springer {{Series}} in {{Statistics}}},
+  edition = {Second},
+  pages = {1--18},
+  publisher = {{Springer-Verlag}},
+  address = {{New York}},
+  doi = {10.1007/b98888},
+  url = {https://www.springer.com/gp/book/9780387400808},
+  urldate = {2021-09-19},
+  collaborator = {Ramsay, James and Silverman, Bernard W.},
   isbn = {978-0-387-40080-8},
   langid = {english},
   keywords = {Multivariate analysis}
@@ -356,7 +405,7 @@
 @inbook{ramsay+silverman_2005_registration,
   title = {The Registration and Display of Functional Data},
   booktitle = {Functional Data Analysis},
-  author = {Ramsay, James and Silverman, B. W.},
+  author = {Ramsay, James and Silverman, Bernard W.},
   year = {2005},
   series = {Springer {{Series}} in {{Statistics}}},
   edition = {Second},
@@ -366,7 +415,7 @@
   doi = {10.1007/b98888},
   url = {https://www.springer.com/gp/book/9780387400808},
   urldate = {2021-09-19},
-  collaborator = {Ramsay, James and Silverman, B. W.},
+  collaborator = {Ramsay, James and Silverman, Bernard W.},
   isbn = {978-0-387-40080-8},
   langid = {english},
   keywords = {Multivariate analysis}

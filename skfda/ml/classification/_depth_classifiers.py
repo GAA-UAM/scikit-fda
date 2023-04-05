@@ -67,11 +67,13 @@ class DDClassifier(
     BaseEstimator,
     ClassifierMixin[Input, Target],
 ):
-    """Depth-versus-depth (DD) classifer for functional data.
+    """
+    Depth-versus-depth (DD) classifer for functional data.
 
     Transforms the data into a DD-plot and then classifies using a polynomial
-    of a chosen degree. The polynomial passes through zero and maximizes the
-    accuracy of the classification on the train dataset.
+    of a chosen degree\ :footcite:p:`li++_2012_ddclassifier`.
+    The polynomial passes through zero and maximizes the accuracy of the
+    classification on the train dataset.
 
     If a point is below the polynomial in the DD-plot, it is classified to
     the first class. Otherwise, the point is classified to the second class.
@@ -118,9 +120,7 @@ class DDClassifier(
         :class:`~skfda.preprocessing.dim_reduction.feature_extraction._ddg_transformer`
 
     References:
-        Li, J., Cuesta-Albertos, J. A., and Liu, R. Y. (2012). DD-classifier:
-        Nonparametric classification procedure based on DD-plot. Journal of
-        the American Statistical Association, 107(498):737-753.
+        .. footbibliography::
     """
 
     def __init__(

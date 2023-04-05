@@ -169,11 +169,8 @@ class BSplineBasis(Basis):
         Get the knots adding m knots to the boundary.
 
         This needs to be done in order to allow a discontinuous behaviour
-        at the boundaries of the domain [RS05]_.
+        at the boundaries of the domain (see references).
 
-        References:
-            .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-                Analysis*. Springer. 50-51.
         """
         return tuple(
             (self.knots[0],) * (self.order - 1)

@@ -10,6 +10,7 @@ from sklearn.utils import Bunch
 from typing_extensions import Literal
 
 import rdata
+import skdatasets
 
 from ..representation import FDataGrid
 from ..typing._numpy import NDArrayFloat, NDArrayInt
@@ -212,6 +213,126 @@ def fetch_ucr(
         return dataset['data'], dataset['target']
 
     return dataset
+
+
+def _physionet_to_fdatagrid(
+    name: str,
+    data: DataFrame,
+    mode: Literal[
+        None,
+        "pad_left",
+        "pad_right",
+        "truncate_left",
+        "truncate_right",
+    ],
+) -> FDataGrid:
+
+    column = data.loc[:, "signal"]
+    n_samples = len(column)
+    dim_codomain = column[0].shape[1]
+
+    min_len = min(s.shape[0] for s in column)
+    max_len = max(s.shape[0] for s in column)
+
+    if mode is None and min_len != max_len:
+        raise ValueError(
+            f"Dataset {name} has signals of different lengths. Use the "
+            f"'mode' parameter to set a common lenght",
+        )
+
+    n_points = max_len if mode in {"pad_left", "pad_right"} else min_len
+
+    data_matrix = np.full(
+        shape=(n_samples, n_points, dim_codomain),
+        fill_value=np.nan,
+        dtype=column[0].dtype,
+    )
+
+    for i, sample in enumerate(column):
+        copy_len = min(sample.shape[0], n_points)
+
+        if mode in {None, "pad_right", "truncate_right"}:
+            data_matrix[i, :copy_len, :] = sample[:copy_len, :]
+        else:
+            data_matrix[i, -copy_len:, :] = sample[-copy_len:, :]
+
+    grid_points = np.linspace(
+        0,
+        column.attrs["fs"] * (n_points - 1),
+        n_points,
+    )
+
+    coordinate_names = [
+        f"{sig_name}({unit})"
+        for sig_name, unit in zip(
+            column.attrs["sig_name"],
+            column.attrs["units"],
+        )
+    ]
+
+    sample_names = list(data.index)
+
+    return FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+        dataset_name=name,
+        coordinate_names=coordinate_names,
+        sample_names=sample_names,
+    )
+
+
+def fetch_physionet(
+    name: str,
+    *,
+    return_X_y: bool = False,
+    as_frame: bool = True,
+    target_column: str | Sequence[str] | None = None,
+    mode: Literal[
+        None,
+        "pad_left",
+        "pad_right",
+        "truncate_left",
+        "truncate_right",
+    ] = None,
+    **kwargs: Any,
+) -> (
+    Bunch
+    | Tuple[NDArrayAny, NDArrayAny | None]
+    | Tuple[DataFrame, Series | DataFrame | None]
+):
+    """
+    Fetch a dataset from Physionet.
+
+    Args:
+        name: Dataset name.
+        kwargs: Additional parameters for the function
+            :func:`skdatasets.repositories.ucr.fetch`.
+
+    Returns:
+        The dataset requested.
+
+    Examples:
+        >>> import skfda
+        >>> X, y = skfda.datasets.fetch_physionet("ctu-uhb-ctgdb", return_X_y=True, mode="truncate_right")
+
+    """
+    repositories = _get_skdatasets_repositories()
+
+    dataset = repositories.physionet.fetch(name, as_frame=True, **kwargs)
+
+    fdatagrid = _physionet_to_fdatagrid(name, data=dataset.frame, mode=mode)
+
+    dataset.frame.loc[:, "signal"] = pd.Series(
+        fdatagrid,
+        index=dataset.frame.index,
+    )
+
+    return repositories.base.dataset_from_dataframe(
+        dataset.frame,
+        return_X_y=return_X_y,
+        as_frame=as_frame,
+        target_column=target_column,
+    )
 
 
 def _fetch_cran_no_encoding_warning(*args: Any, **kwargs: Any) -> Any:

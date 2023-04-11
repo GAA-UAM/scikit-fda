@@ -6,6 +6,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
     submodules=[
         "feature_construction",
+        "missing",
         "registration",
         "smoothing",
         "dim_reduction",

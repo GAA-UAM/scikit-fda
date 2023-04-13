@@ -902,7 +902,7 @@ class FDataBasis(FData):  # noqa: WPS214
     ) -> T:
         """Multiplication by scalar."""
         try:
-            vector = np.atleast_1d(other)
+            vector = _int_to_real(np.atleast_1d(other))
         except Exception:
             return NotImplemented
 

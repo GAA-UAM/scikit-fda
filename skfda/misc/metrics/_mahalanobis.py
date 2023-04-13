@@ -23,7 +23,7 @@ class MahalanobisDistance(BaseEstimator):
 
     Class that implements functional Mahalanobis distance for both
     basis and grid representations of the data
-    :footcite:`berrendero+bueno-larraz+cuevas_2020_mahalanobis`.
+    :footcite:`berrendero++_2020_mahalanobis`.
 
     Parameters:
         n_components: Number of eigenvectors to keep from
@@ -104,11 +104,11 @@ class MahalanobisDistance(BaseEstimator):
 
         if self.eigenvalues is None or self.eigenvectors is None:
             fpca = FPCA(
-                self.n_components,
-                self.centering,
-                self.regularization,
-                self.weights,
-                self.components_basis,
+                n_components=self.n_components,
+                centering=self.centering,
+                regularization=self.regularization,
+                components_basis=self.components_basis,
+                _weights=self.weights,
             )
             fpca.fit(X)
             self.eigenvalues_ = fpca.explained_variance_

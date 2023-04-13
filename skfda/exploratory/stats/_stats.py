@@ -192,7 +192,7 @@ def geometric_median(
         \sum_{i=1}^N \left \| x_i-y \right \|
 
     The geometric median in the functional case is also described in
-    :footcite:`gervini_2008_estimation`.
+    :footcite:`gervini_2008_robust`.
     Instead of the proposed algorithm, however, the current implementation
     uses the corrected Weiszfeld algorithm to compute the median.
 

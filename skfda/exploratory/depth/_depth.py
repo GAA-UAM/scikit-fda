@@ -231,7 +231,7 @@ class DistanceBasedDepth(Depth[FDataGrid], BaseEstimator):
             .. math::
                 D(x) = [1 + M(x, \mu)]^{-1}.
 
-            as explained in :footcite:`serfling+zuo_2000_depth_function`.
+            as explained in :footcite:`serfling+zuo_2000_general`.
 
     Examples:
         >>> import skfda

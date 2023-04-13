@@ -40,9 +40,7 @@ from .grid import FDataGrid
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike
 from .interpolation import SplineInterpolation
-
-if TYPE_CHECKING:
-    from .basis import Basis, FDataBasis
+from .basis import Basis, FDataBasis
 
 T = TypeVar("T", bound='FDataIrregular'
             )
@@ -735,8 +733,44 @@ class FDataIrregular(FData):  # noqa: WPS214
         return ScatterPlotIrregular(self, *args, **kwargs).plot()
 
     def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
-        # TODO Use BasisSmoother to return basis?
-        return None
+        from ..preprocessing.smoothing import BasisSmoother
+
+        if self.dim_domain != basis.dim_domain:
+            raise ValueError(
+                f"The domain of the function has "
+                f"dimension {self.dim_domain} "
+                f"but the domain of the basis has "
+                f"dimension {basis.dim_domain}",
+            )
+        elif self.dim_codomain != basis.dim_codomain:
+            raise ValueError(
+                f"The codomain of the function has "
+                f"dimension {self.dim_codomain} "
+                f"but the codomain of the basis has "
+                f"dimension {basis.dim_codomain}",
+            )
+
+        # Readjust the domain range if there was not an explicit one
+        if not basis.is_domain_range_fixed():
+            basis = basis.copy(domain_range=self.domain_range)
+
+        smoother = BasisSmoother(
+            basis=basis,
+            **kwargs,
+            return_basis=True,
+        )
+        
+        # Only uses the available values for each curve
+        basis_coefficients = [smoother.fit_transform(curve.to_grid()).coefficients[0] for curve in self]
+
+        return FDataBasis(
+            basis, 
+            basis_coefficients, 
+            dataset_name=self.dataset_name, 
+            argument_names=self.argument_names, 
+            coordinate_names=self.coordinate_names, 
+            sample_names=self.sample_names,
+            extrapolation=self.extrapolation)
 
     def to_matrix(self, **kwargs: Any) -> ArrayLike:
         # Convert FDataIrregular to matrix of all points

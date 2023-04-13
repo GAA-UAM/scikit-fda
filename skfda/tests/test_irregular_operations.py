@@ -7,6 +7,7 @@ import pytest
 from skfda.datasets._real_datasets import _fetch_loon_data
 from skfda.representation import FDataIrregular, FDataGrid
 from skfda.representation.interpolation import SplineInterpolation
+from skfda.representation.basis import Basis, FDataBasis, FourierBasis, BSplineBasis
 
 ############
 # MACROS
@@ -15,6 +16,7 @@ from skfda.representation.interpolation import SplineInterpolation
 NUM_CURVES = 100
 MAX_VALUES_PER_CURVE = 10
 DIMENSIONS = 2
+N_BASIS = 5
 
 random_state = np.random.RandomState(seed=14)
 
@@ -159,6 +161,29 @@ _all_numeric_reductions = [
 def all_numeric_reductions(request: Any) -> Any:
     """
     Fixture for numeric reduction names.
+    """
+    return request.param
+
+_all_basis_operations = [
+    "to_basis",
+]
+
+@pytest.fixture(params=_all_basis_operations)
+def all_basis_operations(request: Any) -> Any:
+    """
+    Fixture for basis operation names.
+    """
+    return request.param
+
+_all_basis = [
+    FourierBasis,
+    BSplineBasis,
+]
+
+@pytest.fixture(params=_all_basis)
+def all_basis(request: Any) -> Any:
+    """
+    Fixture for basis names.
     """
     return request.param
 
@@ -655,3 +680,25 @@ class TestNumericReductions:
     
         reduction = getattr(fdatairregular, all_numeric_reductions)()
         assert isinstance(reduction, FDataIrregular)
+
+########################
+# TEST BASIS OPERATIONS
+########################
+
+class TestBasisOperations:
+    """
+    Class which encapsulates the testing of numeric reductions
+    (such as mean, std) for FDataIrregular objects
+    """
+    def test_fdatairregular_numeric_reduction(
+        self,
+        fdatairregular1D: FDataIrregular,
+        all_basis: Basis,
+        all_basis_operations: str,
+    ) -> None:
+        basis = all_basis(
+            domain_range=fdatairregular1D.domain_range, 
+            n_basis=N_BASIS
+            )
+        basis_operation = getattr(fdatairregular1D, all_basis_operations)(basis)
+        assert isinstance(basis_operation, FDataBasis)

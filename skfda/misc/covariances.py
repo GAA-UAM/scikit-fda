@@ -763,13 +763,13 @@ class Matern(Covariance):
 
 
 class Empirical(Covariance):
-    """
+    r"""
     Sample covariance function.
 
     The sample covariance function is defined as
     . math::
-        K(t, s) = \frac{1}{n}\sum_{n=1}^N(x_n(t) - \bar{x}(t))
-        (x_n(s) - \bar{x}(s))
+        K(t, s) = \frac{1}{n}\sum_{n=1}^N\left(x_n(t) - \bar{x}(t)\right)
+        \left(x_n(s) - \bar{x}(s)\right)
 
     where :math:`x_n(t)` is the n-th sample and :math:`\bar{x}(t)` is the
     mean of the samples.
@@ -795,13 +795,20 @@ class Empirical(Covariance):
             )
 
     def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+        """Evaluate the covariance function.
+
+        Args:
+            x: First array of points of evaluation.
+            y: Second array of points of evaluation.
+
+        Returns:
+            Covariance function evaluated at the grid formed by x and y.
+        """
         return self.cov_fdata([x, y], grid=True)[0, ..., 0]
 
 
 class EmpiricalGrid(Empirical):
-    """
-    Sample covariance function for FDataGrid.
-    """
+    """Sample covariance function for FDataGrid."""
 
     cov_fdata: FDataGrid
 

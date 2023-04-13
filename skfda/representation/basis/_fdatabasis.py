@@ -6,6 +6,7 @@ from builtins import isinstance
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Optional,
     Sequence,
     Type,
@@ -473,26 +474,27 @@ class FDataBasis(FData):  # noqa: WPS214
     @overload
     def cov(
         self: T,
-    ) -> T:
+    ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
-    def cov(
+    def cov(  # noqa: WPS320
         self: T,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
-    ) -> Union[T, NDArrayFloat]:
+    ) -> Union[
+        Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
+        NDArrayFloat,
+    ]:
         """Compute the covariance of the functional data object.
 
         Calculates the unbiased sample covariance function of the data.
         This is expected to be only defined for univariate functions.
         This is a function defined over the basis consisting of the tensor
         product of the original basis with itself. The resulting covariance
-        function is then represented as an FDataBasis object with one
-        sample with such tensor basis with the coefficients being the
-        flattened covariance matrix of the original coefficients.
+        function is then represented as a callable object.
 
-        If s_points and t_points are not provided, this method returns
-        the FData object representing the covariance function.
+        If s_points or t_points are not provided, this method returns
+        a callable object representing the covariance function.
         If s_points and t_points are provided, this method returns the
         evaluation of the covariance function at the grid formed by the
         cartesian product of the points in s_points and t_points.
@@ -505,31 +507,12 @@ class FDataBasis(FData):  # noqa: WPS214
             Covariance function.
 
         """
-        # import TensorBasis here to avoid circular dependencies
-        from . import TensorBasis
-
-        dataset_name = (
-            f"{self.dataset_name} - covariance"
-            if self.dataset_name is not None else None
-        )
-
-        basis = TensorBasis([self.basis, self.basis])
-        coefficients = np.cov(self.coefficients, rowvar=False).flatten()
-
-        covariance_function = FDataBasis(
-            basis=basis,
-            coefficients=coefficients,
-            dataset_name=dataset_name,
-            argument_names=self.argument_names * 2,
-            sample_names=("covariance",),
-        )
-
-        if s_points is not None and t_points is not None:
-            return covariance_function(
-                [s_points, t_points],
-                grid=True,
-            )[0, ..., 0]
-        return covariance_function
+        # To avoid circular imports
+        from ...misc.covariances import EmpiricalBasis
+        cov_function = EmpiricalBasis(self)
+        if s_points is None or t_points is None:
+            return cov_function
+        return cov_function(s_points, t_points)
 
     def to_grid(
         self,

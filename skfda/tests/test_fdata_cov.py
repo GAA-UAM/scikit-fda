@@ -108,6 +108,30 @@ def data_in_basis(
 # TESTS
 ############
 
+def test_overload_cov() -> None:
+    """Test that the overloading of the cov method is consistent."""
+    # Generate any sample data
+    data = make_gaussian_process(
+        n_samples=N_SAMPLES,
+        n_features=N_FEATURES,
+        start=0,
+        stop=1,
+    )
+    grid_points = np.linspace(0, 1, N_FEATURES)
+    # Test for FDataGrid
+    np.testing.assert_equal(
+        data.cov()(grid_points, grid_points),
+        data.cov(grid_points, grid_points),
+    )
+    # Test for FDataBasis
+    basis = FourierBasis(n_basis=5, domain_range=(0, 1))
+    data_in_basis = data.to_basis(basis)
+    np.testing.assert_equal(
+        data_in_basis.cov()(grid_points, grid_points),
+        data_in_basis.cov(grid_points, grid_points),
+    )
+
+
 def test_fdatabasis_covariance(
     data_in_basis: FDataBasis,
 ) -> None:
@@ -124,9 +148,8 @@ def test_fdatabasis_covariance(
     domain_range = data_in_basis.domain_range[0]
     grid_points = np.linspace(domain_range[0], domain_range[1], N_FEATURES)
     data_in_grid = data_in_basis.to_grid(grid_points)
-    s_grid, t_grid = grid_points, grid_points
     # Check that the covariance functions are equal
     np.testing.assert_allclose(
-        data_in_basis.cov(s_grid, t_grid),
-        data_in_grid.cov(s_grid, t_grid),
+        data_in_basis.cov(grid_points, grid_points),
+        data_in_grid.cov(grid_points, grid_points),
     )

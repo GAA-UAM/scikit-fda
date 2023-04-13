@@ -13,6 +13,7 @@ import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Optional,
     Sequence,
     Type,
@@ -605,14 +606,17 @@ class FDataGrid(FData):  # noqa: WPS214
     @overload
     def cov(
         self: T,
-    ) -> T:
+    ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
-    def cov(
+    def cov(  # noqa: WPS320
         self: T,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
-    ) -> Union[T, NDArrayFloat]:
+    ) -> Union[
+        Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
+        NDArrayFloat,
+    ]:
         """Compute the covariance.
 
         Calculates the covariance matrix representing the covariance of the
@@ -629,40 +633,12 @@ class FDataGrid(FData):  # noqa: WPS214
             Covariance function.
 
         """
-        dataset_name = (
-            f"{self.dataset_name} - covariance"
-            if self.dataset_name is not None else None
-        )
-
-        if self.dim_domain != 1 or self.dim_codomain != 1:
-            raise NotImplementedError(
-                "Covariance only implemented "
-                "for univariate functions",
-            )
-
-        covariance_function = self.copy(
-            data_matrix=np.cov(
-                self.data_matrix[..., 0],
-                rowvar=False,
-            )[np.newaxis, ...],
-            grid_points=[
-                self.grid_points[0],
-                self.grid_points[0],
-            ],
-            domain_range=[
-                self.domain_range[0],
-                self.domain_range[0],
-            ],
-            dataset_name=dataset_name,
-            argument_names=self.argument_names * 2,
-            sample_names=("covariance",),
-        )
-        if s_points is not None and t_points is not None:
-            return covariance_function(
-                [s_points, t_points],
-                grid=True,
-            )[0, ..., 0]
-        return covariance_function
+        # To avoid circular imports
+        from ..misc.covariances import EmpiricalGrid
+        cov_function = EmpiricalGrid(self)
+        if s_points is None or t_points is None:
+            return cov_function
+        return cov_function(s_points, t_points)
 
     def gmean(self: T) -> T:
         """Compute the geometric mean of all samples in the FDataGrid object.

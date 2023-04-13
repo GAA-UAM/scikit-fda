@@ -28,6 +28,7 @@ COPY_KWARGS = [
 
 random_state = np.random.RandomState(seed=14)
 
+
 @pytest.fixture()
 def input_arrays(
 ) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:

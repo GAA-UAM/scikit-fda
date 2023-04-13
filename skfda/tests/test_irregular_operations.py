@@ -12,8 +12,8 @@ from skfda.representation.interpolation import SplineInterpolation
 # MACROS
 ############
 
-NUM_CURVES = 10
-MAX_VALUES_PER_CURVE = 100
+NUM_CURVES = 100
+MAX_VALUES_PER_CURVE = 10
 DIMENSIONS = 2
 
 random_state = np.random.RandomState(seed=14)

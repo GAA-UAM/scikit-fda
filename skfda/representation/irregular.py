@@ -36,7 +36,7 @@ from ..typing._base import (
 )
 from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from ._functional_data import FData
-from .grid import FDataGrid, FDataGridDType
+from .grid import FDataGrid
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike
 from .interpolation import SplineInterpolation
@@ -44,8 +44,8 @@ from .interpolation import SplineInterpolation
 if TYPE_CHECKING:
     from .basis import Basis, FDataBasis
 
-T = TypeVar("T", bound='FDataIrregular')
-
+T = TypeVar("T", bound='FDataIrregular'
+            )
 
 class FDataIrregular(FData):  # noqa: WPS214
     # TODO Docstring
@@ -80,51 +80,26 @@ class FDataIrregular(FData):  # noqa: WPS214
         self.set_function_arguments(function_arguments)
         self.set_function_values(function_values)
 
-        dim_ranges = list()
-        for dim in range(self.dim_domain):
-            i = 0
-            dim_sample_ranges = list()
-            for f in self.function_indices[1:]:
-                min_argument = min([self.function_arguments[j][dim] for j in range(i, f)])
-                max_argument = max([self.function_arguments[j][dim] for j in range(i, f)])
-                dim_sample_ranges.append(tuple((min_argument, 
-                                                max_argument))
-                                         )
-                i = f
-                
-            min_argument = min([self.function_arguments[i + j][dim] 
-                                for j in range(self.function_arguments.shape[0] - i)])
-            max_argument = max([self.function_arguments[i + j][dim] 
-                                for j in range(self.function_arguments.shape[0] - i)])
-            dim_sample_ranges.append((min_argument,
-                                      max_argument))
-            dim_ranges.append(dim_sample_ranges)
-
-        self._sample_range = list()
-        for sample in range(len(dim_sample_ranges)):
-            self._sample_range.append(
-                tuple([dim_ranges[dim][sample]
-                       for dim in range(self.dim_domain)])
-                )
+        self._sample_range = FDataIrregular._get_sample_range_from_data(
+            self.function_indices, 
+            self.function_arguments, 
+            self.dim_domain
+            )
 
         # Default value for sample_range is a list of tuples with
         # the first and last arguments of each curve for each dimension
-
-        from ..misc.validation import validate_domain_range
+        
         if domain_range is None:
-            ranges = list()
-            for dim in range(self.dim_domain):
-                min_argument = min([x[dim][0] for x in self._sample_range])
-                max_argument = max([x[dim][1] for x in self._sample_range])
-                ranges.append((min_argument, max_argument))
+            domain_range = FDataIrregular._get_domain_range_from_sample_range(
+                self._sample_range, 
+                self.dim_domain
+                )
 
-            domain_range = tuple(ranges)
-
-            # Default value for domain_range is a list of tuples with
-
-            # the minimum and maximum value of the arguments for each
-            # dimension
-
+        # Default value for domain_range is a list of tuples with
+        # the minimum and maximum value of the arguments for each
+        # dimension
+            
+        from ..misc.validation import validate_domain_range
         self._domain_range = validate_domain_range(domain_range)
 
         self.interpolation = interpolation
@@ -240,7 +215,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             function_values,
             **kwargs
             )
-
+        
     def set_function_indices(self, function_indices) -> ArrayLike:
         self.function_indices = function_indices.copy()
 
@@ -249,6 +224,47 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def set_function_values(self, function_values) -> ArrayLike:
         self.function_values = function_values.copy()
+        
+    def _get_sample_range_from_data(function_indices, function_arguments, dim_domain):
+        dim_ranges = list()
+        for dim in range(dim_domain):
+            i = 0
+            dim_sample_ranges = list()
+            for f in function_indices[1:]:
+                min_argument = min([function_arguments[j][dim] for j in range(i, f)])
+                max_argument = max([function_arguments[j][dim] for j in range(i, f)])
+                dim_sample_ranges.append(tuple((min_argument, 
+                                                max_argument))
+                                         )
+                i = f
+                
+            min_argument = min([function_arguments[i + j][dim] 
+                                for j in range(function_arguments.shape[0] - i)])
+            max_argument = max([function_arguments[i + j][dim] 
+                                for j in range(function_arguments.shape[0] - i)])
+            dim_sample_ranges.append((min_argument,
+                                      max_argument))
+            dim_ranges.append(dim_sample_ranges)
+
+        sample_range = list()
+        for sample in range(len(dim_sample_ranges)):
+            sample_range.append(
+                tuple([dim_ranges[dim][sample]
+                       for dim in range(dim_domain)])
+                )
+        
+        return sample_range
+    
+    def _get_domain_range_from_sample_range(sample_range, dim_domain):
+        ranges = list()
+        for dim in range(dim_domain):
+            min_argument = min([x[dim][0] for x in sample_range])
+            max_argument = max([x[dim][1] for x in sample_range])
+            ranges.append((min_argument, max_argument))
+
+        domain_range = tuple(ranges)
+        
+        return domain_range
 
     def round(
         self,
@@ -461,9 +477,6 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def equals(self, other: object) -> bool:
         """Comparison of FDataIrregular objects."""
-        if not super().equals(other):
-            return False
-
         other = cast(FDataIrregular, other)
 
         if not self._eq_elemenwise(other):
@@ -478,7 +491,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if self.interpolation != other.interpolation:
             return False
 
-        return True
+        return super().equals(other)
 
     def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
         """Elementwise equality of FDataIrregular."""
@@ -487,6 +500,9 @@ class FDataIrregular(FData):  # noqa: WPS214
              (self.function_arguments == other.function_arguments).all(),
              (self.function_values == other.function_values).all()]
         )
+        
+    def __eq__(self, other: object) -> NDArrayBool:
+        return self.equals(other)
 
     def _get_op_matrix(
         self,
@@ -553,7 +569,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                 return np.repeat(other_vector, values_curve, axis=0)
 
             raise ValueError(
-                f"Invalid dimensions in operator between FDataGrid and Numpy "
+                f"Invalid dimensions in operator between FDataIrregular and Numpy "
                 f"array: {other.shape}"
             )
 
@@ -820,7 +836,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             function_values = self.function_values
 
         if domain_range is None:
-            domain_range = copy.deepcopy(self.domain_range)
+            domain_range = self.domain_range
 
         if dataset_name is None:
             dataset_name = self.dataset_name
@@ -1122,19 +1138,21 @@ class FDataIrregular(FData):  # noqa: WPS214
         return result
 
     @property
-    def dtype(self) -> FDataGridDType:
-        # TODO Do this natively? FDataIrregularDType?
-        """The dtype for this extension array, FDataGridDType"""
-        return self.to_grid().dtype
+    def dtype(self) -> FDataIrregularDType:
+        """The dtype for this extension array, FDataIrregularDType"""
+        return FDataIrregularDType(
+            function_indices=self.function_indices,
+            function_arguments=self.function_arguments,
+            dim_codomain=self.dim_codomain,
+            domain_range=self.domain_range
+        )
 
     @property
     def nbytes(self) -> int:
         """
         The number of bytes needed to store this object in memory.
         """
-        return self.data_matrix.nbytes + sum(
-            p.nbytes for p in self.grid_points
-        )
+        return self.function_indices.nbytes + self.function_arguments.nbytes + self.function_values
 
     def isna(self) -> NDArrayBool:
         """
@@ -1144,9 +1162,93 @@ class FDataIrregular(FData):  # noqa: WPS214
             na_values: Positions of NA.
         """
         return np.all(  # type: ignore[no-any-return]
-            np.isnan(self.data_matrix),
-            axis=tuple(range(1, self.data_matrix.ndim)),
+            np.isnan(self.function_values),
+            axis=tuple(range(1, self.function_values.ndim)),
         )
+        
+class FDataIrregularDType(
+    pandas.api.extensions.ExtensionDtype,  # type: ignore[misc]
+):
+    """DType corresponding to FDataIrregular in Pandas."""
+
+    name = 'FDataIrregular'
+    kind = 'O'
+    type = FDataIrregular  # noqa: WPS125
+    na_value = pandas.NA
+
+    def __init__(
+        self,
+        function_indices: ArrayLike,
+        function_arguments: ArrayLike,
+        dim_codomain: int,
+        domain_range: Optional[DomainRangeLike] = None,
+    ) -> None:
+        from ..misc.validation import validate_domain_range
+        self.function_indices = function_indices
+        self.function_arguments = function_arguments
+        self.dim_domain = function_arguments.shape[1]
+        self.num_observations = len(function_arguments)
+
+        if domain_range is None:
+            sample_range = FDataIrregular._get_sample_range_from_data(
+                self.function_indices, 
+                self.function_arguments, 
+                self.dim_domain
+            )
+            domain_range = FDataIrregular._get_domain_range_from_sample_range(
+                sample_range, 
+                self.dim_domain
+            )
+
+        self.domain_range = validate_domain_range(domain_range)
+        self.dim_codomain = dim_codomain
+
+    @classmethod
+    def construct_array_type(cls) -> Type[FDataIrregular]:  # noqa: D102
+        return FDataIrregular
+
+    def _na_repr(self) -> FDataIrregular:
+
+        shape = (
+            (self.num_observations,)
+            + (self.dim_codomain,)
+        )
+
+        function_values = np.full(shape=shape, fill_value=self.na_value)
+
+        return FDataIrregular(
+            function_indices=self.function_indices,
+            function_arguments=self.function_arguments,
+            function_values=function_values,
+            domain_range=self.domain_range,
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Compare dtype equality.
+
+        Rules for equality (similar to categorical):
+        1) Any FData is equal to the string 'category'
+        2) Any FData is equal to itself
+        3) Otherwise, they are equal if the arguments are equal.
+        6) Any other comparison returns False
+        """
+        if isinstance(other, str):
+            return other == self.name
+        elif other is self:
+            return True
+
+        return (
+            isinstance(other, FDataIrregularDType)
+            and self.function_indices == other.function_indices
+            and self.function_arguments == other.function_arguments
+            and self.domain_range == other.domain_range
+            and self.dim_codomain == other.dim_codomain
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.function_indices, self.function_arguments, 
+                     self.domain_range, self.dim_codomain))
 
 class _IrregularCoordinateIterator(Sequence[T]):
     """Internal class to iterate through the image coordinates."""

@@ -16,6 +16,13 @@ this category deal with this problem.
    preprocessing/dim_reduction
    preprocessing/feature_construction
 
+Missing data
+------------
+
+When the observations contains missing data, it is necessary to reconstruct
+the invalid information before processing it further.
+:doc:`Here <preprocessing/missing>` you can learn more about this procedure.
+
 Smoothing
 ---------
 

@@ -10,6 +10,7 @@ this category deal with this problem.
    :caption: Modules:
    :hidden:
 
+   preprocessing/missing
    preprocessing/smoothing
    preprocessing/registration
    preprocessing/dim_reduction

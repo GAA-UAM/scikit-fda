@@ -488,7 +488,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         df = pd.DataFrame(cov_dict)
 
         y_fd = FDataBasis(y_basis, [[1, 2], [3, 4], [5, 6]])
-        y_pred_coef_compare = [[177, 878], [100, 200]]
+        y_pred_coef_compare = [[[177, 878]], [[100, 200]]]
 
         funct_reg = LinearRegression(fit_intercept=False)
         funct_reg.fit(df, y_fd)
@@ -500,7 +500,11 @@ class TestFunctionalLinearRegression(unittest.TestCase):
 
         y_pred = funct_reg.predict([[177, 878], [100, 200]])
         np.testing.assert_allclose(
-            y_pred.coefficients, y_pred_coef_compare, atol=0.01,
+            y_pred[0].coefficients, y_pred_coef_compare[0], atol=0.01,
+        )
+
+        np.testing.assert_allclose(
+            y_pred[1].coefficients, y_pred_coef_compare[1], atol=0.01,
         )
 
     def test_multivariate_covariates_2(self) -> None:
@@ -529,7 +533,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
 
         y_pred = funct_reg.predict([[3, 2, 1]])
         np.testing.assert_allclose(
-            y_pred.coefficients, y_pred_coef_compare, atol=0.01,
+            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
         )
 
     def test_multivariate_covariates_regularization(self) -> None:
@@ -566,7 +570,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
 
         y_pred = funct_reg.predict([[3, 2, 1]])
         np.testing.assert_allclose(
-            y_pred.coefficients, y_pred_coef_compare, atol=0.01,
+            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
         )
 
     def test_multivariate_covariates_R_fda(self) -> None:  # noqa: N802
@@ -714,6 +718,33 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             beta_coef_compare,
             atol=0.01,
         )
+
+        x_fd = FDataBasis(x_basis, [[0, 0, 1], [0, 0, 1], [0, 1, 1]])
+
+        cov_dict = {"fd": x_fd, "mult": [2, 1, 1]}
+        df = pd.DataFrame(cov_dict)
+
+        beta_coef_compare = [
+            [[-0.463, 3.250]],
+            [[12.509, -6.275]],
+        ]
+
+        pred = funct_reg.predict(df)
+
+        np.testing.assert_allclose(
+            pred[0].coefficients,
+            beta_coef_compare[0],
+            atol=0.01,
+        )
+
+        np.testing.assert_allclose(
+            pred[1].coefficients,
+            beta_coef_compare[1],
+            atol=0.01,
+        )
+
+        np.testing.assert_equal(y_basis, pred[0].basis)
+        np.testing.assert_equal(y_basis, pred[1].basis)
 
     def test_error_y_X_samples_different(self) -> None:  # noqa: N802
         """Number of response samples and explanatory samples are not different.

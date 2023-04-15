@@ -2,7 +2,16 @@ from __future__ import annotations
 
 import itertools
 import warnings
-from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -10,6 +19,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import nquad_vec
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
+from ...misc._math import inner_product
 from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData, FDataBasis
@@ -207,10 +217,10 @@ class LinearRegression(
             coefficients=[[ 6.  3.  1.]],
             ...)
         >>> funct_linear.predict([[3, 4, 1]])
-        FDataBasis(
-            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
-            coefficients=[[ 47.  22.  24.]],
-            ...)
+        array([FDataBasis(
+                   basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
+                   coefficients=[[ 47.  22.  24.]],
+                   ...)
 
         And also when multivariate are functional in a concurrent way:
 
@@ -428,30 +438,47 @@ class LinearRegression(
 
     def predict(  # noqa: D102
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
+        X: Union[Sequence[AcceptedDataType], pd.DataFrame],
     ) -> NDArrayFloat:
 
         check_is_fitted(self)
         X = self._argcheck_X(X)
+        result = []
 
         if self.functional_response:
-            X = [x.flatten() for x in X]
-            result_list = np.dot(X, np.array(self.basis_coefs)[:, :, 0])
-            result = self._convert_from_constant_coefs(
-                result_list, self._coef_info, self.functional_response,
-            )
-        else:
-            result = np.sum(
-                [
-                    coef_info.inner_product(coef, x)
-                    for coef, x, coef_info  # noqa: WPS361
-                    in zip(self.coef_, X, self._coef_info)
-                ],
-                axis=0,
-            )
+            # Predict each covariate (multivariate or functional)
+            if len(X) > 1:
+                return list(
+                    itertools.chain.from_iterable(
+                        [self.predict(x) for x in X],
+                    ),
+                )
+            X = X[0]
+
+        for coef, x, coef_info in zip(self.coef_, X, self._coef_info):
+            if self.functional_response:
+                def prediction(arg):  # noqa: WPS430
+                    x_eval = x
+                    if isinstance(x, Callable):
+                        x_eval = x(arg)  # noqa: WPS220
+
+                    return coef(arg) * x_eval
+
+                result.append(
+                    self._change_function_basis(prediction, self.y_basis),
+                )
+            else:
+                result.append(coef_info.inner_product(coef, x))
+
+        result = np.sum(result, axis=0)
 
         if self.fit_intercept:
-            result += self.intercept_
+            if self.functional_response:
+                result += self._change_function_basis(
+                    self.fit_intercept, self.y_basis,
+                )
+            else:
+                result += self.intercept_
 
         if self._target_ndim == 1:
             result = result.ravel()
@@ -585,11 +612,8 @@ class LinearRegression(
         self,
         coef_list: Sequence[NDArrayFloat],
         coef_info: Sequence[AcceptedDataCoefsType],
-        response: bool = False,
     ) -> Sequence[FDataBasis]:
-        if response:
-            return FDataBasis(self.y_basis, coef_list)
-        elif self.functional_response:
+        if self.functional_response:
             return [
                 FDataBasis(self.coef_basis[i], coef_list[i].T)
                 for i in range(len(self.coef_basis))
@@ -679,3 +703,30 @@ class LinearRegression(
             List: list which elements are the input DataFrame columns.
         """
         return [v.values for k, v in X.items()]
+
+    def _change_function_basis(
+        self,
+        f: Callable | NDArrayFloat,
+        new_basis: Basis,
+    ) -> FDataBasis:
+        """Express a math function as a FDataBasis with a given basis.
+
+        Args:
+            f: math function.
+            new_basis: the basis of the output.
+
+        Returns:
+            FDataBasis: FDataBasis with calculated coefficients and the new
+            basis.
+        """
+        inner_prod = inner_product(
+            f,
+            new_basis,
+            _domain_range=new_basis.domain_range,
+        )[:, np.newaxis]
+
+        gram_matrix = new_basis.gram_matrix()
+
+        coefs = np.linalg.solve(gram_matrix, inner_prod).flatten()
+
+        return FDataBasis(new_basis, coefs)

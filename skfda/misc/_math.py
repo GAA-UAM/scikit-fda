@@ -486,8 +486,15 @@ def _inner_product_integrate(
     def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         f_args = np.asarray(args)
 
-        f1 = arg1(f_args)[:, 0, :]
-        f2 = arg2(f_args)[:, 0, :]
+        try:
+            f1 = arg1(f_args)[:, 0, :]
+        except Exception:
+            f1 = arg1(f_args)
+
+        try:
+            f2 = arg2(f_args)[:, 0, :]
+        except Exception:
+            f2 = arg2(f_args)
 
         if _matrix:
             ret = np.einsum('n...,m...->nm...', f1, f2)

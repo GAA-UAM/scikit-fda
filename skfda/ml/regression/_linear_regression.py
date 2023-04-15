@@ -474,8 +474,8 @@ class LinearRegression(
 
         if self.fit_intercept:
             if self.functional_response:
-                result += self._change_function_basis(
-                    self.fit_intercept, self.y_basis,
+                result[0] = result[0] + self._change_function_basis(
+                    self.intercept_, self.y_basis,
                 )
             else:
                 result += self.intercept_
@@ -719,6 +719,9 @@ class LinearRegression(
             FDataBasis: FDataBasis with calculated coefficients and the new
             basis.
         """
+        if isinstance(f, FDataBasis) and f.basis == new_basis:
+            return f
+
         inner_prod = inner_product(
             f,
             new_basis,

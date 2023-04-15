@@ -78,4 +78,4 @@ funct_reg.coef_[2].plot()
 
 funct_reg.predict(
     [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-).plot()
+)[0].plot()

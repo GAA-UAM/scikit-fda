@@ -300,11 +300,7 @@ def _change_luminosity(color: ColorLike, amount: float = 0.5) -> ColorLike:
     import colorsys
 
     import matplotlib.colors as mc
-    try:
-        c = mc.cnames[color]
-    except TypeError:
-        c = color
-    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    c = colorsys.rgb_to_hls(*mc.to_rgb(color))
 
     intensity = (amount - 0.5) * 2
     up = intensity > 0

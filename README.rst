@@ -109,10 +109,10 @@ license_ can be found along with the code.
 .. |python| image:: https://img.shields.io/pypi/pyversions/scikit-fda.svg
 .. _python: https://badge.fury.io/py/scikit-fda
 
-.. |build-status| image:: https://travis-ci.org/GAA-UAM/scikit-fda.svg?branch=develop
+.. |build-status| image:: https://github.com/GAA-UAM/scikit-fda/actions/workflows/tests.yml/badge.svg?event=push
     :alt: build status
     :scale: 100%
-    :target: https://travis-ci.com/GAA-UAM/scikit-fda
+    :target: https://github.com/GAA-UAM/scikit-fda/actions/workflows/tests.yml
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status
@@ -120,7 +120,7 @@ license_ can be found along with the code.
     :target: http://fda.readthedocs.io/en/latest/?badge=latest
 
 .. |Codecov| image:: https://codecov.io/gh/GAA-UAM/scikit-fda/branch/develop/graph/badge.svg
-.. _Codecov: https://codecov.io/github/GAA-UAM/scikit-fda?branch=develop
+.. _Codecov: https://app.codecov.io/gh/GAA-UAM/scikit-fda
 
 .. |PyPIBadge| image:: https://badge.fury.io/py/scikit-fda.svg
 .. _PyPIBadge: https://badge.fury.io/py/scikit-fda

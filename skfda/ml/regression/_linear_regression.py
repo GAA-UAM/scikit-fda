@@ -457,10 +457,9 @@ class LinearRegression(
 
         for coef, x, coef_info in zip(self.coef_, X, self._coef_info):
             if self.functional_response:
-                def prediction(arg):  # noqa: WPS430
-                    x_eval = x
-                    if isinstance(x, Callable):
-                        x_eval = x(arg)  # noqa: WPS220
+                def prediction(arg, x_eval=x):  # noqa: WPS430
+                    if isinstance(x_eval, Callable):
+                        x_eval = x_eval(arg)  # noqa: WPS220
 
                     return coef(arg) * x_eval
 

@@ -749,6 +749,22 @@ def fdatabasis_penalty_matrix_optimized(
     coef_matrix = fdatabasis.coefficients
     return coef_matrix @ basis_pen_matrix @ coef_matrix.T
 
+@gram_matrix_optimization.register
+def fdatagrid_penalty_matrix_optimized(
+    linear_operator: LinearDifferentialOperator,
+    fdatagrid: FDataGrid,
+) -> NDArrayFloat:
+    from ...misc import inner_product_matrix
+    """Optimized version for FDataGrid."""
+    operator_evaluated = linear_operator(fdatagrid)(
+        fdatagrid.grid_points[0],
+    )
+
+    fdatagrid_evaluated = FDataGrid(
+        data_matrix=operator_evaluated[..., 0],
+        grid_points=fdatagrid.grid_points[0],
+    )
+    return inner_product_matrix(fdatagrid_evaluated)
 
 @gram_matrix_optimization.register
 def custombasis_penalty_matrix_optimized(
@@ -756,17 +772,4 @@ def custombasis_penalty_matrix_optimized(
     basis: CustomBasis,
 ) -> NDArrayFloat:
     """Optimized version for CustomBasis."""
-    from ...misc import inner_product_matrix
-
-    if isinstance(basis.fdata, FDataGrid):
-        operator_evaluated = linear_operator(basis.fdata)(
-            basis.fdata.grid_points[0],
-        )
-
-        fdatagrid = FDataGrid(
-            data_matrix=operator_evaluated[..., 0],
-            grid_points=basis.fdata.grid_points[0],
-        )
-        return inner_product_matrix(fdatagrid)
-
     return gram_matrix(linear_operator, basis.fdata)

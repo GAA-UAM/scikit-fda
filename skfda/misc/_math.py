@@ -243,6 +243,7 @@ def inner_product(
     Args:
         arg1: First sample.
         arg2: Second sample.
+        kwargs: Additional parameters for the function.
 
     Returns:
         Vector with the inner products of each pair of samples.

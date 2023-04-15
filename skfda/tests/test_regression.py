@@ -1,3 +1,4 @@
+"""Tests for scalar and functional response linear regression."""
 from __future__ import annotations
 
 import unittest

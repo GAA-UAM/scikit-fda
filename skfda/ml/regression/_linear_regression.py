@@ -304,6 +304,7 @@ class LinearRegression(
         array([ 11.,  10.,  12.,   6.,  10.,  13.])
 
     """
+
     def __init__(
         self,
         *,
@@ -457,11 +458,11 @@ class LinearRegression(
 
         for coef, x, coef_info in zip(self.coef_, X, self._coef_info):
             if self.functional_response:
-                def prediction(arg, x_eval=x):  # noqa: WPS430
+                def prediction(arg, x_eval=x, coef_eval=coef):  # noqa: WPS430
                     if isinstance(x_eval, Callable):
                         x_eval = x_eval(arg)  # noqa: WPS220
 
-                    return coef(arg) * x_eval
+                    return coef_eval(arg) * x_eval
 
                 result.append(
                     self._change_function_basis(prediction, self.y_basis),

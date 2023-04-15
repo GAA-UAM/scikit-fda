@@ -9,7 +9,6 @@ from skfda._utils import _pairwise_symmetric
 from skfda.datasets import make_gaussian_process
 from skfda.misc.covariances import Gaussian
 from skfda.representation.basis import (
-    FDataBasis,
     MonomialBasis,
     TensorBasis,
     VectorValuedBasis,

@@ -17,7 +17,7 @@ from ...representation.basis import (
     CustomBasis,
     FourierBasis,
     MonomialBasis,
-    GridBasis,
+    _GridBasis,
 )
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat, NDArrayInt
@@ -661,7 +661,7 @@ def _optimized_operator_evaluation_in_grid(
 @gram_matrix_optimization.register
 def gridbasis_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
-    basis: GridBasis,
+    basis: _GridBasis,
 ) -> NDArrayFloat:
     """
     Optimized version for GridBasis.

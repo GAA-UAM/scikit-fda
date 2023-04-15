@@ -117,7 +117,7 @@ class Boxplot(FDataBoxplot):
     detected in a functional boxplot by the 1.5 times the 50% central region
     empirical rule, analogous to the rule for classical boxplots.
 
-    For more information see :footcite:ts:`sun+genton_2011_boxplots`.
+    For more information see :footcite:ts:`sun+genton_2011_functional`.
 
     Args:
         fdatagrid: Object containing the data.
@@ -538,7 +538,7 @@ class SurfaceBoxplot(FDataBoxplot):
     :ref:`depth measure <depth-measures>`
     for functional data, it represents the envelope of the
     50% central region, the median curve, and the maximum non-outlying
-    envelope :footcite:`sun+genton_2011_boxplots`.
+    envelope :footcite:`sun+genton_2011_functional`.
 
     Args:
         fdatagrid: Object containing the data.

@@ -46,7 +46,7 @@ def hotelling_t2(
     the discrete representation, depending on the input.
 
     This statistic is defined in Pini, Stamm and Vantini
-    :footcite:`pini+stamm+vantini_2018_hotellings`.
+    :footcite:`pini++_2018_hotelling`.
 
     Args:
         fd1: Object with the first sample.
@@ -167,7 +167,7 @@ def hotelling_test_ind(
     tested are generated randomly.
 
     This procedure is from Pini, Stamm and Vantinni
-    :footcite:`pini+stamm+vantini_2018_hotellings`.
+    :footcite:`pini++_2018_hotelling`.
 
     Args:
         fd1: First sample of data.

@@ -217,7 +217,8 @@ class HistoricalLinearRegression(
     BaseEstimator,
     RegressorMixin[FDataGrid, FDataGrid],
 ):
-    r"""Historical functional linear regression.
+    r"""
+    Historical functional linear regression.
 
     This is a linear regression method where the covariate and the response are
     both functions :math:`\mathbb{R}` to :math:`\mathbb{R}` with the same
@@ -225,7 +226,7 @@ class HistoricalLinearRegression(
     :math:`t`, only the information of the covariate at points :math:`s < t` is
     used. Is thus an "historical" model in the sense that, if the domain
     represents time, only the data from the past, or historical data, is used
-    to predict a given point.
+    to predict a given point\ :footcite:p:`malfait+ramsay_2003_historical`.
 
     The model assumed by this method is:
 
@@ -307,8 +308,7 @@ class HistoricalLinearRegression(
         array([[ 2.,  0.,  0.,  4.,  5.,  5.]])
 
     References:
-        Malfait, N., & Ramsay, J. O. (2003). The historical functional linear
-        model. Canadian Journal of Statistics, 31(2), 115-128.
+        .. footbibliography::
 
     """
 

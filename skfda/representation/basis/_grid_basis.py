@@ -5,7 +5,6 @@ from typing import Any, TypeVar
 from ..._utils import _to_grid_points
 from ...typing._base import GridPointsLike
 from ...typing._numpy import NDArrayFloat
-from ..evaluator import Evaluator
 from ._basis import Basis
 
 T = TypeVar("T", bound="_GridBasis")

@@ -7,7 +7,9 @@ import numpy as np
 
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.representation.basis import ConstantBasis, FDataBasis, MonomialBasis
-
+from skfda.misc.operators import gram_matrix
+from skfda.representation.basis import _GridBasis
+from skfda.representation.grid import FDataGrid
 WeightCallable = Callable[[np.ndarray], np.ndarray]
 
 
@@ -121,6 +123,36 @@ class TestLinearDifferentialOperator(unittest.TestCase):
                 weights=fdlist,
                 domain_range=(0, 2),
             )
+
+    def test_grid_basis_penalty_matrix(self) -> None:
+        """Check the penalty matrix for a grid basis."""
+
+        n_points = 10000
+        n_functions = 10
+        linear_operator = LinearDifferentialOperator(order=2)
+        grid_points = np.linspace(0, 100, n_points)
+
+        # Generate random functions
+        random_gen = np.random.default_rng(0)
+        data_matrix = random_gen.random(size=(n_functions, n_points))
+        fd = FDataGrid(data_matrix=data_matrix, grid_points=grid_points)
+
+        # Calcualate the norm of the second derivatives using the
+        # penalty matrix
+
+        penalty_matrix = gram_matrix(
+            linear_operator=linear_operator,
+            basis=_GridBasis(grid_points=fd.grid_points),
+        )
+        pen_mat_norms = np.diagonal(data_matrix @ penalty_matrix @ data_matrix.T)
+
+        # Calculate the norm of the second derivatives direclty by derivating,
+        # squaring the functions and integrating
+        fd_dif = fd.derivative(order=2)
+        int_norms = (fd_dif * fd_dif).integrate().flatten()
+
+        np.testing.assert_allclose(pen_mat_norms, int_norms)
+
 
 
 if __name__ == '__main__':

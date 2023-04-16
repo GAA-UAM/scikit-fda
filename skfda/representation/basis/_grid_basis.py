@@ -34,7 +34,6 @@ class _GridBasis(Basis):
         self,
         *,
         grid_points: GridPointsLike,
-        interpolation: Evaluator | None = None,
     ) -> None:
         """Basis constructor."""
         self.grid_points = _to_grid_points(grid_points)

@@ -624,11 +624,12 @@ def _optimized_operator_evaluation_in_grid(
                 [6, 7]]))
     Explanation:
         Each row of the first array contains the values of the linear operator
-        applied to the delta basis function. As it can be seen, each row of the
-        second array cointains the domain limits of the corresponding row of the
-        first array. That is to say, the range in which their values are not 0.
-        For example, the third row of the first array is non-zero until the fourth
-        element, so the third row of the second array is [0, 3].
+        applied to the delta basis function.
+        As it can be seen, each row of the second array cointains the domain
+        limits of the corresponding row of the first array. That is to say,
+        the range in which their values are not 0.
+        For example, the third row of the first array is non-zero until the
+        fourth element, so the third row of the second array is [0, 3].
     """
     n_points = grid_points.shape[0]
     diff_coefficients = np.zeros((n_points, n_points))

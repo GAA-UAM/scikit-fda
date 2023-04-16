@@ -130,7 +130,6 @@ class TestLinearDifferentialOperator(unittest.TestCase):
 
     def test_grid_basis_penalty_matrix(self) -> None:
         """Check the penalty matrix for a grid basis."""
-
         n_points = 10000
         n_functions = 10
         linear_operator = LinearDifferentialOperator(order=2)
@@ -148,10 +147,12 @@ class TestLinearDifferentialOperator(unittest.TestCase):
             linear_operator=linear_operator,
             basis=_GridBasis(grid_points=fd.grid_points),
         )
-        pen_mat_norms = np.diagonal(data_matrix @ penalty_matrix @ data_matrix.T)
+        pen_mat_norms = np.diagonal(
+            data_matrix @ penalty_matrix @ data_matrix.T,
+        )
 
-        # Calculate the norm of the second derivatives direclty by derivating,
-        # squaring the functions and integrating
+        # Calculate the norm of the second derivatives direclty 
+        # by derivating, squaring the functions and integrating
         fd_dif = fd.derivative(order=2)
         int_norms = (fd_dif * fd_dif).integrate().flatten()
 

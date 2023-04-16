@@ -5,11 +5,15 @@ from typing import Callable, Sequence, Union
 
 import numpy as np
 
-from skfda.misc.operators import LinearDifferentialOperator
-from skfda.representation.basis import ConstantBasis, FDataBasis, MonomialBasis
-from skfda.misc.operators import gram_matrix
-from skfda.representation.basis import _GridBasis
+from skfda.misc.operators import LinearDifferentialOperator, gram_matrix
+from skfda.representation.basis import (
+    ConstantBasis,
+    FDataBasis,
+    MonomialBasis,
+    _GridBasis,
+)
 from skfda.representation.grid import FDataGrid
+
 WeightCallable = Callable[[np.ndarray], np.ndarray]
 
 

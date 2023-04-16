@@ -11,7 +11,7 @@ from ..._utils import _to_grid
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FData
 from ...typing._numpy import NDArrayFloat
-from .base import RegistrationTransformer
+from ._base import RegistrationTransformer
 
 Input = TypeVar("Input", bound=FData)
 Output = TypeVar("Output", bound=FData)

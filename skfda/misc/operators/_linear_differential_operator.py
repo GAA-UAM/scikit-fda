@@ -622,6 +622,7 @@ def _optimized_operator_evaluation_in_grid(
                 [4, 7],
                 [5, 7],
                 [6, 7]]))
+
     Explanation:
         Each row of the first array contains the values of the linear operator
         applied to the delta basis function.

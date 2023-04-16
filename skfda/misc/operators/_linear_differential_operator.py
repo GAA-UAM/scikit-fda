@@ -748,18 +748,17 @@ def fdatabasis_penalty_matrix_optimized(
 
     coef_matrix = fdatabasis.coefficients
     return coef_matrix @ basis_pen_matrix @ coef_matrix.T
-
-@gram_matrix_optimization.register
+    
 def fdatagrid_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     fdatagrid: FDataGrid,
 ) -> NDArrayFloat:
-    from ...misc import inner_product_matrix
     """Optimized version for FDataGrid."""
+    from ...misc import inner_product_matrix
+
     operator_evaluated = linear_operator(fdatagrid)(
         fdatagrid.grid_points[0],
     )
-
     fdatagrid_evaluated = FDataGrid(
         data_matrix=operator_evaluated[..., 0],
         grid_points=fdatagrid.grid_points[0],

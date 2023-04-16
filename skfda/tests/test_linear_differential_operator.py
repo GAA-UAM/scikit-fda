@@ -151,7 +151,7 @@ class TestLinearDifferentialOperator(unittest.TestCase):
             data_matrix @ penalty_matrix @ data_matrix.T,
         )
 
-        # Calculate the norm of the second derivatives direclty 
+        # Calculate the norm of the second derivatives direclty
         # by derivating, squaring the functions and integrating
         fd_dif = fd.derivative(order=2)
         int_norms = (fd_dif * fd_dif).integrate().flatten()

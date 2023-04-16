@@ -748,7 +748,8 @@ def fdatabasis_penalty_matrix_optimized(
 
     coef_matrix = fdatabasis.coefficients
     return coef_matrix @ basis_pen_matrix @ coef_matrix.T
-    
+
+
 def fdatagrid_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     fdatagrid: FDataGrid,

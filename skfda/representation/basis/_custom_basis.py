@@ -1,5 +1,3 @@
-"""Abstract base class for basis."""
-
 from __future__ import annotations
 
 from typing import Any, Tuple, TypeVar
@@ -19,7 +17,7 @@ T = TypeVar("T", bound="CustomBasis")
 class CustomBasis(Basis):
     """Basis composed of custom functions.
 
-    Defines a basis composed of the functions in the :class: `FData` object
+    Defines a basis composed of the functions in the :class:`FData` object
     passed as argument.
     The functions must be linearly independent, otherwise
     an exception is raised.

@@ -38,7 +38,12 @@ T = TypeVar("T", bound='FDataIrregular')
 # Auxiliary functions#
 ######################
 
-def _get_sample_range_from_data(function_indices, function_arguments, dim_domain):
+
+def _get_sample_range_from_data(
+    function_indices,
+    function_arguments,
+    dim_domain,
+):
     dim_ranges = []
     for dim in range(dim_domain):
         i = 0
@@ -84,7 +89,11 @@ def _get_sample_range_from_data(function_indices, function_arguments, dim_domain
 
     return sample_range
 
-def _get_domain_range_from_sample_range(sample_range, dim_domain):
+
+def _get_domain_range_from_sample_range(
+    sample_range,
+    dim_domain,
+):
     ranges = []
     for dim in range(dim_domain):
         min_argument = min([x[dim][0] for x in sample_range])
@@ -97,8 +106,106 @@ def _get_domain_range_from_sample_range(sample_range, dim_domain):
 # FDataIrregular#
 ######################
 
+
 class FDataIrregular(FData):  # noqa: WPS214
-    # TODO Docstring
+    r"""Represent discretised functional data of an irregular or sparse nature.
+
+    Class for representing irregular functional data in a compact manner,
+    allowing basic operations, representation and conversion to basis format.
+
+    Attributes:
+        functional_indices: a unidimensional array which stores the index of
+        the functional_values and functional_values arrays where the data
+        of each individual curve of the sample begins.
+        functional_arguments: an array of every argument of the domain for
+        every curve in the sample. Each row contains an observation.
+        functional_values: an array of every value of the codomain for
+        every curve in the sample. Each row contains an observation.
+        domain_range: 2 dimension matrix where each row
+            contains the bounds of the interval in which the functional data
+            is considered to exist for each one of the axies.
+        dataset_name: name of the dataset.
+        argument_names: tuple containing the names of the different
+            arguments.
+        coordinate_names: tuple containing the names of the different
+            coordinate functions.
+        extrapolation: defines the default type of
+            extrapolation. By default None, which does not apply any type of
+            extrapolation. See `Extrapolation` for detailled information of the
+            types of extrapolation.
+        interpolation: Defines the type of interpolation
+            applied in `evaluate`.
+
+    Examples:
+        Representation of an irregular functional data object with 2 samples
+        representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`,
+        with 2 and 3 discretization points respectively.
+
+        >>> indices = [0, 2]
+        >>> arguments = [[1], [2], [3], [4], [5]]
+        >>> values = [[1], [2], [3], [4], [5]]
+        >>> FDataIrregular(indices, arguments, values)
+        FDataIrregular(
+            function_indices=array([0,2]),
+            function_arguments=array([[1],
+                                      [2],
+                                      [3],
+                                      [4],
+                                      [5]]),
+            function_values=array([[1],
+                                   [2],
+                                   [3],
+                                   [4],
+                                   [5]]),
+             domain_range=((1.0, 5.0),),
+            ...)
+
+        The number of arguments and values must be the same.
+
+        >>> indices = [0,2]
+        >>> arguments = np.arange(5).reshape(-1, 1)
+        >>> values = np.arange(6).reshape(-1, 1)
+        >>> FDataIrregular(indices, arguments, values)
+        Traceback (most recent call last):
+            ....
+        ValueError: Dimension mismatch between function_arguments
+        and function_values...
+
+        The indices in function_indices must point to correct rows
+        in function_arguments and function_values.
+
+        >>> indices = [0,7]
+        >>> arguments = np.arange(5).reshape(-1, 1)
+        >>> values = np.arange(5).reshape(-1, 1)
+        >>> FDataIrregular(indices, arguments, values)
+        Traceback (most recent call last):
+            ....
+        ValueError: Index in function_indices out of bounds...
+
+        FDataIrregular supports higher dimensional data both in the domain
+        and in the codomain (image).
+
+        Representation of a functional data object with 2 samples
+        representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
+
+        >>> indices = [0, 2]
+        >>> arguments = [[1], [2], [3], [4], [5]]
+        >>> values = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]]
+        >>> fd = FDataIrregular(indices, arguments, values)
+        >>> fd.dim_domain, fd.dim_codomain
+        (1, 2)
+
+        Representation of a functional data object with 2 samples
+        representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
+
+        >>> indices = [0, 2]
+        >>> arguments = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]]
+        >>> values = [[1], [2], [3], [4], [5]]
+        >>> fd = FDataIrregular(indices, arguments, values)
+        >>> fd.dim_domain, fd.dim_codomain
+        (2, 1)
+
+    """
 
     def __init__(
         self,
@@ -115,19 +222,25 @@ class FDataIrregular(FData):  # noqa: WPS214
         coordinate_names: Optional[LabelTupleLike] = None,
     ):
         """Construct a FDataIrregular object."""
+        self.function_indices = np.array(function_indices)
+        self.function_arguments = np.array(function_arguments)
+        self.function_values = np.array(function_values)
+
         # Set dimensions
-        self._dim_domain = function_arguments.shape[1]
-        self._dim_codomain = function_values.shape[1]
+        self._dim_domain = self.function_arguments.shape[1]
+        self._dim_codomain = self.function_values.shape[1]
 
         # Set structure to given data
-        self.num_functions = function_indices.shape[0]
+        self.num_functions = self.function_indices.shape[0]
 
-        assert function_arguments.shape[0] == function_values.shape[0]
-        self.num_observations = function_arguments.shape[0]
+        if self.function_arguments.shape[0] != self.function_values.shape[0]:
+            raise ValueError("Dimension mismatch between function_arguments \
+                and function_values")
 
-        self.set_function_indices(function_indices)
-        self.set_function_arguments(function_arguments)
-        self.set_function_values(function_values)
+        self.num_observations = self.function_arguments.shape[0]
+
+        if max(self.function_indices) >= self.num_observations:
+            raise ValueError("Index in function_indices out of bounds")
 
         self._sample_range = _get_sample_range_from_data(
             self.function_indices,
@@ -271,14 +384,6 @@ class FDataIrregular(FData):  # noqa: WPS214
             **kwargs,
         )
 
-    def set_function_indices(self, function_indices) -> ArrayLike:
-        self.function_indices = function_indices.copy()
-
-    def set_function_arguments(self, function_arguments) -> ArrayLike:
-        self.function_arguments = function_arguments.copy()
-
-    def set_function_values(self, function_values) -> ArrayLike:
-        self.function_values = function_values.copy()
 
     def round(
         self,

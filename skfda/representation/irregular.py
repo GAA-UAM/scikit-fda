@@ -283,7 +283,28 @@ class FDataIrregular(FData):  # noqa: WPS214
         coordinate_columns: LabelTupleLike,
         **kwargs,
     ) -> FDataIrregular:
+        """Create a FDataIrregular object from a pandas dataframe.
 
+        The pandas dataframe should be in 'long' format: each row
+        containing the arguments and values of a given point of the
+        dataset, and an identifier which specifies which curve they
+        belong to.
+
+        Args:
+            dataframe (pandas.DataFrame): Pandas dataframe containing the
+                irregular functional dataset.
+            id_column (str): Name of the column which contains the information
+                about which curve does each each row belong to.
+            argument_columns (LabelTupleLike): list of columns where
+                the arguments for each dimension of the domain can be found.
+            coordinate_columns (LabelTupleLike): list of columns where
+                the values for each dimension of the image can be found.
+            kwargs: Arguments for the FDataIrregular constructor.
+
+        Returns:
+            FDataIrregular: Returns a FDataIrregular object which contains
+            the irregular functional data of the dataset.
+        """
         # Accept strings but ensure the column names are tuples
         is_str = isinstance(argument_columns, str)
         argument_columns = [argument_columns] if is_str else \
@@ -338,7 +359,16 @@ class FDataIrregular(FData):  # noqa: WPS214
         f_data: FDataGrid,
         **kwargs,
     ) -> FDataIrregular:
+        """Create a FDataIrregular object from a source FDataGrid.
 
+        Args:
+            f_data (FDataGrid): FDataGrid object used as source.
+            kwargs: Arguments for the FDataIrregular constructor.
+
+        Returns:
+            FDataIrregular: FDataIrregular containing the same data
+            as the source but with an irregular structure.
+        """
         # Obtain num functions and num observations from data
         num_observations = np.sum(~np.isnan(f_data.data_matrix))
         num_functions = f_data.data_matrix.shape[0]
@@ -384,12 +414,30 @@ class FDataIrregular(FData):  # noqa: WPS214
             **kwargs,
         )
 
-
     def round(
         self,
         decimals: int = 0,
         out: Optional[FDataIrregular] = None,
     ) -> FDataIrregular:
+        """Evenly round function_values to the given number of decimals.
+
+        Arguments are not rounded due to possibility of coalescing
+        various arguments to the same rounded value.
+
+        .. deprecated:: 0.6
+            Use :func:`numpy.round` function instead.
+
+        Args:
+            decimals: Number of decimal places to round to.
+                If decimals is negative, it specifies the number of
+                positions to the left of the decimal point. Defaults to 0.
+            out: FDataIrregular where to place the result, if any.
+
+        Returns:
+            Returns a FDataIrregular object where all elements
+            in its function_values are rounded.
+
+        """
         # Arguments are not rounded due to possibility of
         # coalescing various arguments to the same rounded value
         rounded_values = self.function_values.round(decimals=decimals)
@@ -479,17 +527,32 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def derivative(
         self: T,
-        *,
         order: int = 1,
         method: Optional[Basis] = None,
     ) -> T:
+        """Differentiate the FDataIrregular object.
+
+        Args:
+            order: Order of the derivative. Defaults to one.
+            method (Optional[Basis]):
+
+        Returns:
+            FDataIrregular with the derivative of the dataset.
+        """
         pass
 
     def integrate(
         self: T,
-        *,
         domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
+        """Integrate the FDataIrregular object.
+
+        Args:
+            domain (Optional[DomainRange]):
+
+        Returns:
+            FDataIrregular with the integral.
+        """
         pass
 
     def _check_same_dimensions(self: T, other: T) -> None:
@@ -507,6 +570,24 @@ class FDataIrregular(FData):  # noqa: WPS214
         skipna: bool = False,
         min_count: int = 0,
     ) -> T:
+        """Compute the sum of all the samples.
+
+        Args:
+            axis (Optional[int]): Used for compatibility with numpy.
+                Must be None or 0.
+            out (None): Used for compatibility with numpy.
+                Must be None.
+            keepdims (bool): Used for compatibility with numpy.
+                Must be False.
+            skipna (bool): Wether the NaNs are ignored or not.
+            min_count: Number of valid (non NaN) data to have in order
+                for the a variable to not be NaN when `skipna` is
+                `True`.
+
+        Returns:
+            T: FDataIrregular object with only one curve and one value
+            representing the sum of all the samples in the original object.
+        """
         super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
         data = (
@@ -583,9 +664,15 @@ class FDataIrregular(FData):  # noqa: WPS214
         )
 
     def cov(self: T) -> T:
+        """Compute the covariance for a FDataIrregular object.
+
+        Returns:
+            FDataIrregular with the covariance function.
+        """
         # TODO Implementation to be decided
         pass
 
+    # TODO remove and remove scipy
     def gmean(self: T) -> T:
         gmean = scipy.stats.mstats.gmean(self.function_values, axis=0)
         return FDataIrregular(
@@ -802,13 +889,62 @@ class FDataIrregular(FData):  # noqa: WPS214
         return self.copy(function_values=-self.function_values)
 
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
+        """Join samples from a similar FDataIrregular object.
+
+        Joins samples from another FDataIrregular object if it has the same
+        dimensions.
+
+        Args:
+            others: Objects to be concatenated.
+            as_coordinates (bool): If False concatenates as
+                new samples, else, concatenates the other functions as
+                new components of the image. Defaults to false.
+
+        Raises:
+            NotImplementedError: Not implemented for as_coordinates = True
+
+        Returns:
+            T: FDataIrregular object with the samples from the source objects.
+
+        Examples:
+            >>> indices = [0,2]
+            >>> arguments = values = np.arange(5).reshape(-1, 1)
+            >>> fd = FDataIrregular(indices, arguments, values)
+            >>> arguments_2 = values_2 = np.arange(5, 10).reshape(-1, 1)
+            >>> fd_2 = FDataIrregular(indices, arguments_2, values_2)
+            >>> fd.concatenate(fd_2)
+            FDataIrregular(
+                function_indices=array([0, 2, 5, 7], dtype=uint32),
+                function_arguments=array([[0.],
+                                          [1.],
+                                          [2.],
+                                          [3.],
+                                          [4.],
+                                          [5.],
+                                          [6.],
+                                          [7.],
+                                          [8.],
+                                          [9.]]),
+                function_values=array([[0.],
+                                          [1.],
+                                          [2.],
+                                          [3.],
+                                          [4.],
+                                          [5.],
+                                          [6.],
+                                          [7.],
+                                          [8.],
+                                          [9.]]),
+                domain_range=((0.0, 9.0),),
+                ...)
+        """
         # TODO As coordinates
         if as_coordinates:
             raise NotImplementedError(
                 "Not implemented for as_coordinates = True",
             )
         # Verify that dimensions are compatible
-        assert len(others) > 0
+        assert len(others) > 0, "No objects to concatenate"
         self._check_same_dimensions(others[0])
         if len(others) > 1:
             for x, y in zip(others, others[1:]):
@@ -855,14 +991,37 @@ class FDataIrregular(FData):  # noqa: WPS214
             head += f_data.num_observations
             total_sample_names = total_sample_names + list(f_data.sample_names)
 
+        # Check domain range
+        domain_range = [list(r) for r in self.domain_range]
+        for dim in range(self.dim_domain):
+            dim_max = np.max(function_args, axis=(1, dim))
+            dim_min = np.min(function_args, axis=(1, dim))
+
+            if dim_max > self.domain_range[dim][1]:
+                domain_range[dim][1] = dim_max
+            if dim_min < self.domain_range[dim][0]:
+                domain_range[dim][0] = dim_min
+
         return self.copy(
             function_indices,
             function_args,
             function_values,
+            domain_range=domain_range,
             sample_names=total_sample_names,
         )
 
     def plot(self, *args: Any, **kwargs: Any) -> Figure:
+        """Plot the functional data of FDataIrregular with a lines plot.
+
+        Args:
+            args: Positional arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.LinearPlotIrregular`.
+            kwargs: Keyword arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.LinearPlotIrregular`.
+
+        Returns:
+            Figure object in which the graphs are plotted.
+        """
         from ..exploratory.visualization.representation import (
             LinearPlotIrregular,
         )
@@ -870,6 +1029,17 @@ class FDataIrregular(FData):  # noqa: WPS214
         return LinearPlotIrregular(self, *args, **kwargs).plot()
 
     def scatter(self, *args: Any, **kwargs: Any) -> Figure:
+        """Plot the functional data of FDataIrregular with a scatter plot.
+
+        Args:
+            args: Positional arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.ScatterPlotIrregular`.
+            kwargs: Keyword arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.ScatterPlotIrregular`.
+
+        Returns:
+            Figure object in which the graphs are plotted.
+        """
         from ..exploratory.visualization.representation import (
             ScatterPlotIrregular,
         )
@@ -877,6 +1047,22 @@ class FDataIrregular(FData):  # noqa: WPS214
         return ScatterPlotIrregular(self, *args, **kwargs).plot()
 
     def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
+        """Return the basis representation of the object.
+
+        Args:
+            basis (Basis): basis object in which the functional data are
+                going to be represented.
+            kwargs: keyword arguments to be passed to
+                FDataBasis.from_data().
+
+        Raises:
+            ValueError: Incorrect domain dimension
+            ValueError: Incorrect codomain dimension
+
+        Returns:
+            FDataBasis: Basis representation of the funtional data
+            object.
+        """
         from ..preprocessing.smoothing import BasisSmoother
 
         if self.dim_domain != basis.dim_domain:
@@ -920,10 +1106,14 @@ class FDataIrregular(FData):  # noqa: WPS214
             extrapolation=self.extrapolation,
         )
 
-    def to_matrix(self, **kwargs: Any) -> ArrayLike:
-        # Convert FDataIrregular to matrix of all points
-        # with NaN in undefined values
+    def to_matrix(self) -> ArrayLike:
+        """Convert FDataIrregular values to numpy matrix.
 
+        Undefined values in the grid will be represented with np.nan.
+
+        Returns:
+            ArrayLike: numpy array with the resulting matrix.
+        """
         # Find the grid points and values for each function
         index_end = 0
         grid_points = [[] for i in range(self.dim_domain)]
@@ -993,7 +1183,13 @@ class FDataIrregular(FData):  # noqa: WPS214
     def to_grid(  # noqa: D102
         self: T,
     ) -> FDataGrid:
+        """Convert FDataIrregular to FDataGrid.
 
+        Undefined values in the grid will be represented with np.nan.
+
+        Returns:
+            FDataGrid: FDataGrid with the irregular functional data.
+        """
         data_matrix, grid_points = self.to_matrix()
 
         return FDataGrid(
@@ -1076,6 +1272,16 @@ class FDataIrregular(FData):  # noqa: WPS214
         self: T,
         domain_range: DomainRangeLike,
     ) -> T:
+        """
+        Restrict the functions to a new domain range.
+
+        Args:
+            domain_range: New domain range.
+
+        Returns:
+            T: Restricted function.
+
+        """
         from ..misc.validation import validate_domain_range
 
         domain_range = validate_domain_range(domain_range)
@@ -1202,7 +1408,19 @@ class FDataIrregular(FData):  # noqa: WPS214
         *,
         eval_points: Optional[GridPointsLike] = None,
     ) -> T:
+        """Composition of functions.
 
+        Performs the composition of functions.
+
+        Args:
+            fd: FData object to make the composition. Should
+                have the same number of samples and image dimension equal to 1.
+            eval_points: Points to perform the evaluation.
+
+        Returns:
+            Function representing the composition.
+
+        """
         # TODO Is this possible with this structure?
         pass
 

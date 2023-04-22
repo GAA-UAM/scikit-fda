@@ -672,16 +672,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         # TODO Implementation to be decided
         pass
 
-    # TODO remove and remove scipy
-    def gmean(self: T) -> T:
-        gmean = scipy.stats.mstats.gmean(self.function_values, axis=0)
-        return FDataIrregular(
-            function_indices=np.array([0]),
-            function_arguments=np.zeros((1, self.dim_domain)),
-            function_values=np.array([gmean]),
-            sample_names=("geometric mean",),
-        )
-
     def equals(self, other: object) -> bool:
         """Comparison of FDataIrregular objects."""
         other = cast(FDataIrregular, other)

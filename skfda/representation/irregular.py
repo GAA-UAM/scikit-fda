@@ -115,12 +115,12 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     Attributes:
         functional_indices: a unidimensional array which stores the index of
-        the functional_values and functional_values arrays where the data
-        of each individual curve of the sample begins.
+            the functional_values and functional_values arrays where the data
+            of each individual curve of the sample begins.
         functional_arguments: an array of every argument of the domain for
-        every curve in the sample. Each row contains an observation.
+            every curve in the sample. Each row contains an observation.
         functional_values: an array of every value of the codomain for
-        every curve in the sample. Each row contains an observation.
+            every curve in the sample. Each row contains an observation.
         domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
             is considered to exist for each one of the axies.
@@ -146,18 +146,18 @@ class FDataIrregular(FData):  # noqa: WPS214
         >>> values = [[1], [2], [3], [4], [5]]
         >>> FDataIrregular(indices, arguments, values)
         FDataIrregular(
-            function_indices=array([0,2]),
+            function_indices=array([0, 2]),
             function_arguments=array([[1],
-                                      [2],
-                                      [3],
-                                      [4],
-                                      [5]]),
+                [2],
+                [3],
+                [4],
+                [5]]),
             function_values=array([[1],
-                                   [2],
-                                   [3],
-                                   [4],
-                                   [5]]),
-             domain_range=((1.0, 5.0),),
+                [2],
+                [3],
+                [4],
+                [5]]),
+            domain_range=((1.0, 5.0),),
             ...)
 
         The number of arguments and values must be the same.
@@ -897,7 +897,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             T: FDataIrregular object with the samples from the source objects.
 
         Examples:
-            >>> indices = [0,2]
+            >>> indices = [0, 2]
             >>> arguments = values = np.arange(5).reshape(-1, 1)
             >>> fd = FDataIrregular(indices, arguments, values)
             >>> arguments_2 = values_2 = np.arange(5, 10).reshape(-1, 1)
@@ -906,25 +906,25 @@ class FDataIrregular(FData):  # noqa: WPS214
             FDataIrregular(
                 function_indices=array([0, 2, 5, 7], dtype=uint32),
                 function_arguments=array([[0.],
-                                          [1.],
-                                          [2.],
-                                          [3.],
-                                          [4.],
-                                          [5.],
-                                          [6.],
-                                          [7.],
-                                          [8.],
-                                          [9.]]),
+                    [1.],
+                    [2.],
+                    [3.],
+                    [4.],
+                    [5.],
+                    [6.],
+                    [7.],
+                    [8.],
+                    [9.]]),
                 function_values=array([[0.],
-                                          [1.],
-                                          [2.],
-                                          [3.],
-                                          [4.],
-                                          [5.],
-                                          [6.],
-                                          [7.],
-                                          [8.],
-                                          [9.]]),
+                    [1.],
+                    [2.],
+                    [3.],
+                    [4.],
+                    [5.],
+                    [6.],
+                    [7.],
+                    [8.],
+                    [9.]]),
                 domain_range=((0.0, 9.0),),
                 ...)
         """

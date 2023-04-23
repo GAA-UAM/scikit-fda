@@ -153,7 +153,6 @@ _all_numeric_reductions = [
     "sum",
     "var",
     "mean",
-    "gmean",
     #"cov",
 ]
 

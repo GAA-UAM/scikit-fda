@@ -370,7 +370,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             as the source but with an irregular structure.
         """
         # Obtain num functions and num observations from data
-        num_observations = np.sum(~np.isnan(f_data.data_matrix))
+        num_observations = np.sum(~(np.isnan(f_data.data_matrix).all(axis=-1)))
         num_functions = f_data.data_matrix.shape[0]
 
         # Create data structure of function pointers and coordinates
@@ -382,25 +382,28 @@ class FDataIrregular(FData):  # noqa: WPS214
             (num_observations, f_data.dim_codomain),
         )
 
+        # Find all the combinations of grid points and indices
+        from itertools import product
+        grid_point_indexes = [
+            np.indices(np.array(gp).shape)[0]
+            for gp in f_data.grid_points
+        ]
+        combinations = list(product(*f_data.grid_points))
+        index_combinations = list(product(*grid_point_indexes))
+
         head = 0
         for i in range(num_functions):
             function_indices[i] = head
             num_values = 0
 
-            for j in range(f_data.data_matrix.shape[1]):
-                if np.all(np.isnan(f_data.data_matrix[i, j])):
+            for g_index, g in enumerate(index_combinations):
+                if np.all(np.isnan(f_data.data_matrix[(i,) + g])):
                     continue
 
-                arg = [
-                    f_data.grid_points[dim][j]
-                    for dim in range(f_data.dim_domain)
-                ]
-                function_arguments[head + num_values, :] = arg
+                arg = combinations[g_index]
+                value = f_data.data_matrix[(i, ) + g]
 
-                value = [
-                    f_data.data_matrix[i, j, dim]
-                    for dim in range(f_data.dim_codomain)
-                ]
+                function_arguments[head + num_values, :] = arg
                 function_values[head + num_values, :] = value
 
                 num_values += 1
@@ -1053,7 +1056,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             FDataBasis: Basis representation of the funtional data
             object.
         """
-        from ..preprocessing.smoothing import BasisSmoother
+        from ..preprocessing.smoothing import IrregularBasisSmoother
 
         if self.dim_domain != basis.dim_domain:
             raise ValueError(
@@ -1074,7 +1077,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if not basis.is_domain_range_fixed():
             basis = basis.copy(domain_range=self.domain_range)
 
-        smoother = BasisSmoother(
+        smoother = IrregularBasisSmoother(
             basis=basis,
             **kwargs,
             return_basis=True,
@@ -1082,7 +1085,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         # Only uses the available values for each curve
         basis_coefficients = [
-            smoother.fit_transform(curve.to_grid()).coefficients[0]
+            smoother.fit_transform(curve).coefficients[0]
             for curve in self
         ]
 
@@ -1704,8 +1707,10 @@ class _IrregularCoordinateIterator(Sequence[T]):
             self._fdatairregular.coordinate_names,
         )[s_key]
 
+        coordinate_values = self._fdatairregular.function_values[..., key]
+
         return self._fdatairregular.copy(
-            function_values=self._fdatairregular.function_values[..., key],
+            function_values=coordinate_values.reshape(-1, 1),
             coordinate_names=tuple(coordinate_names),
         )
 

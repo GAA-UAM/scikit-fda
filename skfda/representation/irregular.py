@@ -1014,8 +1014,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         # Check domain range
         domain_range = [list(r) for r in self.domain_range]
         for dim in range(self.dim_domain):
-            dim_max = np.max(function_args, axis=(1, dim))
-            dim_min = np.min(function_args, axis=(1, dim))
+            dim_max = np.max(function_args[:, dim])
+            dim_min = np.min(function_args[:, dim])
 
             if dim_max > self.domain_range[dim][1]:
                 domain_range[dim][1] = dim_max

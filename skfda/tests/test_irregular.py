@@ -353,6 +353,29 @@ def test_fdatairregular_round(
         np.round(fdatairregular.function_values, decimals)
         )
 
+
+def test_fdatairregular_concatenate(
+    fdatairregular: FDataIrregular,
+) -> None:
+    """Test concatenate FDataIrregular objects.
+
+    Args:
+        input_arrays (ArrayLike): tuple of three arrays required for
+        FDataIrregular
+            indices: Array of pointers to the beginning of the arguments and
+            values of each curve
+            arguments: Array of each of the points of the domain
+            values: Array of each of the coordinates of the codomain
+    """
+    fd_concat = fdatairregular.concatenate(fdatairregular)
+    assert len(fd_concat) == 2*len(fdatairregular)
+    assert np.all(np.split(fd_concat.function_indices, 2)[0] == fdatairregular.function_indices)
+    assert np.all(np.split(fd_concat.function_indices, 2)[1] == fdatairregular.function_indices + fdatairregular.num_observations)
+    assert fd_concat.num_observations == 2*fdatairregular.num_observations
+    assert np.all(np.split(fd_concat.function_arguments, 2)[0] == fdatairregular.function_arguments)
+    assert np.all(np.split(fd_concat.function_values, 2)[0] == fdatairregular.function_values)
+
+
 def test_fdatairregular_equals(
     fdatairregular: FDataIrregular,
 ) -> None:

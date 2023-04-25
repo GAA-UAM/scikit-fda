@@ -1,5 +1,5 @@
 """Test the basic methods of the FDataIrregular structure"""
-from typing import Tuple
+from typing import Any, Tuple
 from ..typing._numpy import ArrayLike
 import numpy as np
 import pandas
@@ -22,7 +22,6 @@ COPY_KWARGS = [
     {"domain_range": ((0, 10))},
     {"dataset_name": "test"},
     {"sample_names": ["test"]*NUM_CURVES},
-    # TODO Extrapolation
     {"interpolation": SplineInterpolation(3)},
     {"argument_names": ("test",)},
     {"coordinate_names": ("test",)},
@@ -38,7 +37,6 @@ def input_arrays(
     Generate three unidimensional arrays describing a
     FDataIrregular structure
     """
-    # TODO Make editable with pytest
     num_values_per_curve = np.array(range(NUM_CURVES)) + 1
 
     values_per_curve = [random_state.rand(num_values, 1)
@@ -59,7 +57,6 @@ def input_arrays_multidimensional(
     Generate three multidimensional arrays
     describing a FDataIrregular structure
     """
-    # TODO Make editable with pytest
     num_values_per_curve = np.array(range(NUM_CURVES)) + 1
 
     values_per_curve = [random_state.rand(num_values, DIMENSIONS)
@@ -74,36 +71,72 @@ def input_arrays_multidimensional(
     return indices, values, arguments
 
 
+@pytest.fixture(
+    params=[
+        "input_arrays",
+        "input_arrays_multidimensional",
+    ],
+)
+def fdatairregular(
+    request: Any,
+    input_arrays: FDataIrregular,
+    input_arrays_multidimensional: FDataIrregular,
+) -> FDataIrregular:
+    """Return 'input_arrays' or 'input_arrays_multidimensional'."""
+    if request.param == "input_arrays":
+        return FDataIrregular(*input_arrays)
+    elif request.param == "input_arrays_multidimensional":
+        return FDataIrregular(*input_arrays_multidimensional)
+
+
 @pytest.fixture()
-def fdatagrid(
+def fdatagrid_unidimensional(
 ) -> FDataGrid:
     """Generate FDataGrid"""
-    # TODO Make editable with pytest
     num_values_per_curve = NUM_CURVES
 
     data_matrix = random_state.rand(NUM_CURVES, num_values_per_curve, 1)
     # Grid points must be sorted
     grid_points = np.sort(random_state.rand(num_values_per_curve))
 
-    return FDataGrid(data_matrix=data_matrix,
-                     grid_points=grid_points,
-                     )
+    return FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+    )
 
 
 @pytest.fixture()
 def fdatagrid_multidimensional(
 ) -> FDataGrid:
     """Generate multidimensional FDataGrid"""
-    # TODO Make editable with pytest
     num_values_per_curve = NUM_CURVES
 
     data_matrix = random_state.rand(NUM_CURVES, num_values_per_curve, DIMENSIONS)
     # Grid points must be sorted
     grid_points = np.sort(random_state.rand(num_values_per_curve))
 
-    return FDataGrid(data_matrix=data_matrix,
-                     grid_points=grid_points,
-                     )
+    return FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+    )
+
+
+@pytest.fixture(
+    params=[
+        "fdatagrid_unidimensional",
+        "fdatagrid_multidimensional",
+    ],
+)
+def fdatagrid(
+    request: Any,
+    fdatagrid_unidimensional: FDataGrid,
+    fdatagrid_multidimensional: FDataGrid,
+) -> FDataIrregular:
+    """Return 'fdatagrid_unidimensional' or 'fdatagrid_multidimensional'."""
+    if request.param == "fdatagrid_unidimensional":
+        return fdatagrid_unidimensional
+    elif request.param == "fdatagrid_multidimensional":
+        return fdatagrid_multidimensional
 
 
 @pytest.fixture()
@@ -173,65 +206,52 @@ def test_fdatairregular_from_multidimensional_arrays(
 
 
 def test_fdatairregular_copy(
-    input_arrays: ArrayLike,
+    fdatairregular: FDataIrregular,
 ) -> None:
     """Test the copy function for FDataIrregular for an exact copy
 
     Args:
-        input_arrays (ArrayLike): tuple of three arrays required for
-        FDataIrregular
-            indices: Array of pointers to the beginning of the arguments and
-            values of each curve
-            arguments: Array of each of the points of the domain
-            values: Array of each of the coordinates of the codomain
+        fdatairregular (FDataIrregular): FDataIrregular object
+        which can be unidimensional or multidimensional.
     """
-    indices, arguments, values = input_arrays
-
-    f_data_irreg = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-
-    assert f_data_irreg == f_data_irreg.copy()
+    assert fdatairregular == fdatairregular.copy()
 
 
 @pytest.mark.parametrize("kwargs", COPY_KWARGS)
 def test_fdatairregular_copy_kwargs(
-    input_arrays: ArrayLike,
+    fdatairregular: FDataIrregular,
     kwargs: dict,
 ) -> None:
     """Test the copy function for FDataIrregular with additional arguments
     which replace certain parameters of the object
 
     Args:
-        input_arrays (ArrayLike): tuple of three arrays required for
-        FDataIrregular
-            indices: Array of pointers to the beginning of the arguments and
-            values of each curve
-            arguments: Array of each of the points of the domain
-            values: Array of each of the coordinates of the codomain
+        fdatairregular (FDataIrregular): FDataIrregular object
+        which can be unidimensional or multidimensional.
         kwargs: Dict with the parameters for each iteration of the test
     """
-    indices, arguments, values = input_arrays
-
-    f_data_irreg = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-
-    f_data_copy = f_data_irreg.copy(**kwargs)
+    changed_attribute = next(iter(kwargs))
+    local_kwargs = kwargs.copy()
+    
+    if changed_attribute == "argument_names":
+        # Set correct dimensionality
+        dim = fdatairregular.dim_domain
+        local_kwargs[changed_attribute] = kwargs[changed_attribute]*dim
+    if changed_attribute == "coordinate_names":
+        # Set correct dimensionality
+        dim = fdatairregular.dim_codomain
+        local_kwargs[changed_attribute] = kwargs[changed_attribute]*dim
+    
+    f_data_copy = fdatairregular.copy(**local_kwargs)
 
     # Check everything equal except specified kwarg
-    assert len(f_data_copy) == len(f_data_irreg)
+    assert len(f_data_copy) == len(fdatairregular)
     assert len(f_data_copy.function_arguments) == \
-        len(f_data_irreg.function_arguments)
-    assert f_data_copy.dim_domain == f_data_irreg.dim_domain
-    assert f_data_copy.dim_domain == f_data_irreg.dim_codomain
-    changed_attribute = next(iter(kwargs))
+        len(fdatairregular.function_arguments)
+    assert f_data_copy.dim_domain == fdatairregular.dim_domain
+    assert f_data_copy.dim_domain == fdatairregular.dim_codomain
     assert getattr(f_data_copy, changed_attribute) != \
-        getattr(f_data_irreg, changed_attribute)
+        getattr(fdatairregular, changed_attribute)
 
 
 def test_fdatairregular_from_fdatagrid(
@@ -247,22 +267,6 @@ def test_fdatairregular_from_fdatagrid(
 
     assert f_data_irreg is not None
     assert len(f_data_irreg) == len(fdatagrid)
-
-
-def test_fdatairregular_from_fdatagrid_multidimensional(
-    fdatagrid_multidimensional: FDataGrid,
-) -> None:
-    """Tests creating a correct FDataIrregular object from
-    a multidimensional FDataGrid
-
-    Args:
-        fdatagrid (FDataGrid): FDataGrid object. Can be dense or sparse
-        (contain NaNs)
-    """
-    f_data_irreg = FDataIrregular.from_datagrid(fdatagrid_multidimensional)
-
-    assert f_data_irreg is not None
-    assert len(f_data_irreg) == len(fdatagrid_multidimensional)
 
 
 def test_fdatairregular_from_dataframe(
@@ -295,188 +299,89 @@ def test_fdatairregular_from_dataframe(
 
 
 def test_fdatairregular_getitem(
-    input_arrays: ArrayLike,
+    fdatairregular: FDataIrregular,
 ) -> None:
     """Tests using slices to get subsamples of a given FDataIrregular,
     using the method __getitem__ of the class
 
     Args:
-        input_arrays (ArrayLike): tuple of three arrays required for
-        FDataIrregular
-            indices: Array of pointers to the beginning of the arguments and
-            values of each curve
-            arguments: Array of each of the points of the domain
-            values: Array of each of the coordinates of the codomain
+        fdatairregular (FDataIrregular): FDataIrregular object
+        which can be unidimensional or multidimensional.
     """
-    indices, arguments, values = input_arrays
-
-    f_data_irreg = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-
-    assert len(f_data_irreg[0]) == 1
-    assert len(f_data_irreg[-1]) == 1
-    assert len(f_data_irreg[0:NUM_CURVES]) == NUM_CURVES
-    assert len(f_data_irreg[0:]) == len(f_data_irreg)
-    assert len(f_data_irreg[:NUM_CURVES]) == NUM_CURVES
-    assert len(f_data_irreg[0:NUM_CURVES:2]) == NUM_CURVES/2
-    assert len(f_data_irreg[0:NUM_CURVES:2]) == NUM_CURVES/2
+    assert len(fdatairregular[0]) == 1
+    assert len(fdatairregular[-1]) == 1
+    assert len(fdatairregular[0:NUM_CURVES]) == NUM_CURVES
+    assert len(fdatairregular[0:]) == len(fdatairregular)
+    assert len(fdatairregular[:NUM_CURVES]) == NUM_CURVES
+    assert len(fdatairregular[0:NUM_CURVES:2]) == NUM_CURVES/2
+    assert len(fdatairregular[0:NUM_CURVES:2]) == NUM_CURVES/2
 
 
 def test_fdatairregular_coordinates(
-    input_arrays_multidimensional: ArrayLike,
+    fdatairregular: FDataIrregular,
 ) -> None:
     """Test obtaining the different coordinates for a multidimensional
     FDataGrid object by using the custom _IrregularCoordinateIterator
 
     Args:
-        input_arrays (ArrayLike): tuple of three arrays required for
-        FDataIrregular
-            indices: Array of pointers to the beginning of the arguments and
-            values of each curve
-            arguments: Array of each of the points of the domain
-            values: Array of each of the coordinates of the codomain
+        fdatairregular (FDataIrregular): FDataIrregular object
+        which can be unidimensional or multidimensional.
     """
-    indices, arguments, values = input_arrays_multidimensional
-
-    f_data_irreg = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-
-    for dim, f_data_coordinate in enumerate(f_data_irreg.coordinates):
-        assert len(f_data_coordinate) == len(f_data_irreg)
+    for dim, f_data_coordinate in enumerate(fdatairregular.coordinates):
+        assert len(f_data_coordinate) == len(fdatairregular)
         assert f_data_coordinate.dim_codomain == 1
         assert np.all(
             f_data_coordinate.function_values[:, 0]
-            == f_data_irreg.function_values[:, dim]
+            == fdatairregular.function_values[:, dim]
         )
 
 
 @pytest.mark.parametrize("decimals", TEST_DECIMALS)
 def test_fdatairregular_round(
-    input_arrays: ArrayLike,
+    fdatairregular: FDataIrregular,
     decimals: int,
 ) -> None:
     """Test the round function for FDataIrregular
 
     Args:
-        input_arrays (ArrayLike): tuple of three arrays required for
-        FDataIrregular
-            indices: Array of pointers to the beginning of the arguments and
-            values of each curve
-            arguments: Array of each of the points of the domain
-            values: Array of each of the coordinates of the codomain
+        fdatairregular (FDataIrregular): FDataIrregular object
+        which can be unidimensional or multidimensional.
+        decimals (int): Number of decimal places to round.
     """
-    indices, arguments, values = input_arrays
-
-    f_data_irreg = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-
     assert np.all(
-        f_data_irreg.round(decimals).function_values ==
-        np.round(f_data_irreg.function_values, decimals)
+        fdatairregular.round(decimals).function_values ==
+        np.round(fdatairregular.function_values, decimals)
         )
 
 def test_fdatairregular_equals(
-    input_arrays: ArrayLike,
-    input_arrays_multidimensional: ArrayLike,
+    fdatairregular: FDataIrregular,
 ) -> None:
     """Test for equals method, which in turn uses _eq_elementwise
     to verify equality in every index, argument and value
 
     Args:
-        input_arrays (ArrayLike): tuple of three arrays required for
-        FDataIrregular
-        input_arrays_multidimensional (ArrayLike): tuple of three arrays required for
-        FDataIrregular, with multiple dimensions
-            indices: Array of pointers to the beginning of the arguments and
-            values of each curve
-            arguments: Array of each of the points of the domain
-            values: Array of each of the coordinates of the codomain
+        fdatairregular (FDataIrregular): FDataIrregular object
+        which can be unidimensional or multidimensional.
     """
-    indices, arguments, values = input_arrays_multidimensional
+    assert fdatairregular.equals(fdatairregular)
+    assert fdatairregular.equals(fdatairregular.copy())
 
-    f_data_irreg_multidimensional = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-    
-    indices, arguments, values = input_arrays
-    
-    f_data_irreg = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-    
-    assert f_data_irreg.equals(f_data_irreg)
-    assert f_data_irreg_multidimensional.equals(f_data_irreg_multidimensional)
-    assert not f_data_irreg.equals(f_data_irreg_multidimensional)
-    assert f_data_irreg.equals(f_data_irreg.copy())
-    
 
 def test_fdatairregular_to_grid(
-    input_arrays: ArrayLike,
+    fdatairregular: FDataIrregular,
     fdatagrid: FDataGrid,
 ) -> None:
     """Test conversion of FDataIrregular to and from FDataGrid.
 
     Args:
-        input_arrays (ArrayLike): tuple of three arrays required for
-        FDataIrregular
-            indices: Array of pointers to the beginning of the arguments and
-            values of each curve
-            arguments: Array of each of the points of the domain
-            values: Array of each of the coordinates of the codomain
+        Args:
+        fdatairregular (FDataIrregular): FDataIrregular object
+        which can be unidimensional or multidimensional.
+        fdatagrid (FDataGrid): FDataGrid object.
     """
-    indices, arguments, values = input_arrays
-
-    f_data_irreg = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-    
-    f_data_grid = f_data_irreg.to_grid()
+    f_data_grid = fdatairregular.to_grid()
 
     # FDataGrid -> FDataIrregular -> FDataGrid
     assert fdatagrid.equals(FDataIrregular.from_datagrid(fdatagrid).to_grid())
     # FDataIrregular -> FDataGrid -> FDataIrregular
-    assert f_data_irreg.equals(FDataIrregular.from_datagrid(f_data_grid))
-    
-def test_fdatairregular_to_grid_multidimensional(
-    input_arrays_multidimensional: ArrayLike,
-    fdatagrid_multidimensional: FDataGrid,
-) -> None:
-    """Test conversion of FDataIrregular to and from FDataGrid.
-
-    Args:
-        input_arrays_multidimensional (ArrayLike): tuple of three arrays required for
-        FDataIrregular
-            indices: Array of pointers to the beginning of the arguments and
-            values of each curve
-            arguments: Array of each of the points of the domain
-            values: Array of each of the coordinates of the codomain
-    """
-    indices, arguments, values = input_arrays_multidimensional
-
-    f_data_irreg = FDataIrregular(
-        indices,
-        arguments,
-        values,
-        )
-    
-    f_data_grid = f_data_irreg.to_grid()
-
-    # FDataGrid -> FDataIrregular -> FDataGrid
-    assert fdatagrid_multidimensional.equals(FDataIrregular.from_datagrid(fdatagrid_multidimensional).to_grid())
-    # FDataIrregular -> FDataGrid -> FDataIrregular
-    assert f_data_irreg.equals(FDataIrregular.from_datagrid(f_data_grid))
+    assert fdatairregular.equals(FDataIrregular.from_datagrid(f_data_grid))

@@ -12,13 +12,14 @@ from skfda.representation.basis import Basis, FDataBasis, FourierBasis, BSplineB
 ############
 # MACROS
 ############
+SEED = 2906198114
 
 NUM_CURVES = 100
 MAX_VALUES_PER_CURVE = 10
 DIMENSIONS = 2
 N_BASIS = 5
 
-random_state = np.random.RandomState(seed=14)
+random_state = np.random.RandomState(seed=SEED)
 
 ############
 # FIXTURES

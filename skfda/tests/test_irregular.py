@@ -13,6 +13,8 @@ from skfda.representation.interpolation import SplineInterpolation
 # FIXTURES
 ############
 
+SEED = 2906198114
+
 NUM_CURVES = 10
 DIMENSIONS = 2
 TEST_DECIMALS = range(10)
@@ -26,7 +28,7 @@ COPY_KWARGS = [
     {"coordinate_names": ("test",)},
 ]
 
-random_state = np.random.RandomState(seed=14)
+random_state = np.random.RandomState(seed=SEED)
 
 
 @pytest.fixture()

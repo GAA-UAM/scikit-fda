@@ -224,7 +224,11 @@ class FDataIrregular(FData):  # noqa: WPS214
         """Construct a FDataIrregular object."""
         self.function_indices = np.array(function_indices)
         self.function_arguments = np.array(function_arguments)
+        if len(self.function_arguments.shape) == 1:
+            self.function_arguments = self.function_arguments.reshape(-1, 1)
         self.function_values = np.array(function_values)
+        if len(self.function_values.shape) == 1:
+            self.function_values = self.function_values.reshape(-1, 1)
 
         # Set dimensions
         self._dim_domain = self.function_arguments.shape[1]
@@ -241,6 +245,9 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         if max(self.function_indices) >= self.num_observations:
             raise ValueError("Index in function_indices out of bounds")
+        
+        # Ensure arguments are in order within each function
+        self.function_arguments, self.function_values = self._sort_by_arguments()
 
         self._sample_range = _get_sample_range_from_data(
             self.function_indices,
@@ -416,6 +423,26 @@ class FDataIrregular(FData):  # noqa: WPS214
             function_values,
             **kwargs,
         )
+
+    def _sort_by_arguments(self) -> Tuple[ArrayLike, ArrayLike]:
+        """Sort the arguments lexicographically functionwise.
+        
+        Additionally, sort the values accordingly.
+
+        Returns:
+            Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
+        """
+        indices_start_end = np.append(self.function_indices, self.num_observations)
+        slices = list(zip(indices_start_end, indices_start_end[1:]))
+        slice_args = [self.function_arguments[slice(*s)] for s in slices]
+        slice_values = [self.function_values[slice(*s)] for s in slices]
+        
+        # Sort lexicographically, first to last dimension
+        sorting_masks = [np.lexsort(np.flip(f_args, axis=1).T) for f_args in slice_args]
+        sorted_args = [slice_args[i][mask] for i, mask in enumerate(sorting_masks)]
+        sorted_values = [slice_values[i][mask] for i, mask in enumerate(sorting_masks)]
+        
+        return np.concatenate(sorted_args), np.concatenate(sorted_values)
 
     def round(
         self,
@@ -1107,71 +1134,38 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             ArrayLike: numpy array with the resulting matrix.
         """
-        # Find the grid points and values for each function
-        index_end = 0
-        grid_points = [[] for i in range(self.dim_domain)]
-        evaluated_points = []
-        for index_start, index_end in zip(
-            list(self.function_indices),
-            list(self.function_indices[1:]),
-        ):
-            for dim in range(self.dim_domain):
-                grid_points[dim].append(
-                    [
-                        x[dim]
-                        for x in self.function_arguments[index_start:index_end]
-                    ],
-                )
-
-            evaluated_points.append(
-                self.function_values[index_start:index_end],
-            )
-
-        # Dont forget to add the last one
-        for dim in range(self.dim_domain):
-            grid_points[dim].append(
-                [x[dim] for x in self.function_arguments[index_end:]],
-            )
-        evaluated_points.append(self.function_values[index_end:])
-
-        # Aggregate into a complete data matrix
-        unified_grid_points = [[] for i in range(self.dim_domain)]
-        from functools import reduce
-        for dim in range(self.dim_domain):
-            unified_points = reduce(
-                lambda x, y: set(y).union(list(x)),
-                grid_points[dim],
-            )
-            unified_grid_points[dim] = sorted(unified_points)
-
-        # Fill matrix with known values, leave unknown as NA
-        num_curves = len(grid_points[0])
-        num_points = len(unified_grid_points[0])
+        # Find the common grid points
+        grid_points = [
+            np.unique(self.function_arguments[:, dim])
+            for dim in range(self.dim_domain)
+        ]
 
         unified_matrix = np.empty(
             (
-                num_curves,
-                *(num_points,) * self.dim_domain,
+                self.n_samples,
+                *[len(gp) for gp in grid_points],
                 self.dim_codomain,
             ),
         )
         unified_matrix.fill(np.nan)
 
-        for curve in range(num_curves):
-            # There must always be one dimension,
-            # and same size across all domain dimensions
-            for point, _ in enumerate(grid_points[0][curve]):
-                for dimension in range(self.dim_codomain):
-                    point_index = [
-                        unified_grid_points[i].index(
-                            grid_points[i][curve][point],
-                        )
-                        for i in range(self.dim_domain)
-                    ]
-                    unified_matrix[(curve, *point_index, dimension)] = \
-                        evaluated_points[curve][point][dimension]
+        #Fill with each function
+        next_indices = np.append(
+            self.function_indices,
+            self.num_observations,
+        )
 
-        return unified_matrix, unified_grid_points
+        for i, index in enumerate(self.function_indices):
+            for j in range(index, next_indices[i + 1]):
+                arg = self.function_arguments[j]
+                val = self.function_values[j]
+                pos = [
+                    np.where(gp==arg[dim])[0][0]
+                    for dim, gp in enumerate(grid_points)
+                ]
+                unified_matrix[(i,) + tuple(pos)] = val
+
+        return unified_matrix, grid_points
 
     def to_grid(  # noqa: D102
         self: T,

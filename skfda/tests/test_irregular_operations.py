@@ -7,7 +7,7 @@ import pytest
 from skfda.datasets._real_datasets import _fetch_loon_data
 from skfda.representation import FDataIrregular, FDataGrid
 from skfda.representation.interpolation import SplineInterpolation
-from skfda.representation.basis import Basis, FDataBasis, FourierBasis, BSplineBasis
+from skfda.representation.basis import Basis, FDataBasis, FourierBasis, BSplineBasis, TensorBasis
 
 ############
 # MACROS
@@ -687,18 +687,34 @@ class TestNumericReductions:
 
 class TestBasisOperations:
     """
-    Class which encapsulates the testing of numeric reductions
-    (such as mean, std) for FDataIrregular objects
+    Class which encapsulates the testing of basis operations
+    (such as to_basis) for FDataIrregular objects
     """
-    def test_fdatairregular_numeric_reduction(
+    def test_fdatairregular_basis_operation(
         self,
-        fdatairregular1D: FDataIrregular,
+        fdatairregular: FDataIrregular,
         all_basis: Basis,
         all_basis_operations: str,
     ) -> None:
-        basis = all_basis(
-            domain_range=fdatairregular1D.domain_range, 
-            n_basis=N_BASIS
-            )
-        basis_operation = getattr(fdatairregular1D, all_basis_operations)(basis)
-        assert isinstance(basis_operation, FDataBasis)
+        # Create Tensor basis for higher dimensions
+        if fdatairregular.dim_domain == 1:
+            basis = all_basis(
+                domain_range=fdatairregular.domain_range, 
+                n_basis=N_BASIS,
+                )
+        else:
+            basis_by_dim = [
+                all_basis(
+                    domain_range=fdatairregular.domain_range[dim: dim + 1], 
+                    n_basis=N_BASIS,
+                )
+                for dim in range(fdatairregular.dim_domain)
+            ]
+            basis = TensorBasis(basis_by_dim)
+        
+        fd_basis_coords = [
+            getattr(coordinate, all_basis_operations)(basis)
+            for coordinate in fdatairregular.coordinates
+        ]
+        
+        assert all([isinstance(fd_basis, FDataBasis) for fd_basis in fd_basis_coords])

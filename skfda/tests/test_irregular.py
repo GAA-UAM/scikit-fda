@@ -378,6 +378,47 @@ def test_fdatairregular_equals(
     assert fdatairregular.equals(fdatairregular.copy())
 
 
+def test_fdatairregular_restrict(
+    fdatairregular: FDataIrregular,
+) -> None:
+    """Test the restrict function for FDataIrregular.
+
+    Args:
+        fdatairregular (FDataIrregular): FDataIrregular object
+            which can be unidimensional or multidimensional.
+    """
+    restricted_domain = [
+        (dr[0] + (dr[0] + dr[1]) / 4, dr[1] - (dr[0] + dr[1]) / 4)
+        for dr in fdatairregular.domain_range
+    ]
+
+    restricted_fdata = fdatairregular.restrict(restricted_domain)
+
+    samples_by_dim = [
+        restricted_fdata.function_arguments[:, dim]
+        for dim in range(fdatairregular.dim_domain)
+    ]
+
+    sample_ranges = [(np.min(args), np.max(args)) for args in samples_by_dim]
+
+    # The min arg is larger than the domain min constraint
+    assert len(restricted_fdata) > 0
+    assert all(
+        [
+            sr[0] > restricted_domain[i][0]
+            for i, sr in enumerate(sample_ranges)
+        ],
+    )
+
+    # The max arg is lesser than the domain max constraint
+    assert all(
+        [
+            sr[1] < restricted_domain[i][1]
+            for i, sr in enumerate(sample_ranges)
+        ],
+    )
+
+
 def test_fdatairregular_to_grid(
     fdatairregular: FDataIrregular,
     fdatagrid: FDataGrid,

@@ -175,9 +175,10 @@ def test_fdatairregular_init(
         fdatairregular (FDataIrregular): FDataIrregular object
             which can be unidimensional or multidimensional.
     """
+    arguments = fdatairregular.function_arguments
     assert fdatairregular is not None
-    assert len(fdatairregular) == len(fdatairregular)
-    assert len(fdatairregular.function_arguments) == len(fdatairregular)
+    assert len(fdatairregular) == len(fdatairregular.function_indices)
+    assert len(arguments) == fdatairregular.num_observations
 
 
 def test_fdatairregular_copy(

@@ -1543,18 +1543,18 @@ class FDataIrregular(FData):  # noqa: WPS214
         fill_value: T,
     ) -> T:
         result = self.copy()
-        result.data_matrix = np.full(
-            (len(indices),) + self.data_matrix.shape[1:],
+        result.function_values = np.full(
+            (len(indices),) + self.function_values.shape[1:],
             np.nan,
         )
 
         positive_mask = indices >= 0
-        result.data_matrix[positive_mask] = self.data_matrix[
+        result.function_values[positive_mask] = self.function_values[
             indices[positive_mask]
         ]
 
         if fill_value is not self.dtype.na_value:
-            result.data_matrix[~positive_mask] = fill_value.data_matrix[0]
+            result.function_values[~positive_mask] = fill_value.function_values[0]
 
         return result
 
@@ -1673,8 +1673,8 @@ class FDataIrregularDType(
     def __hash__(self) -> int:
         return hash(
             (
-                self.function_indices,
-                self.function_arguments,
+                str(self.function_indices),
+                str(self.function_arguments),
                 self.domain_range,
                 self.dim_codomain,
             ),

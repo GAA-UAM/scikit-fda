@@ -660,7 +660,7 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
     Stop when the selected point is independent from the target.
 
     It uses an asymptotic test based on the chi-squared distribution described
-    in :footcite:`szekely+rizzo_2010_brownian`. The test rejects independence
+    in :footcite:`szekely+rizzo_2009_brownian`. The test rejects independence
     if
 
     .. math::
@@ -870,7 +870,7 @@ class RecursiveMaximaHunting(
     selected by :class:`MaximaHunting` alone.
 
     This method was originally described in a special case in article
-    :footcite:`torrecilla+suarez_2016_hunting`.
+    :footcite:`torrecilla+suarez_2016_feature`.
     Additional information about the usage of this method can be found in
     :doc:`/modules/preprocessing/dim_reduction/recursive_maxima_hunting`.
 

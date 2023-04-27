@@ -73,7 +73,7 @@ def _fisher_rao_warping_mean(
 
     The karcher mean :math:`\bar \gamma` is defined as the warping that
     minimises locally the sum of Fisher-Rao squared distances
-    :footcite:`srivastava+klassen_2016_analysis_orbit`.
+    :footcite:`srivastava+klassen_2016_statistical`.
 
     .. math::
         \bar \gamma = argmin_{\gamma \in \Gamma} \sum_{i=1}^{n}
@@ -81,7 +81,7 @@ def _fisher_rao_warping_mean(
 
     The computation is performed using the structure of Hilbert Sphere obtained
     after a transformation of the warpings, see
-    :footcite:`srivastava++_2011_ficher-rao_orbit`.
+    :footcite:`srivastava++_2011_registration`.
 
     Args:
         warping: Set of warpings.
@@ -211,8 +211,8 @@ def fisher_rao_karcher_mean(
     equivalence class which makes the mean of the warpings employed be the
     identity.
 
-    See :footcite:`srivastava+klassen_2016_analysis_karcher` and
-    :footcite:`srivastava++_2011_ficher-rao_karcher`.
+    See :footcite:`srivastava+klassen_2016_statistical` and
+    :footcite:`srivastava++_2011_registration`.
 
     Args:
         fdatagrid: Set of functions to compute the

@@ -176,7 +176,13 @@ def fetch_ucr(
     **kwargs: Any,
 ) -> Bunch | Tuple[FDataGrid, NDArrayInt]:
     """
-    Fetch a dataset from the UCR.
+    Fetch a dataset from the UCR/UEA repository.
+
+    The UCR/UEA Time Series Classification repository, hosted at
+    www.timeseriesclassification.com includes plenty of
+    classification problems with univariate and multivariate time series
+    \ :footcite:p:`dau++_2019_ucr,bagnall++_2018_uea`.
+    They are widely used in the functional data classification literature.
 
     Args:
         name: Dataset name.
@@ -190,12 +196,7 @@ def fetch_ucr(
         Functional multivariate datasets are not yet supported.
 
     References:
-        Dau, Hoang Anh, Anthony Bagnall, Kaveh Kamgar, Chin-Chia Michael Yeh,
-        Yan Zhu, Shaghayegh Gharghabi, Chotirat Ann Ratanamahatana, and
-        Eamonn Keogh. «The UCR Time Series Archive».
-        arXiv:1810.07758 [cs, stat], 17 de octubre de 2018.
-        http://arxiv.org/abs/1810.07758.
-
+        .. footbibliography::
 
     """
     repositories = _get_skdatasets_repositories()
@@ -1142,17 +1143,21 @@ def fetch_octane(
 if fetch_octane.__doc__ is not None:  # docstrings can be stripped off
     fetch_octane.__doc__ += _octane_descr + _param_descr
 
-_gait_descr = """
+_gait_template = """
     Angles formed by the hip and knee of each of 39 children over each boy
-    gait cycle.
+    gait cycle {cite}.
 
     References:
-        Ramsay, James O., and Silverman, Bernard W. (2006),
-        Functional Data Analysis, 2nd ed. , Springer, New York.
+        {bibliography}
 
-        Ramsay, James O., and Silverman, Bernard W. (2002),
-        Applied Functional Data Analysis, Springer, New York
 """
+
+_gait_descr = _gait_template.format(
+    cite="[1]",
+    bibliography="[1] Ramsay, J., & Silverman, B. W. (2005). Introduction. "
+    "In J. Ramsay & B. W. Silverman, Functional data analysis (2nd ed., "
+    "pp. 1–18). Springer-Verlag. https://doi.org/10.1007/b98888",
+)
 
 
 @overload
@@ -1239,18 +1244,30 @@ def fetch_gait(
 
 
 if fetch_gait.__doc__ is not None:  # docstrings can be stripped off
-    fetch_gait.__doc__ += _gait_descr + _param_descr
+    fetch_gait.__doc__ += _gait_template.format(
+        cite=":footcite:p:`ramsay+silverman_2005_introduction`",
+        bibliography=".. footbibliography::",
+    ) + _param_descr
 
-_handwriting_descr = """
+
+_handwriting_template = """
     Data representing the X-Y coordinates along time obtained while
     writing the word "fda". The sample contains 20 instances measured over
     2.3 seconds that had been aligned for a better understanding. Each instance
-    is formed by 1401 coordinate values.
+    is formed by 1401 coordinate values {cite}.
 
     References:
-        Ramsay, James O., and Silverman, Bernard W. (2006),
-        Functional Data Analysis, 2nd ed. , Springer, New York.
+        {bibliography}
+
 """
+
+_handwriting_descr = _handwriting_template.format(
+    cite="[1]",
+    bibliography="[1] Ramsay, J., & Silverman, B. W. (2005). From functional "
+    "data to smooth functions. In J. Ramsay & B. W. Silverman, Functional "
+    "data analysis (2nd ed., pp. 37–58). Springer-Verlag. "
+    "https://doi.org/10.1007/b98888",
+)
 
 
 @overload
@@ -1337,7 +1354,10 @@ def fetch_handwriting(
 
 
 if fetch_handwriting.__doc__ is not None:  # docstrings can be stripped off
-    fetch_handwriting.__doc__ += _handwriting_descr + _param_descr
+    fetch_handwriting.__doc__ += _handwriting_template.format(
+        cite=":footcite:p:`ramsay+silverman_2005_functionala`",
+        bibliography=".. footbibliography::",
+    ) + _param_descr
 
 _nox_descr_template = """
     NOx levels measured every hour by a control station in Poblenou in
@@ -1439,8 +1459,8 @@ def fetch_nox(
 
 if fetch_nox.__doc__ is not None:  # docstrings can be stripped off
     fetch_nox.__doc__ += _nox_descr_template.format(
-        cite=":footcite:`febrero++_2008_outlier`",
-        bibliography=".. footbibliography::"
+        cite=":footcite:p:`febrero++_2008_outlier`",
+        bibliography=".. footbibliography::",
     ) + _param_descr
 
 _mco_descr_template = """
@@ -1541,7 +1561,7 @@ def fetch_mco(
 
 if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
     fetch_mco.__doc__ += _mco_descr_template.format(
-        cite=":footcite:`ruiz++_2003_cariporide`",
+        cite=":footcite:p:`ruiz-meana++_2003_cariporide`",
         bibliography=".. footbibliography::",
     ) + _param_descr
 

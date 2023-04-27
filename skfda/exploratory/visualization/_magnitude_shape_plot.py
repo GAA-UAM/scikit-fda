@@ -41,7 +41,7 @@ class MagnitudeShapePlot(BasePlot):
     The outliers are detected using an instance of
     :class:`MSPlotOutlierDetector`.
 
-    For more information see :footcite:ts:`dai+genton_2018_visualization`.
+    For more information see :footcite:ts:`dai+genton_2018_multivariate`.
 
     Args:
         fdata: Object containing the data.

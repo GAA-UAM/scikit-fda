@@ -2,6 +2,7 @@
 basemap
 basemap-data
 basemap-data-hires
+ipykernel
 Sphinx>=3
 pydata-sphinx-theme
 sphinx-gallery

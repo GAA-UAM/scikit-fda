@@ -550,7 +550,7 @@ class ScatterPlot(BasePlot):
         _set_labels(self.fdata, fig, axes, self.patches)
 
 
-class PlotIrregular(BasePlot):
+class PlotIrregular(BasePlot):  # noqa: WPS230
     """
     Class used to plot a FDataIrregular object.
 
@@ -598,7 +598,7 @@ class PlotIrregular(BasePlot):
             matplotlib.pyplot.plot_surface function.
     """
 
-    def __init__(
+    def __init__(  # noqa: WPS211
         self,
         fdata: FDataIrregular,
         chart: Figure | Axes | None = None,
@@ -627,15 +627,17 @@ class PlotIrregular(BasePlot):
         # There may be different points for each function
         self.grid_points = []
         self.evaluated_points = []
-        for index_start, index_end in zip(list(self.fdata.function_indices), 
-                                          list(self.fdata.function_indices[1:])):
+        indices = np.append(self.fdata.function_indices, self.fdata.n_samples)
+        for index_start, index_end in zip(
+            indices,
+            indices[1:],
+        ):
             self.grid_points.append(
-                self.fdata.function_arguments[index_start:index_end])
+                self.fdata.function_arguments[index_start:index_end],
+            )
             self.evaluated_points.append(
-                self.fdata.function_values[index_start:index_end])
-        # Dont forget to add the last one
-        self.grid_points.append(self.fdata.function_arguments[index_end:])
-        self.evaluated_points.append(self.fdata.function_values[index_end:])
+                self.fdata.function_values[index_start:index_end],
+            )
 
         self.domain_range = domain_range
         self.group = group
@@ -678,13 +680,14 @@ class PlotIrregular(BasePlot):
         axes: Sequence[Axes],
     ) -> None:
         # Implement in subclasses
-        pass 
-        
-        
+        pass
+
+
 class LinearPlotIrregular(PlotIrregular):
     """
-    Class used to plot the individual curves of a FDataIrregular object
-    using linear interpolation between the points.
+    Class used to plot the individual curves of a FDataIrregular object.
+
+    It uses linear interpolation between the points of each curve.
     """
 
     def _plot(
@@ -698,10 +701,8 @@ class LinearPlotIrregular(PlotIrregular):
         Returns:
         fig: figure object in which the graphs are plotted.
         """
-        self.artists = np.zeros(
-            (self.n_samples, self.fdata.dim_codomain),
-            dtype=Artist,
-        )
+        artists_shape = (self.n_samples, self.fdata.dim_codomain)
+        self.artists = np.zeros(artists_shape, dtype=Artist)
 
         color_dict: Dict[str, ColorLike | None] = {}
 
@@ -725,11 +726,9 @@ class LinearPlotIrregular(PlotIrregular):
 
         _set_labels(self.fdata, fig, axes, self.patches)
 
-     
+
 class ScatterPlotIrregular(PlotIrregular):
-    """
-    Class used to scatter a FDataIrregular object.
-    """
+    """Class used to scatter plot a FDataIrregular object."""
 
     def _plot(
         self,
@@ -742,10 +741,8 @@ class ScatterPlotIrregular(PlotIrregular):
         Returns:
         fig: figure object in which the graphs are plotted.
         """
-        self.artists = np.zeros(
-            (self.n_samples, self.fdata.dim_codomain),
-            dtype=Artist,
-        )
+        artists_shape = (self.n_samples, self.fdata.dim_codomain)
+        self.artists = np.zeros(artists_shape, dtype=Artist)
 
         color_dict: Dict[str, ColorLike | None] = {}
 

@@ -18,6 +18,7 @@ NUM_CURVES = 100
 MAX_VALUES_PER_CURVE = 10
 DIMENSIONS = 2
 N_BASIS = 5
+DECIMALS = 4
 
 random_state = np.random.RandomState(seed=SEED)
 
@@ -71,6 +72,58 @@ def input_arrays_2D(
     arguments = np.concatenate(args_per_curve)
 
     return indices, values, arguments
+
+@pytest.fixture()
+def fdatagrid1D(
+) -> FDataGrid:
+    """Generate FDataGrid"""
+    num_values_per_curve = NUM_CURVES
+
+    data_matrix = random_state.rand(NUM_CURVES, num_values_per_curve, 1)
+    # Grid points must be sorted
+    grid_points = np.sort(random_state.rand(num_values_per_curve))
+
+    return FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+    )
+
+@pytest.fixture()
+def fdatagrid2D(
+) -> FDataGrid:
+    """Generate multidimensional FDataGrid."""
+    num_values_per_curve = NUM_CURVES
+
+    data_matrix = random_state.rand(
+        NUM_CURVES,
+        num_values_per_curve,
+        DIMENSIONS,
+    )
+
+    # Grid points must be sorted
+    grid_points = np.sort(random_state.rand(num_values_per_curve))
+
+    return FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+    )
+
+@pytest.fixture(
+    params=[
+        "fdatagrid1D",
+        "fdatagrid2D",
+    ],
+)
+def fdatagrid(
+    request: Any,
+    fdatagrid1D: FDataGrid,
+    fdatagrid2D: FDataGrid,
+) -> FDataIrregular:
+    """Return 'fdatagrid1D' or 'fdatagrid2D'."""
+    if request.param == "fdatagrid1D":
+        return fdatagrid1D
+    elif request.param == "fdatagrid2D":
+        return fdatagrid2D
 
 @pytest.fixture(params=["single_curve", "multiple_curves"])
 def fdatairregular1D(
@@ -718,3 +771,60 @@ class TestBasisOperations:
         ]
         
         assert all([isinstance(fd_basis, FDataBasis) for fd_basis in fd_basis_coords])
+
+
+def test_fdatairregular_to_basis_consistency(
+    fdatagrid: FDataIrregular,
+    all_basis : Basis,
+) -> None:
+    """Test that irregular to_basis is consistent with
+    analogous FDataGrid to_basis in 1D.
+
+    Args:
+        fdatairregular1D (FDataIrregular): FDataIrregular
+            object with dimensions (1,1).
+        all_basis (Basis): FDataBasis object.
+    """
+    fd_irregular = FDataIrregular.from_datagrid(fdatagrid)
+    
+    if fd_irregular.dim_domain == 1:
+        basis = all_basis(
+            domain_range=fd_irregular.domain_range, 
+            n_basis=N_BASIS,
+        )
+    else:
+        basis_by_dim = [
+            all_basis(
+                domain_range=fd_irregular.domain_range[dim: dim + 1], 
+                n_basis=N_BASIS,
+            )
+            for dim in range(fd_irregular.dim_domain)
+        ]
+        basis = TensorBasis(basis_by_dim)
+
+    irregular_basis = [
+        coord.to_basis(basis)
+        for coord in fd_irregular.coordinates
+    ]
+
+    grid_basis = [
+        coord.to_basis(basis)
+        for coord in fdatagrid.coordinates
+    ]
+
+    irregular_coefs = [
+        b.coefficients.round(DECIMALS)
+        for b in irregular_basis
+    ]
+
+    grid_coefs = [
+        b.coefficients.round(DECIMALS)
+        for b in grid_basis
+    ]
+
+    assert all(
+        [
+            np.all(irregular_coefs[i] == g_coef)
+            for i, g_coef in enumerate(grid_coefs)
+        ],
+    )

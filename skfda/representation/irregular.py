@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import numbers
 import warnings
-from typing import Any, Optional, Sequence, Type, TypeVar, Union, cast
+from typing import Any, Optional, Sequence, Tuple, Type, TypeVar, Union, cast
 
 import numpy as np
 import pandas.api.extensions
-import scipy.stats.mstats
 from matplotlib.figure import Figure
 
 from .._utils import _check_array_key
@@ -83,7 +82,7 @@ def _get_sample_range_from_data(
     for sample, _ in enumerate(dim_sample_ranges):
         sample_range.append(
             tuple(
-                [dim_ranges[dim][sample] for dim in range(dim_domain)],
+                [dim_ranges[d][sample] for d in range(dim_domain)],
             ),
         )
 
@@ -207,7 +206,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     """
 
-    def __init__(
+    def __init__(  # noqa:  WPS211
         self,
         function_indices: ArrayLike,
         function_arguments: ArrayLike,
@@ -238,16 +237,19 @@ class FDataIrregular(FData):  # noqa: WPS214
         self.num_functions = self.function_indices.shape[0]
 
         if self.function_arguments.shape[0] != self.function_values.shape[0]:
-            raise ValueError("Dimension mismatch between function_arguments \
-                and function_values")
+            raise ValueError(
+                "Dimension mismatch in function_arguments and function_values",
+            )
 
         self.num_observations = self.function_arguments.shape[0]
 
         if max(self.function_indices) >= self.num_observations:
             raise ValueError("Index in function_indices out of bounds")
-        
+
         # Ensure arguments are in order within each function
-        self.function_arguments, self.function_values = self._sort_by_arguments()
+        sorted_arguments, sorted_values = self._sort_by_arguments()
+        self.function_arguments = sorted_arguments
+        self.function_values = sorted_values
 
         self._sample_range = _get_sample_range_from_data(
             self.function_indices,
@@ -313,13 +315,11 @@ class FDataIrregular(FData):  # noqa: WPS214
             the irregular functional data of the dataset.
         """
         # Accept strings but ensure the column names are tuples
-        is_str = isinstance(argument_columns, str)
-        argument_columns = [argument_columns] if is_str else \
-            argument_columns
+        if isinstance(argument_columns, str):
+            argument_columns = [argument_columns]
 
-        is_str = isinstance(coordinate_columns, str)
-        coordinate_columns = [coordinate_columns] if is_str else \
-            coordinate_columns
+        if isinstance(coordinate_columns, str):
+            coordinate_columns = [coordinate_columns]
 
         # Obtain num functions and num observations from data
         num_observations = dataframe.shape[0]
@@ -426,22 +426,37 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def _sort_by_arguments(self) -> Tuple[ArrayLike, ArrayLike]:
         """Sort the arguments lexicographically functionwise.
-        
+
         Additionally, sort the values accordingly.
 
         Returns:
             Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
         """
-        indices_start_end = np.append(self.function_indices, self.num_observations)
+        indices_start_end = np.append(
+            self.function_indices,
+            self.num_observations,
+        )
+
         slices = list(zip(indices_start_end, indices_start_end[1:]))
         slice_args = [self.function_arguments[slice(*s)] for s in slices]
         slice_values = [self.function_values[slice(*s)] for s in slices]
-        
+
         # Sort lexicographically, first to last dimension
-        sorting_masks = [np.lexsort(np.flip(f_args, axis=1).T) for f_args in slice_args]
-        sorted_args = [slice_args[i][mask] for i, mask in enumerate(sorting_masks)]
-        sorted_values = [slice_values[i][mask] for i, mask in enumerate(sorting_masks)]
-        
+        sorting_masks = [
+            np.lexsort(np.flip(f_args, axis=1).T)
+            for f_args in slice_args
+        ]
+
+        sorted_args = [
+            slice_args[i][mask]
+            for i, mask in enumerate(sorting_masks)
+        ]
+
+        sorted_values = [
+            slice_values[i][mask]
+            for i, mask in enumerate(sorting_masks)
+        ]
+
         return np.concatenate(sorted_args), np.concatenate(sorted_values)
 
     def round(
@@ -564,7 +579,8 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         Args:
             order: Order of the derivative. Defaults to one.
-            method (Optional[Basis]):
+            method (Optional[Basis]): Method used to generate
+                the derivatives.
 
         Returns:
             FDataIrregular with the derivative of the dataset.
@@ -578,14 +594,26 @@ class FDataIrregular(FData):  # noqa: WPS214
         """Integrate the FDataIrregular object.
 
         Args:
-            domain (Optional[DomainRange]):
+            domain (Optional[DomainRange]): tuple with
+                the domain ranges for each dimension
+                of the domain
 
         Returns:
             FDataIrregular with the integral.
         """
         pass
 
-    def _check_same_dimensions(self: T, other: T) -> None:
+    def check_same_dimensions(self: T, other: T) -> None:
+        """Ensure that other FDataIrregular object ahs compatible dimensions.
+
+        Args:
+            other (T): FDataIrregular object to compare dimensions
+                with.
+
+        Raises:
+            ValueError: Dimension mismatch in coordinates.
+            ValueError: Dimension mismatch in arguments.
+        """
         if self.dim_codomain != other.dim_codomain:
             raise ValueError("Dimension mismatch in coordinates")
         if self.dim_domain != other.dim_domain:
@@ -733,7 +761,7 @@ class FDataIrregular(FData):  # noqa: WPS214
     def __eq__(self, other: object) -> NDArrayBool:
         return self.equals(other)
 
-    def _get_op_matrix(
+    def _get_op_matrix(  # noqa: WPS212
         self,
         other: Union[T, NDArrayFloat, NDArrayInt, float],
     ) -> Union[None, float, NDArrayFloat, NDArrayInt]:
@@ -965,10 +993,10 @@ class FDataIrregular(FData):  # noqa: WPS214
             )
         # Verify that dimensions are compatible
         assert len(others) > 0, "No objects to concatenate"
-        self._check_same_dimensions(others[0])
+        self.check_same_dimensions(others[0])
         if len(others) > 1:
             for x, y in zip(others, others[1:]):
-                x._check_same_dimensions(y)
+                x.check_same_dimensions(y)
 
         # Allocate all required memory
         total_functions = self.num_functions + sum(
@@ -1149,7 +1177,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         )
         unified_matrix.fill(np.nan)
 
-        #Fill with each function
+        # Fill with each function
         next_indices = np.append(
             self.function_indices,
             self.num_observations,
@@ -1160,7 +1188,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                 arg = self.function_arguments[j]
                 val = self.function_values[j]
                 pos = [
-                    np.where(gp==arg[dim])[0][0]
+                    np.where(gp == arg[dim])[0][0]
                     for dim, gp in enumerate(grid_points)
                 ]
                 unified_matrix[(i,) + tuple(pos)] = val
@@ -1447,8 +1475,9 @@ class FDataIrregular(FData):  # noqa: WPS214
         indices = range(self.num_functions)
         required_indices = indices[key]
         for i in required_indices:
-            next_index = self.function_indices[i + 1] if i + 1 < \
-                self.num_functions else None
+            next_index = None
+            if i + 1 < self.num_functions:
+                next_index = self.function_indices[i + 1]
             s = slice(self.function_indices[i], next_index)
             required_slices.append(s)
 
@@ -1504,7 +1533,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                 return NotImplemented
 
         new_inputs = [
-            self._get_op_matrix(i) for i in inputs
+            self._get_op_matrix(input_) for input_ in inputs
         ]
 
         outputs = kwargs.pop('out', None)
@@ -1554,7 +1583,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         ]
 
         if fill_value is not self.dtype.na_value:
-            result.function_values[~positive_mask] = fill_value.function_values[0]
+            fill_value_ = fill_value.function_values[0]
+            result.function_values[~positive_mask] = fill_value_
 
         return result
 
@@ -1573,15 +1603,19 @@ class FDataIrregular(FData):  # noqa: WPS214
         """
         The number of bytes needed to store this object in memory.
         """
-        return self.function_indices.nbytes + \
-            self.function_arguments.nbytes + self.function_values
+        array_nbytes = [
+            self.function_indices.nbytes,
+            self.function_arguments.nbytes,
+            self.function_values,
+        ]
+        return sum(array_nbytes)
 
     def isna(self) -> NDArrayBool:
         """
         Return a 1-D array indicating if each value is missing.
 
         Returns:
-            na_values: Positions of NA.
+            na_values (NDArrayBool): Positions of NA.
         """
         return np.all(  # type: ignore[no-any-return]
             np.isnan(self.function_values),

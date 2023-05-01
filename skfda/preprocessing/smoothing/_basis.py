@@ -334,8 +334,11 @@ class BasisSmoother(_LinearSmoother):
             )
 
         return super().transform(X, y)
-    
+
+
 class IrregularBasisSmoother(_LinearSmoother):
+    """Transform irregular data to a smooth basis functional form."""
+
     _required_parameters = ["basis"]
 
     def __init__(
@@ -395,8 +398,8 @@ class IrregularBasisSmoother(_LinearSmoother):
         output_points: GridPointsLike,
     ) -> NDArrayFloat:
         raise NotImplementedError(
-                "Not implemented for as_coordinates = True",
-            )
+            "Not implemented for as_coordinates = True",
+        )
 
     def fit(
         self,
@@ -414,7 +417,8 @@ class IrregularBasisSmoother(_LinearSmoother):
 
         """
         self.input_points_ = X.function_arguments
-        self.output_points_ = (self.output_points
+        self.output_points_ = (
+            self.output_points
             if self.output_points is not None
             else self.input_points_
         )

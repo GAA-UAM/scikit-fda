@@ -174,7 +174,7 @@ def fetch_ucr(
     return_X_y: bool = False,
     **kwargs: Any,
 ) -> Bunch | Tuple[FDataGrid, NDArrayInt]:
-    """
+    r"""
     Fetch a dataset from the UCR/UEA repository.
 
     The UCR/UEA Time Series Classification repository, hosted at
@@ -261,7 +261,7 @@ _phoneme_descr = """
     Acoustic-Phonetic Continuous Speech Corpus, NTIS, US Dept of Commerce)
     which is a widely used resource for research in speech recognition. A
     dataset was formed by selecting five phonemes for
-    classification based on digitized speech from this database.   
+    classification based on digitized speech from this database.
     phonemes are transcribed as follows: "sh" as in "she", "dcl" as in
     "dark", "iy" as the vowel in "she", "aa" as the vowel in "dark", and
     "ao" as the first vowel in "water". From continuous speech of 50 male

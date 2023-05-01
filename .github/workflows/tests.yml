@@ -23,14 +23,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov;
+        pip3 install pytest-cov || pip3 install --user pytest-cov;
 
     - name: Run tests
       run: |
         pip3 debug --verbose .
         pip3 install numba
         pip3 install ".[test]"
-        coverage run --source=skfda/ -m pytest;
+        pytest --cov=skfda/ --cov-report=xml
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3

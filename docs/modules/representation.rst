@@ -55,6 +55,7 @@ The following classes are used to define different basis for
    skfda.representation.basis.FourierBasis
    skfda.representation.basis.MonomialBasis
    skfda.representation.basis.ConstantBasis
+   skfda.representation.basis.CustomBasis
    
 The following classes, allow the construction of a basis for
 :math:`\mathbb{R}^n \to \mathbb{R}` functions.

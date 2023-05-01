@@ -133,7 +133,7 @@ class RKHSVariableSelection(
     misclassification error of all the classification problems with the
     reduced dimensionality. For a longer discussion about the optimality and
     consistence of this method, we refer the reader to the original
-    article [1]_.
+    article :footcite:`berrendero++_2018_use`.
 
     In practice the points are selected one at a time, using
     a greedy approach, so this optimality is not always guaranteed.
@@ -189,11 +189,7 @@ class RKHSVariableSelection(
         (10000, 3)
 
     References:
-        .. [1] J. R. Berrendero, A. Cuevas, and J. L. Torrecilla, «On the Use
-               of Reproducing Kernel Hilbert Spaces in Functional
-               Classification», Journal of the American Statistical
-               Association, vol. 113, no. 523, pp. 1210-1218, jul. 2018,
-               doi: 10.1080/01621459.2017.1320287.
+        .. footbibliography::
 
     """
 

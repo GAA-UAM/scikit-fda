@@ -5,11 +5,10 @@ from typing import Any, Mapping, Tuple, overload
 
 import numpy as np
 import pandas as pd
+import rdata
 from pandas import DataFrame, Series
 from sklearn.utils import Bunch
 from typing_extensions import Literal
-
-import rdata
 
 from ..representation import FDataGrid
 from ..representation.irregular import FDataIrregular

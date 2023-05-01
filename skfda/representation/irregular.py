@@ -740,6 +740,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         if not np.array_equal(self.domain_range, other.domain_range):
             return False
 
+        # TODO extrapolation when implemented
+
         if self.interpolation != other.interpolation:
             return False
 
@@ -1298,6 +1300,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         domain_range = validate_domain_range(domain_range)
 
+
         head = 0
         indices = []
         arguments = []
@@ -1329,7 +1332,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
                 masks = masks.intersection(set(select_mask[0]))
 
-            # Do not keep functions with no values.
+            # TODO Keep functions with no values?
             masks = list(masks)
             if len(masks) > 0:
                 indices.append(head)
@@ -1383,6 +1386,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             Shifted functions.
         """
+        # TODO build based in above
         pass
 
     def compose(
@@ -1404,6 +1408,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             Function representing the composition.
 
         """
+        # TODO Is this possible with this structure?
         pass
 
     def __str__(self) -> str:

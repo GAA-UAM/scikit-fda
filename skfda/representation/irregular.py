@@ -167,8 +167,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         >>> FDataIrregular(indices, arguments, values)
         Traceback (most recent call last):
             ....
-        ValueError: Dimension mismatch between function_arguments
-        and function_values...
+        ValueError: Dimension mismatch ...
 
         The indices in function_indices must point to correct rows
         in function_arguments and function_values.
@@ -961,26 +960,26 @@ class FDataIrregular(FData):  # noqa: WPS214
             >>> fd.concatenate(fd_2)
             FDataIrregular(
                 function_indices=array([0, 2, 5, 7], dtype=uint32),
-                function_arguments=array([[0.],
-                    [1.],
-                    [2.],
-                    [3.],
-                    [4.],
-                    [5.],
-                    [6.],
-                    [7.],
-                    [8.],
-                    [9.]]),
-                function_values=array([[0.],
-                    [1.],
-                    [2.],
-                    [3.],
-                    [4.],
-                    [5.],
-                    [6.],
-                    [7.],
-                    [8.],
-                    [9.]]),
+                function_arguments=array([[ 0.],
+                    [ 1.],
+                    [ 2.],
+                    [ 3.],
+                    [ 4.],
+                    [ 5.],
+                    [ 6.],
+                    [ 7.],
+                    [ 8.],
+                    [ 9.]]),
+                function_values=array([[ 0.],
+                    [ 1.],
+                    [ 2.],
+                    [ 3.],
+                    [ 4.],
+                    [ 5.],
+                    [ 6.],
+                    [ 7.],
+                    [ 8.],
+                    [ 9.]]),
                 domain_range=((0.0, 9.0),),
                 ...)
         """

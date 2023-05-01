@@ -185,6 +185,7 @@ def fetch_ucr(
 
     Args:
         name: Dataset name.
+        return_X_y: Return tuple (data, target)
         kwargs: Additional parameters for the function
             :func:`skdatasets.repositories.ucr.fetch`.
 

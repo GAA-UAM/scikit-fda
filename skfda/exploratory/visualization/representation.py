@@ -8,7 +8,7 @@ like depth measures.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Sequence, Sized, Tuple, TypeVar, Optional
+from typing import Any, Dict, Optional, Sequence, Sized, Tuple, TypeVar
 
 import matplotlib.cm
 import matplotlib.patches

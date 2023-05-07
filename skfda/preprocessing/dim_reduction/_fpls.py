@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Tuple, TypeVar, Union, Optional
+from typing import Optional, Tuple, Union
 
 import multimethod
 import numpy as np
 from sklearn.utils.validation import check_is_fitted
-
-from skfda.misc.hat_matrix import Input
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
@@ -416,7 +414,9 @@ class FPLS(
         Returns:
             self
         """
-        calculate_mean = lambda x: x.mean() if isinstance(x, FData) else x.mean(axis=0)
+        calculate_mean = (
+            lambda x: x.mean() if isinstance(x, FData) else x.mean(axis=0)
+        )
         # Center and scale data
         self.x_mean = calculate_mean(X)
         self.y_mean = calculate_mean(y)

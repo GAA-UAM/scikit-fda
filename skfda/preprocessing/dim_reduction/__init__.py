@@ -13,11 +13,13 @@ _normal_getattr, __dir__, __all__ = lazy.attach(
     ],
     submod_attrs={
         "_fpca": ["FPCA"],
+        "_fpls": ["FPLS"],
     },
 )
 
 if TYPE_CHECKING:
     from ._fpca import FPCA as FPCA
+    from ._fpls import FPLS as FPLS
 
 
 def __getattr__(name: str) -> Any:

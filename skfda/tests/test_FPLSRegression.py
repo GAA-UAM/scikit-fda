@@ -1,4 +1,6 @@
 """Test the FPLSRegression class."""
+import os
+
 import numpy as np
 import pytest
 import scipy
@@ -74,12 +76,13 @@ class TestFPLSRegression:
                 )
             }
         """
-        # Results of fda.usc:
-
-        with open(
-            "test_FPLSRegression_data/test_fda_usc_no_reg_data.npy",
-            "rb",
-        ) as f:
+        # Results from fda.usc:
+        path = os.path.join(
+            os.path.dirname(__file__),
+            "test_FPLSRegression_data",
+            "test_fda_usc_no_reg_data.npy",
+        )
+        with open(path, "rb") as f:
             r_results = np.load(f, allow_pickle=False)
 
         signs = np.array([1, -1, 1, -1, 1])
@@ -145,10 +148,12 @@ class TestFPLSRegression:
         )
         fplsr.fit(X, y)
 
-        with open(
-            "test_FPLSRegression_data/test_fda_usc_reg_data.npy",
-            "rb",
-        ) as f:
+        path = os.path.join(
+            os.path.dirname(__file__),
+            "test_FPLSRegression_data",
+            "test_fda_usc_reg_data.npy",
+        )
+        with open(path, "rb") as f:
             r_results = np.load(f, allow_pickle=False)
 
         signs = np.array([1, -1, 1, -1, 1])

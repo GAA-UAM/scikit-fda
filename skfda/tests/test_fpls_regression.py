@@ -78,8 +78,7 @@ class TestFPLSRegression:
         """
         # Results from fda.usc:
         path = os.path.join(
-            os.path.dirname(__file__),
-            "test_FPLSRegression_data",
+            __file__[:-3]+ "_data",  # Trim .py ending
             "test_fda_usc_no_reg_data.npy",
         )
         with open(path, "rb") as f:
@@ -149,8 +148,7 @@ class TestFPLSRegression:
         fplsr.fit(X, y)
 
         path = os.path.join(
-            os.path.dirname(__file__),
-            "test_FPLSRegression_data",
+            __file__[:-3] + "_data",  # Trim .py ending
             "test_fda_usc_reg_data.npy",
         )
         with open(path, "rb") as f:
@@ -336,7 +334,3 @@ class TestFPLSRegression:
             )
 
         return observed_func, rotation
-
-
-if __name__ == "__main__":
-    TestFPLSRegression().test_fda_usc_reg()

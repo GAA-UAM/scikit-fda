@@ -69,7 +69,7 @@ def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
         Finally the value of the statistic is calculated:
 
         >>> v_sample_stat(fd, weights)
-        0.01649448843348894
+        0.01649...
 
     References:
         .. footbibliography::

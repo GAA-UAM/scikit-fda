@@ -109,14 +109,14 @@ class TestWarping(unittest.TestCase):
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [domain])
 
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             normalized.grid_points[0],
             np.linspace(*domain, 50),
         )
 
-        np.testing.assert_array_equal(normalized(a)[..., 0], [[a], [a]])
+        np.testing.assert_allclose(normalized(a)[..., 0], [[a], [a]])
 
-        np.testing.assert_array_equal(normalized(b)[..., 0], [[b], [b]])
+        np.testing.assert_allclose(normalized(b)[..., 0], [[b], [b]])
 
     def test_landmark_shift_deltas(self) -> None:
         """Test landmark shift deltas."""

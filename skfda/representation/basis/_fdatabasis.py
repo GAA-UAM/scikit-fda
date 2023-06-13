@@ -464,7 +464,7 @@ class FDataBasis(FData):  # noqa: WPS214
         return self.to_grid(eval_points).var().to_basis(self.basis)
 
     @overload
-    def cov(
+    def cov(  # noqa: WPS451
         self: T,
         /,
         s_points: NDArrayFloat,

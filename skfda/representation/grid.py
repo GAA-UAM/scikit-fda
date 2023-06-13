@@ -596,7 +596,7 @@ class FDataGrid(FData):  # noqa: WPS214
         )
 
     @overload
-    def cov(
+    def cov(  # noqa: WPS451
         self: T,
         /,
         s_points: NDArrayFloat,

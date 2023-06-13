@@ -191,7 +191,6 @@ def _anova_bootstrap(
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
-    default_n_features: int = constants.N_POINTS_FINE_MESH,
 ) -> NDArrayFloat:
 
     n_groups = len(fd_grouped)
@@ -215,8 +214,7 @@ def _anova_bootstrap(
     grid_points = getattr(fd_grouped[0], "grid_points", None)
     if grid_points is None:
         start, stop = fd_grouped[0].domain_range[0]
-        n_features = default_n_features
-        grid_points = np.linspace(start, stop, n_features)
+        grid_points = np.linspace(start, stop, constants.N_POINTS_FINE_MESH)
 
     if equal_var:
         cov_est = concatenate(fd_grouped).cov(

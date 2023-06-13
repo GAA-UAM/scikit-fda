@@ -71,7 +71,7 @@ def gmean(X: FDataGrid) -> FDataGrid:
     return X.gmean()
 
 
-def cov(X: F) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
+def cov(X: FData) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
     """
     Compute the covariance.
 

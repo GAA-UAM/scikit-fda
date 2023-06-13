@@ -23,7 +23,7 @@ class MahalanobisDistance(BaseEstimator):
 
     Class that implements functional Mahalanobis distance for both
     basis and grid representations of the data
-    :footcite:`berrendero+bueno-larraz+cuevas_2020_mahalanobis`.
+    :footcite:`berrendero++_2020_mahalanobis`.
 
     Parameters:
         n_components: Number of eigenvectors to keep from

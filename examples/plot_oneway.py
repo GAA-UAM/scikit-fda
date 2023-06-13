@@ -66,7 +66,8 @@ v_n, p_val = oneway_anova(fd_hip1, fd_hip2, fd_hip3)
 # The function returns first the statistic :func:`~skfda.inference.anova
 # .v_sample_stat` used to measure the variability between groups,
 # second the *p-value* of the test . For further information visit
-# :func:`~skfda.inference.anova.oneway_anova` and [1].
+# :func:`~skfda.inference.anova.oneway_anova` and
+# :footcite:t:`cuevas++_2004_anova`.
 
 print('Statistic: ', v_n)
 print('p-value: ', p_val)
@@ -111,7 +112,4 @@ print('Distribution: ', dist)
 
 ###############################################################################
 # **References:**
-#
-#  [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An anova 
-# test for functional data". *Computational Statistics  Data Analysis*,
-#  47:111-112, 02 2004
+#     .. footbibliography::

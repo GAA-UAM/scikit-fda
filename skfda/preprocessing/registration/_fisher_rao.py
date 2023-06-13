@@ -16,7 +16,7 @@ from ...representation import FDataGrid
 from ...representation.basis import Basis
 from ...representation.interpolation import SplineInterpolation
 from ...typing._numpy import ArrayLike
-from .base import InductiveRegistrationTransformer
+from ._base import InductiveRegistrationTransformer
 
 _MeanType = Callable[[FDataGrid], FDataGrid]
 SelfType = TypeVar("SelfType", bound="FisherRaoElasticRegistration")
@@ -60,7 +60,7 @@ class FisherRaoElasticRegistration(
     `elastic mean`, wich is the local minimum of the sum of squares of elastic
     distances. See :func:`~elastic_mean`.
 
-    In :footcite:`srivastava+klassen_2016_analysis_elastic` are described
+    In :footcite:`srivastava+klassen_2016_functionala` are described
     extensively the algorithms employed and the SRSF framework.
 
     Args:

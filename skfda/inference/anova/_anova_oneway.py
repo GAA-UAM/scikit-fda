@@ -218,16 +218,16 @@ def _anova_bootstrap(
 
     if equal_var:
         cov_est = concatenate(fd_grouped).cov(
-            s_points=grid_points,
-            t_points=grid_points,
+            grid_points,
+            grid_points,
         )
         k_est = [cov_est] * len(fd_grouped)
     else:
         # Estimating covariances for each group
         k_est = [
             fdg.cov(
-                s_points=grid_points,
-                t_points=grid_points,
+                grid_points,
+                grid_points,
             )
             for fdg in fd_grouped
         ]

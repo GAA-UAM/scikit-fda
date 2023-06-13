@@ -823,6 +823,7 @@ class FData(  # noqa: WPS214
     @overload
     def cov(
         self: T,
+        /,
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
     ) -> NDArrayFloat:

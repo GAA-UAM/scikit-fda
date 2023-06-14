@@ -16,7 +16,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 import skfda
 from skfda.ml.regression import LinearRegression
-from skfda.representation.basis import FourierBasis
+from skfda.representation.basis import FDataBasis, FourierBasis
 
 ##############################################################################
 # In this example, we will demonstrate the use of the Linear Regression with
@@ -76,6 +76,15 @@ funct_reg.coef_[2].plot()
 ##############################################################################
 # Finally, it is shown a panel with the prediction for all climate zones.
 
-funct_reg.predict(
-    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-)[0].plot()
+predictions = []
+
+predictions.append(funct_reg.predict([[0, 1, 0, 0]])[0])
+predictions.append(funct_reg.predict([[0, 0, 1, 0]])[0])
+predictions.append(funct_reg.predict([[0, 0, 0, 1]])[0])
+
+predictions_conc = FDataBasis.concatenate(*predictions)
+
+predictions_conc.argument_names = ('day',)
+predictions_conc.coordinate_names = ('temperature (ºC)',)
+
+predictions_conc.plot()

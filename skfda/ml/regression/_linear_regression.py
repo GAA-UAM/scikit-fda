@@ -320,7 +320,7 @@ class LinearRegression(
     def fit(  # noqa: D102
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
-        y: NDArrayFloat,
+        y: AcceptedDataType,
         sample_weight: Optional[NDArrayFloat] = None,
     ) -> LinearRegression:
 

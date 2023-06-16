@@ -24,7 +24,7 @@ class SRSF(
     function, the SRSF transform is defined as
 
     .. math::
-        SRSF(f(t)) = sgn(f(t)) \sqrt{|\dot f(t)|} = q(t)
+        SRSF(f(t)) = sgn(\dot f(t)) \sqrt{|\dot f(t)|} = q(t)
 
     This representation it is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
@@ -137,7 +137,7 @@ class SRSF(
 
         .. math::
 
-            SRSF(f(t)) = sgn(f(t)) \sqrt{\dot f(t)|} = q(t)
+            SRSF(f(t)) = sgn(\dot f(t)) \sqrt{\dot f(t)|} = q(t)
 
         Args:
             X: Functions to be transformed.
@@ -166,7 +166,7 @@ class SRSF(
         # Evaluation with the corresponding interpolation
         data_matrix = g(output_points)[..., 0]
 
-        # SRSF(f) = sign(f) * sqrt|Df| (avoiding multiple allocation)
+        # SRSF(f) = sign(Df) * sqrt|Df| (avoiding multiple allocation)
         sign_g = np.sign(data_matrix)
         data_matrix = np.abs(data_matrix, out=data_matrix)
         data_matrix = np.sqrt(data_matrix, out=data_matrix)

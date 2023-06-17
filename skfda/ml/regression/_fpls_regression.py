@@ -16,7 +16,6 @@ FPLSRegressionSelf = TypeVar("FPLSRegressionSelf", bound="FPLSRegression")
 
 Input = Union[FData, NDArrayFloat]
 
-
 class FPLSRegression(
     BaseEstimator,
     RegressorMixin[Input, Input],
@@ -47,40 +46,27 @@ class FPLSRegression(
         self.weight_basis_X = weight_basis_X
         self.weight_basis_Y = weight_basis_Y
 
-    @multimethod.multidispatch
-    def _configure_x(self, X):
-        self.y_predictor = lambda X: X @ self.fpls_.G_xw @ self.coef_
-        return X
-
-    @_configure_x.register
-    def _configure_x_grid(self, X: FDataGrid):
-        self.y_predictor = (
-            lambda X: X.data_matrix[..., 0] @ self.fpls_.G_xw @ self.coef_
-        )
-
-    @_configure_x.register
-    def _configure_x_basis(self, X: FDataBasis):
-        self.y_predictor = (
-            lambda X: X.coefficients @ self.fpls_.G_xw @ self.coef_
-        )
-
-    @multimethod.multidispatch
-    def _configure_y(self, Y):
-        self.postprocess_response = lambda y_data: y_data
-
-    @_configure_y.register
-    def _configure_y_grid(self, Y: FDataGrid):
-        self.postprocess_response = lambda y_data: Y.copy(
-            data_matrix=y_data,
-            sample_names=(None,) * y_data.shape[0],
-        )
-
-    @_configure_y.register
-    def _configure_y_basis(self, Y: FDataBasis):
-        self.postprocess_response = lambda y_data: Y.copy(
-            coefficients=y_data,
-            sample_names=(None,) * y_data.shape[0],
-        )
+    def _predict_y(self, X: FData) -> FData:
+        if isinstance(X, FDataGrid):
+            return X.data_matrix[..., 0] @ self.fpls_.x_block.G_data_weights @ self.coef_
+        elif isinstance(X, FDataBasis):
+            return X.coefficients @ self.fpls_.x_block.G_data_weights @ self.coef_
+        else:
+            return X @ self.fpls_.x_block.G_data_weights @ self.coef_
+    
+    def _postprocess_response(self, y_data: NDArrayFloat) -> FData:
+        if isinstance(self.train_y, FDataGrid):
+            return self.train_y.copy(
+                data_matrix=y_data,
+                sample_names=(None,) * y_data.shape[0],
+            )
+        elif isinstance(self.train_y, FDataBasis):
+            return self.train_y.copy(
+                coefficients=y_data,
+                sample_names=(None,) * y_data.shape[0],
+            )
+        else:
+            return y_data
 
     def fit(
         self,
@@ -101,9 +87,6 @@ class FPLSRegression(
         X = (X - self.x_mean) / self.x_std
         y = (y - self.y_mean) / self.y_std
 
-        self._configure_x(X)
-        self._configure_y(y)
-
         self.fpls_ = FPLS(
             n_components=self.n_components,
             scale=False,
@@ -118,6 +101,9 @@ class FPLSRegression(
         self.fpls_.fit(X, y)
 
         self.coef_ = self.fpls_.x_rotations_ @ self.fpls_.y_loadings_.T
+
+        self.train_X = X
+        self.train_y = y
 
         return self
 
@@ -135,7 +121,7 @@ class FPLSRegression(
 
         X = (X - self.x_mean) / self.x_std
 
-        y_scaled = self.y_predictor(X)
-        y_scaled = self.postprocess_response(y_scaled)
+        y_scaled = self._predict_y(X)
+        y_scaled = self._postprocess_response(y_scaled)
 
         return y_scaled * self.y_std + self.y_mean

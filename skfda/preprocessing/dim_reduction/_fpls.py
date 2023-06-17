@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Union
 
 import multimethod
 import numpy as np
+import scipy
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
@@ -152,7 +153,7 @@ class FPLS(
         regularization_Y: L2Regularization | None = None,
         weight_basis_X: Basis | None = None,
         weight_basis_Y: Basis | None = None,
-        deflation_mode: str = "reg",
+        deflation_mode: str = "can",
     ) -> None:
         self.n_components = n_components
         self.scale = scale
@@ -187,7 +188,8 @@ class FPLS(
     def _process_input_x_grid(self, X: FDataGrid):
         x_mat = X.data_matrix[..., 0]
         if self.integration_weights_X is None:
-            self.integration_weights_X = np.ones(x_mat.shape[1])
+            identity = np.eye(x_mat.shape[1])
+            self.integration_weights_X = scipy.integrate.simps(identity, X.grid_points[0])
 
         self.G_xw = np.diag(self.integration_weights_X)
         self.G_ww = self.G_xw
@@ -283,7 +285,8 @@ class FPLS(
     def _process_input_y_grid(self, Y: FDataGrid):
         y_mat = Y.data_matrix[..., 0]
         if self.integration_weights_Y is None:
-            self.integration_weights_Y = np.ones(y_mat.shape[1])
+            identity = np.eye(y_mat.shape[1])
+            self.integration_weights_Y = scipy.integrate.simps(identity, Y.grid_points[0])
 
         self.G_yc = np.diag(self.integration_weights_Y)
         self.G_cc = self.G_yc
@@ -414,6 +417,9 @@ class FPLS(
         Returns:
             self
         """
+        if isinstance(y, np.ndarray) and len(y.shape) == 1:
+             y = y[:, np.newaxis]
+
         calculate_mean = (
             lambda x: x.mean() if isinstance(x, FData) else x.mean(axis=0)
         )

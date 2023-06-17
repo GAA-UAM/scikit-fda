@@ -24,7 +24,7 @@ class TestFPLSRegression:
         )
 
         # Fit the model
-        fplsr = FPLSRegression(n_components=5)
+        fplsr = FPLSRegression(n_components=5, integration_weights_X=np.ones(len(X.grid_points[0])))
         fplsr.fit(X, y)
 
         sklearnpls = PLSRegression(n_components=5, scale=False)
@@ -92,7 +92,8 @@ class TestFPLSRegression:
             return_X_y=True,
         )
 
-        plsReg = FPLSRegression(n_components=5, scale=False)
+        plsReg = FPLSRegression(n_components=5, integration_weights_X=np.ones(len(X.grid_points[0])))
+        print(plsReg.integration_weights_X)
         plsReg.fit(X, y)
 
         W = plsReg.fpls_.x_weights_
@@ -144,6 +145,7 @@ class TestFPLSRegression:
         fplsr = FPLSRegression(
             n_components=5,
             regularization_X=regularization,
+            integration_weights_X=np.ones(len(X.grid_points[0])),
         )
         fplsr.fit(X, y)
 
@@ -201,14 +203,18 @@ class TestFPLSRegression:
             rtol=3e-3,
         )
 
-    def test_multivariate_regression(self):
-        """Test the multivariate regression."""
+    @pytest.mark.parametrize("y_features", [1, 5])
+    def test_multivariate_regression(self, y_features):
+        """Test the multivariate regression.
+
+        Consider both scalar and multivariate responses.
+        """ 
         self.create_latent_variables(n_latent=5, n_samples=100)
 
         # Check that the model is able to recover the latent variables
         # if it has enough components
         y_observed, y_rotations = self.create_observed_multivariate_variable(
-            n_features=5,
+            n_features=y_features,
         )
         X_observed, X_rotations = self.create_observed_multivariate_variable(
             n_features=10,

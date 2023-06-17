@@ -48,11 +48,11 @@ class FPLSRegression(
 
     def _predict_y(self, X: FData) -> FData:
         if isinstance(X, FDataGrid):
-            return X.data_matrix[..., 0] @ self.fpls_.x_block.G_data_weights @ self.coef_
+            return X.data_matrix[..., 0] @ self.fpls_._x_block.G_data_weights @ self.coef_
         elif isinstance(X, FDataBasis):
-            return X.coefficients @ self.fpls_.x_block.G_data_weights @ self.coef_
+            return X.coefficients @ self.fpls_._x_block.G_data_weights @ self.coef_
         else:
-            return X @ self.fpls_.x_block.G_data_weights @ self.coef_
+            return X @ self.fpls_._x_block.G_data_weights @ self.coef_
     
     def _postprocess_response(self, y_data: NDArrayFloat) -> FData:
         if isinstance(self.train_y, FDataGrid):

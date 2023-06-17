@@ -1,7 +1,8 @@
 from __future__ import annotations
-from abc import abstractmethod
 
-from typing import Optional, Tuple, Union
+from abc import abstractmethod
+from typing import Optional, Tuple, Union, overload
+from typing_extensions import override
 
 import multimethod
 import numpy as np
@@ -149,9 +150,10 @@ class FPLSBlock:
         self.data_matrix = data_matrix
 
         if regularization_matrix is None:
-            regularization_matrix = np.zeros((data_matrix.shape[1], data_matrix.shape[1]))
+            regularization_matrix = np.zeros(
+                (data_matrix.shape[1], data_matrix.shape[1]),
+            )
         self.regularization_matrix = regularization_matrix
-
 
     def set_values(
         self,
@@ -166,18 +168,24 @@ class FPLSBlock:
         pass
 
     @abstractmethod
-    def transform(self, X: NDArrayFloat | FData) -> NDArrayFloat:
+    def transform(
+        self,
+        X: NDArrayFloat | FData,
+    ) -> NDArrayFloat:
         pass
 
     @abstractmethod
     def inverse_transform(
-        self, components: NDArrayFloat
+        self,
+        components: NDArrayFloat,
     ) -> NDArrayFloat | FData:
         pass
 
     @abstractmethod
     def y_predict(
-        self, X: NDArrayFloat | FData, coef: NDArrayFloat | FData
+        self,
+        X: NDArrayFloat | FData,
+        coef: NDArrayFloat | FData,
     ) -> NDArrayFloat | FData:
         pass
 
@@ -205,7 +213,7 @@ class FPLSBlockDataMultivariate(FPLSBlock):
     def transform(self, data: NDArrayFloat | FData) -> NDArrayFloat:
         if not isinstance(data, NDArrayFloat):
             raise TypeError(
-                "Attribute in block " + self.label + " must be a numpy array"
+                f"Data in block {self.label} must be a numpy array",
             )
         return data @ self.rotations
 
@@ -213,11 +221,11 @@ class FPLSBlockDataMultivariate(FPLSBlock):
         return components @ self.loadings.T
 
     def y_predict(
-        self, X: NDArrayFloat | FData, coef: NDArrayFloat | FData
+        self, X: NDArrayFloat | FData, coef: NDArrayFloat | FData,
     ) -> NDArrayFloat | FData:
         if not isinstance(X, NDArrayFloat):
             raise TypeError(
-                "Attribute in block " + self.label + " must be a numpy array"
+                f"X data in block {self.label} must be a numpy array",
             )
         return X @ coef
 
@@ -252,7 +260,7 @@ class FPLSBlockDataGrid(FPLSBlock):
                 regularization_parameter=1,
                 regularization=regularization,
             )
-        
+
         super().__init__(
             n_components=n_components,
             label=label,
@@ -266,13 +274,13 @@ class FPLSBlockDataGrid(FPLSBlock):
         return self.data.copy(
             data_matrix=np.transpose(self.rotations),
             sample_names=(None,) * self.n_components,
-            dataset_name="FPLS " + self.label + " components",
+            dataset_name=f"FPLS {self.label} components",
         )
 
     def transform(self, data: FDataGrid | NDArrayFloat) -> NDArrayFloat:
         if not isinstance(data, FDataGrid):
             raise TypeError(
-                "Attribute in block " + self.label + " must be an FDataGrid"
+                f"Data in block {self.label} must be an FDataGrid",
             )
         return data.data_matrix[..., 0] @ self.G_data_weights @ self.rotations
 
@@ -280,15 +288,15 @@ class FPLSBlockDataGrid(FPLSBlock):
         return self.data.copy(
             data_matrix=components @ self.loadings.T,
             sample_names=(None,) * components.shape[0],
-            dataset_name="FPLS " + self.label + " reconstructions",
+            dataset_name=f"FPLS {self.label} components",
         )
 
     def y_predict(
-        self, X: NDArrayFloat | FData, coef: NDArrayFloat
+        self, X: NDArrayFloat | FData, coef: NDArrayFloat,
     ) -> NDArrayFloat:
         if not isinstance(X, FDataGrid):
             raise TypeError(
-                "Attribute in block " + self.label + " must be an FDataGrid"
+                f"X data in block {self.label} must be an FDataGrid",
             )
         return X.data_matrix[..., 0] @ self.G_data_weights @ coef
 
@@ -328,23 +336,18 @@ class FPLSBlockDataBasis(FPLSBlock):
             data_matrix=data.coefficients,
         )
 
-    def check_type(self, data: NDArrayFloat | FData) -> None:
-        if not isinstance(data, FDataBasis):
-            raise TypeError(
-                "Attribute in block " + self.label + " must be an FDataBasis"
-            )
 
     def make_component(self):
         return self.data.copy(
             coefficients=np.transpose(self.rotations),
             sample_names=(None,) * self.n_components,
-            dataset_name="FPLS " + self.label + " components",
+            dataset_name=f"FPLS {self.label} components",
         )
 
     def transform(self, data: NDArrayFloat | FData) -> NDArrayFloat:
         if not isinstance(data, FDataBasis):
             raise TypeError(
-                "Attribute in block " + self.label + " must be an FDataBasis"
+                f"Data in block {self.label} must be an FDataBasis",
             )
         return data.coefficients @ self.G_weights @ self.rotations
 
@@ -352,7 +355,7 @@ class FPLSBlockDataBasis(FPLSBlock):
         return self.data.copy(
             coefficients=components @ self.loadings.T,
             sample_names=(None,) * components.shape[0],
-            dataset_name="FPLS " + self.label + " reconstructions",
+            dataset_name=f"FPLS {self.label} reconstructions",
         )
 
     def y_predict(
@@ -360,12 +363,12 @@ class FPLSBlockDataBasis(FPLSBlock):
     ) -> NDArrayFloat:
         if not isinstance(X, FDataBasis):
             raise TypeError(
-                "Attribute in block " + self.label + " must be an FDataBasis"
+                f"X data in block {self.label} must be an FDataBasis",
             )
         return X.coefficients @ self.G_data_weights @ coef
 
 
-def blockFactory(
+def block_factory(
     data,
     n_components: int,
     label: str,
@@ -436,7 +439,7 @@ class FPLS(
         Y: InputType,
     ) -> None:
         """Fit the model using X and Y as already centered data."""
-        self.x_block = blockFactory(
+        self._x_block = block_factory(
             data=X,
             n_components=self.n_components,
             label="X",
@@ -446,11 +449,11 @@ class FPLS(
         )
 
         penalization_matrix = (
-            self.x_block.G_weights + self.x_block.regularization_matrix
+            self._x_block.G_weights + self._x_block.regularization_matrix
         )
         L_X_inv = np.linalg.inv(np.linalg.cholesky(penalization_matrix))
 
-        self.y_block = blockFactory(
+        self._y_block = block_factory(
             data=Y,
             n_components=self.n_components,
             label="X",
@@ -460,19 +463,19 @@ class FPLS(
         )
 
         penalization_matrix = (
-            self.y_block.G_weights + self.y_block.regularization_matrix
+            self._y_block.G_weights + self._y_block.regularization_matrix
         )
         L_Y_inv = np.linalg.inv(np.linalg.cholesky(penalization_matrix))
 
         # Supress flake8 warning about too many values to unpack
         W, C, T, U, P, Q = _pls_nipals(  # noqa: WPS236
-            X=self.x_block.data_matrix,
-            Y=self.y_block.data_matrix,
+            X=self._x_block.data_matrix,
+            Y=self._y_block.data_matrix,
             n_components=self.n_components,
-            G_ww=self.x_block.G_weights,
-            G_xw=self.x_block.G_data_weights,
-            G_cc=self.y_block.G_weights,
-            G_yc=self.y_block.G_data_weights,
+            G_ww=self._x_block.G_weights,
+            G_xw=self._x_block.G_data_weights,
+            G_cc=self._y_block.G_weights,
+            G_yc=self._y_block.G_data_weights,
             L_X_inv=L_X_inv,
             L_Y_inv=L_Y_inv,
             deflation=self.deflation_mode,
@@ -485,24 +488,24 @@ class FPLS(
         self.x_loadings_ = P
         self.y_loadings_ = Q
         self.x_rotations_ = W @ np.linalg.pinv(
-            P.T @ self.x_block.G_data_weights @ W
+            P.T @ self._x_block.G_data_weights @ W,
         )
 
         self.y_rotations_ = C @ np.linalg.pinv(
-            Q.T @ self.y_block.G_data_weights @ C
+            Q.T @ self._y_block.G_data_weights @ C,
         )
 
-        self.x_block.set_values(
+        self._x_block.set_values(
             rotations=self.x_rotations_,
             loadings=self.x_loadings_,
         )
-        self.y_block.set_values(
+        self._y_block.set_values(
             rotations=self.y_rotations_,
             loadings=self.y_loadings_,
         )
 
-        self.components_x_ = self.x_block.make_component()
-        self.components_y_ = self.y_block.make_component()
+        self.components_x_ = self._x_block.make_component()
+        self.components_y_ = self._y_block.make_component()
 
         self.coef_ = self.x_rotations_ @ Q.T
 
@@ -530,17 +533,17 @@ class FPLS(
             lambda x: x.mean() if isinstance(x, FData) else x.mean(axis=0)
         )
         # Center and scale data
-        self.x_mean = calculate_mean(X)
-        self.y_mean = calculate_mean(y)
+        self._x_mean = calculate_mean(X)
+        self._y_mean = calculate_mean(y)
         if self.scale:
-            self.x_std = X.std()
-            self.y_std = y.std()
+            self._x_std = X.std()
+            self._y_std = y.std()
         else:
-            self.x_std = 1
-            self.y_std = 1
+            self._x_std = 1
+            self._y_std = 1
 
-        X = (X - self.x_mean) / self.x_std
-        y = (y - self.y_mean) / self.y_std
+        X = (X - self._x_mean) / self._x_std
+        y = (y - self._y_mean) / self._y_std
 
         self._fit_data(X, y)
         return self
@@ -566,12 +569,12 @@ class FPLS(
         """
         check_is_fitted(self)
 
-        X = (X - self.x_mean) / self.x_std
-        x_scores = self.x_block.transform(X)
+        X = (X - self._x_mean) / self._x_std
+        x_scores = self._x_block.transform(X)
 
         if y is not None:
-            y = (y - self.y_mean) / self.y_std
-            y_scores = self.y_block.transform(y)
+            y = (y - self._y_mean) / self._y_std
+            y_scores = self._y_block.transform(y)
             return x_scores, y_scores
         return x_scores
 
@@ -596,11 +599,11 @@ class FPLS(
         """
         check_is_fitted(self)
 
-        X = X * self.x_std + self.x_mean
-        x_recon = self.x_block.inverse_transform(X)
+        X = X * self._x_std + self._x_mean
+        x_recon = self._x_block.inverse_transform(X)
 
         if Y is not None:
-            Y = Y * self.y_std + self.y_mean
-            y_recon = self.y_block.inverse_transform(Y)
+            Y = Y * self._y_std + self._y_mean
+            y_recon = self._y_block.inverse_transform(Y)
             return x_recon, y_recon
         return x_recon

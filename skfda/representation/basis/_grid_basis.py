@@ -39,7 +39,7 @@ class _GridBasis(Basis):
         domain_range = tuple((s[0], s[-1]) for s in self.grid_points)
         super().__init__(
             domain_range=domain_range,
-            n_basis=len(grid_points[0]),
+            n_basis=len(self.grid_points[0]),
         )
 
     def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
@@ -54,10 +54,7 @@ class _GridBasis(Basis):
         )
 
     def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__}("
-            f"grid_points={self.grid_points}, "
-        )
+        return f"{type(self).__name__}(grid_points={self.grid_points}) "
 
     def __hash__(self) -> int:
         return (

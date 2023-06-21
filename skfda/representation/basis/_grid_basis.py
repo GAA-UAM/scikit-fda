@@ -57,9 +57,4 @@ class _GridBasis(Basis):
         return f"{type(self).__name__}(grid_points={self.grid_points}) "
 
     def __hash__(self) -> int:
-        return (
-            super().__hash__()
-            ^ hash(
-                self.grid_points,
-            )
-        )
+        return hash((super(), f"{self.grid_points}"))

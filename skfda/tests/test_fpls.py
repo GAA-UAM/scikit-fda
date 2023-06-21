@@ -112,6 +112,37 @@ class TestFPLS(LatentVariablesModel):
             atol=atol,
         )
 
+        # Check the transformation of X
+        np.testing.assert_allclose(
+            fpls.transform(X, y),
+            sklearnpls.transform(X.data_matrix[..., 0],y),
+            rtol=rtol,
+            atol=1e-5,
+        )
+
+        comp_x, comp_y = fpls.transform(X,y)
+
+        fpls_inv_x, fpls_inv_y = fpls.inverse_transform(comp_x, comp_y)
+        sklearnpls_inv_x, sklearnpls_inv_y = sklearnpls.inverse_transform(
+            comp_x,
+            comp_y,
+        )
+        # Check the inverse transformation of X
+        np.testing.assert_allclose(
+            fpls_inv_x.data_matrix.flatten(),
+            sklearnpls_inv_x.flatten(),
+            rtol=rtol,
+            atol=atol,
+        )
+
+        # Check the inverse transformation of y
+        np.testing.assert_allclose(
+            fpls_inv_y.flatten(),
+            sklearnpls_inv_y.flatten(),
+            rtol=rtol,
+            atol=atol,
+        )
+
     
     def test_basis_vs_grid(self,):
         """Test that the results are the same in basis and grid."""
@@ -160,6 +191,35 @@ class TestFPLS(LatentVariablesModel):
             np.abs(fpls_grid.components_y_(self.grid_points)),
             rtol=5e-3,
         )
+
+        # Check that the transform is the same
+        np.testing.assert_allclose(
+            np.abs(fpls.transform(X_observed, y_observed)),
+            np.abs(fpls_grid.transform(X_observed_grid, y_observed_grid)),
+            rtol=5e-3,
+        )
+        # Check the inverse transform
+        comp_x, comp_y = fpls.transform(X_observed, y_observed)
+
+        fpls_inv_x, fpls_inv_y = fpls.inverse_transform(comp_x, comp_y)
+        fpls_grid_x, fpsl_grid_y = fpls_grid.inverse_transform(
+            comp_x,
+            comp_y,
+        )
+        # Check the inverse transformation of X
+        np.testing.assert_allclose(
+            fpls_inv_x(grid_points),
+            fpls_grid_x(grid_points),
+            rtol=7e-2,
+        )
+
+        # Check the inverse transformation of y
+        np.testing.assert_allclose(
+            fpls_inv_y(grid_points),
+            fpsl_grid_y(grid_points),
+            rtol=0.13,
+        )
+
 
 
         

@@ -593,7 +593,7 @@ def _optimized_operator_evaluation_in_grid(
     Returns:
     If the linear operator does not have constant weights, NotImplemented.
     Otherwise, returns a tuple with:
-     - A matrix where the i-th row contians the values of the linear operator
+     - A matrix where the i-th row contains the values of the linear operator
         applied to the i-th basis function of the delta basis.
 
     - The domain limits of each basis function of the delta basis. Outside

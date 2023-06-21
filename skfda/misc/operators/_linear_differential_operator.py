@@ -812,6 +812,7 @@ def fdatagrid_penalty_matrix_optimized(
     )
     return inner_product_matrix(fdatagrid_evaluated)
 
+
 @gram_matrix_optimization.register
 def custombasis_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,

@@ -211,7 +211,7 @@ class FPLSBlockDataMultivariate(FPLSBlock):
         return self.rotations
 
     def transform(self, data: NDArrayFloat | FData) -> NDArrayFloat:
-        if not isinstance(data, NDArrayFloat):
+        if not isinstance(data, np.ndarray):
             raise TypeError(
                 f"Data in block {self.label} must be a numpy array",
             )
@@ -223,7 +223,7 @@ class FPLSBlockDataMultivariate(FPLSBlock):
     def y_predict(
         self, X: NDArrayFloat | FData, coef: NDArrayFloat | FData,
     ) -> NDArrayFloat | FData:
-        if not isinstance(X, NDArrayFloat):
+        if not isinstance(X, np.ndarray):
             raise TypeError(
                 f"X data in block {self.label} must be a numpy array",
             )
@@ -249,9 +249,6 @@ class FPLSBlockDataGrid(FPLSBlock):
                 data.grid_points[0],
             )
         self.integration_weights = integration_weights
-
-        self.G_data_weights = np.diag(self.integration_weights)
-        self.G_weights = np.diag(self.integration_weights)
 
         regularization_matrix = None
         if regularization is not None:
@@ -307,20 +304,20 @@ class FPLSBlockDataBasis(FPLSBlock):
         data: FDataBasis,
         n_components: int,
         label: str,
-        weight_basis: Basis | None,
+        weights_basis: Basis | None,
         regularization: L2Regularization | None,
     ) -> None:
         self.data = data
 
-        if weight_basis is None:
-            self.weight_basis = data.basis
+        if weights_basis is None:
+            self.weights_basis = data.basis
         else:
-            self.weight_basis = weight_basis
+            self.weights_basis = weights_basis
 
         regularization_matrix = None
         if regularization is not None:
             regularization_matrix = compute_penalty_matrix(
-                basis_iterable=(self.weight_basis,),
+                basis_iterable=(self.weights_basis,),
                 regularization_parameter=1,
                 regularization=regularization,
             )
@@ -328,9 +325,9 @@ class FPLSBlockDataBasis(FPLSBlock):
         super().__init__(
             n_components=n_components,
             label=label,
-            G_data_weights=self.weight_basis.gram_matrix(),
+            G_data_weights=self.weights_basis.gram_matrix(),
             G_weights=data.basis.inner_product_matrix(
-                self.weight_basis,
+                self.weights_basis,
             ),
             regularization_matrix=regularization_matrix,
             data_matrix=data.coefficients,
@@ -389,7 +386,7 @@ def block_factory(
             data=data,
             n_components=n_components,
             label=label,
-            weight_basis=weight_basis,
+            weights_basis=weight_basis,
             regularization=regularization,
         )
     return FPLSBlockDataMultivariate(
@@ -535,12 +532,8 @@ class FPLS(
         # Center and scale data
         self._x_mean = calculate_mean(X)
         self._y_mean = calculate_mean(y)
-        if self.scale:
-            self._x_std = X.std()
-            self._y_std = y.std()
-        else:
-            self._x_std = 1
-            self._y_std = 1
+        self._x_std = 1
+        self._y_std = 1
 
         X = (X - self._x_mean) / self._x_std
         y = (y - self._y_mean) / self._y_std
@@ -599,11 +592,11 @@ class FPLS(
         """
         check_is_fitted(self)
 
-        X = X * self._x_std + self._x_mean
         x_recon = self._x_block.inverse_transform(X)
+        x_recon = x_recon * self._x_std + self._x_mean
 
         if Y is not None:
-            Y = Y * self._y_std + self._y_mean
             y_recon = self._y_block.inverse_transform(Y)
+            y_recon = y_recon * self._y_std + self._y_mean
             return x_recon, y_recon
         return x_recon

@@ -16,6 +16,7 @@ from skfda.representation.basis import BSplineBasis, FDataBasis
 class TestFPLSRegression:
     """Test the FPLSRegression class."""
 
+    
     def test_sklearn(self):
         """Compare results with sklearn."""
         # Load the data
@@ -24,7 +25,7 @@ class TestFPLSRegression:
         )
 
         # Fit the model
-        fplsr = FPLSRegression(n_components=5, integration_weights_X=np.ones(len(X.grid_points[0])))
+        fplsr = FPLSRegression(n_components=5, integration_weights_X=np.ones(len(X.grid_points[0])), scale=False)
         fplsr.fit(X, y)
 
         sklearnpls = PLSRegression(n_components=5, scale=False)

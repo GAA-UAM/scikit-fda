@@ -42,13 +42,13 @@ class FisherRaoElasticRegistration(
 
     .. math::
         d_{\lambda}^2(f \circ \gamma, g) = \| SRSF(f \circ \gamma)
-        \sqrt{\dot{\gamma}} - SRSF(g)\|_{\mathbb{L}^2}^2 + \lambda
+        \sqrt{\gamma'} - SRSF(g)\|_{\mathbb{L}^2}^2 + \lambda
         \mathcal{R}(\gamma)
 
     In the implementation it is used as penalty term
 
     .. math::
-        \mathcal{R}(\gamma) = \|\sqrt{\dot{\gamma}}- 1 \|_{\mathbb{L}^2}^2
+        \mathcal{R}(\gamma) = \|\sqrt{\gamma'}- 1 \|_{\mathbb{L}^2}^2
 
     Wich restrict the amount of elasticity employed in the alignment.
 

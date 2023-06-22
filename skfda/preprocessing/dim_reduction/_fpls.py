@@ -663,12 +663,9 @@ class FPLS(
         if isinstance(y, np.ndarray) and len(y.shape) == 1:
             y = y[:, np.newaxis]
 
-        calculate_mean = (
-            lambda x: x.mean() if isinstance(x, FData) else x.mean(axis=0)
-        )
         # Center and scale data
-        self._x_mean = calculate_mean(X)
-        self._y_mean = calculate_mean(y)
+        self._x_mean = X.mean(axis=0)
+        self._y_mean = y.mean(axis=0)
         self._x_std = 1
         self._y_std = 1
 

@@ -822,7 +822,7 @@ class FData(  # noqa: WPS214
     def mean(
         self: T,
         *,
-        axis: None = None,
+        axis: Optional[int] = None,
         dtype: None = None,
         out: None = None,
         keepdims: bool = False,

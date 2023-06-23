@@ -597,6 +597,44 @@ class FPLS(  # noqa: WPS230
             return x_scores, y_scores
         return x_scores
 
+    def transform_x(
+        self,
+        X: InputTypeX,
+    ) -> NDArrayFloat:
+        """
+        Apply the dimension reduction learned on the train data.
+
+        Args:
+            X: Data to transform. Must have the same number of features and
+                type as the data used to train the model.
+
+
+        Returns:
+            - Data transformed.
+        """
+        check_is_fitted(self)
+
+        return self._x_block.transform(X)
+
+    def transform_y(
+        self,
+        Y: InputTypeY,
+    ) -> NDArrayFloat:
+        """
+        Apply the dimension reduction learned on the train data.
+
+        Args:
+            Y: Data to transform. Must have the same number of features and
+                type as the data used to train the model.
+
+
+        Returns:
+            - Data transformed.
+        """
+        check_is_fitted(self)
+
+        return self._y_block.transform(Y)
+
     def inverse_transform(
         self,
         X: NDArrayFloat,
@@ -624,3 +662,39 @@ class FPLS(  # noqa: WPS230
             y_reconstructed = self._y_block.inverse_transform(Y)
             return x_reconstructed, y_reconstructed
         return x_reconstructed
+
+    def inverse_transform_x(
+        self,
+        X: NDArrayFloat,
+    ) -> InputTypeX:
+        """
+        Transform X data back to its original space.
+
+        Args:
+            X: Data to transform back. Must have the same number of columns
+                as the number of components of the model.
+
+        Returns:
+            - Data reconstructed from the transformed data.
+        """
+        check_is_fitted(self)
+
+        return self._x_block.inverse_transform(X)
+
+    def inverse_transform_y(
+        self,
+        Y: NDArrayFloat,
+    ) -> InputTypeY:
+        """
+        Transform Y data back to its original space.
+
+        Args:
+            Y: Data to transform back. Must have the same number of columns
+                as the number of components of the model.
+
+        Returns:
+            - Data reconstructed from the transformed data.
+        """
+        check_is_fitted(self)
+
+        return self._y_block.inverse_transform(Y)

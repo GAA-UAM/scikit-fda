@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import Optional, Tuple, Union, Any, Generic, TypeVar, cast
+from typing import Any, Generic, Optional, Tuple, TypeVar, Union, cast
 
 import multimethod
 import numpy as np
 import scipy
 from sklearn.utils.validation import check_is_fitted
 
-from skfda.representation import FData
-from skfda.typing._numpy import NDArrayFloat
-
-from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
+from ..._utils._sklearn_adapter import BaseEstimator
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData, FDataGrid
 from ...representation.basis import Basis, FDataBasis, _GridBasis
@@ -79,7 +75,7 @@ def _calculate_weights(
 
 
 # ignore flake8 multi-line function annotation
-def _pls_nipals(  # noqa WPS320
+def _pls_nipals(  # noqa: WPS320
     X: NDArrayFloat,
     Y: NDArrayFloat,
     n_components: int,
@@ -207,7 +203,8 @@ BlockType = TypeVar(
 )
 
 
-class _FPLSBlock(Generic[BlockType]):
+# Ignore too many public instance attributes
+class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
     """
     Class to store the data of a block of a FPLS model.
 
@@ -224,6 +221,8 @@ class _FPLSBlock(Generic[BlockType]):
             The data matrix of the block.
     """
 
+    mean: BlockType
+
     def __init__(
         self,
         data: BlockType,
@@ -235,7 +234,6 @@ class _FPLSBlock(Generic[BlockType]):
     ) -> None:
         self.n_components = n_components
         self.label = label
-        self.data = data
         self._initialize_data(
             data=data,
             integration_weights=integration_weights,
@@ -259,7 +257,7 @@ class _FPLSBlock(Generic[BlockType]):
     @_initialize_data.register
     def _initialize_data_multivariate(
         self,
-        data: np.ndarray,
+        data: np.ndarray,  # type: ignore
         integration_weights: None,
         regularization: None,
         weights_basis: None,
@@ -267,7 +265,13 @@ class _FPLSBlock(Generic[BlockType]):
         """Initialize the data of the block."""
         self.G_data_weights = np.identity(data.shape[1])
         self.G_weights = np.identity(data.shape[1])
-        self.data_matrix = data
+
+        self.mean = np.mean(data, axis=0)
+        self.data_matrix = data - self.mean
+        if len(self.data_matrix.shape) == 1:
+            self.data_matrix = self.data_matrix[:, np.newaxis]
+        self.data = data - self.mean
+
         self.regularization_matrix = np.zeros(
             (data.shape[1], data.shape[1]),
         )
@@ -276,10 +280,14 @@ class _FPLSBlock(Generic[BlockType]):
     def _initialize_data_fdatagrid(
         self,
         data: FDataGrid,
-        integration_weights: Optional[np.ndarray],
+        integration_weights: Optional[np.ndarray],  # type: ignore
         regularization: Optional[L2Regularization[Any]],
         weights_basis: None,
     ) -> None:
+        self.mean = data.mean()
+        data = data - self.mean
+        self.data = data
+
         data_mat = data.data_matrix[..., 0]
         if integration_weights is None:
             identity = np.identity(data_mat.shape[1])
@@ -314,6 +322,10 @@ class _FPLSBlock(Generic[BlockType]):
         regularization: Optional[L2Regularization[Any]],
         weights_basis: Optional[Basis],
     ) -> None:
+        self.mean = data.mean()
+        data = data - self.mean
+        self.data = data
+
         data_mat = data.coefficients
         if weights_basis is None:
             self.weights_basis = data.basis
@@ -376,13 +388,20 @@ class _FPLSBlock(Generic[BlockType]):
     ) -> NDArrayFloat:
         """Transform from the data space to the component space."""
         if isinstance(data, FDataGrid):
+            data_grid = data - cast(FDataGrid, self.mean)
             return (
-                data.data_matrix[..., 0] @ self.G_data_weights @ self.rotations
+                data_grid.data_matrix[..., 0]
+                @ self.G_data_weights
+                @ self.rotations
             )
         elif isinstance(data, FDataBasis):
-            return data.coefficients @ self.G_data_weights @ self.rotations
+            data_basis = data - cast(FDataBasis, self.mean)
+            return (
+                data_basis.coefficients @ self.G_data_weights @ self.rotations
+            )
         elif isinstance(data, np.ndarray):
-            return data @ self.rotations
+            data_array = data - cast(NDArrayFloat, self.mean)
+            return data_array @ self.rotations
 
         raise NotImplementedError(
             f"Data type {type(data)} not supported",
@@ -394,23 +413,37 @@ class _FPLSBlock(Generic[BlockType]):
     ) -> BlockType:
         """Transform from the component space to the data space."""
         if isinstance(self.data, FDataGrid):
-            return self.data.copy(
+            reconstructed_grid = self.data.copy(
                 data_matrix=components @ self.loadings.T,
                 sample_names=(None,) * components.shape[0],
                 dataset_name=f"FPLS {self.label} components",
             )
+            return reconstructed_grid + cast(FDataGrid, self.mean)
+
         elif isinstance(self.data, FDataBasis):
-            return self.data.copy(
+            reconstructed_basis = self.data.copy(
                 coefficients=components @ self.loadings.T,
                 sample_names=(None,) * components.shape[0],
                 dataset_name=f"FPLS {self.label} components",
             )
+            return reconstructed_basis + cast(FDataBasis, self.mean)
+
         elif isinstance(self.data, np.ndarray):
-            return cast(BlockType, components @ self.loadings.T)
+            reconstructed = components @ self.loadings.T
+            reconstructed += self.mean
+            return cast(BlockType, reconstructed)
 
         raise NotImplementedError(
             f"Data type {type(self.data)} not supported",
         )
+
+    def get_penalty_matrix(self) -> NDArrayFloat:
+        """Return the penalty matrix."""
+        return self.G_weights + self.regularization_matrix
+
+    def get_cholesky_inv_penalty_matrix(self) -> NDArrayFloat:
+        """Return the Cholesky decomposition of the penalty matrix."""
+        return np.linalg.inv(np.linalg.cholesky(self.get_penalty_matrix()))
 
 
 InputTypeX = TypeVar(
@@ -423,7 +456,8 @@ InputTypeY = TypeVar(
 )
 
 
-class FPLS(
+# Ignore too many public instance attributes
+class FPLS(  # noqa: WPS230
     BaseEstimator,
     Generic[InputTypeX, InputTypeY],
 ):
@@ -457,12 +491,7 @@ class FPLS(
         self.weight_basis_Y = weight_basis_Y
         self.deflation_mode = deflation_mode
 
-    def _fit_data(
-        self,
-        X: InputTypeX,
-        Y: InputTypeY,
-    ) -> None:
-        """Fit the model using X and Y as already centered data."""
+    def _initialize_blocks(self, X: InputTypeX, Y: InputTypeY) -> None:
         self._x_block = _FPLSBlock(
             data=X,
             n_components=self.n_components,
@@ -471,12 +500,6 @@ class FPLS(
             regularization=self.regularization_X,
             weights_basis=self.weight_basis_X,
         )
-
-        penalization_matrix = (
-            self._x_block.G_weights + self._x_block.regularization_matrix
-        )
-        L_X_inv = np.linalg.inv(np.linalg.cholesky(penalization_matrix))
-
         self._y_block = _FPLSBlock(
             data=Y,
             n_components=self.n_components,
@@ -486,10 +509,24 @@ class FPLS(
             weights_basis=self.weight_basis_Y,
         )
 
-        penalization_matrix = (
-            self._y_block.G_weights + self._y_block.regularization_matrix
-        )
-        L_Y_inv = np.linalg.inv(np.linalg.cholesky(penalization_matrix))
+    def fit(
+        self,
+        X: InputTypeX,
+        y: InputTypeY,
+    ) -> FPLS[InputTypeX, InputTypeY]:
+        """
+        Fit the model using the data for both blocks.
+
+        Any of the parameters can be a FDataGrid, FDataBasis or numpy array.
+
+        Args:
+            X: Data of the X block
+            y: Data of the Y block
+
+        Returns:
+            self
+        """
+        self._initialize_blocks(X, y)
 
         # Supress flake8 warning about too many values to unpack
         W, C, T, U, P, Q = _pls_nipals(  # noqa: WPS236
@@ -500,8 +537,8 @@ class FPLS(
             G_xw=self._x_block.G_data_weights,
             G_cc=self._y_block.G_weights,
             G_yc=self._y_block.G_data_weights,
-            L_X_inv=L_X_inv,
-            L_Y_inv=L_Y_inv,
+            L_X_inv=self._x_block.get_cholesky_inv_penalty_matrix(),
+            L_Y_inv=self._y_block.get_cholesky_inv_penalty_matrix(),
             deflation=self.deflation_mode,
         )
 
@@ -530,37 +567,6 @@ class FPLS(
         )
 
         self.coef_ = self.x_rotations_ @ Q.T
-
-    def fit(
-        self,
-        X: InputTypeX,
-        y: InputTypeY,
-    ) -> FPLS[InputTypeX, InputTypeY]:
-        """
-        Fit the model using the data for both blocks.
-
-        Any of the parameters can be a FDataGrid, FDataBasis or numpy array.
-
-        Args:
-            X: Data of the X block
-            y: Data of the Y block
-
-        Returns:
-            self
-        """
-        if isinstance(y, np.ndarray) and len(y.shape) == 1:
-            y = y[:, np.newaxis]
-
-        # Center and scale data
-        self._x_mean = X.mean(axis=0)
-        self._y_mean = y.mean(axis=0)
-        self._x_std = 1
-        self._y_std = 1
-
-        X = (X - self._x_mean) / self._x_std
-        y = (y - self._y_mean) / self._y_std
-
-        self._fit_data(X, y)
         return self
 
     def transform(
@@ -584,11 +590,9 @@ class FPLS(
         """
         check_is_fitted(self)
 
-        X = (X - self._x_mean) / self._x_std
         x_scores = self._x_block.transform(X)
 
         if y is not None:
-            y = (y - self._y_mean) / self._y_std
             y_scores = self._y_block.transform(y)
             return x_scores, y_scores
         return x_scores
@@ -614,11 +618,9 @@ class FPLS(
         """
         check_is_fitted(self)
 
-        x_recon = self._x_block.inverse_transform(X)
-        x_recon = x_recon * self._x_std + self._x_mean
+        x_reconstructed = self._x_block.inverse_transform(X)
 
         if Y is not None:
-            y_recon = self._y_block.inverse_transform(Y)
-            y_recon = y_recon * self._y_std + self._y_mean
-            return x_recon, y_recon
-        return x_recon
+            y_reconstructed = self._y_block.inverse_transform(Y)
+            return x_reconstructed, y_reconstructed
+        return x_reconstructed

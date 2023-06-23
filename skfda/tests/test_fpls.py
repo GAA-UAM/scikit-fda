@@ -1,21 +1,21 @@
 """Test the FPLS class."""
-import os
+
+from typing import Tuple
 
 import numpy as np
-import pytest
-import scipy
 from sklearn.cross_decomposition import PLSCanonical
 
 from skfda.datasets import fetch_tecator
-from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import L2Regularization
 from skfda.preprocessing.dim_reduction import FPLS
+from skfda.representation import FData, FDataGrid
 from skfda.representation.basis import BSplineBasis, FDataBasis
+from skfda.typing._numpy import NDArrayFloat
+
 
 class LatentVariablesModel:
     """Simulate model driven by latent variables."""
 
-    def create_latent_variables(self, n_latent, n_samples):
+    def create_latent_variables(self, n_latent: int, n_samples: int) -> None:
         """Create latent variables for testing."""
         self.rng = np.random.RandomState(0)
         self.n_latent = n_latent
@@ -33,7 +33,11 @@ class LatentVariablesModel:
             ],
         ).T
 
-    def create_observed_multivariate_variable(self, n_features, noise=0):
+    def create_observed_multivariate_variable(
+        self,
+        n_features: int,
+        noise: float = 0,
+    ) -> Tuple[NDArrayFloat, NDArrayFloat]:
         """Create observed multivariate variable for testing."""
         rotations = self.rng.uniform(
             low=0,
@@ -49,7 +53,11 @@ class LatentVariablesModel:
 
         return observed_values, rotations
 
-    def create_observed_functional_variable(self, noise=0, discretized=False):
+    def create_observed_functional_variable(
+        self,
+        noise: float = 0,
+        discretized: bool = False,
+    ) -> Tuple[FData, FData]:
         """Create observed functional variable for testing."""
         n_basis = 20
         basis = BSplineBasis(n_basis=n_basis)
@@ -78,12 +86,12 @@ class LatentVariablesModel:
             )
 
         return observed_func, rotation
- 
+
 
 class TestFPLS(LatentVariablesModel):
     """Test the FPLS class."""
 
-    def test_sklearn(self):
+    def test_sklearn(self) -> None:
         """Compare results with sklearn."""
         # Load the data
         X, y = fetch_tecator(
@@ -93,8 +101,9 @@ class TestFPLS(LatentVariablesModel):
         integration_weights = np.ones(len(X.grid_points[0]))
 
         # Fit the model
-        fpls = FPLS(n_components=3,
-                    integration_weights_X=integration_weights,
+        fpls = FPLS[FDataGrid, NDArrayFloat](
+            n_components=3,
+            integration_weights_X=integration_weights,
         )
         fpls.fit(X, y)
 
@@ -115,12 +124,12 @@ class TestFPLS(LatentVariablesModel):
         # Check the transformation of X
         np.testing.assert_allclose(
             fpls.transform(X, y),
-            sklearnpls.transform(X.data_matrix[..., 0],y),
+            sklearnpls.transform(X.data_matrix[..., 0], y),
             rtol=rtol,
             atol=1e-5,
         )
 
-        comp_x, comp_y = fpls.transform(X,y)
+        comp_x, comp_y = fpls.transform(X, y)
 
         fpls_inv_x, fpls_inv_y = fpls.inverse_transform(comp_x, comp_y)
         sklearnpls_inv_x, sklearnpls_inv_y = sklearnpls.inverse_transform(
@@ -143,10 +152,11 @@ class TestFPLS(LatentVariablesModel):
             atol=atol,
         )
 
-    
-    def test_basis_vs_grid(self,):
+    # Ignoring WPS210: Found too many local variables
+    def test_basis_vs_grid(  # noqa: WPS210
+        self,
+    ) -> None:
         """Test that the results are the same in basis and grid."""
-
         n_components = 5
         self.create_latent_variables(n_latent=n_components, n_samples=100)
 
@@ -161,7 +171,7 @@ class TestFPLS(LatentVariablesModel):
         )
 
         # Fit the model
-        fpls = FPLS(n_components=n_components)
+        fpls = FPLS[FData, FData](n_components=n_components)
         fpls.fit(X_observed, y_observed)
 
         # Convert the observed variables to grid
@@ -175,20 +185,19 @@ class TestFPLS(LatentVariablesModel):
         )
 
         # Fit the model with the grid variables
-        fpls_grid = FPLS(n_components=n_components)
+        fpls_grid = FPLS[FData, FData](n_components=n_components)
         fpls_grid.fit(X_observed_grid, y_observed_grid)
-
 
         # Check that the results are the same
         np.testing.assert_allclose(
-            np.abs(fpls.components_x_(self.grid_points)),
-            np.abs(fpls_grid.components_x_(self.grid_points)),
+            np.abs(fpls.x_components_(self.grid_points)),
+            np.abs(fpls_grid.x_components_(self.grid_points)),
             rtol=5e-3,
         )
 
         np.testing.assert_allclose(
-            np.abs(fpls.components_y_(self.grid_points)),
-            np.abs(fpls_grid.components_y_(self.grid_points)),
+            np.abs(fpls.y_components_(self.grid_points)),
+            np.abs(fpls_grid.y_components_(self.grid_points)),
             rtol=5e-3,
         )
 
@@ -219,8 +228,3 @@ class TestFPLS(LatentVariablesModel):
             fpsl_grid_y(grid_points),
             rtol=0.13,
         )
-
-
-
-        
-

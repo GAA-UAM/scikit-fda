@@ -20,7 +20,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
 
 if TYPE_CHECKING:
     from ._fpca_regression import FPCARegression
-    from ._fpls_regression import FPLSRegression
+    from ._fpls_regression import FPLSRegression as FPLSRegression
     from ._historical_linear_model import (
         HistoricalLinearRegression as HistoricalLinearRegression,
     )

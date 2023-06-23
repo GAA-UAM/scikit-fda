@@ -10,14 +10,16 @@ from skfda.datasets import fetch_tecator
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import FPLSRegression
-from skfda.representation.basis import BSplineBasis, FDataBasis
+from skfda.representation import FData
+from skfda.representation.basis import BSplineBasis
+from skfda.tests.test_fpls import LatentVariablesModel
+from skfda.typing._numpy import NDArrayFloat
 
 
-class TestFPLSRegression:
+class TestFPLSRegression(LatentVariablesModel):
     """Test the FPLSRegression class."""
 
-    
-    def test_sklearn(self):
+    def test_sklearn(self) -> None:
         """Compare results with sklearn."""
         # Load the data
         X, y = fetch_tecator(
@@ -25,7 +27,11 @@ class TestFPLSRegression:
         )
 
         # Fit the model
-        fplsr = FPLSRegression(n_components=5, integration_weights_X=np.ones(len(X.grid_points[0])), scale=False)
+        fplsr = FPLSRegression[NDArrayFloat, NDArrayFloat](
+            n_components=5,
+            integration_weights_X=np.ones(len(X.grid_points[0])),
+            scale=False,
+        )
         fplsr.fit(X, y)
 
         sklearnpls = PLSRegression(n_components=5, scale=False)
@@ -57,7 +63,7 @@ class TestFPLSRegression:
             atol=atol,
         )
 
-    def test_fda_usc_no_reg(self):
+    def test_fda_usc_no_reg(self) -> None:
         """
         Test a multivariate regression with no regularization.
 
@@ -79,7 +85,7 @@ class TestFPLSRegression:
         """
         # Results from fda.usc:
         path = os.path.join(
-            __file__[:-3]+ "_data",  # Trim .py ending
+            f"{__file__[:-3]}_data",  # Trim .py ending
             "test_fda_usc_no_reg_data.npy",
         )
         with open(path, "rb") as f:
@@ -93,14 +99,16 @@ class TestFPLSRegression:
             return_X_y=True,
         )
 
-        plsReg = FPLSRegression(n_components=5, integration_weights_X=np.ones(len(X.grid_points[0])))
-        print(plsReg.integration_weights_X)
+        plsReg = FPLSRegression[FData, NDArrayFloat](
+            n_components=5,
+            integration_weights_X=np.ones(len(X.grid_points[0])),
+        )
         plsReg.fit(X, y)
 
         W = plsReg.fpls_.x_weights_
         np.testing.assert_allclose(W, r_results, atol=1e-8)
 
-    def test_fda_usc_reg(self):
+    def test_fda_usc_reg(self) -> None:
         """
         Test the FPLSRegression with regularization against fda.usc.
 
@@ -143,7 +151,7 @@ class TestFPLSRegression:
         )
 
         # Fit the model
-        fplsr = FPLSRegression(
+        fplsr = FPLSRegression[FData, NDArrayFloat](
             n_components=5,
             regularization_X=regularization,
             integration_weights_X=np.ones(len(X.grid_points[0])),
@@ -151,7 +159,7 @@ class TestFPLSRegression:
         fplsr.fit(X, y)
 
         path = os.path.join(
-            __file__[:-3] + "_data",  # Trim .py ending
+            f"{__file__[:-3]}_data",  # Trim .py ending
             "test_fda_usc_reg_data.npy",
         )
         with open(path, "rb") as f:
@@ -162,7 +170,7 @@ class TestFPLSRegression:
         w_mat = fplsr.fpls_.x_weights_ @ np.diag(signs)
         np.testing.assert_allclose(w_mat, r_results, atol=6e-6, rtol=6e-4)
 
-    def test_basis_vs_grid(self):
+    def test_basis_vs_grid(self) -> None:
         """Test that the results are the same in basis and grid."""
         X, y = fetch_tecator(
             return_X_y=True,
@@ -173,9 +181,9 @@ class TestFPLSRegression:
         X = X.to_basis(BSplineBasis(n_basis=20))
 
         # Fit the model
-        fplsr = FPLSRegression(n_components=5)
+        fplsr = FPLSRegression[FData, NDArrayFloat](n_components=5)
         fplsr.fit(X, y)
-        basis_components = fplsr.fpls_.components_x_(original_grid_points)
+        basis_components = fplsr.fpls_.x_components_(original_grid_points)
 
         # Go back to grid
         new_grid_points = np.linspace(
@@ -196,7 +204,7 @@ class TestFPLSRegression:
         )
         fplsr.fit(X, y)
 
-        grid_components = fplsr.fpls_.components_x_(original_grid_points)
+        grid_components = fplsr.fpls_.x_components_(original_grid_points)
 
         np.testing.assert_allclose(
             basis_components,
@@ -205,11 +213,11 @@ class TestFPLSRegression:
         )
 
     @pytest.mark.parametrize("y_features", [1, 5])
-    def test_multivariate_regression(self, y_features):
+    def test_multivariate_regression(self, y_features: int) -> None:
         """Test the multivariate regression.
 
         Consider both scalar and multivariate responses.
-        """ 
+        """
         self.create_latent_variables(n_latent=5, n_samples=100)
 
         # Check that the model is able to recover the latent variables
@@ -221,7 +229,7 @@ class TestFPLSRegression:
             n_features=10,
         )
 
-        plsreg = FPLSRegression(n_components=5)
+        plsreg = FPLSRegression[NDArrayFloat, NDArrayFloat](n_components=5)
         plsreg.fit(X_observed, y_observed)
 
         minimum_score = 0.99
@@ -230,7 +238,12 @@ class TestFPLSRegression:
     @pytest.mark.parametrize("discretized", [True, False])
     @pytest.mark.parametrize("n_features", [1, 5])
     @pytest.mark.parametrize("noise_std", [0, 1])
-    def test_simple_regresion(self, discretized, n_features, noise_std):
+    def test_simple_regresion(
+        self,
+        discretized: bool,
+        n_features: int,
+        noise_std: float,
+    ) -> None:
         """Test multivariate regressor and functional response."""
         self.create_latent_variables(n_latent=5, n_samples=100)
 
@@ -245,7 +258,7 @@ class TestFPLSRegression:
             noise=noise_std,
         )
 
-        plsreg = FPLSRegression(n_components=5)
+        plsreg = FPLSRegression[FData, NDArrayFloat](n_components=5)
         plsreg.fit(X_observed, y_observed)
 
         minimum_score = 0.99 if noise_std == 0 else 0.98
@@ -256,10 +269,10 @@ class TestFPLSRegression:
     @pytest.mark.parametrize("noise_std", [0, 1])
     def test_simple_regresion_dataset_functional(
         self,
-        discretized_observed,
-        discretized_response,
-        noise_std,
-    ):
+        discretized_observed: bool,
+        discretized_response: bool,
+        noise_std: float,
+    ) -> None:
         """Test multivariate regressor and functional response."""
         self.create_latent_variables(n_latent=5, n_samples=100)
 
@@ -274,70 +287,7 @@ class TestFPLSRegression:
             noise=noise_std,
         )
 
-        plsreg = FPLSRegression(n_components=5)
+        plsreg = FPLSRegression[FData, FData](n_components=5)
         plsreg.fit(X_observed, y_observed)
         minimum_score = 0.99 if noise_std == 0 else 0.98
         assert plsreg.score(X_observed, y_observed) > minimum_score
-
-    def create_latent_variables(self, n_latent, n_samples):
-        """Create latent variables for testing."""
-        self.rng = np.random.RandomState(0)
-        self.n_latent = n_latent
-        self.n_samples = n_samples
-
-        # Get the means of the latent variables
-        latent_means = self.rng.uniform(low=1, high=10, size=(n_latent))
-
-        # Sample the variables
-        self.latent_samples = np.array(
-            [
-                self.rng.normal(loc=mean, scale=1, size=n_samples)
-                for mean in latent_means
-            ],
-        ).T
-
-    def create_observed_multivariate_variable(self, n_features, noise=0):
-        """Create observed multivariate variable for testing."""
-        rotations = self.rng.uniform(
-            low=0,
-            high=10,
-            size=(n_features, self.n_latent),
-        )
-
-        observed_values = self.latent_samples @ rotations.T
-        observed_noise = noise * self.rng.normal(
-            size=(self.n_samples, n_features),
-        )
-        observed_values += observed_noise
-
-        return observed_values, rotations
-
-    def create_observed_functional_variable(self, noise=0, discretized=False):
-        """Create observed functional variable for testing."""
-        n_basis = 20
-        basis = BSplineBasis(n_basis=n_basis)
-
-        rotation_coef = self.rng.uniform(
-            low=0,
-            high=10,
-            size=(self.n_latent, n_basis),
-        )
-        rotation = FDataBasis(basis, rotation_coef)
-
-        observed_coef = self.latent_samples @ rotation_coef
-        observed_func = FDataBasis(basis, observed_coef)
-
-        if discretized:
-            observed_func = observed_func.to_grid(
-                grid_points=np.linspace(0, 1, 100),
-            )
-
-            func_noise = noise * self.rng.normal(size=(self.n_samples, 100))
-            observed_func.data_matrix[..., 0] += func_noise
-
-        else:
-            observed_func.coefficients += noise * self.rng.normal(
-                size=(self.n_samples, n_basis),
-            )
-
-        return observed_func, rotation

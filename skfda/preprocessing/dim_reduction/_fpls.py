@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Optional, Tuple, Union, Any
+from typing import Optional, Tuple, Union, Any, Generic, TypeVar, cast
 
 import multimethod
 import numpy as np
 import scipy
 from sklearn.utils.validation import check_is_fitted
+
+from skfda.representation import FData
+from skfda.typing._numpy import NDArrayFloat
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
@@ -75,7 +78,8 @@ def _calculate_weights(
     return w, c
 
 
-def _pls_nipals(  # noqa WPS320 (multi-line function annotation)
+# ignore flake8 multi-line function annotation
+def _pls_nipals(  # noqa WPS320
     X: NDArrayFloat,
     Y: NDArrayFloat,
     n_components: int,
@@ -197,10 +201,13 @@ def _pls_nipals(  # noqa WPS320 (multi-line function annotation)
     )
 
 
-InputType = Union[FData, NDArrayFloat]
+BlockType = TypeVar(
+    "BlockType",
+    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
+)
 
 
-class FPLSBlock:
+class _FPLSBlock(Generic[BlockType]):
     """
     Class to store the data of a block of a FPLS model.
 
@@ -219,135 +226,68 @@ class FPLSBlock:
 
     def __init__(
         self,
-        n_components: int,
-        label: str,
-        G_data_weights: NDArrayFloat,
-        G_weights: NDArrayFloat,
-        data_matrix: NDArrayFloat,
-        regularization_matrix: NDArrayFloat | None = None,
-    ) -> None:
-        self.n_components = n_components
-        self.label = label
-        self.G_data_weights = G_data_weights
-        self.G_weights = G_weights
-        self.data_matrix = data_matrix
-
-        if regularization_matrix is None:
-            regularization_matrix = np.zeros(
-                (data_matrix.shape[1], data_matrix.shape[1]),
-            )
-        self.regularization_matrix = regularization_matrix
-
-    def set_values(
-        self,
-        rotations: NDArrayFloat,
-        loadings: NDArrayFloat,
-    ) -> None:
-        """Set the results of NIPALS."""
-        self.rotations = rotations
-        self.loadings = loadings
-
-    @abstractmethod
-    def make_component(self) -> NDArrayFloat | FData:
-        """
-        Return the component of the block.
-
-        This method must be called once set_values has been called.
-        It returns the component of the block, which can be a matrix
-        or a FData object.
-        """
-        pass
-
-    @abstractmethod
-    def transform(
-        self,
-        data: NDArrayFloat | FData,
-    ) -> NDArrayFloat:
-        """Transform from the data space to the component space."""
-        pass
-
-    @abstractmethod
-    def inverse_transform(
-        self,
-        components: NDArrayFloat,
-    ) -> NDArrayFloat | FData:
-        """Transform from the component space to the data space."""
-        pass
-
-
-class FPLSBlockDataMultivariate(FPLSBlock):
-    """
-    FPLS block model specialized for multivariate data.
-
-    Attributes:
-        - data: (n_samples, n_features)
-            The data matrix of the block.
-    """
-
-    def __init__(
-        self,
-        data: NDArrayFloat,
-        n_components: int,
-        label: str,
-    ) -> None:
-        self.data = data
-
-        super().__init__(
-            n_components=n_components,
-            label=label,
-            G_data_weights=np.identity(data.shape[1]),
-            G_weights=np.identity(data.shape[1]),
-            data_matrix=data,
-        )
-
-    def make_component(self) -> NDArrayFloat:  # noqa: D102
-        return self.rotations
-
-    def transform(  # noqa: D102
-        self,
-        data: NDArrayFloat | FData,
-    ) -> NDArrayFloat:
-        if not isinstance(data, np.ndarray):
-            raise TypeError(
-                f"Data in block {self.label} must be a numpy array",
-            )
-        return data @ self.rotations
-
-    def inverse_transform(  # noqa: D102
-        self,
-        components: NDArrayFloat,
-    ) -> NDArrayFloat:
-        return components @ self.loadings.T
-
-
-class FPLSBlockDataGrid(FPLSBlock):
-    """
-    FPLS block model specialized for multivariate data.
-
-    Attributes:
-        - data: FDataGrid object.
-        - integration_weights: (n_samples, n_samples)
-            The discretization weights matrix.
-    """
-
-    def __init__(
-        self,
-        data: FDataGrid,
+        data: BlockType,
         n_components: int,
         label: str,
         integration_weights: NDArrayFloat | None,
-        regularization: L2Regularization[FDataGrid] | None,
+        regularization: L2Regularization[Any] | None,
+        weights_basis: Basis | None,
     ) -> None:
+        self.n_components = n_components
+        self.label = label
         self.data = data
-        data_mat = data.data_matrix[..., 0]
+        self._initialize_data(
+            data=data,
+            integration_weights=integration_weights,
+            regularization=regularization,
+            weights_basis=weights_basis,
+        )
 
+    @multimethod.multidispatch
+    def _initialize_data(
+        self,
+        data: Union[FData, NDArrayFloat],
+        integration_weights: Optional[NDArrayFloat],
+        regularization: Optional[L2Regularization[Any]],
+        weights_basis: Optional[Basis],
+    ) -> None:
+        """Initialize the data of the block."""
+        raise NotImplementedError(
+            f"Data type {type(data)} not supported",
+        )
+
+    @_initialize_data.register
+    def _initialize_data_multivariate(
+        self,
+        data: np.ndarray,
+        integration_weights: None,
+        regularization: None,
+        weights_basis: None,
+    ) -> None:
+        """Initialize the data of the block."""
+        self.G_data_weights = np.identity(data.shape[1])
+        self.G_weights = np.identity(data.shape[1])
+        self.data_matrix = data
+        self.regularization_matrix = np.zeros(
+            (data.shape[1], data.shape[1]),
+        )
+
+    @_initialize_data.register
+    def _initialize_data_fdatagrid(
+        self,
+        data: FDataGrid,
+        integration_weights: Optional[np.ndarray],
+        regularization: Optional[L2Regularization[Any]],
+        weights_basis: None,
+    ) -> None:
+        data_mat = data.data_matrix[..., 0]
         if integration_weights is None:
             identity = np.identity(data_mat.shape[1])
             integration_weights = scipy.integrate.simps(
                 identity,
                 data.grid_points[0],
             )
-        self.integration_weights = integration_weights
+        self.integration_weights = np.diag(integration_weights)
 
         regularization_matrix = None
         if regularization is not None:
@@ -356,63 +296,25 @@ class FPLSBlockDataGrid(FPLSBlock):
                 regularization_parameter=1,
                 regularization=regularization,
             )
-
-        super().__init__(
-            n_components=n_components,
-            label=label,
-            G_data_weights=np.diag(self.integration_weights),
-            G_weights=np.diag(self.integration_weights),
-            regularization_matrix=regularization_matrix,
-            data_matrix=data_mat,
-        )
-
-    def make_component(self) -> FDataGrid:  # noqa: D102
-        return self.data.copy(
-            data_matrix=np.transpose(self.rotations),
-            sample_names=(None,) * self.n_components,
-            dataset_name=f"FPLS {self.label} components",
-        )
-
-    def transform(  # noqa: D102
-        self,
-        data: FDataGrid | NDArrayFloat,
-    ) -> NDArrayFloat:
-        if not isinstance(data, FDataGrid):
-            raise TypeError(
-                f"Data in block {self.label} must be an FDataGrid",
+        if regularization_matrix is None:
+            regularization_matrix = np.zeros(
+                (data_mat.shape[1], data_mat.shape[1]),
             )
-        return data.data_matrix[..., 0] @ self.G_data_weights @ self.rotations
 
-    def inverse_transform(  # noqa: D102
-        self,
-        components: NDArrayFloat,
-    ) -> NDArrayFloat:
-        return self.data.copy(
-            data_matrix=components @ self.loadings.T,
-            sample_names=(None,) * components.shape[0],
-            dataset_name=f"FPLS {self.label} components",
-        )
+        self.regularization_matrix = regularization_matrix
+        self.G_data_weights = self.integration_weights
+        self.G_weights = self.integration_weights
+        self.data_matrix = data_mat
 
-
-class FPLSBlockDataBasis(FPLSBlock):
-    """
-    FPLS block model specialized for basis expansion data.
-
-    Attributes:
-        - data: FDataBasis object.
-        - weights_basis: Basis object for the weights
-    """
-
-    def __init__(
+    @_initialize_data.register
+    def _initialize_data_fdatabasis(
         self,
         data: FDataBasis,
-        n_components: int,
-        label: str,
-        weights_basis: Basis | None,
-        regularization: L2Regularization[FDataBasis] | None,
+        integration_weights: None,
+        regularization: Optional[L2Regularization[Any]],
+        weights_basis: Optional[Basis],
     ) -> None:
-        self.data = data
-
+        data_mat = data.coefficients
         if weights_basis is None:
             self.weights_basis = data.basis
         else:
@@ -425,117 +327,105 @@ class FPLSBlockDataBasis(FPLSBlock):
                 regularization_parameter=1,
                 regularization=regularization,
             )
-
-        super().__init__(
-            n_components=n_components,
-            label=label,
-            G_data_weights=self.weights_basis.gram_matrix(),
-            G_weights=data.basis.inner_product_matrix(
-                self.weights_basis,
-            ),
-            regularization_matrix=regularization_matrix,
-            data_matrix=data.coefficients,
-        )
-
-    def make_component(self) -> FDataBasis:  # noqa: D102
-        return self.data.copy(
-            coefficients=np.transpose(self.rotations),
-            sample_names=(None,) * self.n_components,
-            dataset_name=f"FPLS {self.label} components",
-        )
-
-    def transform(  # noqa: D102
-        self,
-        data: NDArrayFloat | FData,
-    ) -> NDArrayFloat:
-        if not isinstance(data, FDataBasis):
-            raise TypeError(
-                f"Data in block {self.label} must be an FDataBasis",
+        if regularization_matrix is None:
+            regularization_matrix = np.zeros(
+                (data_mat.shape[1], data_mat.shape[1]),
             )
-        return data.coefficients @ self.G_weights @ self.rotations
 
-    def inverse_transform(  # noqa: D102
+        self.regularization_matrix = regularization_matrix
+        self.G_weights = self.weights_basis.gram_matrix()
+        self.G_data_weights = data.basis.inner_product_matrix(
+            self.weights_basis,
+        )
+        self.data_matrix = data_mat
+
+    def calculate_components(
+        self,
+        rotations: NDArrayFloat,
+        loadings: NDArrayFloat,
+    ) -> BlockType:
+        """Set the results of NIPALS."""
+        self.rotations = rotations
+        self.loadings = loadings
+        self.components = self._calculate_component()
+        return self.components
+
+    def _calculate_component(self) -> BlockType:
+        if isinstance(self.data, FDataGrid):
+            return self.data.copy(
+                data_matrix=np.transpose(self.rotations),
+                sample_names=(None,) * self.n_components,
+                dataset_name=f"FPLS {self.label} components",
+            )
+        elif isinstance(self.data, FDataBasis):
+            return self.data.copy(
+                coefficients=np.transpose(self.rotations),
+                sample_names=(None,) * self.n_components,
+                dataset_name=f"FPLS {self.label} components",
+            )
+        elif isinstance(self.data, np.ndarray):
+            return cast(BlockType, self.rotations)
+
+        raise NotImplementedError(
+            f"Data type {type(self.data)} not supported",
+        )
+
+    def transform(
+        self,
+        data: BlockType,
+    ) -> NDArrayFloat:
+        """Transform from the data space to the component space."""
+        if isinstance(data, FDataGrid):
+            return (
+                data.data_matrix[..., 0] @ self.G_data_weights @ self.rotations
+            )
+        elif isinstance(data, FDataBasis):
+            return data.coefficients @ self.G_data_weights @ self.rotations
+        elif isinstance(data, np.ndarray):
+            return data @ self.rotations
+
+        raise NotImplementedError(
+            f"Data type {type(data)} not supported",
+        )
+
+    def inverse_transform(
         self,
         components: NDArrayFloat,
-    ) -> NDArrayFloat:
-        return self.data.copy(
-            coefficients=components @ self.loadings.T,
-            sample_names=(None,) * components.shape[0],
-            dataset_name=f"FPLS {self.label} reconstructions",
+    ) -> BlockType:
+        """Transform from the component space to the data space."""
+        if isinstance(self.data, FDataGrid):
+            return self.data.copy(
+                data_matrix=components @ self.loadings.T,
+                sample_names=(None,) * components.shape[0],
+                dataset_name=f"FPLS {self.label} components",
+            )
+        elif isinstance(self.data, FDataBasis):
+            return self.data.copy(
+                coefficients=components @ self.loadings.T,
+                sample_names=(None,) * components.shape[0],
+                dataset_name=f"FPLS {self.label} components",
+            )
+        elif isinstance(self.data, np.ndarray):
+            return cast(BlockType, components @ self.loadings.T)
+
+        raise NotImplementedError(
+            f"Data type {type(self.data)} not supported",
         )
 
 
-@multimethod.multidispatch
-def block_factory(
-    data: Union[FData, NDArrayFloat],
-    n_components: int,
-    label: str,
-    integration_weights: Optional[np.ndarray],
-    regularization: Optional[L2Regularization[Any]],
-    weight_basis: Optional[Basis],
-) -> FPLSBlock:
-    """Create a PLSBlock depending on the data type."""
-    return NotImplemented
-
-
-@block_factory.register
-def block_factory_data_grid(
-    data: FDataGrid,
-    n_components: int,
-    label: str,
-    integration_weights: Optional[np.ndarray],
-    regularization: Optional[L2Regularization[Any]],
-    weight_basis: None,
-) -> FPLSBlock:
-    """Create a PLSBlock for FDataGrid objects."""
-    return FPLSBlockDataGrid(
-        data=data,
-        n_components=n_components,
-        label=label,
-        integration_weights=integration_weights,
-        regularization=regularization,
-    )
-
-
-@block_factory.register
-def block_factory_data_basis(
-    data: FDataBasis,
-    n_components: int,
-    label: str,
-    integration_weights: None,
-    regularization: Optional[L2Regularization[Any]],
-    weight_basis: Optional[Basis],
-) -> FPLSBlock:
-    """Create a PLSBlock for FDataBasis objects."""
-    return FPLSBlockDataBasis(
-        data=data,
-        n_components=n_components,
-        label=label,
-        weights_basis=weight_basis,
-        regularization=regularization,
-    )
-
-
-@block_factory.register
-def block_factory_multivariate(
-    data: np.ndarray,
-    n_components: int,
-    label: str,
-    integration_weights: None,
-    regularization: None,
-    weight_basis: None,
-) -> FPLSBlock:
-    """Create a PLSBlock for multivariate data."""
-    return FPLSBlockDataMultivariate(
-        data=data,
-        n_components=n_components,
-        label=label,
-    )
+InputTypeX = TypeVar(
+    "InputTypeX",
+    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
+)
+InputTypeY = TypeVar(
+    "InputTypeY",
+    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
+)
 
 
 class FPLS(
     BaseEstimator,
-    InductiveTransformerMixin[InputType, InputType, Optional[InputType]],
+    Generic[InputTypeX, InputTypeY],
 ):
     """
     Functional Partial Least Squares Regression.
@@ -551,8 +441,8 @@ class FPLS(
         scale: bool = False,
         integration_weights_X: NDArrayFloat | None = None,
         integration_weights_Y: NDArrayFloat | None = None,
-        regularization_X: L2Regularization[InputType] | None = None,
-        regularization_Y: L2Regularization[InputType] | None = None,
+        regularization_X: L2Regularization[InputTypeX] | None = None,
+        regularization_Y: L2Regularization[InputTypeY] | None = None,
         weight_basis_X: Basis | None = None,
         weight_basis_Y: Basis | None = None,
         deflation_mode: str = "can",
@@ -569,17 +459,17 @@ class FPLS(
 
     def _fit_data(
         self,
-        X: InputType,
-        Y: InputType,
+        X: InputTypeX,
+        Y: InputTypeY,
     ) -> None:
         """Fit the model using X and Y as already centered data."""
-        self._x_block = block_factory(
+        self._x_block = _FPLSBlock(
             data=X,
             n_components=self.n_components,
             label="X",
             integration_weights=self.integration_weights_X,
             regularization=self.regularization_X,
-            weight_basis=self.weight_basis_X,
+            weights_basis=self.weight_basis_X,
         )
 
         penalization_matrix = (
@@ -587,13 +477,13 @@ class FPLS(
         )
         L_X_inv = np.linalg.inv(np.linalg.cholesky(penalization_matrix))
 
-        self._y_block = block_factory(
+        self._y_block = _FPLSBlock(
             data=Y,
             n_components=self.n_components,
             label="X",
             integration_weights=self.integration_weights_Y,
             regularization=self.regularization_Y,
-            weight_basis=self.weight_basis_Y,
+            weights_basis=self.weight_basis_Y,
         )
 
         penalization_matrix = (
@@ -621,6 +511,7 @@ class FPLS(
         self.y_scores_ = U
         self.x_loadings_ = P
         self.y_loadings_ = Q
+
         self.x_rotations_ = W @ np.linalg.pinv(
             P.T @ self._x_block.G_data_weights @ W,
         )
@@ -629,25 +520,22 @@ class FPLS(
             Q.T @ self._y_block.G_data_weights @ C,
         )
 
-        self._x_block.set_values(
+        self.x_components_ = self._x_block.calculate_components(
             rotations=self.x_rotations_,
-            loadings=self.x_loadings_,
+            loadings=P,
         )
-        self._y_block.set_values(
+        self.y_components_ = self._y_block.calculate_components(
             rotations=self.y_rotations_,
-            loadings=self.y_loadings_,
+            loadings=Q,
         )
-
-        self.components_x_ = self._x_block.make_component()
-        self.components_y_ = self._y_block.make_component()
 
         self.coef_ = self.x_rotations_ @ Q.T
 
     def fit(
         self,
-        X: InputType,
-        y: InputType,
-    ) -> FPLS:
+        X: InputTypeX,
+        y: InputTypeY,
+    ) -> FPLS[InputTypeX, InputTypeY]:
         """
         Fit the model using the data for both blocks.
 
@@ -677,8 +565,8 @@ class FPLS(
 
     def transform(
         self,
-        X: InputType,
-        y: InputType | None = None,
+        X: InputTypeX,
+        y: InputTypeY | None = None,
     ) -> NDArrayFloat | Tuple[NDArrayFloat, NDArrayFloat]:
         """
         Apply the dimension reduction learned on the train data.
@@ -709,7 +597,7 @@ class FPLS(
         self,
         X: NDArrayFloat,
         Y: NDArrayFloat | None = None,
-    ) -> InputType | Tuple[InputType, InputType]:
+    ) -> InputTypeX | Tuple[InputTypeX, InputTypeY]:
         """
         Transform data back to its original space.
 

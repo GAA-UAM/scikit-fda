@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from ._fpls import FPLS as FPLS
 
 
-def __getattr__(name: str) -> Any:
+def __getattr__(name: str) -> Any:  # noqa: WPS413
     if name in {"projection", "feature_extraction"}:
         return importlib.import_module(f".{name}", __name__)
     return _normal_getattr(name)

@@ -591,7 +591,9 @@ def _optimized_operator_evaluation_in_grid(
     i-th point and 0 in the rest of points.
 
     Returns:
-     - A matrix where the i-th row contians the values of the linear operator
+    If the linear operator does not have constant weights, NotImplemented.
+    Otherwise, returns a tuple with:
+     - A matrix where the i-th row contains the values of the linear operator
         applied to the i-th basis function of the delta basis.
 
     - The domain limits of each basis function of the delta basis. Outside
@@ -642,9 +644,13 @@ def _optimized_operator_evaluation_in_grid(
         ],
     ).astype(int)
 
+    linear_operator_weights = linear_operator.constant_weights()
+    if linear_operator_weights is None:
+        return NotImplemented, NotImplemented
+
     # The desired matrix can be obtained by appending the coefficients
     # of the finite differences for each point column-wise.
-    for dif_order, w in enumerate(linear_operator.weights):
+    for dif_order, w in enumerate(linear_operator_weights):
         if w == 0:
             continue
         for point_index in range(n_points):
@@ -710,6 +716,11 @@ def gridbasis_penalty_matrix_optimized(
         basis.grid_points[0],
         findiff_accuracy=findiff_accuracy,
     )
+
+    # If the operator does not have constant weights, the
+    # optimized evaluation is not implemented.
+    if evaluated_basis is NotImplemented:
+        return NotImplemented
 
     # The support of the result of applying the linear operator
     # is a small subset of the grid points. We calculate the
@@ -800,6 +811,7 @@ def fdatagrid_penalty_matrix_optimized(
         grid_points=fdatagrid.grid_points[0],
     )
     return inner_product_matrix(fdatagrid_evaluated)
+
 
 @gram_matrix_optimization.register
 def custombasis_penalty_matrix_optimized(

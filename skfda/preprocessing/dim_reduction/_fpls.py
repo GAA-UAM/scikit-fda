@@ -257,7 +257,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
     @_initialize_data.register
     def _initialize_data_multivariate(
         self,
-        data: np.ndarray,  # type: ignore
+        data: np.ndarray,  # type: ignore[type-arg]
         integration_weights: None,
         regularization: None,
         weights_basis: None,
@@ -280,7 +280,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
     def _initialize_data_fdatagrid(
         self,
         data: FDataGrid,
-        integration_weights: Optional[np.ndarray],  # type: ignore
+        integration_weights: Optional[np.ndarray],  # type: ignore[type-arg]
         regularization: Optional[L2Regularization[Any]],
         weights_basis: None,
     ) -> None:

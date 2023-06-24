@@ -823,23 +823,25 @@ class FData(  # noqa: WPS214
     @overload
     def cov(  # noqa: WPS451
         self: T,
-        /,
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
+        /,
     ) -> NDArrayFloat:
         pass
 
     @overload
-    def cov(
+    def cov(  # noqa: WPS451
         self: T,
+        /,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
     @abstractmethod
-    def cov(  # noqa: WPS320
+    def cov(  # noqa: WPS320, WPS451
         self: T,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
+        /,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,

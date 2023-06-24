@@ -786,7 +786,7 @@ class FData(  # noqa: WPS214
     def sum(  # noqa: WPS125
         self: T,
         *,
-        axis: Optional[int] = None,
+        axis: int | None = None,
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,

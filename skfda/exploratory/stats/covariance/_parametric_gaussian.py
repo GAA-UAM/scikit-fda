@@ -13,6 +13,7 @@ from ._empirical import EmpiricalCovariance
 
 
 class ParametricGaussianCovariance(EmpiricalCovariance[FDataGrid]):
+    """Parametric Gaussian covariance estimator."""
 
     covariance_: Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]
 
@@ -21,9 +22,13 @@ class ParametricGaussianCovariance(EmpiricalCovariance[FDataGrid]):
         cov: Kernel | Covariance,
         *,
         assume_centered: bool = False,
+        regularization_parameter: float = 0,
         fit_noise: bool = True,
     ) -> None:
-        super().__init__(assume_centered=assume_centered)
+        super().__init__(
+            assume_centered=assume_centered,
+            regularization_parameter=regularization_parameter,
+        )
         self.cov = cov
         self.fit_noise = fit_noise
 
@@ -32,7 +37,7 @@ class ParametricGaussianCovariance(EmpiricalCovariance[FDataGrid]):
         X: FDataGrid,
         y: object = None,
     ) -> ParametricGaussianCovariance:
-
+        """Fit the covariance estimator."""
         self._fit_mean(X)
 
         X_centered = X - self.location_
@@ -62,5 +67,21 @@ class ParametricGaussianCovariance(EmpiricalCovariance[FDataGrid]):
                 grid_points,
             )[np.newaxis, ...],
         )
+        self.covariance_.set_regularization_parameter(
+            self.regularization_parameter,
+        )
 
         return self
+
+    def score(
+        self,
+        X_test: FDataGrid,
+        y: object = None,
+    ) -> NDArrayFloat:
+        """Compute the log-likelihood of the data."""
+        assert isinstance(self.covariance_, EmpiricalGrid)
+        log_determinant = self.covariance_.log_determinant()
+        mahalanobis = self.mahalanobis(
+            X_test,
+        )
+        return -0.5 * (mahalanobis + log_determinant)

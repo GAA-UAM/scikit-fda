@@ -785,14 +785,19 @@ class Empirical(Covariance):
     ]
 
     cov_fdata: FData
+    _regularization_parameter: float
 
     @abc.abstractmethod
-    def __init__(self, data: FData) -> None:
+    def __init__(
+        self,
+        data: FData,
+    ) -> None:
         if data.dim_domain != 1 or data.dim_codomain != 1:
             raise NotImplementedError(
                 "Covariance only implemented "
                 "for univariate functions",
             )
+        self._regularization_parameter = 0
 
     def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
         """Evaluate the covariance function.
@@ -808,13 +813,43 @@ class Empirical(Covariance):
         y = _transform_to_2d(y)
         return self.cov_fdata([x, y], grid=True)[0, ..., 0]
 
+    # TODO:
+    # Currently, the regularization parameter also resides in the class
+    # CovarianceEstimator, and when that class is fitted, the regularization
+    # parameter must be set here too, since this is where the covariance
+    # function is created.
+    # Ideally, this regularization parameter should be a property of this
+    # class, however I have encountered MyPy problems when trying to do so.
+    # Currently working on it.
+    def set_regularization_parameter(
+        self,
+        regularization_parameter: float,
+    ) -> None:
+        """Set the regularization parameter.
+
+        The regularization parameter is used to avoid numerical problems.
+        It adds a constant to the diagonal of the covariance matrix.
+        """
+        self._regularization_parameter = regularization_parameter
+
+    @abc.abstractmethod
+    def log_determinant(self) -> NDArrayFloat:
+        """Compute the logdeterminant for the covariance matrix.
+
+        This method is used when computing QDA.
+        """
+        pass
+
 
 class EmpiricalGrid(Empirical):
     """Sample covariance function for FDataGrid."""
 
     cov_fdata: FDataGrid
 
-    def __init__(self, data: FDataGrid) -> None:
+    def __init__(
+        self,
+        data: FDataGrid,
+    ) -> None:
         super().__init__(data=data)
 
         self.cov_fdata = data.copy(
@@ -834,6 +869,26 @@ class EmpiricalGrid(Empirical):
             sample_names=("covariance",),
         )
 
+    def set_regularization_parameter(
+        self,
+        regularization_parameter: float,
+    ) -> None:
+        """Set the regularization parameter."""
+        super().set_regularization_parameter(regularization_parameter)
+        self.cov_fdata.data_matrix[0, ..., 0] += (
+            regularization_parameter
+            * np.eye(
+                self.cov_fdata.data_matrix.shape[0],
+            )
+        )
+
+    def log_determinant(self) -> NDArrayFloat:
+        """Compute the logdeterminant for the covariance matrix."""
+        log_determinant: NDArrayFloat = np.linalg.slogdet(
+            self.cov_fdata.data_matrix[0, ..., 0],
+        )[1]
+        return log_determinant
+
 
 class EmpiricalBasis(Empirical):
     """
@@ -847,13 +902,35 @@ class EmpiricalBasis(Empirical):
     cov_fdata: FDataBasis
     coeff_matrix: NDArrayFloat
 
-    def __init__(self, data: FDataBasis) -> None:
+    def __init__(
+        self,
+        data: FDataBasis,
+    ) -> None:
         super().__init__(data=data)
 
         self.coeff_matrix = np.cov(data.coefficients, rowvar=False)
+
         self.cov_fdata = FDataBasis(
             basis=TensorBasis([data.basis, data.basis]),
             coefficients=self.coeff_matrix.flatten(),
             argument_names=data.argument_names * 2,
             sample_names=("covariance",),
         )
+
+    def set_regularization_parameter(
+        self,
+        regularization_parameter: float,
+    ) -> None:
+        """Set the regularization parameter."""
+        super().set_regularization_parameter(regularization_parameter)
+        self.coeff_matrix += regularization_parameter * np.eye(
+            self.coeff_matrix.shape[0],
+        )
+        self.cov_fdata.coefficients = self.coeff_matrix.flatten()
+
+    def log_determinant(self) -> NDArrayFloat:
+        """Calculate the logdeterminant of the covariance matrix."""
+        log_determinant: NDArrayFloat = np.linalg.slogdet(
+            self.coeff_matrix,
+        )[1]
+        return log_determinant

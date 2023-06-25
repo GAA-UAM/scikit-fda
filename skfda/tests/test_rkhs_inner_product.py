@@ -29,7 +29,7 @@ DOMAIN_RANGE = (0, 1)
         "BSplineBasis",
     ],
 )
-def basis_2(
+def basis(
     request: Any,
 ) -> Any:
     """Fixture for classes to test."""
@@ -92,7 +92,7 @@ def test_rkhs_inner_product_grid() -> None:
 
 
 def test_rkhs_inner_product_basis(
-    basis_2: Basis,
+    basis: Basis,
 ) -> None:
     """Test the RKHS product for specific FDataBasis.
 
@@ -141,7 +141,7 @@ def test_rkhs_inner_product_basis(
         return kernel([s, t], grid=True)[0, ..., 0]
 
     x_basis = x.to_basis(basis_1)
-    y_basis = y.to_basis(basis_2)
+    y_basis = y.to_basis(basis)
 
     result = rkhs_inner_product(
         fdata1=x_basis,
@@ -165,6 +165,59 @@ def test_rkhs_inner_product_basis(
         result,
         expected_result,
         atol=1e-4,
+    )
+
+
+def test_rkhs_inner_product_empirical_covariance(
+    basis: Basis,
+) -> None:
+    """Test the RKHS product using the empirical covariance.
+
+    This test checks that the function rkhs_inner_product works with a given
+    matrix of coefficients, that is, the covariance function comes already
+    expressed in the tensor basis via the empirical covariance matrix.
+    In this test, we use a known set of coefficients from which we have
+    computed the empirical covariance matrix and its inner product.
+
+    The coefficients for the dataset are:
+        [1,2,3,4,5], = x
+        [1,0,1,1,0], = y
+        [0,1,0,1,1],
+        [1,2,1,1,1],
+        [1,1,1,0,1],
+        [2,1,3,4,5]
+    The covariance function is given by its empirical covariance.
+    The terms to compute the inner product are the first and second functions
+    of the dataset.
+    The expected result of the RKHS product is:
+        <x,y>_K = 236*5/225
+    """
+    coefficients = np.array([
+        [1, 2, 3, 4, 5],
+        [1, 0, 1, 1, 0],
+        [0, 1, 0, 1, 1],
+        [1, 2, 1, 1, 1],
+        [1, 1, 1, 0, 1],
+        [2, 1, 3, 4, 5],
+    ])
+
+    fdata = FDataBasis(
+        basis=basis,
+        coefficients=coefficients,
+    )
+    x = fdata[0]
+    y = fdata[1]
+
+    result = rkhs_inner_product(
+        fdata1=x,
+        fdata2=y,
+        cov_function=fdata.cov(),
+    )
+    expected_result = [236 * 5 / 225]
+    np.testing.assert_allclose(
+        result,
+        expected_result,
+        rtol=1e-13,
     )
 
 

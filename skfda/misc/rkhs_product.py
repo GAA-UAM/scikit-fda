@@ -139,13 +139,6 @@ def rkhs_inner_product(
             )[0],
         ).T[..., np.newaxis]
 
-        # NOTE: Numpy alternative.
-        # inv_fd2_matrix = np.linalg.lstsq(
-        #     cov_matrix_1_2.T,
-        #     data_matrix_2[..., 0].T,
-        #     rcond=None,
-        # )[0].T[..., np.newaxis]
-
     products = (
         np.transpose(data_matrix_1, axes=(0, 2, 1))
         @ inv_fd2_matrix

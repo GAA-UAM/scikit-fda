@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from builtins import isinstance
-from typing import TypeVar, Union
+from typing import Callable, TypeVar, Union
 
 import numpy as np
 from scipy import integrate
@@ -71,7 +71,7 @@ def gmean(X: FDataGrid) -> FDataGrid:
     return X.gmean()
 
 
-def cov(X: FData) -> FDataGrid:
+def cov(X: FData) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
     """
     Compute the covariance.
 
@@ -83,10 +83,10 @@ def cov(X: FData) -> FDataGrid:
 
     Returns:
         Covariance of all the samples in the original object, as a
-        :term:`functional data object` with just one sample.
+        callable.
 
     """
-    return X.cov()  # type: ignore[no-any-return]
+    return X.cov()
 
 
 def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:

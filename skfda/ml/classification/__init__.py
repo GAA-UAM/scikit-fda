@@ -16,6 +16,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "DDGClassifier",
             "MaximumDepthClassifier",
         ],
+        "_lda": ["LinearDiscriminantAnalysis"],
         "_logistic_regression": ["LogisticRegression"],
         "_neighbors_classifiers": [
             "KNeighborsClassifier",
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
         DDGClassifier as DDGClassifier,
         MaximumDepthClassifier as MaximumDepthClassifier,
     )
+    from ._lda import LinearDiscriminantAnalysis as LinearDiscriminantAnalysis
     from ._logistic_regression import LogisticRegression as LogisticRegression
     from ._neighbors_classifiers import (
         KNeighborsClassifier as KNeighborsClassifier,

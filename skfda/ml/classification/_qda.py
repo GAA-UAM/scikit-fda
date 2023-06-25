@@ -3,22 +3,20 @@ from __future__ import annotations
 from typing import Sequence, TypeVar, Union
 
 import numpy as np
-from scipy.linalg import logm
 from sklearn.base import clone
 from sklearn.utils.validation import check_is_fitted
 
-from ..._utils import _classifier_get_classes
-from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
+from ._lda import LinearDiscriminantAnalysis
 from ...exploratory.stats.covariance import CovarianceEstimator
-from ...representation import FDataGrid
+from ...representation import FData
 from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
+Input = TypeVar("Input", bound=FData)
 Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 class QuadraticDiscriminantAnalysis(
-    BaseEstimator,
-    ClassifierMixin[FDataGrid, Target],
+    LinearDiscriminantAnalysis[Input, Target],
 ):
     """
     Functional quadratic discriminant analysis.
@@ -87,8 +85,10 @@ class QuadraticDiscriminantAnalysis(
         use as regularizer parameter a low value such as 0.05.
 
         >>> qda = QuadraticDiscriminantAnalysis(
-        ...     ParametricGaussianCovariance(rbf),
-        ...     regularizer=0.05,
+        ...     ParametricGaussianCovariance(
+        ...         rbf,
+        ...         regularization_parameter=0.05,
+        ...     ),
         ... )
         >>> qda = qda.fit(X_train, y_train)
 
@@ -105,149 +105,61 @@ class QuadraticDiscriminantAnalysis(
         0.96
     """
 
-    means_: Sequence[FDataGrid]
-
-    def __init__(
-        self,
-        cov_estimator: CovarianceEstimator[FDataGrid],
-        *,
-        regularizer: float = 0,
-    ) -> None:
-        self.cov_estimator = cov_estimator
-        self.regularizer = regularizer
-
-    def fit(
-        self,
-        X: FDataGrid,
-        y: Target,
-    ) -> QuadraticDiscriminantAnalysis[Target]:
-        """
-        Fit the model using X as training data and y as target values.
-
-        Args:
-            X: FDataGrid with the training data.
-            y: Target values of shape (n_samples).
-
-        Returns:
-            self
-        """
-        classes, y_ind = _classifier_get_classes(y)
-        self.classes_ = classes
-        self.y_ind = y_ind
-
-        self._fit_gaussian_process(X)
-
-        self.priors_ = self._calculate_priors(y)
-        self._log_priors = np.log(self.priors_)
-
-        self._regularized_covariances = (
-            self._covariances
-            + self.regularizer * np.eye(len(X.grid_points[0]))
-        )
-
-        self._log_determinant_covariances = np.asarray([
-            np.trace(logm(regularized_covariance))
-            for regularized_covariance in self._regularized_covariances
-        ])
-
-        return self
-
-    def predict(self, X: FDataGrid) -> Target:
-        """
-        Predict the class labels for the provided data.
-
-        Args:
-            X: FDataGrid with the test samples.
-
-        Returns:
-            Array of shape (n_samples) with class labels
-            for each data sample.
-        """
-        check_is_fitted(self)
-
-        return self.classes_[  # type: ignore[no-any-return]
-            np.argmax(
-                self._calculate_log_likelihood(X.data_matrix),
-                axis=1,
-            )]
-
-    def _calculate_priors(self, y: Target) -> NDArrayFloat:
-        """
-        Calculate the prior probability of each class.
-
-        Args:
-            y: ndarray with the labels of the training data.
-
-        Returns:
-            Numpy array with the respective prior of each class.
-        """
-        _, counts = np.unique(y, return_counts=True)
-        return counts / len(y)
+    covariances_: Sequence[CovarianceEstimator[Input]]
 
     def _fit_gaussian_process(
         self,
-        X: FDataGrid,
+        X: Input,
     ) -> None:
-        """
-        Fit the kernel to the data in each class.
-
-        For each class the initial kernel passed as parameter is
-        adjusted and the mean is calculated.
-
-        Args:
-            X: FDataGrid with the training data.
-
-        """
+        """Fit the means and covariances."""
+        # Compute the mean of each class and the covariance estimator
         cov_estimators = []
         means = []
-        covariance = []
         for class_index, _ in enumerate(self.classes_):
             X_class = X[self.y_ind == class_index]
-            cov_estimator = clone(self.cov_estimator).fit(X_class)
+            cov_estimator: CovarianceEstimator[Input] = clone(
+                self.cov_estimator,
+            ).fit(X_class)
 
             cov_estimators.append(cov_estimator)
             means.append(cov_estimator.location_)
-            # TODO: QDA should use the covariance estimators interface
-            covariance.append(
-                cov_estimator.covariance_.cov_fdata.data_matrix[0, ..., 0],
-            )
 
         self.means_ = means
-        self._covariances = np.asarray(covariance)
+        self.covariances_ = cov_estimators
 
-    def _calculate_log_likelihood(self, X: NDArrayFloat) -> NDArrayFloat:
+    def _discriminant_function(
+        self,
+        X: Input,
+    ) -> NDArrayFloat:
         """
-        Calculate the log likelihood quadratic discriminant analysis.
+        Compute the discriminant function of the given samples.
+
+        This is the same as the result obtained from predict_log_proba
+        before applying the normalization needed to obtain the
+        probabilities.
 
         Args:
-            X: sample where we want to calculate the discriminant.
+            X: Test samples.
 
         Returns:
-            A ndarray with the log likelihoods corresponding to the
-            output classes.
+            Discriminant results of the given samples.
         """
-        # Calculates difference wrt. the mean (x - un)
-        mean_values = np.array([m.data_matrix[0] for m in self.means_])
+        check_is_fitted(self)
 
-        X_centered = (
-            X[:, np.newaxis, :, :]
-            - mean_values[np.newaxis, :, :, :]
-        )
+        # Xs_centered has shape (n_classes, n_samples, n_features, n_points)
+        Xs_centered = [X - class_mean for class_mean in self.means_]
 
-        # Calculates mahalanobis distance (-1/2*(x - un).T*inv(sum)*(x - un))
-        mahalanobis_distances = np.reshape(
-            np.transpose(X_centered, axes=(0, 1, 3, 2))
-            @ np.linalg.solve(
-                self._regularized_covariances,
+        # discriminants has shape (n_classes, n_samples)
+        discriminants: NDArrayFloat = np.array([
+            cov_estimator.score(
                 X_centered,
-            ),
-            (-1, self.classes_.size),
-        )
+            )
+            + log_prior
+            for log_prior, X_centered, cov_estimator in zip(
+                self._log_priors,
+                Xs_centered,
+                self.covariances_,
+            )
+        ])
 
-        return np.asarray(
-            (
-                -0.5 * self._log_determinant_covariances
-                - 0.5 * mahalanobis_distances
-                + self._log_priors
-            ),
-        )
+        return discriminants

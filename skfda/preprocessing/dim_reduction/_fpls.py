@@ -14,6 +14,7 @@ from ...representation.basis import Basis, FDataBasis, _GridBasis
 from ...typing._numpy import NDArrayFloat
 
 POWER_SOLVER_EPS = 1e-15
+INV_EPS = 1e-15
 
 
 def _power_solver(X: NDArrayFloat) -> NDArrayFloat:
@@ -63,13 +64,13 @@ def _calculate_weights(
     w = L_X_inv.T @ w
 
     # Normalize
-    w /= np.sqrt(np.dot(w.T, G_ww @ w))
+    w /= np.sqrt(np.dot(w.T, G_ww @ w)) + INV_EPS
 
     # Undo the transformation
     c = L_Y_inv.T @ c
 
     # Normalize the other weight
-    c /= np.sqrt(np.dot(c.T, G_cc @ c))
+    c /= np.sqrt(np.dot(c.T, G_cc @ c)) + INV_EPS
 
     return w, c
 
@@ -170,11 +171,13 @@ def _pls_nipals(  # noqa: WPS320
         t = np.dot(X @ G_xw, w)
         u = np.dot(Y @ G_yc, c)
 
-        p = np.dot(X.T, t) / np.dot(t.T, t)
+        p = np.dot(X.T, t) / (np.dot(t.T, t) + INV_EPS)
 
         y_proyection = t if deflation == "reg" else u
 
-        q = np.dot(Y.T, y_proyection) / np.dot(y_proyection, y_proyection)
+        q = np.dot(Y.T, y_proyection) / (
+            np.dot(y_proyection, y_proyection) + INV_EPS
+        )
 
         X = X - np.outer(t, p)
         Y = Y - np.outer(y_proyection, q)

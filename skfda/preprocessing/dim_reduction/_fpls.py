@@ -266,13 +266,14 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
         weights_basis: None,
     ) -> None:
         """Initialize the data of the block."""
+        if len(data.shape) == 1:
+            data = data[:, np.newaxis]
+
         self.G_data_weights = np.identity(data.shape[1])
         self.G_weights = np.identity(data.shape[1])
 
         self.mean = np.mean(data, axis=0)
         self.data_matrix = data - self.mean
-        if len(self.data_matrix.shape) == 1:
-            self.data_matrix = self.data_matrix[:, np.newaxis]
         self.data = data - self.mean
 
         self.regularization_matrix = np.zeros(
@@ -403,6 +404,8 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
                 data_basis.coefficients @ self.G_data_weights @ self.rotations
             )
         elif isinstance(data, np.ndarray):
+            if len(data.shape) == 1:
+                data = data[:, np.newaxis]
             data_array = data - cast(NDArrayFloat, self.mean)
             return data_array @ self.rotations
 
@@ -419,7 +422,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
             reconstructed_grid = self.data.copy(
                 data_matrix=components @ self.loadings.T,
                 sample_names=(None,) * components.shape[0],
-                dataset_name=f"FPLS {self.label} components",
+                dataset_name=f"FPLS {self.label} inverse transformed",
             )
             return reconstructed_grid + cast(FDataGrid, self.mean)
 
@@ -427,7 +430,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
             reconstructed_basis = self.data.copy(
                 coefficients=components @ self.loadings.T,
                 sample_names=(None,) * components.shape[0],
-                dataset_name=f"FPLS {self.label} components",
+                dataset_name=f"FPLS {self.label} inverse transformed",
             )
             return reconstructed_basis + cast(FDataBasis, self.mean)
 
@@ -506,7 +509,7 @@ class FPLS(  # noqa: WPS230
         self._y_block = _FPLSBlock(
             data=Y,
             n_components=self.n_components,
-            label="X",
+            label="Y",
             integration_weights=self.integration_weights_Y,
             regularization=self.regularization_Y,
             weights_basis=self.weight_basis_Y,

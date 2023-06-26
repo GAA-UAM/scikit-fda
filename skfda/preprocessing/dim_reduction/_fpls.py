@@ -211,17 +211,58 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
     """
     Class to store the data of a block of a FPLS model.
 
-    Attributes:
-        - n_components: number of components to extract.
-        - label: label of the block (X or Y).
-        - G_data_weights: (n_samples, n_samples)
-            The inner product matrix for the data and weights
-            (The discretization weights matrix in the case of FDataGrid).
-        - G_weights: (n_samples, n_samples)
-            The inner product matrix for the weights
-            (The discretization weights matrix in the case of FDataGrid).
-        - data_matrix: (n_samples, n_features)
-            The data matrix of the block.
+    This is an internal class, intended to be used only by the FPLS class.
+    It provides a common interface for the different types of blocks,
+    simplifying the implementation of the FPLS algorithm.
+
+    There are three types of blocks (depending on BlockType):
+    mutltivariate (NDArrayFloat), basis (FDataBasis) and grid (FDataGrid).
+
+    In the following, n_samples is the number of samples of the block.
+    n_features is:
+        - The number of features of the block in the case of multivariate
+          block.
+        - The number of basis functions in the case of a FDataBasis block.
+        - The number of points in the case of a FDataGrid block.
+
+    Parameters:
+        - data: The data of the block.
+        - n_components: Number of components to extract.
+        - label: Label of the block (X or Y).
+        - integration_weights: Array with shape (n_features,).
+            The integration weights of the block. It must be None for
+            multivariate or FDataBasis blocks.
+        - regularization: The regularization to apply to the block.
+            It must be None for multivariate blocks.
+        - weights_basis: The basis of the weights. It must be None for
+            multivariate or grid blocks.
+
+    Attributes set during the initialization:
+        - n_components: `int`.  Number of components to extract.
+        - label: `str`.  Label of the block (X or Y).
+        - data: `BlockType`.  The data of the block.
+        - data_matrix: `NDArrayFloat` (n_samples, n_features).  The data
+          matrix of the block.
+        - mean: `BlockType`.  The mean of the data.
+        - weights_basis: `Basis`. The basis of the weights.
+        - regularization_matrix: `NDArrayFloat` (n_features, n_features).
+            Inner product matrix of the regularization operator applied
+            to the basis or the grid.
+        - integration_matrix: `NDArrayFloat` (n_features, n_features).
+            Diagonal matrix of the integration weights.
+        - G_data_weights: `NDArrayFloat` (n_samples, n_samples).  The inner
+            product matrix for the data and weights
+            (The discretization matrix in grid blocks).
+        - G_weights: `NDArrayFloat` (n_samples, n_samples).  The inner product
+            matrix for the weights (The discretization matrix in grid blocks).
+
+    Attributes set after calculating the components:
+        - rotations: `NDArrayFloat` (n_features, n_components).  The
+            rotations of the block.
+        - loadings: `NDArrayFloat` (n_features, n_components).  The
+            loadings of the block.
+        - components: `BlockType`.  The components of the block.
+
     """
 
     mean: BlockType
@@ -254,7 +295,8 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
     ) -> None:
         """Initialize the data of the block."""
         raise NotImplementedError(
-            f"Data type {type(data)} not supported",
+            f"Data type {type(data)} or combination of arguments"
+            "not supported",
         )
 
     @_initialize_data.register
@@ -265,7 +307,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
         regularization: None,
         weights_basis: None,
     ) -> None:
-        """Initialize the data of the block."""
+        """Initialize the data of a multivariate block."""
         if len(data.shape) == 1:
             data = data[:, np.newaxis]
 
@@ -281,61 +323,70 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
         )
 
     @_initialize_data.register
-    def _initialize_data_fdatagrid(
+    def _initialize_data_grid(
         self,
         data: FDataGrid,
         integration_weights: Optional[np.ndarray],  # type: ignore[type-arg]
         regularization: Optional[L2Regularization[Any]],
         weights_basis: None,
     ) -> None:
+        """Initialize the data of a grid block."""
         self.mean = data.mean()
-        data = data - self.mean
-        self.data = data
+        self.data = data - self.mean
+        self.data_matrix = data.data_matrix[..., 0]
 
-        data_mat = data.data_matrix[..., 0]
+        # Arrange the integration weights in a diagonal matrix
+        # By default, use Simpson's rule
         if integration_weights is None:
-            identity = np.identity(data_mat.shape[1])
+            identity = np.identity(self.data_matrix.shape[1])
             integration_weights = scipy.integrate.simps(
                 identity,
-                data.grid_points[0],
+                self.data.grid_points[0],
             )
         self.integration_weights = np.diag(integration_weights)
 
+        # Compute the regularization matrix
+        # By default, all zeros (no regularization)
         regularization_matrix = None
         if regularization is not None:
             regularization_matrix = compute_penalty_matrix(
-                basis_iterable=(_GridBasis(grid_points=data.grid_points),),
+                basis_iterable=(
+                    _GridBasis(grid_points=self.data.grid_points),
+                ),
                 regularization_parameter=1,
                 regularization=regularization,
             )
         if regularization_matrix is None:
             regularization_matrix = np.zeros(
-                (data_mat.shape[1], data_mat.shape[1]),
+                (self.data_matrix.shape[1], self.data_matrix.shape[1]),
             )
 
         self.regularization_matrix = regularization_matrix
         self.G_data_weights = self.integration_weights
         self.G_weights = self.integration_weights
-        self.data_matrix = data_mat
 
     @_initialize_data.register
-    def _initialize_data_fdatabasis(
+    def _initialize_data_basis(
         self,
         data: FDataBasis,
         integration_weights: None,
         regularization: Optional[L2Regularization[Any]],
         weights_basis: Optional[Basis],
     ) -> None:
+        """Initialize the data of a basis block."""
         self.mean = data.mean()
-        data = data - self.mean
-        self.data = data
+        self.data = data - self.mean
+        self.data_matrix = self.data.coefficients
 
-        data_mat = data.coefficients
+        # By default, use the basis of the input data
+        # for the weights
         if weights_basis is None:
             self.weights_basis = data.basis
         else:
             self.weights_basis = weights_basis
 
+        # Compute the regularization matrix
+        # By default, all zeros (no regularization)
         regularization_matrix = None
         if regularization is not None:
             regularization_matrix = compute_penalty_matrix(
@@ -345,42 +396,52 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
             )
         if regularization_matrix is None:
             regularization_matrix = np.zeros(
-                (data_mat.shape[1], data_mat.shape[1]),
+                (self.data_matrix.shape[1], self.data_matrix.shape[1]),
             )
 
         self.regularization_matrix = regularization_matrix
         self.G_weights = self.weights_basis.gram_matrix()
-        self.G_data_weights = data.basis.inner_product_matrix(
+        self.G_data_weights = self.data.basis.inner_product_matrix(
             self.weights_basis,
         )
-        self.data_matrix = data_mat
 
-    def calculate_components(
+    def set_nipals_results(
         self,
         rotations: NDArrayFloat,
         loadings: NDArrayFloat,
-    ) -> BlockType:
+    ) -> None:
         """Set the results of NIPALS."""
         self.rotations = rotations
-        self.loadings = loadings
-        self.components = self._calculate_component()
-        return self.components
+        self.loadings_matrix = loadings
+        self.components = self._to_block_type(rotations, "Component")
+        self.loadings = self._to_block_type(self.loadings_matrix, "Loading")
 
-    def _calculate_component(self) -> BlockType:
+    def _to_block_type(
+        self,
+        nipals_matrix: NDArrayFloat,
+        title: str,
+    ) -> BlockType:
+        # Each column of the matrix generated by NIPALS corresponds to
+        # an obsevation or direction. Therefore, there must be transposed
+        # so that each row corresponds ot an observation or direction
         if isinstance(self.data, FDataGrid):
             return self.data.copy(
-                data_matrix=np.transpose(self.rotations),
-                sample_names=(None,) * self.n_components,
-                dataset_name=f"FPLS {self.label} components",
+                data_matrix=nipals_matrix.T,
+                sample_names=[
+                    f"{title} {i}" for i in range(self.n_components)
+                ],
+                dataset_name=f"FPLS {self.label} {title}s",
             )
         elif isinstance(self.data, FDataBasis):
             return self.data.copy(
-                coefficients=np.transpose(self.rotations),
-                sample_names=(None,) * self.n_components,
-                dataset_name=f"FPLS {self.label} components",
+                coefficients=nipals_matrix.T,
+                sample_names=[
+                    f"{title} {i}" for i in range(self.n_components)
+                ],
+                dataset_name=f"FPLS {self.label} {title}s",
             )
         elif isinstance(self.data, np.ndarray):
-            return cast(BlockType, self.rotations)
+            return cast(BlockType, nipals_matrix.T)
 
         raise NotImplementedError(
             f"Data type {type(self.data)} not supported",
@@ -392,7 +453,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
     ) -> NDArrayFloat:
         """Transform from the data space to the component space."""
         if isinstance(data, FDataGrid):
-            data_grid = data - cast(FDataGrid, self.mean)
+            data_grid = data - self.mean
             return (
                 data_grid.data_matrix[..., 0]
                 @ self.G_data_weights
@@ -404,9 +465,10 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
                 data_basis.coefficients @ self.G_data_weights @ self.rotations
             )
         elif isinstance(data, np.ndarray):
-            if len(data.shape) == 1:
-                data = data[:, np.newaxis]
-            data_array = data - cast(NDArrayFloat, self.mean)
+            data_array = data
+            if len(data_array.shape) == 1:
+                data_array = data_array[:, np.newaxis]
+            data_array = data_array - self.mean
             return data_array @ self.rotations
 
         raise NotImplementedError(
@@ -420,7 +482,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
         """Transform from the component space to the data space."""
         if isinstance(self.data, FDataGrid):
             reconstructed_grid = self.data.copy(
-                data_matrix=components @ self.loadings.T,
+                data_matrix=components @ self.loadings_matrix.T,
                 sample_names=(None,) * components.shape[0],
                 dataset_name=f"FPLS {self.label} inverse transformed",
             )
@@ -428,14 +490,14 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
 
         elif isinstance(self.data, FDataBasis):
             reconstructed_basis = self.data.copy(
-                coefficients=components @ self.loadings.T,
+                coefficients=components @ self.loadings_matrix.T,
                 sample_names=(None,) * components.shape[0],
                 dataset_name=f"FPLS {self.label} inverse transformed",
             )
             return reconstructed_basis + cast(FDataBasis, self.mean)
 
         elif isinstance(self.data, np.ndarray):
-            reconstructed = components @ self.loadings.T
+            reconstructed = components @ self.loadings_matrix.T
             reconstructed += self.mean
             return cast(BlockType, reconstructed)
 
@@ -467,52 +529,82 @@ class FPLS(  # noqa: WPS230
     BaseEstimator,
     Generic[InputTypeX, InputTypeY],
 ):
-    """
+    r"""
     Functional Partial Least Squares Regression.
 
+    Given two data blocks, X and Y, FPLS finds pairs of latent variables
+    (aka extracted variables). Each extracted variable is the result of
+    projecting the data along a direction (vector or function).
+    In this class, the term component is used to refer to these
+    projection directions, otherwise known as rotations.
+
+    This is a generic class. When instantiated, the type of the
+    data in each block can be specified. The possiblities are:
+    NDArrayFloat, FDataGrid and FDataBasis.
+
+    Parameters:
+        n_components: Number of components to extract.
+        regularization_X: Regularization to apply to the X block.
+        regularization_Y: Regularization to apply to the Y block.
+        component_basis_X: Basis to use for the X block. Only
+            applicable if X is a FDataBasis. Otherwise it must be None.
+        component_basis_Y: Basis to use for the Y block. Only
+            applicable if Y is a FDataBasis. Otherwise it must be None.
+
+        _deflation_mode: Mode to use for deflation. Can be "can"
+            (dimensionality reduction) or "reg" (regression).
+        _integration_weights_X: One-dimensional array with the integration
+            weights for the X block.
+            Only applicable if X is a FDataGrid. Otherwise it must be None.
+        _integration_weights_Y: One-dimensional array with the integration
+            weights for the Y block.
+            Only applicable if Y is a FDataGrid. Otherwise it must be None.
+
     Attributes:
-        n_components: Number of components to keep.
-    ...
+        x_components\_: Components of the X block (Same type as X).
+        y_components\_: Components of the Y block (Same type as y).
+        x_loadings
+
+
     """
 
     def __init__(
         self,
         n_components: int = 5,
-        scale: bool = False,
-        integration_weights_X: NDArrayFloat | None = None,
-        integration_weights_Y: NDArrayFloat | None = None,
+        *,
         regularization_X: L2Regularization[InputTypeX] | None = None,
         regularization_Y: L2Regularization[InputTypeY] | None = None,
-        weight_basis_X: Basis | None = None,
-        weight_basis_Y: Basis | None = None,
-        deflation_mode: str = "can",
+        component_basis_X: Basis | None = None,
+        component_basis_Y: Basis | None = None,
+        _deflation_mode: str = "can",
+        _integration_weights_X: NDArrayFloat | None = None,
+        _integration_weights_Y: NDArrayFloat | None = None,
     ) -> None:
         self.n_components = n_components
-        self.scale = scale
-        self.integration_weights_X = integration_weights_X
-        self.integration_weights_Y = integration_weights_Y
+        self._integration_weights_X = _integration_weights_X
+        self._integration_weights_Y = _integration_weights_Y
         self.regularization_X = regularization_X
         self.regularization_Y = regularization_Y
-        self.weight_basis_X = weight_basis_X
-        self.weight_basis_Y = weight_basis_Y
-        self.deflation_mode = deflation_mode
+        self.component_basis_X = component_basis_X
+        self.component_basis_Y = component_basis_Y
+        self._deflation_mode = _deflation_mode
 
     def _initialize_blocks(self, X: InputTypeX, Y: InputTypeY) -> None:
         self._x_block = _FPLSBlock(
             data=X,
             n_components=self.n_components,
             label="X",
-            integration_weights=self.integration_weights_X,
+            integration_weights=self._integration_weights_X,
             regularization=self.regularization_X,
-            weights_basis=self.weight_basis_X,
+            weights_basis=self.component_basis_X,
         )
         self._y_block = _FPLSBlock(
             data=Y,
             n_components=self.n_components,
             label="Y",
-            integration_weights=self.integration_weights_Y,
+            integration_weights=self._integration_weights_Y,
             regularization=self.regularization_Y,
-            weights_basis=self.weight_basis_Y,
+            weights_basis=self.component_basis_Y,
         )
 
     def fit(
@@ -545,15 +637,13 @@ class FPLS(  # noqa: WPS230
             G_yc=self._y_block.G_data_weights,
             L_X_inv=self._x_block.get_cholesky_inv_penalty_matrix(),
             L_Y_inv=self._y_block.get_cholesky_inv_penalty_matrix(),
-            deflation=self.deflation_mode,
+            deflation=self._deflation_mode,
         )
 
         self.x_weights_ = W
         self.y_weights_ = C
         self.x_scores_ = T
         self.y_scores_ = U
-        self.x_loadings_ = P
-        self.y_loadings_ = Q
 
         self.x_rotations_ = W @ np.linalg.pinv(
             P.T @ self._x_block.G_data_weights @ W,
@@ -563,14 +653,20 @@ class FPLS(  # noqa: WPS230
             Q.T @ self._y_block.G_data_weights @ C,
         )
 
-        self.x_components_ = self._x_block.calculate_components(
+        self._x_block.set_nipals_results(
             rotations=self.x_rotations_,
             loadings=P,
         )
-        self.y_components_ = self._y_block.calculate_components(
+        self._y_block.set_nipals_results(
             rotations=self.y_rotations_,
             loadings=Q,
         )
+
+        self.x_components_ = self._x_block.components
+        self.y_components_ = self._y_block.components
+
+        self.x_loadings_ = self._x_block.loadings
+        self.y_loadings_ = self._y_block.loadings
 
         self.coef_ = self.x_rotations_ @ Q.T
         return self

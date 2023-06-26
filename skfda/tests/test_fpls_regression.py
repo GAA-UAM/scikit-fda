@@ -29,8 +29,7 @@ class TestFPLSRegression(LatentVariablesModel):
         # Fit the model
         fplsr = FPLSRegression[NDArrayFloat, NDArrayFloat](
             n_components=5,
-            integration_weights_X=np.ones(len(X.grid_points[0])),
-            scale=False,
+            _integration_weights_X=np.ones(len(X.grid_points[0])),
         )
         fplsr.fit(X, y)
 
@@ -101,7 +100,7 @@ class TestFPLSRegression(LatentVariablesModel):
 
         plsReg = FPLSRegression[FData, NDArrayFloat](
             n_components=5,
-            integration_weights_X=np.ones(len(X.grid_points[0])),
+            _integration_weights_X=np.ones(len(X.grid_points[0])),
         )
         plsReg.fit(X, y)
 
@@ -154,7 +153,7 @@ class TestFPLSRegression(LatentVariablesModel):
         fplsr = FPLSRegression[FData, NDArrayFloat](
             n_components=5,
             regularization_X=regularization,
-            integration_weights_X=np.ones(len(X.grid_points[0])),
+            _integration_weights_X=np.ones(len(X.grid_points[0])),
         )
         fplsr.fit(X, y)
 
@@ -200,7 +199,7 @@ class TestFPLSRegression(LatentVariablesModel):
         # Fit the model with weights
         fplsr = FPLSRegression(
             n_components=5,
-            integration_weights_X=ss_weights,
+            _integration_weights_X=ss_weights,
         )
         fplsr.fit(X, y)
 

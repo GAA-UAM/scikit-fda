@@ -103,7 +103,7 @@ class TestFPLS(LatentVariablesModel):
         # Fit the model
         fpls = FPLS[FDataGrid, NDArrayFloat](
             n_components=3,
-            integration_weights_X=integration_weights,
+            _integration_weights_X=integration_weights,
         )
         fpls.fit(X, y)
 

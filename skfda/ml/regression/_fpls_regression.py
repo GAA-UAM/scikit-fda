@@ -37,20 +37,18 @@ class FPLSRegression(
     def __init__(
         self,
         n_components: int = 5,
-        scale: bool = False,
-        integration_weights_X: NDArrayFloat | None = None,
-        integration_weights_Y: NDArrayFloat | None = None,
         regularization_X: L2Regularization[Any] | None = None,
-        weight_basis_X: Basis | None = None,
-        weight_basis_Y: Basis | None = None,
+        component_basis_X: Basis | None = None,
+        component_basis_Y: Basis | None = None,
+        _integration_weights_X: NDArrayFloat | None = None,
+        _integration_weights_Y: NDArrayFloat | None = None,
     ) -> None:
         self.n_components = n_components
-        self.scale = scale
-        self.integration_weights_X = integration_weights_X
-        self.integration_weights_Y = integration_weights_Y
+        self._integration_weights_X = _integration_weights_X
+        self._integration_weights_Y = _integration_weights_Y
         self.regularization_X = regularization_X
-        self.weight_basis_X = weight_basis_X
-        self.weight_basis_Y = weight_basis_Y
+        self.weight_basis_X = component_basis_X
+        self.weight_basis_Y = component_basis_Y
 
     def fit(
         self,
@@ -60,13 +58,12 @@ class FPLSRegression(
         """Fit the model using X as training data and y as target values."""
         self.fpls_ = FPLS[InputType, OutputType](
             n_components=self.n_components,
-            scale=False,
-            integration_weights_X=self.integration_weights_X,
-            integration_weights_Y=self.integration_weights_Y,
             regularization_X=self.regularization_X,
-            weight_basis_X=self.weight_basis_X,
-            weight_basis_Y=self.weight_basis_Y,
-            deflation_mode="reg",
+            component_basis_X=self.weight_basis_X,
+            component_basis_Y=self.weight_basis_Y,
+            _integration_weights_X=self._integration_weights_X,
+            _integration_weights_Y=self._integration_weights_Y,
+            _deflation_mode="reg",
         )
 
         self.fpls_.fit(X, y)

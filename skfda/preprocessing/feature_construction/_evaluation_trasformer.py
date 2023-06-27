@@ -144,10 +144,14 @@ class EvaluationTransformer(
 
     def fit(  # noqa: D102
         self: SelfType,
-        X: FData,
+        X: FData | NDArrayFloat,
         y: object = None,
     ) -> SelfType:
-        if self.eval_points is None and not isinstance(X, FDataGrid):
+        if (
+            callable(X)
+            and self.eval_points is None
+            and not isinstance(X, FDataGrid)
+        ):
             raise ValueError(
                 "If no eval_points are passed, the functions "
                 "should be FDataGrid objects.",
@@ -159,19 +163,22 @@ class EvaluationTransformer(
 
     def transform(  # noqa: D102
         self,
-        X: FData,
+        X: FData | NDArrayFloat,
         y: object = None,
     ) -> NDArrayFloat:
         check_is_fitted(self, '_is_fitted')
 
-        if self.eval_points is None:
-            assert isinstance(X, FDataGrid)
-            evaluation = X.data_matrix.copy()
+        if callable(X):
+            if self.eval_points is None:
+                assert isinstance(X, FDataGrid)
+                evaluation = X.data_matrix.copy()
+            else:
+                evaluation = X(
+                    self.eval_points,
+                    extrapolation=self.extrapolation,
+                    grid=self.grid,
+                )
         else:
-            evaluation = X(
-                self.eval_points,
-                extrapolation=self.extrapolation,
-                grid=self.grid,
-            )
+            evaluation = X
 
-        return evaluation.reshape((X.n_samples, -1))
+        return evaluation.reshape((len(X), -1))

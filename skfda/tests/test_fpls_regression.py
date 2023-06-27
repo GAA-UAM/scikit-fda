@@ -40,7 +40,7 @@ class TestFPLSRegression(LatentVariablesModel):
         atol = 1e-6
         # Compare the results
         np.testing.assert_allclose(
-            fplsr.fpls_.coef_.flatten(),  # noqa: WPS437
+            fplsr.coef_.flatten(),
             sklearnpls.coef_.flatten(),
             rtol=rtol,
             atol=atol,
@@ -56,7 +56,7 @@ class TestFPLSRegression(LatentVariablesModel):
 
         # Check that the rotations are correc
         np.testing.assert_allclose(
-            np.abs(fplsr.fpls_.x_rotations_).flatten(),
+            np.abs(fplsr.fpls_.x_rotations_matrix_).flatten(),
             np.abs(sklearnpls.x_rotations_).flatten(),
             rtol=rtol,
             atol=atol,
@@ -182,7 +182,7 @@ class TestFPLSRegression(LatentVariablesModel):
         # Fit the model
         fplsr = FPLSRegression[FData, NDArrayFloat](n_components=5)
         fplsr.fit(X, y)
-        basis_components = fplsr.fpls_.x_components_(original_grid_points)
+        basis_components = fplsr.fpls_.x_rotations_(original_grid_points)
 
         # Go back to grid
         new_grid_points = np.linspace(
@@ -203,7 +203,7 @@ class TestFPLSRegression(LatentVariablesModel):
         )
         fplsr.fit(X, y)
 
-        grid_components = fplsr.fpls_.x_components_(original_grid_points)
+        grid_components = fplsr.fpls_.x_rotations_(original_grid_points)
 
         np.testing.assert_allclose(
             basis_components,

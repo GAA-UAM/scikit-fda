@@ -115,7 +115,7 @@ class TestFPLS(LatentVariablesModel):
 
         # Check that the rotations are correct
         np.testing.assert_allclose(
-            np.abs(fpls.x_rotations_).flatten(),
+            np.abs(fpls.x_rotations_matrix_).flatten(),
             np.abs(sklearnpls.x_rotations_).flatten(),
             rtol=rtol,
             atol=atol,
@@ -190,14 +190,14 @@ class TestFPLS(LatentVariablesModel):
 
         # Check that the results are the same
         np.testing.assert_allclose(
-            np.abs(fpls.x_components_(self.grid_points)),
-            np.abs(fpls_grid.x_components_(self.grid_points)),
+            np.abs(fpls.x_rotations_(self.grid_points)),
+            np.abs(fpls_grid.x_rotations_(self.grid_points)),
             rtol=5e-3,
         )
 
         np.testing.assert_allclose(
-            np.abs(fpls.y_components_(self.grid_points)),
-            np.abs(fpls_grid.y_components_(self.grid_points)),
+            np.abs(fpls.y_rotations_(self.grid_points)),
+            np.abs(fpls_grid.y_rotations_(self.grid_points)),
             rtol=5e-3,
         )
 

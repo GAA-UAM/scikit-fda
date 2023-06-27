@@ -26,12 +26,26 @@ class FPLSRegression(
     BaseEstimator,
     RegressorMixin[InputType, OutputType],
 ):
-    """
+    r"""
     Regression using Functional Partial Least Squares.
 
-    Args:
+    Parameters:
         n_components: Number of components to keep. Defaults to 5.
-    ...
+        regularization_X: Regularization for the calculation of the X weights.
+        component_basis_X: Basis to use for the X block. Only
+            applicable if X is a FDataBasis. Otherwise it must be None.
+        component_basis_Y: Basis to use for the Y block. Only
+            applicable if Y is a FDataBasis. Otherwise it must be None.
+        _integration_weights_X: One-dimensional array with the integration
+            weights for the X block.
+            Only applicable if X is a FDataGrid. Otherwise it must be None.
+        _integration_weights_Y: One-dimensional array with the integration
+            weights for the Y block.
+            Only applicable if Y is a FDataGrid. Otherwise it must be None.
+
+    Attributes:
+        coef\_: Coefficients of the linear model.
+        fpls\_: FPLS object used to fit the model.
     """
 
     def __init__(
@@ -55,7 +69,16 @@ class FPLSRegression(
         X: InputType,
         y: OutputType,
     ) -> FPLSRegression[InputType, OutputType]:
-        """Fit the model using X as training data and y as target values."""
+        """
+        Fit the model using the data for both blocks.
+
+        Args:
+            X: Data of the X block
+            y: Data of the Y block
+
+        Returns:
+            self
+        """
         self.fpls_ = FPLS[InputType, OutputType](
             n_components=self.n_components,
             regularization_X=self.regularization_X,
@@ -68,17 +91,20 @@ class FPLSRegression(
 
         self.fpls_.fit(X, y)
 
+        self.coef_ = (
+            self.fpls_.x_rotations_matrix_
+            @ self.fpls_.y_loadings_matrix_.T
+        )
         return self
 
     def predict(self, X: InputType) -> OutputType:
         """Predict using the model.
 
         Args:
-            X: FData to predict.
+            X: Data to predict.
 
         Returns:
             Predicted values.
-
         """
         check_is_fitted(self)
         return self.fpls_.inverse_transform_y(self.fpls_.transform_x(X))

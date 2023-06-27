@@ -15,12 +15,16 @@ from ...typing._numpy import NDArrayFloat
 
 InputBound = Union[NDArrayFloat, FData]
 Input = TypeVar("Input", contravariant=True, bound=InputBound)
+Target = TypeVar("Target")
+SelfType = TypeVar("SelfType", bound="KNeighborsTransformer[Any, Any]")
 
 
 class KNeighborsTransformer(
     KNeighborsMixin[Input, Any],
     InductiveTransformerMixin[Input, NDArrayFloat, Any],
 ):
+
+    n_neighbors: int
 
     @overload
     def __init__(
@@ -90,6 +94,17 @@ class KNeighborsTransformer(
             metric="precomputed",
             n_jobs=self.n_jobs,
         )
+
+    def _fit(
+        self: SelfType,
+        X: Input,
+        y: Target,
+        fit_with_zeros: bool = True,
+    ) -> SelfType:
+        ret = super()._fit(X, y)
+        self.n_features_in_ = self._estimator.n_features_in_
+
+        return ret
 
     def transform(
         self,

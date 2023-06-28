@@ -102,7 +102,8 @@ class KNeighborsTransformer(
         fit_with_zeros: bool = True,
     ) -> SelfType:
         ret = super()._fit(X, y)
-        self.n_features_in_ = self._estimator.n_features_in_
+
+        self.n_features_in_ = 1 if isinstance(X, FData) else X.shape[1]
 
         return ret
 

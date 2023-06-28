@@ -434,7 +434,7 @@ class MinimumRedundancyMaximumRelevance(
                 )
 
             if self.criterion == "difference":
-                self.criterion = operator.sub
+                self.criterion_ = operator.sub
             elif self.criterion == "quotient":
                 self.criterion_ = operator.truediv
             else:

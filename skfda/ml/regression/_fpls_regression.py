@@ -32,9 +32,9 @@ class FPLSRegression(
     Parameters:
         n_components: Number of components to keep. Defaults to 5.
         regularization_X: Regularization for the calculation of the X weights.
-        component_basis_X: Basis to use for the X block. Only
+        weight_basis_X: Basis to use for the X block. Only
             applicable if X is a FDataBasis. Otherwise it must be None.
-        component_basis_Y: Basis to use for the Y block. Only
+        weight_basis_Y: Basis to use for the Y block. Only
             applicable if Y is a FDataBasis. Otherwise it must be None.
         _integration_weights_X: One-dimensional array with the integration
             weights for the X block.
@@ -52,8 +52,8 @@ class FPLSRegression(
         self,
         n_components: int = 5,
         regularization_X: L2Regularization[Any] | None = None,
-        component_basis_X: Basis | None = None,
-        component_basis_Y: Basis | None = None,
+        weight_basis_X: Basis | None = None,
+        weight_basis_Y: Basis | None = None,
         _integration_weights_X: NDArrayFloat | None = None,
         _integration_weights_Y: NDArrayFloat | None = None,
     ) -> None:
@@ -61,8 +61,8 @@ class FPLSRegression(
         self._integration_weights_X = _integration_weights_X
         self._integration_weights_Y = _integration_weights_Y
         self.regularization_X = regularization_X
-        self.weight_basis_X = component_basis_X
-        self.weight_basis_Y = component_basis_Y
+        self.weight_basis_X = weight_basis_X
+        self.weight_basis_Y = weight_basis_Y
 
     def fit(
         self,

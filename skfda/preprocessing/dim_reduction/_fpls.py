@@ -430,6 +430,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
                     f"{title.capitalize()} {i}"
                     for i in range(self.n_components)
                 ],
+                coordinate_names=(f"FPLS {self.label} {title} value",),
                 dataset_name=f"FPLS {self.label} {title}s",
             )
         elif isinstance(self.data, FDataBasis):
@@ -439,6 +440,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
                     f"{title.capitalize()} {i}"
                     for i in range(self.n_components)
                 ],
+                coordinate_names=(f"FPLS {self.label} {title} value",),
                 dataset_name=f"FPLS {self.label} {title}s",
             )
         elif isinstance(self.data, np.ndarray):

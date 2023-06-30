@@ -93,7 +93,7 @@ ax.plot(
     linestyle="dashed",
     marker="o",
 )
-ax.set_xticks(range(0, 100, 10))
+ax.set_xticks(range(0, 110, 10))
 ax.set_xlabel("Number of Components")
 ax.set_ylabel("Cross-validation score")
 ax.set_ylim((0.5, 1))

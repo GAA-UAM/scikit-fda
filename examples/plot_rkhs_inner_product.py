@@ -1,4 +1,4 @@
-r"""
+"""
 Reproducing Kernel Hilbert Space Inner Product for the Brownian Bridge
 =======================================================================
 

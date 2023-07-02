@@ -53,7 +53,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 reg = FPCARegression(n_components=5)
 reg.fit(X_train, y_train)
-print(f"Score with 5 components: {reg.score(X_test, y_test):.4f}")
+test_score = reg.score(X_test, y_test)
+print(f"Score with 5 components: {test_score:.4f}")
 
 ##############################################################################
 # We have obtained a pretty good result considering that
@@ -108,8 +109,10 @@ fig.show()
 
 reg = FPCARegression(n_components=30)
 reg.fit(X_train, y_train)
-print(f"Score with 30 components: {reg.score(X_test, y_test):.4f}")
+test_score = reg.score(X_test, y_test)
+print(f"Score with 30 components: {test_score:.4f}")
 
 reg = FPCARegression(n_components=15)
 reg.fit(X_train, y_train)
-print(f"Score with 15 components: {reg.score(X_test, y_test):.4f}")
+test_score = reg.score(X_test, y_test)
+print(f"Score with 15 components: {test_score:.4f}")

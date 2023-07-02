@@ -32,7 +32,7 @@ y = y["fat"].values
 # curves. The color of these curves depends on the amount of fat, from least
 # (yellow) to highest (red).
 
-X.plot(gradient_criteria=y, legend=True)
+X.plot(gradient_criteria=y, legend=True, colormap="Greens")
 plt.show()
 
 ##############################################################################
@@ -53,7 +53,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 reg = FPCARegression(n_components=5)
 reg.fit(X_train, y_train)
-print(reg.score(X_test, y_test))
+test_score = reg.score(X_test, y_test)
+print(f"Score with 5 components: {test_score:.4f}")
 
 ##############################################################################
 # We have obtained a pretty good result considering that
@@ -73,7 +74,7 @@ gscv.fit(X_train, y_train)
 
 
 print("Best params:", gscv.best_params_)
-print("Best cross-validation score:", gscv.best_score_)
+print(f"Best cross-validation score: {gscv.best_score_:.4f}")
 
 ##############################################################################
 # The best performance for the train set is obtained using 30 components.
@@ -87,24 +88,31 @@ print("Best cross-validation score:", gscv.best_score_)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
-ax.bar(param_grid["n_components"], gscv.cv_results_["mean_test_score"])
-ax.set_xticks(range(0, 100, 10))
-ax.set_ylabel("Number of Components")
-ax.set_xlabel("Cross-validation score")
+ax.plot(
+    param_grid["n_components"],
+    gscv.cv_results_["mean_test_score"],
+    linestyle="dashed",
+    marker="o",
+)
+ax.set_xticks(range(0, 110, 10))
+ax.set_xlabel("Number of Components")
+ax.set_ylabel("Cross-validation score")
 ax.set_ylim((0.5, 1))
+fig.show()
 
 ##############################################################################
 # To conclude, we can calculate the score of the model on the test set after
-# it has been trained on the whole train set. As expected, the score is
-# slightly higher than the one reported by the cross-validation.
+# it has been trained on the whole train set.
 #
 # Moreover, we can check that the score barely changes when we use a somewhat
 # smaller number of components.
 
 reg = FPCARegression(n_components=30)
 reg.fit(X_train, y_train)
-print("Score with 30 components:", reg.score(X_test, y_test))
+test_score = reg.score(X_test, y_test)
+print(f"Score with 30 components: {test_score:.4f}")
 
 reg = FPCARegression(n_components=15)
 reg.fit(X_train, y_train)
-print("Score with 15 components:", reg.score(X_test, y_test))
+test_score = reg.score(X_test, y_test)
+print(f"Score with 15 components: {test_score:.4f}")

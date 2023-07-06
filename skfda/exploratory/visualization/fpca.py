@@ -84,9 +84,10 @@ class FPCAPlot(BasePlot):
             self.mean = self.mean.mean()
 
         for i, ax in enumerate(axes):
-            perturbations = self._get_component_perturbations(i)
-            GraphPlot(fdata=perturbations, axes=ax).plot()
-            ax.set_title(f"Principal component {i + 1}")
+            if i < self.n_subplots:
+                perturbations = self._get_component_perturbations(i)
+                GraphPlot(fdata=perturbations, axes=ax).plot()
+                ax.set_title(f"Principal component {i + 1}")
 
     def _get_component_perturbations(self, index: int = 0) -> FData:
         """

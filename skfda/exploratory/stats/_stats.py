@@ -41,19 +41,22 @@ def mean(
     return (X * weight).sum()
 
 
-def var(X: FData) -> FDataGrid:
+def var(X: FData, ddof: int = 1) -> FDataGrid:
     """
     Compute the variance of a set of samples in a FData object.
 
     Args:
         X: Object containing all the set of samples whose variance is desired.
+        ddof: "Delta Degrees of Freedom": the divisor used in the calculation
+            is `N - ddof`, where `N` represents the number of elements. By
+            default `ddof` is 1.
 
     Returns:
         Variance of all the samples in the original object, as a
         :term:`functional data object` with just one sample.
 
     """
-    return X.var()  # type: ignore[no-any-return]
+    return X.var(ddof=ddof)  # type: ignore[no-any-return]
 
 
 def gmean(X: FDataGrid) -> FDataGrid:

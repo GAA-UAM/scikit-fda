@@ -582,8 +582,13 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T) -> T:
+    def var(self: T, ddof: int = 1) -> T:
         """Compute the variance of a set of samples in a FDataGrid object.
+
+        Args:
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number of
+                elements. By default `ddof` is 1.
 
         Returns:
             A FDataGrid object with just one sample representing the
@@ -591,7 +596,11 @@ class FDataGrid(FData):  # noqa: WPS214
 
         """
         return self.copy(
-            data_matrix=np.array([np.var(self.data_matrix, 0)]),
+            data_matrix=np.array([np.var(
+                self.data_matrix,
+                axis=0,
+                ddof=ddof,
+            )]),
             sample_names=("variance",),
         )
 

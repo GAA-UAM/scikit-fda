@@ -442,7 +442,11 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T, eval_points: Optional[NDArrayFloat] = None) -> T:
+    def var(
+        self: T,
+        eval_points: Optional[NDArrayFloat] = None,
+        ddof: int = 1,
+    ) -> T:
         """Compute the variance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
@@ -456,12 +460,15 @@ class FDataBasis(FData):  # noqa: WPS214
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
                 between 501 and 10 times the number of basis.
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number of
+                elements. By default `ddof` is 1.
 
         Returns:
             Variance of the original object.
 
         """
-        return self.to_grid(eval_points).var().to_basis(self.basis)
+        return self.to_grid(eval_points).var(ddof=ddof).to_basis(self.basis)
 
     @overload
     def cov(  # noqa: WPS451

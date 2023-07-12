@@ -768,16 +768,19 @@ class Empirical(Covariance):
 
     The sample covariance function is defined as
     . math::
-        K(t, s) = \frac{1}{n}\sum_{n=1}^N\left(x_n(t) - \bar{x}(t)\right)
-        \left(x_n(s) - \bar{x}(s)\right)
+        K(t, s) = \frac{1}{N-\text{ddof}}\sum_{n=1}^N\left(x_n(t) -
+        \bar{x}(t)\right) \left(x_n(s) - \bar{x}(s)\right)
 
     where :math:`x_n(t)` is the n-th sample and :math:`\bar{x}(t)` is the
-    mean of the samples.
+    mean of the samples. :math:`N` is the number of samples,
+    :math:`\text{ddof}` means "Delta Degrees of Freedom" and is such that
+    :math:`N-\text{ddof}` is the divisor used in the calculation of the
+    covariance function.
 
     """
 
     _latex_formula = (
-        r"K(t, s) = \frac{1}{n}\sum_{n=1}^N(x_n(t) - \bar{x}(t))"
+        r"K(t, s) = \frac{1}{N-\text{ddof}}\sum_{n=1}^N(x_n(t) - \bar{x}(t))"
         r"(x_n(s) - \bar{x}(s))"
     )
     _parameters_str = [
@@ -785,6 +788,7 @@ class Empirical(Covariance):
     ]
 
     cov_fdata: FData
+    ddof: int
 
     @abc.abstractmethod
     def __init__(self, data: FData) -> None:
@@ -811,14 +815,17 @@ class EmpiricalGrid(Empirical):
     """Sample covariance function for FDataGrid."""
 
     cov_fdata: FDataGrid
+    ddof: int
 
-    def __init__(self, data: FDataGrid) -> None:
+    def __init__(self, data: FDataGrid, ddof: int = 1) -> None:
         super().__init__(data=data)
 
+        self.ddof = ddof
         self.cov_fdata = data.copy(
             data_matrix=np.cov(
                 data.data_matrix[..., 0],
                 rowvar=False,
+                ddof=ddof,
             )[np.newaxis, ...],
             grid_points=[
                 data.grid_points[0],
@@ -844,11 +851,17 @@ class EmpiricalBasis(Empirical):
 
     cov_fdata: FDataBasis
     coeff_matrix: NDArrayFloat
+    ddof: int
 
-    def __init__(self, data: FDataBasis) -> None:
+    def __init__(self, data: FDataBasis, ddof: int = 1) -> None:
         super().__init__(data=data)
 
-        self.coeff_matrix = np.cov(data.coefficients, rowvar=False)
+        self.ddof = ddof
+        self.coeff_matrix = np.cov(
+            data.coefficients,
+            rowvar=False,
+            ddof=ddof,
+        )
         self.cov_fdata = FDataBasis(
             basis=TensorBasis([data.basis, data.basis]),
             coefficients=self.coeff_matrix.flatten(),

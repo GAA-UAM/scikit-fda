@@ -442,7 +442,11 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T, eval_points: Optional[NDArrayFloat] = None) -> T:
+    def var(
+        self: T,
+        eval_points: Optional[NDArrayFloat] = None,
+        ddof: int = 1,
+    ) -> T:
         """Compute the variance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
@@ -456,12 +460,15 @@ class FDataBasis(FData):  # noqa: WPS214
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
                 between 501 and 10 times the number of basis.
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number of
+                elements. By default `ddof` is 1.
 
         Returns:
             Variance of the original object.
 
         """
-        return self.to_grid(eval_points).var().to_basis(self.basis)
+        return self.to_grid(eval_points).var(ddof=ddof).to_basis(self.basis)
 
     @overload
     def cov(  # noqa: WPS451
@@ -469,6 +476,7 @@ class FDataBasis(FData):  # noqa: WPS214
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
         /,
+        ddof: int = 1,
     ) -> NDArrayFloat:
         pass
 
@@ -476,6 +484,7 @@ class FDataBasis(FData):  # noqa: WPS214
     def cov(    # noqa: WPS451
         self: T,
         /,
+        ddof: int = 1,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
@@ -484,6 +493,7 @@ class FDataBasis(FData):  # noqa: WPS214
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
         /,
+        ddof: int = 1,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,
@@ -505,6 +515,9 @@ class FDataBasis(FData):  # noqa: WPS214
         Args:
             s_points: Points where the covariance function is evaluated.
             t_points: Points where the covariance function is evaluated.
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number
+                of elements. By default `ddof` is 1.
 
         Returns:
             Covariance function.
@@ -512,7 +525,7 @@ class FDataBasis(FData):  # noqa: WPS214
         """
         # To avoid circular imports
         from ...misc.covariances import EmpiricalBasis
-        cov_function = EmpiricalBasis(self)
+        cov_function = EmpiricalBasis(self, ddof=ddof)
         if s_points is None or t_points is None:
             return cov_function
         return cov_function(s_points, t_points)

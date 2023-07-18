@@ -1,0 +1,216 @@
+{
+  "projectName": "scikit-fda",
+  "projectOwner": "GAA-UAM",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "CONTRIBUTORS.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "",
+      "name": "Alberto Suárez",
+      "avatar_url": "https://scholar.googleusercontent.com/citations?view_op=view_photo&user=4X4znJIAAAAJ&citpid=3",
+      "profile": "https://scholar.google.es/citations?user=4X4znJIAAAAJ&hl=en",
+      "contributions": [
+        "bug",
+        "doc",
+        "ideas",
+        "mentoring",
+        "projectManagement",
+        "research"
+      ]
+    },
+    {
+      "login": "jltorrecilla",
+      "name": "José Luis Torrecilla",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5597899?v=4",
+      "profile": "https://github.com/jltorrecilla",
+      "contributions": [
+        "bug",
+        "doc",
+        "ideas",
+        "mentoring",
+        "projectManagement",
+        "research",
+        "talk"
+      ]
+    },
+    {
+      "login": "vnmabus",
+      "name": "Carlos Ramos Carreño",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2364173?v=4",
+      "profile": "https://github.com/vnmabus",
+      "contributions": [
+        "bug",
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "infra",
+        "maintenance",
+        "mentoring",
+        "projectManagement",
+        "question",
+        "research",
+        "review",
+        "test",
+        "tutorial",
+        "talk"
+      ]
+    },
+    {
+      "login": "mcarbajo",
+      "name": "Miguel Carbajo Berrocal",
+      "avatar_url": "https://avatars.githubusercontent.com/u/23211688?v=4",
+      "profile": "https://github.com/mcarbajo",
+      "contributions": [
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "infra",
+        "test"
+      ]
+    },
+    {
+      "login": "pablomm",
+      "name": "Pablo Marcos",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16774925?v=4",
+      "profile": "https://github.com/pablomm",
+      "contributions": [
+        "bug",
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
+    },
+    {
+      "login": "amandaher",
+      "name": "amandaher",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10870521?v=4",
+      "profile": "https://github.com/amandaher",
+      "contributions": [
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
+    },
+    {
+      "login": "manso92",
+      "name": "Pablo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2530727?v=4",
+      "profile": "http://manso92.com/",
+      "contributions": [
+        "bug",
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "infra",
+        "test"
+      ]
+    },
+    {
+      "login": "hzzhyj",
+      "name": "hzzhyj",
+      "avatar_url": "https://avatars.githubusercontent.com/u/22401286?v=4",
+      "profile": "https://github.com/hzzhyj",
+      "contributions": [
+        "bug",
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
+    },
+    {
+      "login": "DavidGarciaFer",
+      "name": "David García Fernández",
+      "avatar_url": "https://avatars.githubusercontent.com/u/23263497?v=4",
+      "profile": "https://davidgarciafer.github.io/",
+      "contributions": [
+        "bug",
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
+    },
+    {
+      "login": "pedrorponga",
+      "name": "pedrorponga",
+      "avatar_url": "https://avatars.githubusercontent.com/u/32200195?v=4",
+      "profile": "https://github.com/pedrorponga",
+      "contributions": [
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
+    },
+    {
+      "login": "mellamansanchez",
+      "name": "mellamansanchez",
+      "avatar_url": "https://avatars.githubusercontent.com/u/38490771?v=4",
+      "profile": "https://github.com/mellamansanchez",
+      "contributions": [
+        "bug",
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "test"
+      ]
+    },
+    {
+      "login": "ElenaPetrunina",
+      "name": "ElenaPetrunina",
+      "avatar_url": "https://avatars.githubusercontent.com/u/61758794?v=4",
+      "profile": "https://github.com/ElenaPetrunina",
+      "contributions": [
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
+    },
+    {
+      "login": "",
+      "name": "Luis Alberto Rodriguez Ramirez",
+      "avatar_url": "https://verso.mat.uam.es/web/images/phocagallery/Retratos/thumbs/phoca_thumb_l_LAlbertoRodriguez.jpg",
+      "profile": "https://verso.mat.uam.es/web/index.php/es/directorio/26-pdef/266-rodriguez-ramirez-luis-alberto",
+      "contributions": [
+        "ideas"
+      ]
+    },
+    {
+      "login": "",
+      "name": "Sergio Ruiz Lozano",
+      "avatar_url": "",
+      "profile": "",
+      "contributions": [
+        "design"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "linkToUsage": true
+}

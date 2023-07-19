@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-26-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -42,6 +42,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jiduque"><img src="https://avatars.githubusercontent.com/u/34616214?v=4?s=100" width="100px;" alt="Jorge Duque"/><br /><sub><b>Jorge Duque</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=jiduque" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://saumya-ranjan.github.io/"><img src="https://avatars.githubusercontent.com/u/57477827?v=4?s=100" width="100px;" alt="Saumyaranjan Parida"/><br /><sub><b>Saumyaranjan Parida</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=Saumya-ranjan" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ego-thales"><img src="https://avatars.githubusercontent.com/u/121242234?v=4?s=100" width="100px;" alt="ego-thales"/><br /><sub><b>ego-thales</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=ego-thales" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://research.tetonedge.net/"><img src="https://avatars.githubusercontent.com/u/2325587?v=4?s=100" width="100px;" alt="Derek Tucker"/><br /><sub><b>Derek Tucker</b></sub></a><br /><a href="#question-jdtuck" title="Answering Questions">💬</a></td>
     </tr>
   </tbody>
   <tfoot>

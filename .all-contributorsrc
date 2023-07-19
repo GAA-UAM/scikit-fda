@@ -345,6 +345,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "jdtuck",
+      "name": "Derek Tucker",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2325587?v=4",
+      "profile": "http://research.tetonedge.net/",
+      "contributions": [
+        "question"
+      ]
     }
   ],
   "contributorsPerLine": 7,

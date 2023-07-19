@@ -253,6 +253,21 @@
         "research",
         "test"
       ]
+    },
+    {
+      "login": "Ddelval",
+      "name": "David del Val",
+      "avatar_url": "https://avatars.githubusercontent.com/u/44179156?v=4",
+      "profile": "https://github.com/Ddelval",
+      "contributions": [
+        "bug",
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7,

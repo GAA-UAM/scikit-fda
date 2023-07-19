@@ -363,6 +363,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "half-adder",
+      "name": "Sean Johnsen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10676434?v=4",
+      "profile": "https://github.com/half-adder",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,

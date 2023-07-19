@@ -160,6 +160,7 @@
         "doc",
         "example",
         "ideas",
+        "infra",
         "research",
         "test"
       ]
@@ -188,6 +189,7 @@
         "doc",
         "example",
         "ideas",
+        "infra",
         "research",
         "test"
       ]
@@ -229,6 +231,20 @@
       "name": "Álvaro Castillo",
       "avatar_url": "https://avatars.githubusercontent.com/u/47216026?v=4",
       "profile": "https://github.com/alvaro-castillo",
+      "contributions": [
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
+    },
+    {
+      "login": "rafa9811",
+      "name": "Rafa Hidalgo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/32574570?v=4",
+      "profile": "https://github.com/rafa9811",
       "contributions": [
         "code",
         "doc",

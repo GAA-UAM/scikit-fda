@@ -318,6 +318,15 @@
         "example",
         "test"
       ]
+    },
+    {
+      "login": "jiduque",
+      "name": "Jorge Duque",
+      "avatar_url": "https://avatars.githubusercontent.com/u/34616214?v=4",
+      "profile": "https://github.com/jiduque",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

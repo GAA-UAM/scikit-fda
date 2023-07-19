@@ -36,7 +36,7 @@
         "mentoring",
         "projectManagement",
         "research",
-        "talk"
+        {"type": "talk", "url": "https://seio2022.confereasy.com/es/trabajos/2111/scikit-fda-analisis-de-datos-funcionales-en-python"}
       ]
     },
     {

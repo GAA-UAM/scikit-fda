@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-24-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -40,6 +40,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Clej"><img src="https://avatars.githubusercontent.com/u/54889281?v=4?s=100" width="100px;" alt="Clément Lejeune"/><br /><sub><b>Clément Lejeune</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=Clej" title="Code">💻</a> <a href="#example-Clej" title="Examples">💡</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=Clej" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jiduque"><img src="https://avatars.githubusercontent.com/u/34616214?v=4?s=100" width="100px;" alt="Jorge Duque"/><br /><sub><b>Jorge Duque</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=jiduque" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://saumya-ranjan.github.io/"><img src="https://avatars.githubusercontent.com/u/57477827?v=4?s=100" width="100px;" alt="Saumyaranjan Parida"/><br /><sub><b>Saumyaranjan Parida</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=Saumya-ranjan" title="Code">💻</a></td>
     </tr>
   </tbody>
   <tfoot>

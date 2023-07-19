@@ -307,6 +307,17 @@
         "infra",
         "research"
       ]
+    },
+    {
+      "login": "Clej",
+      "name": "Clément Lejeune",
+      "avatar_url": "https://avatars.githubusercontent.com/u/54889281?v=4",
+      "profile": "https://github.com/Clej",
+      "contributions": [
+        "code",
+        "example",
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7,

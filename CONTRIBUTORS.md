@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-15-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-16-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -30,6 +30,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/dSerna4"><img src="https://avatars.githubusercontent.com/u/91683791?v=4?s=100" width="100px;" alt="dSerna4"/><br /><sub><b>dSerna4</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=dSerna4" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=dSerna4" title="Documentation">📖</a> <a href="#example-dSerna4" title="Examples">💡</a> <a href="#ideas-dSerna4" title="Ideas, Planning, & Feedback">🤔</a> <a href="#research-dSerna4" title="Research">🔬</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=dSerna4" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/alvaro-castillo"><img src="https://avatars.githubusercontent.com/u/47216026?v=4?s=100" width="100px;" alt="Álvaro Castillo"/><br /><sub><b>Álvaro Castillo</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=alvaro-castillo" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=alvaro-castillo" title="Documentation">📖</a> <a href="#example-alvaro-castillo" title="Examples">💡</a> <a href="#ideas-alvaro-castillo" title="Ideas, Planning, & Feedback">🤔</a> <a href="#research-alvaro-castillo" title="Research">🔬</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=alvaro-castillo" title="Tests">⚠️</a></td>
     </tr>
   </tbody>
   <tfoot>

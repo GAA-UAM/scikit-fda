@@ -223,6 +223,20 @@
         "research",
         "test"
       ]
+    },
+    {
+      "login": "alvaro-castillo",
+      "name": "Álvaro Castillo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/47216026?v=4",
+      "profile": "https://github.com/alvaro-castillo",
+      "contributions": [
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7,

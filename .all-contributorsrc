@@ -296,6 +296,17 @@
         "research",
         "test"
       ]
+    },
+    {
+      "login": "pedrog99",
+      "name": "pedrog99",
+      "avatar_url": "https://avatars.githubusercontent.com/u/44478427?v=4",
+      "profile": "https://github.com/pedrog99",
+      "contributions": [
+        "ideas",
+        "infra",
+        "research"
+      ]
     }
   ],
   "contributorsPerLine": 7,

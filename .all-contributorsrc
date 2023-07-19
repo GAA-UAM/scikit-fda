@@ -8,7 +8,7 @@
   ],
   "imageSize": 100,
   "commit": true,
-  "commitConvention": "angular",
+  "commitConvention": "none",
   "contributors": [
     {
       "login": "",
@@ -204,10 +204,24 @@
     {
       "login": "",
       "name": "Sergio Ruiz Lozano",
-      "avatar_url": "",
-      "profile": "",
+      "avatar_url": "https://github.com/GAA-UAM/scikit-fda/blob/develop/docs/logos/logo_only/logo_only.png",
+      "profile": "https://es.linkedin.com/in/sergioruizlozano",
       "contributions": [
         "design"
+      ]
+    },
+    {
+      "login": "dSerna4",
+      "name": "dSerna4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/91683791?v=4",
+      "profile": "https://github.com/dSerna4",
+      "contributions": [
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "research",
+        "test"
       ]
     }
   ],

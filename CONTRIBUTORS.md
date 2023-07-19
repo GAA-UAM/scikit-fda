@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-15-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -26,7 +26,10 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/mellamansanchez"><img src="https://avatars.githubusercontent.com/u/38490771?v=4?s=100" width="100px;" alt="mellamansanchez"/><br /><sub><b>mellamansanchez</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Amellamansanchez" title="Bug reports">🐛</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=mellamansanchez" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=mellamansanchez" title="Documentation">📖</a> <a href="#example-mellamansanchez" title="Examples">💡</a> <a href="#ideas-mellamansanchez" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=mellamansanchez" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ElenaPetrunina"><img src="https://avatars.githubusercontent.com/u/61758794?v=4?s=100" width="100px;" alt="ElenaPetrunina"/><br /><sub><b>ElenaPetrunina</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=ElenaPetrunina" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=ElenaPetrunina" title="Documentation">📖</a> <a href="#example-ElenaPetrunina" title="Examples">💡</a> <a href="#ideas-ElenaPetrunina" title="Ideas, Planning, & Feedback">🤔</a> <a href="#research-ElenaPetrunina" title="Research">🔬</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=ElenaPetrunina" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://verso.mat.uam.es/web/index.php/es/directorio/26-pdef/266-rodriguez-ramirez-luis-alberto"><img src="https://verso.mat.uam.es/web/images/phocagallery/Retratos/thumbs/phoca_thumb_l_LAlbertoRodriguez.jpg?s=100" width="100px;" alt="Luis Alberto Rodriguez Ramirez"/><br /><sub><b>Luis Alberto Rodriguez Ramirez</b></sub></a><br /><a href="#ideas" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><img src="?s=100" width="100px;" alt="Sergio Ruiz Lozano"/><br /><sub><b>Sergio Ruiz Lozano</b></sub><br /><a href="#design" title="Design">🎨</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://es.linkedin.com/in/sergioruizlozano"><img src="https://github.com/GAA-UAM/scikit-fda/blob/develop/docs/logos/logo_only/logo_only.png?s=100" width="100px;" alt="Sergio Ruiz Lozano"/><br /><sub><b>Sergio Ruiz Lozano</b></sub></a><br /><a href="#design" title="Design">🎨</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/dSerna4"><img src="https://avatars.githubusercontent.com/u/91683791?v=4?s=100" width="100px;" alt="dSerna4"/><br /><sub><b>dSerna4</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=dSerna4" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=dSerna4" title="Documentation">📖</a> <a href="#example-dSerna4" title="Examples">💡</a> <a href="#ideas-dSerna4" title="Ideas, Planning, & Feedback">🤔</a> <a href="#research-dSerna4" title="Research">🔬</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=dSerna4" title="Tests">⚠️</a></td>
     </tr>
   </tbody>
   <tfoot>

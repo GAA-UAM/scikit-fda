@@ -18,7 +18,7 @@ from skfda.typing._numpy import NDArrayFloat
 
 ###############################################################################
 # The kernel corresponding to a Brownian Bridge process
-# :cite:p:`gutierrez++_1992_numerical` in the interval :math:`[0, 1]` is
+# :footcite:p:`gutierrez++_1992_numerical` in the interval :math:`[0, 1]` is
 #
 # .. math::
 #     k(s, t) = \min(s, t) - st
@@ -53,7 +53,7 @@ def brownian_bridge_covariance(
 
 
 ###############################################################################
-# The RKHS of this kernel :cite:p:`berlinet+thomas-agnan_2011_reproducing`
+# The RKHS of this kernel :footcite:p:`berlinet+thomas-agnan_2011_reproducing`
 # is the set of functions
 #
 # .. math::
@@ -113,7 +113,7 @@ FDataGrid(
 
 ###############################################################################
 # The inner product of two functions :math:`f, g` in this RKHS
-# :cite:p:`berlinet+thomas-agnan_2011_reproducing` is
+# :footcite:p:`berlinet+thomas-agnan_2011_reproducing` is
 #
 # .. math::
 #     \langle f, g \rangle = \int_0^1 f'(t) g'(t) dt.
@@ -207,4 +207,4 @@ errors_df.plot(
 
 ###############################################################################
 # **References:**
-#     .. bibliography::
+#     .. footbibliography::

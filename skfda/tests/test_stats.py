@@ -2,8 +2,17 @@ import unittest
 
 import numpy as np
 
-from skfda.datasets import fetch_phoneme, fetch_tecator, fetch_weather
-from skfda.exploratory.stats import geometric_median, modified_epigraph_index
+from skfda.datasets import (
+    fetch_phoneme,
+    fetch_tecator,
+    fetch_weather,
+    make_gaussian_process,
+)
+from skfda.exploratory.stats import (
+    geometric_median, modified_epigraph_index, std
+)
+from skfda.misc.covariances import Gaussian
+from skfda.representation.basis import FourierBasis
 
 
 class TestGeometricMedian(unittest.TestCase):
@@ -144,3 +153,57 @@ class TestMEI(unittest.TestCase):
             ]),
             rtol=1e-5,
         )
+
+
+class TestStd(unittest.TestCase):
+    """Test the standard deviation of fuctional data objects."""
+
+    def _test_std_gaussian_fourier(self, n_basis: int) -> None:
+        """
+        Test standard deviation using
+        a gaussian processes and a Fourier basis.
+        """
+        start = 0
+        stop = 1
+        n_features = 1000
+
+        gaussian_process = make_gaussian_process(
+            start=start,
+            stop=stop,
+            n_samples=100,
+            n_features=n_features,
+            mean=0.0,
+            cov=Gaussian(variance=1, length_scale=0.1),
+            random_state=0,
+        )
+        fourier_basis = FourierBasis(n_basis=n_basis, domain_range=(0, 1))
+        fd = gaussian_process.to_basis(fourier_basis)
+
+        std_fd = std(fd)
+        grid = np.linspace(start, stop, n_features)
+        almost_std_fd = std(fd.to_grid(grid)).to_basis(fourier_basis)
+
+        """
+        when measuring the closeness between std(fd) and the "expected" value,
+        we are a bit more lenient in the extremes of the domain; as the way of
+        projecting the std to the basis is different in each case.
+        """
+        inner_grid_limit = n_features // 10
+        inner_grid = grid[inner_grid_limit:-inner_grid_limit]
+        np.testing.assert_allclose(
+            std_fd(inner_grid),
+            almost_std_fd(inner_grid),
+            rtol=1e-3,
+        )
+
+        outer_grid = grid[:inner_grid_limit] + grid[-inner_grid_limit:]
+        np.testing.assert_allclose(
+            std_fd(outer_grid),
+            almost_std_fd(outer_grid),
+            rtol=1e-2,
+        )
+
+    def test_std(self) -> None:
+        """Test standard deviation."""
+
+        self._test_std_gaussian_fourier(61)

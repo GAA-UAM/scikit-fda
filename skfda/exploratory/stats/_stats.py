@@ -5,11 +5,12 @@ from builtins import isinstance
 from typing import Callable, TypeVar, Union
 
 import numpy as np
+import functools
 from scipy import integrate
 from scipy.stats import rankdata
 
 from ...misc.metrics._lp_distances import l2_distance
-from ...representation import FData, FDataGrid
+from ...representation import FData, FDataGrid, FDataBasis
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
@@ -76,7 +77,7 @@ def gmean(X: FDataGrid) -> FDataGrid:
 
 def cov(
     X: FData,
-    ddof: int = 1
+    ddof: int = 1,
 ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
     """
     Compute the covariance.
@@ -97,6 +98,64 @@ def cov(
 
     """
     return X.cov(ddof=ddof)
+
+
+@functools.singledispatch
+def std(X: F, ddof: int = 1) -> F:
+    r"""
+    Compute the standard deviation of all the samples in a FData object.
+
+    .. math::
+        \text{std}_X(t) = \sqrt{\frac{1}{N-\text{ddof}}
+        \sum_{n=1}^{N}{\left(X_n(t) - \overline{X}(t)\right)^2}}
+
+    Args:
+        X: Object containing all the samples whose standard deviation is
+            wanted.
+        ddof: Means "Delta Degrees of Freedom". The divisor used in
+            calculations is `N - ddof`, where `N` represents the number of
+            samples in `X`. By default ddof is 1.
+
+    Returns:
+        Standard deviation of all the samples in the original object, as a
+        :term:`functional data object` with just one sample.
+
+    """
+    raise NotImplementedError("Not implemented for this type")
+
+
+@std.register(FDataGrid)
+def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
+    return X.copy(
+        data_matrix=np.std(X.data_matrix, axis=0, ddof=ddof)[np.newaxis, ...],
+        sample_names=("standard deviation",),
+    )
+
+
+@std.register(FDataBasis)
+def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
+    from ...misc._math import functional_data_object_to_basis
+
+    if X.dim_domain != 1 or X.dim_codomain != 1:
+        raise NotImplementedError(
+            "Standard deviation only implemented "
+            "for univariate functions."
+        )
+
+    basis = X.basis
+    coeff_matrix = np.cov(X.coefficients, rowvar=False, ddof=ddof)
+
+    def std_function(t_points: NDArrayFloat) -> NDArrayFloat:
+        assert len(t_points) == 1, (
+            "Standard deviation function only implemented for "
+            "one-point-at-a-time evaluations."
+        )
+        basis_evaluation = basis(t_points).reshape((-1, 1))
+        return np.sqrt(
+            basis_evaluation.T @ coeff_matrix @ basis_evaluation
+        ).reshape((1, -1, 1))
+
+    return functional_data_object_to_basis(f=std_function, new_basis=X.basis)
 
 
 def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:

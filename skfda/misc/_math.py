@@ -677,3 +677,33 @@ def cosine_similarity_matrix(
     return _clip_cosine(
         inner_matrix / norm1[:, np.newaxis] / norm2[np.newaxis, :],
     )
+
+
+def functional_data_object_to_basis(
+    f: Callable[[NDArrayFloat], NDArrayFloat] | NDArrayFloat,
+    new_basis: Basis,
+) -> FDataBasis:
+    """Express a math function as a FDataBasis with a given basis.
+
+    Args:
+        f: math function.
+        new_basis: the basis of the output.
+
+    Returns:
+        FDataBasis: FDataBasis with calculated coefficients and the new
+        basis.
+    """
+    if isinstance(f, FDataBasis) and f.basis == new_basis:
+        return f
+
+    inner_prod = inner_product_matrix(
+        new_basis,
+        f,
+        _domain_range=new_basis.domain_range,
+    )
+
+    gram_matrix = new_basis.gram_matrix()
+
+    coefs = np.linalg.solve(gram_matrix, inner_prod)
+
+    return FDataBasis(new_basis, coefs.T)

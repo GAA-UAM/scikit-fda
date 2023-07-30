@@ -679,8 +679,8 @@ def cosine_similarity_matrix(
     )
 
 
-def functional_data_object_to_basis(
-    f: Callable[[NDArrayFloat], NDArrayFloat] | NDArrayFloat,
+def function_to_fdatabasis(
+    f: Callable[[NDArrayFloat], NDArrayFloat],
     new_basis: Basis,
 ) -> FDataBasis:
     """Express a math function as a FDataBasis with a given basis.

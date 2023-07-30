@@ -134,7 +134,7 @@ def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
 
 @std.register(FDataBasis)
 def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
-    from ...misc._math import functional_data_object_to_basis
+    from ...misc._math import function_to_fdatabasis
 
     if X.dim_domain != 1 or X.dim_codomain != 1:
         raise NotImplementedError(
@@ -155,7 +155,7 @@ def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
             basis_evaluation.T @ coeff_matrix @ basis_evaluation
         ).reshape((1, -1, 1))
 
-    return functional_data_object_to_basis(f=std_function, new_basis=X.basis)
+    return function_to_fdatabasis(f=std_function, new_basis=X.basis)
 
 
 def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:

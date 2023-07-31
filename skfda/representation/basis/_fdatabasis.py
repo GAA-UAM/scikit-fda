@@ -6,12 +6,14 @@ from builtins import isinstance
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Optional,
     Sequence,
     Type,
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import numpy as np
@@ -440,7 +442,11 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T, eval_points: Optional[NDArrayFloat] = None) -> T:
+    def var(
+        self: T,
+        eval_points: Optional[NDArrayFloat] = None,
+        ddof: int = 1,
+    ) -> T:
         """Compute the variance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
@@ -454,32 +460,75 @@ class FDataBasis(FData):  # noqa: WPS214
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
                 between 501 and 10 times the number of basis.
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number of
+                elements. By default `ddof` is 1.
 
         Returns:
             Variance of the original object.
 
         """
-        return self.to_grid(eval_points).var().to_basis(self.basis)
+        return self.to_grid(eval_points).var(ddof=ddof).to_basis(self.basis)
 
-    def cov(self, eval_points: Optional[NDArrayFloat] = None) -> FData:
+    @overload
+    def cov(  # noqa: WPS451
+        self: T,
+        s_points: NDArrayFloat,
+        t_points: NDArrayFloat,
+        /,
+        ddof: int = 1,
+    ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def cov(    # noqa: WPS451
+        self: T,
+        /,
+        ddof: int = 1,
+    ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
+        pass
+
+    def cov(  # noqa: WPS320, WPS451
+        self: T,
+        s_points: Optional[NDArrayFloat] = None,
+        t_points: Optional[NDArrayFloat] = None,
+        /,
+        ddof: int = 1,
+    ) -> Union[
+        Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
+        NDArrayFloat,
+    ]:
         """Compute the covariance of the functional data object.
 
-        A numerical approach its used. The object its transformed into its
-        discrete representation and then the covariance matrix is computed.
+        Calculates the unbiased sample covariance function of the data.
+        This is expected to be only defined for univariate functions.
+        This is a function defined over the basis consisting of the tensor
+        product of the original basis with itself. The resulting covariance
+        function is then represented as a callable object.
+
+        If s_points or t_points are not provided, this method returns
+        a callable object representing the covariance function.
+        If s_points and t_points are provided, this method returns the
+        evaluation of the covariance function at the grid formed by the
+        cartesian product of the points in s_points and t_points.
 
         Args:
-            eval_points: Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object. If none are passed it calls
-                numpy.linspace with bounds equal to the ones defined in
-                self.domain_range and the number of points the maximum
-                between 501 and 10 times the number of basis.
+            s_points: Points where the covariance function is evaluated.
+            t_points: Points where the covariance function is evaluated.
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number
+                of elements. By default `ddof` is 1.
 
         Returns:
-            Matrix of covariances.
+            Covariance function.
 
         """
-        return self.to_grid(eval_points).cov()
+        # To avoid circular imports
+        from ...misc.covariances import EmpiricalBasis
+        cov_function = EmpiricalBasis(self, ddof=ddof)
+        if s_points is None or t_points is None:
+            return cov_function
+        return cov_function(s_points, t_points)
 
     def to_grid(
         self,

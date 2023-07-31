@@ -14,12 +14,16 @@ _normal_getattr, __dir__, __all__ = lazy.attach(
     submod_attrs={
         "_fpca": ["FPCA"],
         "_fpls": ["FPLS"],
+        "_neighbor_transforms": ["KNeighborsTransformer"],
     },
 )
 
 if TYPE_CHECKING:
     from ._fpca import FPCA as FPCA
     from ._fpls import FPLS as FPLS
+    from ._neighbor_transforms import (
+        KNeighborsTransformer as KNeighborsTransformer,
+    )
 
 
 def __getattr__(name: str) -> Any:  # noqa: WPS413

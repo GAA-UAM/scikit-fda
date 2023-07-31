@@ -13,12 +13,14 @@ import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Optional,
     Sequence,
     Type,
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import findiff
@@ -580,8 +582,13 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T) -> T:
+    def var(self: T, ddof: int = 1) -> T:
         """Compute the variance of a set of samples in a FDataGrid object.
+
+        Args:
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number of
+                elements. By default `ddof` is 1.
 
         Returns:
             A FDataGrid object with just one sample representing the
@@ -589,48 +596,67 @@ class FDataGrid(FData):  # noqa: WPS214
 
         """
         return self.copy(
-            data_matrix=np.array([np.var(self.data_matrix, 0)]),
+            data_matrix=np.array([np.var(
+                self.data_matrix,
+                axis=0,
+                ddof=ddof,
+            )]),
             sample_names=("variance",),
         )
 
-    def cov(self: T) -> T:
+    @overload
+    def cov(  # noqa: WPS451
+        self: T,
+        s_points: NDArrayFloat,
+        t_points: NDArrayFloat,
+        /,
+        ddof: int = 1,
+    ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def cov(  # noqa: WPS451
+        self: T,
+        /,
+        ddof: int = 1,
+    ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
+        pass
+
+    def cov(  # noqa: WPS320, WPS451
+        self: T,
+        s_points: Optional[NDArrayFloat] = None,
+        t_points: Optional[NDArrayFloat] = None,
+        /,
+        ddof: int = 1,
+    ) -> Union[
+        Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
+        NDArrayFloat,
+    ]:
         """Compute the covariance.
 
         Calculates the covariance matrix representing the covariance of the
         functional samples at the observation points.
+        if s_points and t_points are both specified, this method returns the
+        covariance function evaluated at the grid points formed by the
+        cartesian product of s_points and t_points.
+
+        Args:
+            s_points: Grid points where the covariance function is evaluated.
+            t_points: Grid points where the covariance function is evaluated.
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number
+                of elements. By default `ddof` is 1.
 
         Returns:
             Covariance function.
 
         """
-        dataset_name = (
-            f"{self.dataset_name} - covariance"
-            if self.dataset_name is not None else None
-        )
-
-        if self.dim_domain != 1 or self.dim_codomain != 1:
-            raise NotImplementedError(
-                "Covariance only implemented "
-                "for univariate functions",
-            )
-
-        return self.copy(
-            data_matrix=np.cov(
-                self.data_matrix[..., 0],
-                rowvar=False,
-            )[np.newaxis, ...],
-            grid_points=[
-                self.grid_points[0],
-                self.grid_points[0],
-            ],
-            domain_range=[
-                self.domain_range[0],
-                self.domain_range[0],
-            ],
-            dataset_name=dataset_name,
-            argument_names=self.argument_names * 2,
-            sample_names=("covariance",),
-        )
+        # To avoid circular imports
+        from ..misc.covariances import EmpiricalGrid
+        cov_function = EmpiricalGrid(self, ddof=ddof)
+        if s_points is None or t_points is None:
+            return cov_function
+        return cov_function(s_points, t_points)
 
     def gmean(self: T) -> T:
         """Compute the geometric mean of all samples in the FDataGrid object.

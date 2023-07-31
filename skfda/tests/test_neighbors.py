@@ -6,6 +6,7 @@ from typing import Any, Sequence
 
 import numpy as np
 from sklearn.neighbors._base import KNeighborsMixin, RadiusNeighborsMixin
+from sklearn.pipeline import Pipeline
 
 from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
 from skfda.exploratory.outliers import LocalOutlierFactor  # Pending theory
@@ -16,6 +17,7 @@ from skfda.ml.classification import (
 )
 from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
+from skfda.preprocessing.dim_reduction import KNeighborsTransformer
 from skfda.representation import FDataBasis, FDataGrid
 from skfda.representation.basis import FourierBasis
 
@@ -85,6 +87,38 @@ class TestNeighbors(unittest.TestCase):
                 pred,
                 self.y,
                 err_msg=f'fail in {type(neigh)}',
+            )
+
+    def test_predict_classifier_transformer_knn(self) -> None:
+        """Tests equivalence between using the knn transformer or not."""
+        n_neighbors_list = range(1, 11, 2)
+
+        for n_neighbors in n_neighbors_list:
+            classifier = KNeighborsClassifier(n_neighbors=n_neighbors)
+            transformer_classifier = Pipeline([
+                (
+                    "transformer",
+                    KNeighborsTransformer(
+                        n_neighbors=max(n_neighbors_list),
+                        mode="distance",
+                    ),
+                ),
+                (
+                    "classifier",
+                    KNeighborsClassifier(
+                        n_neighbors=n_neighbors,
+                        metric="precomputed",
+                    ),
+                ),
+            ])
+
+            classifier.fit(self.X, self.y)
+            transformer_classifier.fit(self.X, self.y)
+            pred_classifier = classifier.predict(self.X)
+            pred_transformer = transformer_classifier.predict(self.X)
+            np.testing.assert_allclose(
+                pred_classifier,
+                pred_transformer,
             )
 
     def test_predict_proba_classifier(self) -> None:

@@ -41,7 +41,7 @@ class TestFPLSRegression(LatentVariablesModel):
         # Compare the results
         np.testing.assert_allclose(
             fplsr.coef_.flatten(),
-            sklearnpls.coef_.flatten(),
+            sklearnpls.coef_.T.flatten(),
             rtol=rtol,
             atol=atol,
         )

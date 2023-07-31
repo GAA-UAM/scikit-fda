@@ -262,6 +262,15 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
             loadings of the block.
         - loadings: The loadings of the block (same type as the data).
 
+    Example:
+        Fit a FPLS model with two components.
+        >>> from skfda.preprocessing.dim_reduction import FPLS
+        >>> from skfda.datasets import fetch_tecator
+        >>> from skfda.representation import FDataGrid
+        >>> from skfda.typing._numpy import NDArrayFloat
+        >>> X, y = fetch_tecator(return_X_y=True)
+        >>> fpls = FPLS[FDataGrid, NDArrayFloat](n_components=2)
+        >>> fpls = fpls.fit(X, y)
     """
 
     mean: BlockType

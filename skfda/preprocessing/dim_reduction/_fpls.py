@@ -262,8 +262,9 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
             loadings of the block.
         - loadings: The loadings of the block (same type as the data).
 
-    Example:
+    Examples:
         Fit a FPLS model with two components.
+
         >>> from skfda.preprocessing.dim_reduction import FPLS
         >>> from skfda.datasets import fetch_tecator
         >>> from skfda.representation import FDataGrid
@@ -271,6 +272,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
         >>> X, y = fetch_tecator(return_X_y=True)
         >>> fpls = FPLS[FDataGrid, NDArrayFloat](n_components=2)
         >>> fpls = fpls.fit(X, y)
+
     """
 
     mean: BlockType
@@ -709,8 +711,8 @@ class FPLS(  # noqa: WPS230
                 If None, only X is transformed.
 
         Returns:
-            x_scores: Data transformed.
-            y_scores: Data transformed (if y is not None)
+            - x_scores: Data transformed.
+            - y_scores: Data transformed (if y is not None)
         """
         check_is_fitted(self)
 
@@ -775,9 +777,10 @@ class FPLS(  # noqa: WPS230
                 as the number of components of the model.
 
         Returns:
-            X: Data reconstructed from the transformed data.
-            Y: Data reconstructed from the transformed data
+            - X: Data reconstructed from the transformed data.
+            - Y: Data reconstructed from the transformed data
                 (if Y is not None)
+
         """
         check_is_fitted(self)
 

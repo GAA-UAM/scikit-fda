@@ -58,3 +58,16 @@ regression is fitted using the coefficients of the functions in said basis.
    :toctree: autosummary
 
     skfda.ml.regression.FPCARegression
+
+FPLS regression
+-----------------
+This module includes the implementation of FPLS (Functional Partial Least Squares) 
+regression. This implementation accepts either functional or multivariate data as the regressor and the response.
+FPLS regression is performed by performing the FPLS dimensionality reduction algorithm 
+but using a regression deflation strategy.
+
+
+.. autosummary::
+   :toctree: autosummary
+
+    skfda.ml.regression.FPLSRegression

@@ -47,8 +47,9 @@ class FPLSRegression(
         coef\_: Coefficients of the linear model.
         fpls\_: FPLS object used to fit the model.
 
-    Example:
+    Examples:
         Fit a FPLS regression model with two components.
+
         >>> from skfda.ml.regression import FPLSRegression
         >>> from skfda.datasets import fetch_tecator
         >>> from skfda.representation import FDataGrid
@@ -56,6 +57,7 @@ class FPLSRegression(
         >>> X, y = fetch_tecator(return_X_y=True)
         >>> fpls = FPLSRegression[FDataGrid, NDArrayFloat](n_components=2)
         >>> fpls = fpls.fit(X, y)
+
     """
 
     def __init__(

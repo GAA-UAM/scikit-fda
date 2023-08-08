@@ -9,5 +9,6 @@ sphinx-gallery
 pillow
 setuptools>=41.2
 jupyter-sphinx
+myst-parser
 pytest
 sphinxcontrib-bibtex

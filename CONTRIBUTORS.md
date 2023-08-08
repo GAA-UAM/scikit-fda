@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-37-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-38-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -58,6 +58,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ll-portes"><img src="https://avatars.githubusercontent.com/u/20357023?v=4?s=100" width="100px;" alt="Leonardo L. Portes"/><br /><sub><b>Leonardo L. Portes</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3All-portes" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/architdatar"><img src="https://avatars.githubusercontent.com/u/18289402?v=4?s=100" width="100px;" alt="Archit Datar"/><br /><sub><b>Archit Datar</b></sub></a><br /><a href="#ideas-architdatar" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/adeyemi-lawal"><img src="https://avatars.githubusercontent.com/u/48803738?v=4?s=100" width="100px;" alt="adeyemi-lawal"/><br /><sub><b>adeyemi-lawal</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Aadeyemi-lawal" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

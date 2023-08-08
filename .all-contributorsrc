@@ -36,7 +36,10 @@
         "mentoring",
         "projectManagement",
         "research",
-        {"type": "talk", "url": "https://seio2022.confereasy.com/es/trabajos/2111/scikit-fda-analisis-de-datos-funcionales-en-python"}
+        {
+          "type": "talk",
+          "url": "https://seio2022.confereasy.com/es/trabajos/2111/scikit-fda-analisis-de-datos-funcionales-en-python"
+        }
       ]
     },
     {
@@ -382,6 +385,15 @@
         "code",
         "ideas",
         "research"
+      ]
+    },
+    {
+      "login": "yfche",
+      "name": "Yifeng",
+      "avatar_url": "https://avatars.githubusercontent.com/u/24327462?v=4",
+      "profile": "https://github.com/yfche",
+      "contributions": [
+        "bug"
       ]
     }
   ],

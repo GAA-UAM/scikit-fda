@@ -494,6 +494,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "valcarcexyz",
+      "name": "Diego Valcarce",
+      "avatar_url": "https://avatars.githubusercontent.com/u/47260541?v=4",
+      "profile": "https://valcarce.xyz/",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

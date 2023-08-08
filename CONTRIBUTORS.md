@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-41-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-42-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -62,6 +62,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/arezooorooji"><img src="https://avatars.githubusercontent.com/u/115200663?v=4?s=100" width="100px;" alt="arezooorooji"/><br /><sub><b>arezooorooji</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Aarezooorooji" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://cacheme.org/"><img src="https://avatars.githubusercontent.com/u/5269170?v=4?s=100" width="100px;" alt="Fran Navarro"/><br /><sub><b>Fran Navarro</b></sub></a><br /><a href="#ideas-franktoffel" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/fbarfi"><img src="https://avatars.githubusercontent.com/u/73955902?v=4?s=100" width="100px;" alt="fbarfi"/><br /><sub><b>fbarfi</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Afbarfi" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://valcarce.xyz/"><img src="https://avatars.githubusercontent.com/u/47260541?v=4?s=100" width="100px;" alt="Diego Valcarce"/><br /><sub><b>Diego Valcarce</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Avalcarcexyz" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

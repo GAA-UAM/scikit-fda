@@ -440,6 +440,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "ll-portes",
+      "name": "Leonardo L. Portes",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20357023?v=4",
+      "profile": "https://github.com/ll-portes",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

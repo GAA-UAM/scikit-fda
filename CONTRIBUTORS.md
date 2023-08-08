@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-43-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-44-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -66,6 +66,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/shappiron"><img src="https://avatars.githubusercontent.com/u/50598651?v=4?s=100" width="100px;" alt="Dmitrii Kriukov"/><br /><sub><b>Dmitrii Kriukov</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Ashappiron" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/NazZakiyeva"><img src="https://avatars.githubusercontent.com/u/86769542?v=4?s=100" width="100px;" alt="Nazgul Zakiyeva"/><br /><sub><b>Nazgul Zakiyeva</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3ANazZakiyeva" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

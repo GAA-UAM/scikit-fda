@@ -404,6 +404,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "JavierHernandezMontes",
+      "name": "JavierHernandezMontes",
+      "avatar_url": "https://avatars.githubusercontent.com/u/25748527?v=4",
+      "profile": "https://github.com/JavierHernandezMontes",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

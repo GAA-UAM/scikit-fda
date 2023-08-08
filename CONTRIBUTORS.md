@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-32-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-33-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -51,6 +51,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/yfche"><img src="https://avatars.githubusercontent.com/u/24327462?v=4?s=100" width="100px;" alt="Yifeng"/><br /><sub><b>Yifeng</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Ayfche" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/szhang0629"><img src="https://avatars.githubusercontent.com/u/36351460?v=4?s=100" width="100px;" alt="Shan Zhang"/><br /><sub><b>Shan Zhang</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Aszhang0629" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/JavierHernandezMontes"><img src="https://avatars.githubusercontent.com/u/25748527?v=4?s=100" width="100px;" alt="JavierHernandezMontes"/><br /><sub><b>JavierHernandezMontes</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3AJavierHernandezMontes" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jrash33"><img src="https://avatars.githubusercontent.com/u/46009245?v=4?s=100" width="100px;" alt="Joey Ashcroft"/><br /><sub><b>Joey Ashcroft</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Ajrash33" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

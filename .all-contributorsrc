@@ -531,6 +531,15 @@
       "contributions": [
         "ideas"
       ]
+    },
+    {
+      "login": "daviddavo",
+      "name": "David Davó",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10263941?v=4",
+      "profile": "https://ddavo.me/",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

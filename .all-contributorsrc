@@ -485,6 +485,15 @@
       "contributions": [
         "ideas"
       ]
+    },
+    {
+      "login": "fbarfi",
+      "name": "fbarfi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/73955902?v=4",
+      "profile": "https://github.com/fbarfi",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

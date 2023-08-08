@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-30-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-31-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -49,6 +49,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/pcuestas"><img src="https://avatars.githubusercontent.com/u/71875712?v=4?s=100" width="100px;" alt="pcuestas"/><br /><sub><b>pcuestas</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=pcuestas" title="Code">💻</a> <a href="#ideas-pcuestas" title="Ideas, Planning, & Feedback">🤔</a> <a href="#research-pcuestas" title="Research">🔬</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/yfche"><img src="https://avatars.githubusercontent.com/u/24327462?v=4?s=100" width="100px;" alt="Yifeng"/><br /><sub><b>Yifeng</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Ayfche" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/szhang0629"><img src="https://avatars.githubusercontent.com/u/36351460?v=4?s=100" width="100px;" alt="Shan Zhang"/><br /><sub><b>Shan Zhang</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Aszhang0629" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

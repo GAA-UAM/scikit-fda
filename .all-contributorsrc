@@ -395,6 +395,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "szhang0629",
+      "name": "Shan Zhang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/36351460?v=4",
+      "profile": "https://github.com/szhang0629",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

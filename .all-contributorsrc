@@ -431,6 +431,15 @@
       "contributions": [
         "ideas"
       ]
+    },
+    {
+      "login": "hovinh",
+      "name": "Ho Xuan Vinh",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7614509?v=4",
+      "profile": "https://github.com/hovinh",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

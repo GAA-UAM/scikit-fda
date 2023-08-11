@@ -1113,7 +1113,7 @@ class FDataGrid(FData):  # noqa: WPS214
             ib = np.searchsorted(grid_points, b, 'right')
             slice_list.append(slice(ia, ib))
         grid_points = [g[s] for g, s in zip(self.grid_points, slice_list)]
-        data_matrix = self.data_matrix[slice(None), *slice_list]
+        data_matrix = self.data_matrix[(slice(None),) + tuple(slice_list)]
 
         # Ensure that boundaries are in grid_points.
         if with_bounds:
@@ -1122,10 +1122,10 @@ class FDataGrid(FData):  # noqa: WPS214
                 dim_points = grid_points[dim]
                 grid_points[dim] = []
                 add_low, add_high = False, False
-                if a < g:
+                if a < dim_points[0]:
                     add_low = True
                     grid_points[dim].append(a)
-                if b > gb:
+                if b > dim_points[-1]:
                     add_high = True
                     grid_points[dim].append(b)
                 if not (add_low or add_high):
@@ -1142,19 +1142,19 @@ class FDataGrid(FData):  # noqa: WPS214
                 if add_low:
                     if add_high:
                         data_matrix = np.concatenate(
-                            (edge_values.take(0, dim),
+                            (edge_values.take([0], axis=dim+1),
                              data_matrix,
-                             edge_values.take(1, dim)),
-                            axis=dim)
+                             edge_values.take([1], axis=dim+1)),
+                            axis=dim+1)
                         dim_points = np.concatenate(([a], dim_points, [b]))
                     else:
                         data_matrix = np.concatenate(
-                            (edge_values, data_matrix), axis=dim)
+                            (edge_values, data_matrix), axis=dim+1)
                         dim_points = np.concatenate(([a], dim_points))
                 else:
                     if add_high:
                         data_matrix = np.concatenate(
-                            (data_matrix, edge_values), axis=dim)
+                            (data_matrix, edge_values), axis=dim+1)
                         dim_points = np.concatenate((dim_points, [b]))
                 grid_points[dim] = dim_points
 

@@ -1108,7 +1108,7 @@ class FDataGrid(FData):  # noqa: WPS214
         # Eliminate points outside the new range.
         index_list = []
         slice_list = []
-        for (a, b), grid_points in zip(domain_range,self.grid_points):
+        for (a, b), grid_points in zip(domain_range, self.grid_points):
             ia = np.searchsorted(grid_points, a)
             ib = np.searchsorted(grid_points, b, 'right')
             slice_list.append(slice(ia, ib))

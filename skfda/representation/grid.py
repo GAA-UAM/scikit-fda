@@ -1101,30 +1101,19 @@ class FDataGrid(FData):  # noqa: WPS214
             for ((a, b), (c, d)) in zip(domain_range, self.domain_range)
         )
 
-        index_list = []
-        new_grid_points = []
-
         # Eliminate points outside the new range.
-        for dr, grid_points in zip(
-            domain_range,
-            self.grid_points,
-        ):
-            keep_index = (
-                (dr[0] <= grid_points)
-                & (grid_points <= dr[1])
-            )
-
-            index_list.append(keep_index)
-
-            new_grid_points.append(
-                grid_points[keep_index],
-            )
-
-        data_matrix = self.data_matrix[(slice(None),) + tuple(index_list)]
+        index_list = []
+        slice_list = []
+        for (a, b), grid_points in zip(domain_range,self.grid_points):
+            ia = np.searchsorted(grid_points, a)
+            ib = np.searchsorted(grid_points, b, 'right')
+            slice_list.append(slice(ia, ib))
+        grid_points = [g[s] for g, s in zip(self.grid_points, slice_list)]
+        data_matrix = self.data_matrix[slice(None), *slice_list]
 
         return self.copy(
             domain_range=domain_range,
-            grid_points=new_grid_points,
+            grid_points=grid_points,
             data_matrix=data_matrix,
         )
 

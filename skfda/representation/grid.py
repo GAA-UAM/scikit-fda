@@ -1082,12 +1082,16 @@ class FDataGrid(FData):  # noqa: WPS214
     def restrict(
         self: T,
         domain_range: DomainRangeLike,
+        *,
+        with_bounds: bool = True,
     ) -> T:
         """
         Restrict the functions to a new domain range.
 
         Args:
             domain_range: New domain range.
+            with_bounds: Whether or not to ensure domain boundaries
+                appear in `grid_points`.
 
         Returns:
             Restricted function.
@@ -1110,6 +1114,49 @@ class FDataGrid(FData):  # noqa: WPS214
             slice_list.append(slice(ia, ib))
         grid_points = [g[s] for g, s in zip(self.grid_points, slice_list)]
         data_matrix = self.data_matrix[slice(None), *slice_list]
+
+        # Ensure that boundaries are in grid_points.
+        if with_bounds:
+            # Proceed dim by dim
+            for dim, (a, b) in enumerate(domain_range):
+                dim_points = grid_points[dim]
+                grid_points[dim] = []
+                add_low, add_high = False, False
+                if a < g:
+                    add_low = True
+                    grid_points[dim].append(a)
+                if b > gb:
+                    add_high = True
+                    grid_points[dim].append(b)
+                if not (add_low or add_high):
+                    grid_points[dim] = dim_points
+                    continue
+                # Interpolate on the edge.
+                eval_points = np.stack(
+                    np.meshgrid(*grid_points, indexing='ij'), axis=-1
+                )  # Shape (*map(len, grid_points), self.dim_domain)
+                eval_flat = eval_points.reshape(-1, self.dim_domain)
+                edge_values = self(eval_flat).reshape(
+                    len(self), *map(len, grid_points), self.dim_codomain)
+                # Add to self. Double if statement to only `insert` once.
+                if add_low:
+                    if add_high:
+                        data_matrix = np.concatenate(
+                            (edge_values.take(0, dim),
+                             data_matrix,
+                             edge_values.take(1, dim)),
+                            axis=dim)
+                        dim_points = np.concatenate(([a], dim_points, [b]))
+                    else:
+                        data_matrix = np.concatenate(
+                            (edge_values, data_matrix), axis=dim)
+                        dim_points = np.concatenate(([a], dim_points))
+                else:
+                    if add_high:
+                        data_matrix = np.concatenate(
+                            (data_matrix, edge_values), axis=dim)
+                        dim_points = np.concatenate((dim_points, [b]))
+                grid_points[dim] = dim_points
 
         return self.copy(
             domain_range=domain_range,

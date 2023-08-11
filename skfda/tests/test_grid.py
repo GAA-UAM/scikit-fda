@@ -337,6 +337,18 @@ class TestEvaluateFDataGrid(unittest.TestCase):
 
         np.testing.assert_allclose(res, expected)
 
+    def test_restrict(self) -> None:
+        """ Test FDataGrid.restrict with bounds. """
+        # Test 1 sample function R^3 -> R^5.
+        grid_points = ([0, 1], [0, 1, 2], [0, 1, 2, 3])
+        data_matrix = np.ones(1, 2, 3, 4, 5)
+        fd = FDataGrid(data_matrix, grid_points)
+        fd_restricted = fd.restrict(((0, 1), (.5, 1.5), (.5, 2)))
+        res = fd_restricted.grid_points
+        expected = ([0, 1], [.5, 1, 1.5], [.5, 1, 2])
+        for r, e in zip(res, expected):
+            np.testing.assert_array_equal(r, e)
+
 
 if __name__ == '__main__':
     unittest.main()

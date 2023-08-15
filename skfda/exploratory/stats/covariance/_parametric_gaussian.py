@@ -51,6 +51,7 @@ class ParametricGaussianCovariance(EmpiricalCovariance[FDataGrid]):
 
         regressor = GaussianProcessRegressor(kernel=cov)
         regressor.fit(grid_points, data_matrix.T)
+        self.cov_ = regressor.kernel_
 
         # TODO: Skip cov computation?
         # TODO: Use a user-public structure to represent the covariance,

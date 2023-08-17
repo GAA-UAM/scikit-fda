@@ -1083,7 +1083,7 @@ class FDataGrid(FData):  # noqa: WPS214
         self: T,
         domain_range: DomainRangeLike,
         *,
-        with_bounds: bool = True,
+        with_bounds: bool = False,
     ) -> T:
         """
         Restrict the functions to a new domain range.

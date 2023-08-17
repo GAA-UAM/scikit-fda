@@ -9,7 +9,9 @@ from skfda.datasets import (
     make_gaussian_process,
 )
 from skfda.exploratory.stats import (
-    geometric_median, modified_epigraph_index, std
+    geometric_median,
+    modified_epigraph_index,
+    std,
 )
 from skfda.misc.covariances import Gaussian
 from skfda.representation.basis import FourierBasis
@@ -160,8 +162,7 @@ class TestStd(unittest.TestCase):
 
     def _test_std_gaussian_fourier(self, n_basis: int) -> None:
         """
-        Test standard deviation using
-        a gaussian processes and a Fourier basis.
+        Test standard deviation using a gaussian processes and a Fourier basis.
         """
         start = 0
         stop = 1
@@ -183,11 +184,6 @@ class TestStd(unittest.TestCase):
         grid = np.linspace(start, stop, n_features)
         almost_std_fd = std(fd.to_grid(grid)).to_basis(fourier_basis)
 
-        """
-        when measuring the closeness between std(fd) and the "expected" value,
-        we are a bit more lenient in the extremes of the domain; as the way of
-        projecting the std to the basis is different in each case.
-        """
         inner_grid_limit = n_features // 10
         inner_grid = grid[inner_grid_limit:-inner_grid_limit]
         np.testing.assert_allclose(
@@ -205,5 +201,4 @@ class TestStd(unittest.TestCase):
 
     def test_std(self) -> None:
         """Test standard deviation."""
-
         self._test_std_gaussian_fourier(61)

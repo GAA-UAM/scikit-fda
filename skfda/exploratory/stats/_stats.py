@@ -4,13 +4,13 @@ from __future__ import annotations
 from builtins import isinstance
 from typing import Callable, TypeVar, Union
 
-import numpy as np
 import functools
+import numpy as np
 from scipy import integrate
 from scipy.stats import rankdata
 
 from ...misc.metrics._lp_distances import l2_distance
-from ...representation import FData, FDataGrid, FDataBasis
+from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
@@ -139,7 +139,7 @@ def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
     if X.dim_domain != 1 or X.dim_codomain != 1:
         raise NotImplementedError(
             "Standard deviation only implemented "
-            "for univariate functions."
+            "for univariate functions.",
         )
 
     basis = X.basis
@@ -152,7 +152,7 @@ def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
         )
         basis_evaluation = basis(t_points).reshape((-1, 1))
         return np.sqrt(
-            basis_evaluation.T @ coeff_matrix @ basis_evaluation
+            basis_evaluation.T @ coeff_matrix @ basis_evaluation,
         ).reshape((1, -1, 1))
 
     return function_to_fdatabasis(f=std_function, new_basis=X.basis)

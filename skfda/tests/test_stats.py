@@ -161,9 +161,7 @@ class TestStd(unittest.TestCase):
     """Test the standard deviation of fuctional data objects."""
 
     def _test_std_gaussian_fourier(self, n_basis: int) -> None:
-        """
-        Test standard deviation using a gaussian processes and a Fourier basis.
-        """
+        """Test standard deviation: gaussian processes and a Fourier basis."""
         start = 0
         stop = 1
         n_features = 1000

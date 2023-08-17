@@ -347,7 +347,9 @@
       "profile": "https://github.com/ego-thales",
       "contributions": [
         "doc",
-        "bug"
+        "bug",
+        "code",
+        "ideas"
       ]
     },
     {
@@ -543,5 +545,6 @@
     }
   ],
   "contributorsPerLine": 7,
-  "linkToUsage": true
+  "linkToUsage": true,
+  "commitType": "docs"
 }

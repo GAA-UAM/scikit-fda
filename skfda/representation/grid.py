@@ -1119,8 +1119,8 @@ class FDataGrid(FData):  # noqa: WPS214
             # Update `grid_points`
             for dim, (a, b) in enumerate(domain_range):
                 dim_points = grid_points[dim]
-                left = [a] * (a < dim_points[0])
-                right = [b] * (b > dim_points[-1])
+                left = [a] if a < dim_points[0] else []
+                right = [b] if b > dim_points[-1] else []
                 grid_points[dim] = np.concatenate((left, dim_points, right))
             # Evaluate
             data_matrix = self(grid_points, grid=True)

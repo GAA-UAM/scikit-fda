@@ -4,22 +4,19 @@ from __future__ import annotations
 import warnings
 from typing import Callable, Optional, TypeVar, Union
 
+import numpy as np
 from sklearn.utils.validation import check_is_fitted
 
-from ... import FDataGrid
-from ..._utils import (
-    _check_compatible_fdatagrid,
-    check_is_univariate,
-    invert_warping,
-    normalize_scale,
-)
+from ..._utils import invert_warping, normalize_scale
 from ...exploratory.stats import fisher_rao_karcher_mean
 from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
-from ...representation._typing import ArrayLike
+from ...misc.validation import check_fdata_dimensions, check_fdata_same_kind
+from ...representation import FDataGrid
 from ...representation.basis import Basis
 from ...representation.interpolation import SplineInterpolation
-from .base import InductiveRegistrationTransformer
+from ...typing._numpy import ArrayLike
+from ._base import InductiveRegistrationTransformer
 
 _MeanType = Callable[[FDataGrid], FDataGrid]
 SelfType = TypeVar("SelfType", bound="FisherRaoElasticRegistration")
@@ -45,13 +42,13 @@ class FisherRaoElasticRegistration(
 
     .. math::
         d_{\lambda}^2(f \circ \gamma, g) = \| SRSF(f \circ \gamma)
-        \sqrt{\dot{\gamma}} - SRSF(g)\|_{\mathbb{L}^2}^2 + \lambda
+        \sqrt{\gamma'} - SRSF(g)\|_{\mathbb{L}^2}^2 + \lambda
         \mathcal{R}(\gamma)
 
     In the implementation it is used as penalty term
 
     .. math::
-        \mathcal{R}(\gamma) = \|\sqrt{\dot{\gamma}}- 1 \|_{\mathbb{L}^2}^2
+        \mathcal{R}(\gamma) = \|\sqrt{\gamma'}- 1 \|_{\mathbb{L}^2}^2
 
     Wich restrict the amount of elasticity employed in the alignment.
 
@@ -63,7 +60,7 @@ class FisherRaoElasticRegistration(
     `elastic mean`, wich is the local minimum of the sum of squares of elastic
     distances. See :func:`~elastic_mean`.
 
-    In :footcite:`srivastava+klassen_2016_analysis_elastic` are described
+    In :footcite:`srivastava+klassen_2016_functionala` are described
     extensively the algorithms employed and the SRSF framework.
 
     Args:
@@ -117,6 +114,9 @@ class FisherRaoElasticRegistration(
 
     """
 
+    template_: FDataGrid
+    warping_: FDataGrid
+
     def __init__(
         self,
         *,
@@ -132,20 +132,21 @@ class FisherRaoElasticRegistration(
         self.grid_dim = grid_dim
         self.derivative_method = derivative_method
 
-    def fit(self: SelfType, X: FDataGrid, y: None = None) -> SelfType:
+    def fit(self: SelfType, X: FDataGrid, y: object = None) -> SelfType:
 
         # Points of discretization
-        if self.output_points is None:
-            self._output_points = X.grid_points[0]
-        else:
-            self._output_points = self.output_points
+        self._output_points = (
+            X.grid_points[0]
+            if self.output_points is None
+            else np.asarray(self.output_points)
+        )
 
         if isinstance(self.template, FDataGrid):
             self.template_ = self.template  # Template already constructed
         else:
             self.template_ = self.template(X)
 
-        _check_compatible_fdatagrid(X, self.template_)
+        check_fdata_same_kind(X, self.template_)
 
         # Constructs the SRSF of the template
         self._srsf = SRSF(
@@ -157,11 +158,15 @@ class FisherRaoElasticRegistration(
 
         return self
 
-    def transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
+    def transform(self, X: FDataGrid, y: object = None) -> FDataGrid:
 
         check_is_fitted(self)
-        check_is_univariate(X)
-        _check_compatible_fdatagrid(X, self.template_)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_same_kind(X, self.template_)
 
         if (
             len(self._template_srsf) != 1
@@ -177,10 +182,7 @@ class FisherRaoElasticRegistration(
         fdatagrid_srsf = self._srsf.fit_transform(X)
 
         # Points of discretization
-        if self.output_points is None:
-            output_points = fdatagrid_srsf.grid_points[0]
-        else:
-            output_points = self.output_points
+        output_points = self._output_points
 
         # Discretizacion in evaluation points
         q_data = fdatagrid_srsf(output_points)[..., 0]
@@ -222,7 +224,7 @@ class FisherRaoElasticRegistration(
 
         return X.compose(self.warping_, eval_points=output_points)
 
-    def inverse_transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
+    def inverse_transform(self, X: FDataGrid, y: object = None) -> FDataGrid:
         r"""
         Reverse the registration procedure previosly applied.
 

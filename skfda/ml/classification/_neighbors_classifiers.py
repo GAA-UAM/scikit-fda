@@ -1,72 +1,73 @@
 """Neighbor models for supervised classification."""
 
-from sklearn.base import ClassifierMixin
+from __future__ import annotations
+
+from typing import Sequence, TypeVar, Union, overload
+
 from sklearn.neighbors import (
     KNeighborsClassifier as _KNeighborsClassifier,
     RadiusNeighborsClassifier as _RadiusNeighborsClassifier,
 )
+from typing_extensions import Literal
 
-from .._neighbors_base import (
+from ..._utils._neighbors_base import (
+    AlgorithmType,
     KNeighborsMixin,
-    NeighborsBase,
     NeighborsClassifierMixin,
-    NeighborsMixin,
     RadiusNeighborsMixin,
+    WeightsType,
 )
+from ...misc.metrics import l2_distance
+from ...representation import FData
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayFloat, NDArrayInt
+
+InputBound = Union[NDArrayFloat, FData]
+Input = TypeVar("Input", contravariant=True, bound=InputBound)
+OutlierLabelType = Union[int, str, Sequence[int], Sequence[str], None]
 
 
 class KNeighborsClassifier(
-    NeighborsBase,
-    NeighborsMixin,
-    KNeighborsMixin,
-    ClassifierMixin,
-    NeighborsClassifierMixin,
+    KNeighborsMixin[Input, NDArrayInt],
+    NeighborsClassifierMixin[Input, NDArrayInt],
 ):
-    """Classifier implementing the k-nearest neighbors vote.
+    """
+    Classifier implementing the k-nearest neighbors vote.
 
     Parameters:
-        n_neighbors (int, default = 5):
-            Number of neighbors to use by default for :meth:`kneighbors`
-            queries.
-        weights (str or callable, default = 'uniform'):
-            Weight function used in prediction.
+        n_neighbors: Number of neighbors to use by default for
+            :meth:`kneighbors` queries.
+        weights: Weight function used in prediction.
             Possible values:
+
             - 'uniform': uniform weights. All points in each neighborhood
-            are weighted equally.
+              are weighted equally.
             - 'distance': weight points by the inverse of their distance.
-            in this case, closer neighbors of a query point will have a
-            greater influence than neighbors which are further away.
+              in this case, closer neighbors of a query point will have a
+              greater influence than neighbors which are further away.
             - [callable]: a user-defined function which accepts an
-            array of distances, and returns an array of the same shape
-            containing the weights.
-        algorithm (string, optional):
-            Algorithm used to compute the nearest neighbors:
+              array of distances, and returns an array of the same shape
+              containing the weights.
+
+        algorithm: Algorithm used to compute the nearest neighbors:
+
             - 'ball_tree' will use :class:`sklearn.neighbors.BallTree`.
             - 'brute' will use a brute-force search.
             - 'auto' will attempt to decide the most appropriate algorithm
-            based on the values passed to :meth:`fit` method.
-        leaf_size (int, default = 30):
-            Leaf size passed to BallTree or KDTree. This can affect the
+              based on the values passed to :meth:`fit` method.
+
+        leaf_size: Leaf size passed to BallTree or KDTree. This can affect the
             speed of the construction and query, as well as the memory
             required to store the tree. The optimal value depends on the
             nature of the problem.
-        metric (string or callable, default
-            :func:`l2_distance <skfda.misc.metrics.l2_distance>`):
-            the distance metric to use for the tree. The default metric is
+        metric: The distance metric to use for the tree. The default metric is
             the L2 distance. See the documentation of the metrics module
             for a list of available metrics.
-        metric_params (dict, optional):
-            Additional keyword arguments for the metric function.
-        n_jobs (int or None, optional):
-            The number of parallel jobs to run for neighbors search.
+        n_jobs: The number of parallel jobs to run for neighbors search.
             ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
             context.
             ``-1`` means using all processors.
             Doesn't affect :meth:`fit` method.
-        multivariate_metric (boolean, default = False):
-            Indicates if the metric used is a sklearn distance between vectors
-            (see :class:`~sklearn.neighbors.DistanceMetric`) or a functional
-            metric of the module `skfda.misc.metrics` if ``False``.
 
     Examples:
         Firstly, we will create a toy dataset with 2 classes
@@ -118,125 +119,120 @@ class KNeighborsClassifier(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
     """
 
+    @overload
+    def __init__(
+        self: KNeighborsClassifier[NDArrayFloat],
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"],
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self: KNeighborsClassifier[InputBound],
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
     def __init__(
         self,
-        n_neighbors=5,
-        weights='uniform',
-        algorithm='auto',
-        leaf_size=30,
-        metric='l2',
-        metric_params=None,
-        n_jobs=1,
-        multivariate_metric=False,
-    ):
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Metric[Input] = l2_distance,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    # Not useless, it restricts parameters
+    def __init__(  # noqa: WPS612
+        self,
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"] | Metric[Input] = l2_distance,
+        n_jobs: int | None = None,
+    ) -> None:
         super().__init__(
             n_neighbors=n_neighbors,
             weights=weights,
             algorithm=algorithm,
             leaf_size=leaf_size,
             metric=metric,
-            metric_params=metric_params,
             n_jobs=n_jobs,
-            multivariate_metric=multivariate_metric,
         )
 
-    def predict_proba(self, X):
-        """Calculate probability estimates for the test data X.
+    def _init_estimator(self) -> _KNeighborsClassifier:
 
-        Args:
-            X (:class:`FDataGrid` or array-like): FDataGrid with the test
-                samples or array (n_query, n_indexed) if metric ==
-                'precomputed'.
-
-        Returns:
-            p (array of shape = (n_samples, n_classes), or a list of n_outputs
-                of such arrays if n_outputs > 1):
-                The class probabilities of the input samples. Classes are
-                ordered by lexicographic order.
-        """
-        self._check_is_fitted()
-
-        X = self._transform_to_multivariate(X)
-
-        return self.estimator_.predict_proba(X)
-
-    def _init_estimator(self, sklearn_metric):
-        """Initialize the sklearn K neighbors estimator.
-
-        Args:
-            sklearn_metric (pyfunc or 'precomputed'): Metric compatible with
-                sklearn API or matrix (n_samples, n_samples) with precomputed
-                distances.
-
-        Returns:
-            Sklearn K Neighbors estimator initialized.
-        """
         return _KNeighborsClassifier(
             n_neighbors=self.n_neighbors,
             weights=self.weights,
             algorithm=self.algorithm,
             leaf_size=self.leaf_size,
-            metric=sklearn_metric,
-            metric_params=self.metric_params,
+            metric="precomputed",
             n_jobs=self.n_jobs,
         )
 
 
 class RadiusNeighborsClassifier(
-    NeighborsBase,
-    NeighborsMixin,
-    RadiusNeighborsMixin,
-    ClassifierMixin,
-    NeighborsClassifierMixin,
+    RadiusNeighborsMixin[Input, NDArrayInt],
+    NeighborsClassifierMixin[Input, NDArrayInt],
 ):
-    """Classifier implementing a vote among neighbors within a given radius.
+    """
+    Classifier implementing a vote among neighbors within a given radius.
 
     Parameters:
-        radius (float, default = 1.0):
-            Range of parameter space to use by default for
+        radius: Range of parameter space to use by default for
             :meth:`radius_neighbors` queries.
-        weights (str or callable, default = 'uniform'):
-            Weight function used in prediction.
+        weights: Weight function used in prediction.
             Possible values:
+
             - 'uniform': uniform weights. All points in each neighborhood
-            are weighted equally.
+                are weighted equally.
             - 'distance': weight points by the inverse of their distance.
-            in this case, closer neighbors of a query point will have a
-            greater influence than neighbors which are further away.
+                in this case, closer neighbors of a query point will have a
+                greater influence than neighbors which are further away.
             - [callable]: a user-defined function which accepts an
-            array of distances, and returns an array of the same shape
-            containing the weights.
-        algorithm (string, optional):
-            Algorithm used to compute the nearest neighbors:
+                array of distances, and returns an array of the same shape
+                containing the weights.
+
+        algorithm: Algorithm used to compute the nearest neighbors:
+
             - 'ball_tree' will use :class:`sklearn.neighbors.BallTree`.
             - 'brute' will use a brute-force search.
-            - 'auto' will attempt to decide the most appropriate algorithm
-            based on the values passed to :meth:`fit` method.
-        leaf_size (int, default = 30):
-            Leaf size passed to BallTree or KDTree. This can affect the
+            - 'auto' will attempt to decide the most appropriate algorithm.
+                based on the values passed to :meth:`fit` method.
+
+        leaf_size: Leaf size passed to BallTree or KDTree. This can affect the
             speed of the construction and query, as well as the memory
             required to store the tree. The optimal value depends on the
             nature of the problem.
-        metric (string or callable, default
-            :func:`l2_distance <skfda.misc.metrics.l2_distance>`):
-            the distance metric to use for the tree. The default metric is
+        metric: The distance metric to use for the tree. The default metric is
             the L2 distance. See the documentation of the metrics module
             for a list of available metrics.
-        outlier_label (int, optional):
+        outlier_label:
             Label, which is given for outlier samples (samples with no
             neighbors on given radius).
             If set to None, ValueError is raised, when outlier is detected.
-        metric_params (dict, optional):
-            Additional keyword arguments for the metric function.
-        n_jobs (int or None, optional):
-            The number of parallel jobs to run for neighbors search.
+        n_jobs: The number of parallel jobs to run for neighbors search.
             ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
             context.
             ``-1`` means using all processors.
-        multivariate_metric (boolean, default = False):
-            Indicates if the metric used is a sklearn distance between vectors
-            (see :class:`~sklearn.neighbors.DistanceMetric`) or a functional
-            metric of the module `skfda.misc.metrics` if ``False``.
 
     Examples:
         Firstly, we will create a toy dataset with 2 classes.
@@ -277,49 +273,76 @@ class RadiusNeighborsClassifier(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
     """
 
+    @overload
+    def __init__(
+        self: RadiusNeighborsClassifier[NDArrayFloat],
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"],
+        outlier_label: OutlierLabelType = None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self: RadiusNeighborsClassifier[InputBound],
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        outlier_label: OutlierLabelType = None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
     def __init__(
         self,
-        radius=1.0,
-        weights='uniform',
-        algorithm='auto',
-        leaf_size=30,
-        metric='l2',
-        metric_params=None,
-        outlier_label=None,
-        n_jobs=1,
-        multivariate_metric=False,
-    ):
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Metric[Input] = l2_distance,
+        outlier_label: OutlierLabelType = None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    def __init__(
+        self,
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"] | Metric[Input] = l2_distance,
+        outlier_label: OutlierLabelType = None,
+        n_jobs: int | None = None,
+    ) -> None:
         super().__init__(
             radius=radius,
             weights=weights,
             algorithm=algorithm,
             leaf_size=leaf_size,
             metric=metric,
-            metric_params=metric_params,
             n_jobs=n_jobs,
-            multivariate_metric=multivariate_metric,
         )
 
         self.outlier_label = outlier_label
 
-    def _init_estimator(self, sklearn_metric):
-        """Initialize the sklearn radius neighbors estimator.
-
-        Args:
-            sklearn_metric (pyfunc or 'precomputed'): Metric compatible with
-                sklearn API or matrix (n_samples, n_samples) with precomputed
-                distances.
-
-        Returns:
-            Sklearn Radius Neighbors estimator initialized.
-        """
+    def _init_estimator(self) -> _RadiusNeighborsClassifier:
         return _RadiusNeighborsClassifier(
             radius=self.radius,
             weights=self.weights,
             algorithm=self.algorithm,
             leaf_size=self.leaf_size,
-            metric=sklearn_metric,
-            metric_params=self.metric_params,
+            metric="precomputed",
             outlier_label=self.outlier_label,
             n_jobs=self.n_jobs,
         )

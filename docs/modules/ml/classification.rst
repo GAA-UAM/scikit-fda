@@ -43,9 +43,9 @@ This module contains depth based estimators to perform classification.
 .. autosummary::
    :toctree: autosummary
 
+   skfda.ml.classification.MaximumDepthClassifier
    skfda.ml.classification.DDClassifier
    skfda.ml.classification.DDGClassifier
-   skfda.ml.classification.MaximumDepthClassifier
    
 Logistic regression
 -----------------------
@@ -55,3 +55,12 @@ Classifier based on logistic regression.
    :toctree: autosummary
 
    skfda.ml.classification.LogisticRegression
+
+Functional quadratic discriminant analysis
+------------------------------------------
+Classifier based on the quadratic discriminant analysis.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.ml.classification.QuadraticDiscriminantAnalysis

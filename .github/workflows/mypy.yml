@@ -9,12 +9,11 @@ jobs:
     name: Mypy
     steps:
     - uses: actions/checkout@v2
-    - uses: tsuyoshicho/action-mypy@v1
+    - uses: tsuyoshicho/action-mypy@v3
       with:
         github_token: ${{ secrets.github_token }}
-        # Change reviewdog reporter if you need [github-pr-check,github-check,github-pr-review].
         reporter: github-pr-review
-        # Change reporter level if you need.
-        # GitHub Status Check won't become failure with warning.
-        level: warning
+        # The action will output fail if there are mypy errors
+        level: error
+        setup_command: pip install -r requirements.txt pytest mypy
         mypy_flags: ''

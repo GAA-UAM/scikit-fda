@@ -7,14 +7,19 @@ import numpy.linalg as linalg
 import sklearn.utils.validation
 
 from ...._utils import _classifier_get_classes
+from ...._utils._sklearn_adapter import (
+    BaseEstimator,
+    InductiveTransformerMixin,
+)
 from ....representation import FDataGrid
+from ....typing._numpy import NDArrayFloat, NDArrayInt
 
 
 def _rkhs_vs(
-    X: np.ndarray,
-    Y: np.ndarray,
+    X: NDArrayFloat,
+    Y: NDArrayInt,
     n_features_to_select: int = 1,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[NDArrayInt, NDArrayFloat]:
     """
     RKHS-VS implementation.
 
@@ -97,8 +102,8 @@ def _rkhs_vs(
 
 
 class RKHSVariableSelection(
-    sklearn.base.BaseEstimator,  # type: ignore
-    sklearn.base.TransformerMixin,  # type: ignore
+    BaseEstimator,
+    InductiveTransformerMixin[FDataGrid, NDArrayFloat, NDArrayInt],
 ):
     r"""
     Reproducing kernel variable selection.
@@ -128,7 +133,7 @@ class RKHSVariableSelection(
     misclassification error of all the classification problems with the
     reduced dimensionality. For a longer discussion about the optimality and
     consistence of this method, we refer the reader to the original
-    article [1]_.
+    article :footcite:`berrendero++_2018_use`.
 
     In practice the points are selected one at a time, using
     a greedy approach, so this optimality is not always guaranteed.
@@ -146,7 +151,7 @@ class RKHSVariableSelection(
         other with a peak-like mean. Both have Brownian covariance.
 
         >>> n_samples = 10000
-        >>> n_features = 1000
+        >>> n_features = 200
         >>>
         >>> def mean_1(t):
         ...     return (np.abs(t - 0.25)
@@ -179,26 +184,22 @@ class RKHSVariableSelection(
 
         >>> X_dimred = rkvs.transform(X)
         >>> len(X.grid_points[0])
-        1000
+        200
         >>> X_dimred.shape
         (10000, 3)
 
     References:
-        .. [1] J. R. Berrendero, A. Cuevas, and J. L. Torrecilla, «On the Use
-               of Reproducing Kernel Hilbert Spaces in Functional
-               Classification», Journal of the American Statistical
-               Association, vol. 113, no. 523, pp. 1210-1218, jul. 2018,
-               doi: 10.1080/01621459.2017.1320287.
+        .. footbibliography::
 
     """
 
     def __init__(self, n_features_to_select: int = 1) -> None:
         self.n_features_to_select = n_features_to_select
 
-    def fit(  # noqa: D102
+    def fit(  # type: ignore[override] # noqa: D102
         self,
         X: FDataGrid,
-        y: np.ndarray,
+        y: NDArrayInt,
     ) -> RKHSVariableSelection:
 
         n_unique_labels = len(np.unique(y))
@@ -231,7 +232,7 @@ class RKHSVariableSelection(
         self,
         X: FDataGrid,
         Y: None = None,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         sklearn.utils.validation.check_is_fitted(self)
 
@@ -243,9 +244,9 @@ class RKHSVariableSelection(
                 "points than the ones fitted",
             )
 
-        return X_matrix[:, self._features_]
+        return X_matrix[:, self._features_]  # type: ignore[no-any-return]
 
-    def get_support(self, indices: bool = False) -> np.ndarray:
+    def get_support(self, indices: bool = False) -> NDArrayInt:
         """
         Get a mask, or integer index, of the features selected.
 

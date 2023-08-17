@@ -1,3 +1,68 @@
+[project]
+name = "scikit-fda"
+description = "Functional Data Analysis Python package."
+readme = "README.rst"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = [
+	"functional data",
+	"statistics",
+	"machine learning",
+]
+maintainers = [
+  {name = "Carlos Ramos Carreño", email = "vnmabus@gmail.com"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+dynamic = ["version"]
+
+dependencies = [
+	"dcor",
+	"fdasrsf>=2.2.0",
+	"findiff",
+	"lazy_loader",
+	"matplotlib",
+	"multimethod>=1.5",
+	"numpy>=1.16",
+	"pandas>=1.0",
+	"rdata",
+	"scikit-datasets[cran]>=0.1.24",
+	"scikit-learn>=0.20",
+	"scipy>=1.3.0",
+	"typing-extensions",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest-env",
+  "pytest-subtests",
+  "scipy<1.11.0",
+]
+
+[project.urls]
+homepage = "https://github.com/GAA-UAM/scikit-fda"
+documentation = "https://fda.readthedocs.io"
+repository = "https://github.com/GAA-UAM/scikit-fda"
+
 [build-system]
-# Minimum requirements for the build system to execute.
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["skfda*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "skfda.__version__"}

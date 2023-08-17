@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.7', '3.8']
+        python-version: ['3.8', '3.9']
 
     steps:
     - uses: actions/checkout@v2
@@ -23,14 +23,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov;
+        pip3 install pytest-cov || pip3 install --user pytest-cov;
 
     - name: Run tests
       run: |
         pip3 debug --verbose .
-        pip3 install numba==0.53
-        pip3 install --upgrade-strategy eager -v .
-        coverage run --source=skfda/ setup.py test;
+        pip3 install numba
+        pip3 install ".[test]"
+        pytest --cov=skfda/ --cov-report=xml
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3

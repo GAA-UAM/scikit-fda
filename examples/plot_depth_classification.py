@@ -30,8 +30,7 @@ from skfda.ml.classification import (
     DDGClassifier,
     MaximumDepthClassifier,
 )
-from skfda.preprocessing.dim_reduction.feature_extraction import DDGTransformer
-from skfda.representation.grid import FDataGrid
+from skfda.preprocessing.feature_construction import PerClassTransformer
 
 ##############################################################################
 # The Berkeley Growth Study data contains the heights of 39 boys and 54 girls
@@ -185,8 +184,8 @@ DDPlot(
 # :class:`~skfda.ml.classification.DDClassifier` used with
 # :class:`~sklearn.neighbors.KNeighborsClassifier`.
 clf = DDGClassifier(
-    KNeighborsClassifier(n_neighbors=5),
     depth_method=ModifiedBandDepth(),
+    multivariate_classifier=KNeighborsClassifier(n_neighbors=5),
 )
 clf.fit(X_train, y_train)
 print(clf.predict(X_test))
@@ -210,10 +209,9 @@ print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))
 # | NearestClass | DDGClassifier with nearest neighbors |
 # +--------------+--------------------------------------+
 
-ddg: DDGTransformer[FDataGrid] = DDGTransformer(
-    depth_method=ModifiedBandDepth(),
-)
-X_train_trans = ddg.fit_transform(X_train, y_train)
+pct = PerClassTransformer(ModifiedBandDepth(), array_output=True)
+X_train_trans = pct.fit_transform(X_train, y_train)
+X_train_trans = X_train_trans.reshape(len(categories), X_train.shape[0]).T
 
 clf = KNeighborsClassifier(n_neighbors=5)
 clf.fit(X_train_trans, y_train)
@@ -261,13 +259,13 @@ DDPlot(
 # Next, we will use :class:`~skfda.ml.classification.DDGClassifier` together
 # with a neural network: :class:`~sklearn.neural_network.MLPClassifier`.
 clf = DDGClassifier(
-    MLPClassifier(
+    depth_method=ModifiedBandDepth(),
+    multivariate_classifier=MLPClassifier(
         solver='lbfgs',
         alpha=1e-5,
         hidden_layer_sizes=(6, 2),
         random_state=1,
     ),
-    depth_method=ModifiedBandDepth(),
 )
 clf.fit(X_train, y_train)
 print(clf.predict(X_test))

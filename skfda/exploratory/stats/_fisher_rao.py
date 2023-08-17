@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import scipy.integrate
 from fdasrsf.utility_functions import optimum_reparam
 
-from ..._utils import check_is_univariate, invert_warping, normalize_scale
+from ..._utils import invert_warping, normalize_scale
 from ...misc.operators import SRSF
+from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat
 from ...representation.interpolation import SplineInterpolation
+from ...typing._numpy import NDArrayFloat
 
 ###############################################################################
 # Based on the original implementation of J. Derek Tucker in                  #
@@ -45,7 +46,7 @@ def _elastic_alignment_array(
         the functions aligned to the template(s).
 
     """
-    return optimum_reparam(
+    return optimum_reparam(  # type: ignore[no-any-return]
         np.ascontiguousarray(template_data.T),
         np.ascontiguousarray(eval_points),
         np.ascontiguousarray(q_data.T),
@@ -72,7 +73,7 @@ def _fisher_rao_warping_mean(
 
     The karcher mean :math:`\bar \gamma` is defined as the warping that
     minimises locally the sum of Fisher-Rao squared distances
-    :footcite:`srivastava+klassen_2016_analysis_orbit`.
+    :footcite:`srivastava+klassen_2016_statistical`.
 
     .. math::
         \bar \gamma = argmin_{\gamma \in \Gamma} \sum_{i=1}^{n}
@@ -80,7 +81,7 @@ def _fisher_rao_warping_mean(
 
     The computation is performed using the structure of Hilbert Sphere obtained
     after a transformation of the warpings, see
-    :footcite:`srivastava++_2011_ficher-rao_orbit`.
+    :footcite:`srivastava++_2011_registration`.
 
     Args:
         warping: Set of warpings.
@@ -186,7 +187,7 @@ def fisher_rao_karcher_mean(
     center: bool = True,
     max_iter: int = 20,
     tol: float = 1e-3,
-    initial: Optional[float] = None,
+    initial: float | None = None,
     grid_dim: int = 7,
     **kwargs: Any,
 ) -> FDataGrid:
@@ -210,8 +211,8 @@ def fisher_rao_karcher_mean(
     equivalence class which makes the mean of the warpings employed be the
     identity.
 
-    See :footcite:`srivastava+klassen_2016_analysis_karcher` and
-    :footcite:`srivastava++_2011_ficher-rao_karcher`.
+    See :footcite:`srivastava+klassen_2016_statistical` and
+    :footcite:`srivastava++_2011_registration`.
 
     Args:
         fdatagrid: Set of functions to compute the
@@ -239,7 +240,11 @@ def fisher_rao_karcher_mean(
         .. footbibliography::
 
     """
-    check_is_univariate(fdatagrid)
+    check_fdata_dimensions(
+        fdatagrid,
+        dim_domain=1,
+        dim_codomain=1,
+    )
 
     srsf_transformer = SRSF(initial_value=0)
     fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)

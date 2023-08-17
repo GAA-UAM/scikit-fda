@@ -10,9 +10,10 @@ from typing import Any, Callable, Optional, Sequence, Union
 import numpy as np
 
 from ...representation import FData, FDataGrid
-from ...representation._typing import ArrayLike, GridPointsLike, NDArrayFloat
 from ...representation.extrapolation import ExtrapolationLike
 from ...representation.interpolation import SplineInterpolation
+from ...typing._base import GridPointsLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 _FixedLocation = Union[float, Sequence[float]]
 _LocationCallable = Callable[[np.ndarray], _FixedLocation]
@@ -202,7 +203,7 @@ def landmark_elastic_registration_warping(
         :math:`h_i(t^*_j)=t_{ij}`.
         The registered samples can be obtained as :math:`x^*_i(t)=x_i(h_i(t))`.
 
-        See :footcite:`ramsay+silverman_2005_functional_landmark`
+        See :footcite:`ramsay+silverman_2005_registration`
         for a detailed explanation.
 
     Args:
@@ -343,7 +344,7 @@ def landmark_elastic_registration(
     The registered samples will have their features aligned, i.e.,
     :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
 
-    See :footcite:`ramsay+silverman_2005_functional_landmark`
+    See :footcite:`ramsay+silverman_2005_registration`
     for a detailed explanation.
 
     Args:
@@ -370,7 +371,7 @@ def landmark_elastic_registration(
         >>> from skfda.preprocessing.registration import (
         ...     landmark_elastic_registration,
         ... )
-        >>> from skfda.representation.basis import BSpline
+        >>> from skfda.representation.basis import BSplineBasis
 
         We will create a data with landmarks as example
 
@@ -387,7 +388,7 @@ def landmark_elastic_registration(
 
         This method will work for FDataBasis as for FDataGrids
 
-        >>> fd = fd.to_basis(BSpline(n_basis=12))
+        >>> fd = fd.to_basis(BSplineBasis(n_basis=12))
         >>> landmark_elastic_registration(fd, landmarks)
         FDataGrid(...)
 

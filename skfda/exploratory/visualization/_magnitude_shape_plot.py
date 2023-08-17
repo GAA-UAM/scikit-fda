@@ -7,7 +7,7 @@ detection method is implemented.
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Sequence
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -18,8 +18,8 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from matplotlib.patches import Ellipse
 
-from ... import FDataGrid
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...representation import FDataGrid
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ..depth import Depth
 from ..outliers import MSPlotOutlierDetector
 from ._baseplot import BasePlot
@@ -41,7 +41,7 @@ class MagnitudeShapePlot(BasePlot):
     The outliers are detected using an instance of
     :class:`MSPlotOutlierDetector`.
 
-    For more information see :footcite:ts:`dai+genton_2018_visualization`.
+    For more information see :footcite:ts:`dai+genton_2018_multivariate`.
 
     Args:
         fdata: Object containing the data.
@@ -155,7 +155,7 @@ class MagnitudeShapePlot(BasePlot):
             outliercol=0.8,
             xlabel='MO',
             ylabel='VO',
-            title='MS-Plot')
+            title='')
 
     References:
         .. footbibliography::
@@ -165,10 +165,10 @@ class MagnitudeShapePlot(BasePlot):
     def __init__(
         self,
         fdata: FDataGrid,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
+        fig: Figure | None = None,
+        axes: Sequence[Axes] | None = None,
         ellipsoid: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -198,18 +198,20 @@ class MagnitudeShapePlot(BasePlot):
         self._outliercol = 0.8
         self.xlabel = 'MO'
         self.ylabel = 'VO'
-        self.title = 'MS-Plot'
+        self.title = (
+            "" if self.fdata.dataset_name is None else self.fdata.dataset_name
+        )
 
     @property
     def fdata(self) -> FDataGrid:
         return self._fdata
 
     @property
-    def multivariate_depth(self) -> Optional[Depth[NDArrayFloat]]:
+    def multivariate_depth(self) -> Depth[NDArrayFloat] | None:
         return self.outlier_detector.multivariate_depth
 
     @property
-    def pointwise_weights(self) -> Optional[NDArrayFloat]:
+    def pointwise_weights(self) -> NDArrayFloat | None:
         return self.outlier_detector.pointwise_weights
 
     @property
@@ -222,7 +224,7 @@ class MagnitudeShapePlot(BasePlot):
 
     @property
     def outliers(self) -> NDArrayInt:
-        return self._outliers
+        return self._outliers  # type: ignore[no-any-return]
 
     @property
     def colormap(self) -> Colormap:

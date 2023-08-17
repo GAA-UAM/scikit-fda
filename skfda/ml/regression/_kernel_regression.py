@@ -1,20 +1,23 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import TypeVar, Union
 
-import numpy as np
-from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
+from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
 from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
 from ...misc.metrics import PairwiseMetric, l2_distance
-from ...misc.metrics._typing import Metric
 from ...representation._functional_data import FData
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayFloat
+
+Input = TypeVar("Input", bound=Union[NDArrayFloat, FData], contravariant=True)
+Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])
 
 
 class KernelRegression(
     BaseEstimator,
-    RegressorMixin,
+    RegressorMixin[Input, Prediction],
 ):
     r"""Kernel regression with scalar response.
 
@@ -38,6 +41,7 @@ class KernelRegression(
             (default = :func:`L2 distance <skfda.misc.metrics.distance_l2>`).
 
     Examples:
+        >>> import numpy as np
         >>> from skfda import FDataGrid
         >>> from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
         >>> from skfda.misc.hat_matrix import KNeighborsHatMatrix
@@ -67,8 +71,8 @@ class KernelRegression(
     def __init__(
         self,
         *,
-        kernel_estimator: Optional[HatMatrix] = None,
-        metric: Metric[FData] = l2_distance,
+        kernel_estimator: HatMatrix | None = None,
+        metric: Metric[Input] = l2_distance,
     ):
 
         self.kernel_estimator = kernel_estimator
@@ -76,29 +80,32 @@ class KernelRegression(
 
     def fit(  # noqa: D102
         self,
-        X: FData,
-        y: np.ndarray,
-        weight: Optional[np.ndarray] = None,
-    ) -> KernelRegression:
+        X: Input,
+        y: Prediction,
+        weight: NDArrayFloat | None = None,
+    ) -> KernelRegression[Input, Prediction]:
 
         self.X_train_ = X
         self.y_train_ = y
         self.weights_ = weight
 
+        self._kernel_estimator: HatMatrix
         if self.kernel_estimator is None:
-            self.kernel_estimator = NadarayaWatsonHatMatrix()
+            self._kernel_estimator = NadarayaWatsonHatMatrix()
+        else:
+            self._kernel_estimator = self.kernel_estimator
 
         return self
 
     def predict(  # noqa: D102
         self,
-        X: FData,
-    ) -> np.ndarray:
+        X: Input,
+    ) -> Prediction:
 
         check_is_fitted(self)
         delta_x = PairwiseMetric(self.metric)(X, self.X_train_)
 
-        return self.kernel_estimator(
+        return self._kernel_estimator(
             delta_x=delta_x,
             X_train=self.X_train_,
             y_train=self.y_train_,

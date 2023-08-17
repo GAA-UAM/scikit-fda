@@ -9,11 +9,15 @@ import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
 from scipy.special import gamma, kv
 
-from ..representation._typing import ArrayLike, NDArrayFloat
+from ..representation import FData, FDataBasis, FDataGrid
+from ..representation.basis import TensorBasis
+from ..typing._numpy import ArrayLike, NDArrayFloat
 
 
 def _squared_norms(x: NDArrayFloat, y: NDArrayFloat) -> NDArrayFloat:
-    return ((x[np.newaxis, :, :] - y[:, np.newaxis, :]) ** 2).sum(2)
+    return (  # type: ignore[no-any-return]
+        (x[:, np.newaxis, :] - y[np.newaxis, :, :]) ** 2
+    ).sum(2)
 
 
 CovarianceLike = Union[
@@ -25,7 +29,7 @@ CovarianceLike = Union[
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     """Transform 1d arrays in column vectors."""
-    t = np.asarray(t)
+    t = np.asfarray(t)
 
     dim = len(t.shape)
     assert dim <= 2
@@ -254,7 +258,9 @@ class Brownian(Covariance):
             axis=-1,
         )
 
-        return self.variance * (sum_norms - norm_sub) / 2
+        return (  # type: ignore[no-any-return]
+            self.variance * (sum_norms - norm_sub) / 2
+        )
 
 
 class Linear(Covariance):
@@ -713,7 +719,7 @@ class Matern(Covariance):
             power_list = np.full(shape=(p,) + body.shape, fill_value=2 * body)
             power_list = np.cumprod(power_list, axis=0)
             power_list = np.concatenate(
-                (power_list[::-1], [np.ones_like(body)]),
+                (power_list[::-1], np.asarray([np.ones_like(body)])),
             )
             power_list = np.moveaxis(power_list, 0, -1)
             numerator = np.cumprod(np.arange(p, 0, -1))
@@ -724,9 +730,15 @@ class Matern(Covariance):
             denom2 = np.concatenate(([1], denom2))
 
             sum_terms = power_list * numerator / (denom1 * denom2)
-            return self.variance * exponential * np.sum(sum_terms, axis=-1)
+            return (  # type: ignore[no-any-return]
+                self.variance * exponential * np.sum(sum_terms, axis=-1)
+            )
         elif self.nu == np.inf:
-            return self.variance * np.exp(-x_y_squared / (2 * self.length_scale ** 2))
+            return (
+                self.variance * np.exp(
+                    -x_y_squared / (2 * self.length_scale ** 2),
+                )
+            )
         else:
             # General formula
             scaling = 2**(1 - self.nu) / gamma(self.nu)
@@ -738,10 +750,121 @@ class Matern(Covariance):
                 eval_cov = self.variance * scaling * power * bessel
 
             # Values with nan are where the distance is 0
-            return np.nan_to_num(eval_cov, nan=self.variance)
+            return np.nan_to_num(  # type: ignore[no-any-return]
+                eval_cov,
+                nan=self.variance,
+            )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         return (
             self.variance
             * sklearn_kern.Matern(length_scale=self.length_scale, nu=self.nu)
+        )
+
+
+class Empirical(Covariance):
+    r"""
+    Sample covariance function.
+
+    The sample covariance function is defined as
+    . math::
+        K(t, s) = \frac{1}{N-\text{ddof}}\sum_{n=1}^N\left(x_n(t) -
+        \bar{x}(t)\right) \left(x_n(s) - \bar{x}(s)\right)
+
+    where :math:`x_n(t)` is the n-th sample and :math:`\bar{x}(t)` is the
+    mean of the samples. :math:`N` is the number of samples,
+    :math:`\text{ddof}` means "Delta Degrees of Freedom" and is such that
+    :math:`N-\text{ddof}` is the divisor used in the calculation of the
+    covariance function.
+
+    """
+
+    _latex_formula = (
+        r"K(t, s) = \frac{1}{N-\text{ddof}}\sum_{n=1}^N(x_n(t) - \bar{x}(t))"
+        r"(x_n(s) - \bar{x}(s))"
+    )
+    _parameters_str = [
+        ("data", "data"),
+    ]
+
+    cov_fdata: FData
+    ddof: int
+
+    @abc.abstractmethod
+    def __init__(self, data: FData) -> None:
+        if data.dim_domain != 1 or data.dim_codomain != 1:
+            raise NotImplementedError(
+                "Covariance only implemented "
+                "for univariate functions",
+            )
+
+    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+        """Evaluate the covariance function.
+
+        Args:
+            x: First array of points of evaluation.
+            y: Second array of points of evaluation.
+
+        Returns:
+            Covariance function evaluated at the grid formed by x and y.
+        """
+        return self.cov_fdata([x, y], grid=True)[0, ..., 0]
+
+
+class EmpiricalGrid(Empirical):
+    """Sample covariance function for FDataGrid."""
+
+    cov_fdata: FDataGrid
+    ddof: int
+
+    def __init__(self, data: FDataGrid, ddof: int = 1) -> None:
+        super().__init__(data=data)
+
+        self.ddof = ddof
+        self.cov_fdata = data.copy(
+            data_matrix=np.cov(
+                data.data_matrix[..., 0],
+                rowvar=False,
+                ddof=ddof,
+            )[np.newaxis, ...],
+            grid_points=[
+                data.grid_points[0],
+                data.grid_points[0],
+            ],
+            domain_range=[
+                data.domain_range[0],
+                data.domain_range[0],
+            ],
+            argument_names=data.argument_names * 2,
+            sample_names=("covariance",),
+        )
+
+
+class EmpiricalBasis(Empirical):
+    """
+    Sample covariance function for FDataBasis.
+
+    In this case one may use the basis expression of the samples to
+    express the sample covariance function in the tensor product basis
+    of the original basis.
+    """
+
+    cov_fdata: FDataBasis
+    coeff_matrix: NDArrayFloat
+    ddof: int
+
+    def __init__(self, data: FDataBasis, ddof: int = 1) -> None:
+        super().__init__(data=data)
+
+        self.ddof = ddof
+        self.coeff_matrix = np.cov(
+            data.coefficients,
+            rowvar=False,
+            ddof=ddof,
+        )
+        self.cov_fdata = FDataBasis(
+            basis=TensorBasis([data.basis, data.basis]),
+            coefficients=self.coeff_matrix.flatten(),
+            argument_names=data.argument_names * 2,
+            sample_names=("covariance",),
         )

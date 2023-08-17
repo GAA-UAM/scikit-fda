@@ -6,37 +6,29 @@ from builtins import isinstance
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterable,
+    Callable,
     Optional,
     Sequence,
     Type,
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import numpy as np
 import pandas.api.extensions
 
-from skfda._utils._utils import _to_array_maybe_ragged
-
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
+from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
+from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
 from .._functional_data import FData
-from .._typing import (
-    ArrayLike,
-    DomainRange,
-    GridPointsLike,
-    LabelTupleLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
-)
 from ..extrapolation import ExtrapolationLike
-from . import Basis
 
 if TYPE_CHECKING:
     from .. import FDataGrid
+    from . import Basis
 
 T = TypeVar('T', bound='FDataBasis')
 
@@ -75,13 +67,13 @@ class FDataBasis(FData):  # noqa: WPS214
             types of extrapolation.
 
     Examples:
-        >>> from skfda.representation.basis import FDataBasis, Monomial
+        >>> from skfda.representation.basis import FDataBasis, MonomialBasis
         >>>
-        >>> basis = Monomial(n_basis=4)
+        >>> basis = MonomialBasis(n_basis=4)
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=((0, 1),), n_basis=4),
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=4),
             coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
@@ -92,9 +84,7 @@ class FDataBasis(FData):  # noqa: WPS214
         basis: Basis,
         coefficients: ArrayLike,
         *,
-        dataset_label: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        axes_labels: Optional[LabelTupleLike] = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
@@ -113,9 +103,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         super().__init__(
             extrapolation=extrapolation,
-            dataset_label=dataset_label,
             dataset_name=dataset_name,
-            axes_labels=axes_labels,
             argument_names=argument_names,
             coordinate_names=coordinate_names,
             sample_names=sample_names,
@@ -190,8 +178,8 @@ class FDataBasis(FData):  # noqa: WPS214
             >>> x
             array([ 3.,  3.,  1.,  1.,  3.])
 
-            >>> from skfda.representation.basis import FDataBasis, Fourier
-            >>> basis = Fourier((0, 1), n_basis=3)
+            >>> from skfda.representation.basis import FDataBasis, FourierBasis
+            >>> basis = FourierBasis((0, 1), n_basis=3)
             >>> fd = FDataBasis.from_data(x, grid_points=t, basis=basis)
             >>> fd.coefficients.round(2)
             array([[ 2.  , 0.71, 0.71]])
@@ -213,13 +201,6 @@ class FDataBasis(FData):  # noqa: WPS214
                 DeprecationWarning,
             )
             grid_points = sample_points
-
-        # n is the samples
-        # m is the observations
-        # k is the number of elements of the basis
-
-        # Each sample in a column (m x n)
-        data_matrix = np.atleast_2d(data_matrix)
 
         fd = grid.FDataGrid(data_matrix=data_matrix, grid_points=grid_points)
 
@@ -260,7 +241,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: NDArrayFloat,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -270,7 +251,7 @@ class FDataBasis(FData):  # noqa: WPS214
             eval_points = np.asarray(eval_points)
 
             # Each row contains the values of one element of the basis
-            basis_values = self.basis.evaluate(eval_points)
+            basis_values = self.basis(eval_points)
 
             res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
@@ -278,14 +259,12 @@ class FDataBasis(FData):  # noqa: WPS214
                 (self.n_samples, len(eval_points), self.dim_codomain),
             )
 
-        eval_points = cast(Iterable[ArrayLike], eval_points)
-
         res_list = [
-            np.sum((c * self.basis.evaluate(np.asarray(p)).T).T, axis=0)
+            np.sum((c * self.basis(np.asarray(p)).T).T, axis=0)
             for c, p in zip(self.coefficients, eval_points)
         ]
 
-        return _to_array_maybe_ragged(res_list)
+        return np.asarray(res_list)
 
     def shift(
         self,
@@ -361,7 +340,7 @@ class FDataBasis(FData):  # noqa: WPS214
     def integrate(
         self: T,
         *,
-        interval: Optional[DomainRange] = None,
+        domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
         """
         Integration of the FData object.
@@ -373,8 +352,8 @@ class FDataBasis(FData):  # noqa: WPS214
         returned.
 
         Args:
-            interval: domain range where we want to integrate.
-            By default is None as we integrate on the whole domain.
+            domain: Domain range where we want to integrate.
+                By default is None as we integrate on the whole domain.
 
         Returns:
             NumPy array of size (``n_samples``, ``dim_codomain``)
@@ -382,8 +361,9 @@ class FDataBasis(FData):  # noqa: WPS214
 
         Examples:
             We first create the data basis.
-                >>> from skfda.representation.basis import FDataBasis, Monomial
-                >>> basis = Monomial(n_basis=4)
+                >>> from skfda.representation.basis import FDataBasis
+                >>> from skfda.representation.basis import MonomialBasis
+                >>> basis = MonomialBasis(n_basis=4)
                 >>> coefficients = [1, 1, 3, .5]
                 >>> fdata = FDataBasis(basis, coefficients)
 
@@ -392,19 +372,19 @@ class FDataBasis(FData):  # noqa: WPS214
                 array([[ 2.625]])
 
             Or we can do it on a given domain.
-                >>> fdata.integrate(interval = ((0.5, 1),))
+                >>> fdata.integrate(domain=((0.5, 1),))
                 array([[ 1.8671875]])
 
         """
-        if interval is None:
-            interval = self.basis.domain_range
+        if domain is None:
+            domain = self.basis.domain_range
 
         integrated = nquad_vec(
             self,
-            interval,
+            domain,
         )
 
-        return integrated[0]
+        return integrated[:, 0, :]
 
     def sum(  # noqa: WPS125
         self: T,
@@ -432,12 +412,15 @@ class FDataBasis(FData):  # noqa: WPS214
             FDataBasis object.
 
         Examples:
-            >>> from skfda.representation.basis import FDataBasis, Monomial
-            >>> basis = Monomial(n_basis=4)
+            >>> from skfda.representation.basis import (
+            ...     FDataBasis,
+            ...     MonomialBasis,
+            ... )
+            >>> basis = MonomialBasis(n_basis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).sum()
             FDataBasis(
-                basis=Monomial(domain_range=((0, 1),), n_basis=4),
+                basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=4),
                 coefficients=[[ 2.  2.  6.  1.]],
                 ...)
 
@@ -459,7 +442,11 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T, eval_points: Optional[NDArrayFloat] = None) -> T:
+    def var(
+        self: T,
+        eval_points: Optional[NDArrayFloat] = None,
+        ddof: int = 1,
+    ) -> T:
         """Compute the variance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
@@ -473,32 +460,75 @@ class FDataBasis(FData):  # noqa: WPS214
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
                 between 501 and 10 times the number of basis.
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number of
+                elements. By default `ddof` is 1.
 
         Returns:
             Variance of the original object.
 
         """
-        return self.to_grid(eval_points).var().to_basis(self.basis)
+        return self.to_grid(eval_points).var(ddof=ddof).to_basis(self.basis)
 
-    def cov(self, eval_points: Optional[NDArrayFloat] = None) -> FData:
+    @overload
+    def cov(  # noqa: WPS451
+        self: T,
+        s_points: NDArrayFloat,
+        t_points: NDArrayFloat,
+        /,
+        ddof: int = 1,
+    ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def cov(    # noqa: WPS451
+        self: T,
+        /,
+        ddof: int = 1,
+    ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
+        pass
+
+    def cov(  # noqa: WPS320, WPS451
+        self: T,
+        s_points: Optional[NDArrayFloat] = None,
+        t_points: Optional[NDArrayFloat] = None,
+        /,
+        ddof: int = 1,
+    ) -> Union[
+        Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
+        NDArrayFloat,
+    ]:
         """Compute the covariance of the functional data object.
 
-        A numerical approach its used. The object its transformed into its
-        discrete representation and then the covariance matrix is computed.
+        Calculates the unbiased sample covariance function of the data.
+        This is expected to be only defined for univariate functions.
+        This is a function defined over the basis consisting of the tensor
+        product of the original basis with itself. The resulting covariance
+        function is then represented as a callable object.
+
+        If s_points or t_points are not provided, this method returns
+        a callable object representing the covariance function.
+        If s_points and t_points are provided, this method returns the
+        evaluation of the covariance function at the grid formed by the
+        cartesian product of the points in s_points and t_points.
 
         Args:
-            eval_points: Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object. If none are passed it calls
-                numpy.linspace with bounds equal to the ones defined in
-                self.domain_range and the number of points the maximum
-                between 501 and 10 times the number of basis.
+            s_points: Points where the covariance function is evaluated.
+            t_points: Points where the covariance function is evaluated.
+            ddof: "Delta Degrees of Freedom": the divisor used in the
+                calculation is `N - ddof`, where `N` represents the number
+                of elements. By default `ddof` is 1.
 
         Returns:
-            Matrix of covariances.
+            Covariance function.
 
         """
-        return self.to_grid(eval_points).cov()
+        # To avoid circular imports
+        from ...misc.covariances import EmpiricalBasis
+        cov_function = EmpiricalBasis(self, ddof=ddof)
+        if s_points is None or t_points is None:
+            return cov_function
+        return cov_function(s_points, t_points)
 
     def to_grid(
         self,
@@ -524,9 +554,14 @@ class FDataBasis(FData):  # noqa: WPS214
               object.
 
         Examples:
-            >>> from skfda.representation.basis import FDataBasis, Monomial
-            >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
-            ...                 basis=Monomial(domain_range=(0,5), n_basis=3))
+            >>> from skfda.representation.basis import(
+            ...     FDataBasis,
+            ...     MonomialBasis,
+            ... )
+            >>> fd = FDataBasis(
+            ...     coefficients=[[1, 1, 1], [1, 0, 1]],
+            ...     basis=MonomialBasis(domain_range=(0,5), n_basis=3),
+            ... )
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
                 array([[[ 1.],
@@ -536,7 +571,7 @@ class FDataBasis(FData):  # noqa: WPS214
                         [ 2.],
                         [ 5.]]]),
                 grid_points=(array([ 0., 1., 2.]),),
-                domain_range=((0, 5),),
+                domain_range=((0.0, 5.0),),
                 ...)
 
         """
@@ -552,7 +587,7 @@ class FDataBasis(FData):  # noqa: WPS214
             grid_points = self._default_grid_points()
 
         return grid.FDataGrid(
-            self.evaluate(grid_points, grid=True),
+            self(grid_points, grid=True),
             grid_points=grid_points,
             domain_range=self.domain_range,
         )
@@ -703,26 +738,12 @@ class FDataBasis(FData):  # noqa: WPS214
             and np.array_equal(self.coefficients, other.coefficients)
         )
 
-    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
+    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
         """Elementwise equality of FDataBasis."""
-        if not isinstance(other, type(self)) or self.dtype != other.dtype:
-            if other is pandas.NA:
-                return self.isna()
-            if pandas.api.types.is_list_like(other) and not isinstance(
-                other, (pandas.Series, pandas.Index, pandas.DataFrame),
-            ):
-                return np.concatenate([x == y for x, y in zip(self, other)])
-
-            return NotImplemented
-
-        if len(self) != len(other) and len(self) != 1 and len(other) != 1:
-            raise ValueError(
-                f"Different lengths: "
-                f"len(self)={len(self)} and "
-                f"len(other)={len(other)}",
-            )
-
-        return np.all(self.coefficients == other.coefficients, axis=1)
+        return np.all(  # type: ignore[no-any-return]
+            self.coefficients == other.coefficients,
+            axis=1,
+        )
 
     def concatenate(
         self: T,
@@ -782,9 +803,9 @@ class FDataBasis(FData):  # noqa: WPS214
         compute the composition.
 
         Args:
-            fd (:class:`FData`): FData object to make the composition. Should
+            fd: FData object to make the composition. Should
                 have the same number of samples and image dimension equal to 1.
-            eval_points (array_like): Points to perform the evaluation.
+            eval_points: Points to perform the evaluation.
              kwargs: Named arguments to be passed to :func:`from_data`.
 
         Returns:
@@ -811,7 +832,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return self.copy(
             coefficients=self.coefficients[key],
-            sample_names=np.array(self.sample_names)[key],
+            sample_names=list(np.array(self.sample_names)[key]),
         )
 
     def __add__(
@@ -880,7 +901,7 @@ class FDataBasis(FData):  # noqa: WPS214
     ) -> T:
         """Multiplication by scalar."""
         try:
-            vector = np.atleast_1d(other)
+            vector = _int_to_real(np.atleast_1d(other))
         except Exception:
             return NotImplemented
 
@@ -975,10 +996,15 @@ class FDataBasis(FData):  # noqa: WPS214
         Returns:
             na_values (np.ndarray): Positions of NA.
         """
-        return np.all(np.isnan(self.coefficients), axis=1)
+        return np.all(  # type: ignore[no-any-return]
+            np.isnan(self.coefficients),
+            axis=1,
+        )
 
 
-class FDataBasisDType(pandas.api.extensions.ExtensionDtype):  # type: ignore
+class FDataBasisDType(
+    pandas.api.extensions.ExtensionDtype,  # type: ignore[misc]
+):
     """DType corresponding to FDataBasis in Pandas."""
 
     kind = 'O'

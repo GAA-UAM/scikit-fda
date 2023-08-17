@@ -12,7 +12,8 @@ import numpy as np
 from ..._utils._utils import _cartesian_product, _to_grid_points
 from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
 from ...misc.metrics import Metric, PairwiseMetric, l2_distance
-from ...representation._typing import GridPointsLike, NDArrayFloat, Vector
+from ...typing._base import GridPointsLike, Vector
+from ...typing._numpy import NDArrayFloat
 from ._linear import _LinearSmoother
 
 
@@ -110,8 +111,8 @@ class KernelSmoother(_LinearSmoother):
 
     def __init__(
         self,
-        *,
         kernel_estimator: Optional[HatMatrix] = None,
+        *,
         weights: Optional[NDArrayFloat] = None,
         output_points: Optional[GridPointsLike] = None,
         metric: Metric[Vector] = l2_distance,

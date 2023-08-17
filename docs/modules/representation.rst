@@ -51,10 +51,11 @@ The following classes are used to define different basis for
 .. autosummary::
    :toctree: autosummary
 
-   skfda.representation.basis.BSpline
-   skfda.representation.basis.Fourier
-   skfda.representation.basis.Monomial
-   skfda.representation.basis.Constant
+   skfda.representation.basis.BSplineBasis
+   skfda.representation.basis.FourierBasis
+   skfda.representation.basis.MonomialBasis
+   skfda.representation.basis.ConstantBasis
+   skfda.representation.basis.CustomBasis
    
 The following classes, allow the construction of a basis for
 :math:`\mathbb{R}^n \to \mathbb{R}` functions.
@@ -62,8 +63,8 @@ The following classes, allow the construction of a basis for
 .. autosummary::
    :toctree: autosummary
 
-   skfda.representation.basis.Tensor
-   skfda.representation.basis.FiniteElement
+   skfda.representation.basis.TensorBasis
+   skfda.representation.basis.FiniteElementBasis
 
 The following class, allows the construction of a basis for
 :math:`\mathbb{R}^n \to \mathbb{R}^m` functions from
@@ -72,7 +73,7 @@ several :math:`\mathbb{R}^n \to \mathbb{R}` bases.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.representation.basis.VectorValued
+   skfda.representation.basis.VectorValuedBasis
    
 All the aforementioned basis inherit the basics from an
 abstract base class :class:`Basis`. Users can create their own
@@ -107,3 +108,18 @@ interval using extrapolation methods.
    :maxdepth: 4
 
    representation/extrapolation
+
+Deprecated Classes
+----------------------
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.representation.basis.BSpline
+   skfda.representation.basis.Fourier
+   skfda.representation.basis.Monomial
+   skfda.representation.basis.Constant
+   skfda.representation.basis.Tensor
+   skfda.representation.basis.FiniteElement
+   skfda.representation.basis.VectorValued
+

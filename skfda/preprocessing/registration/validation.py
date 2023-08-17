@@ -3,16 +3,21 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+from typing import Generic, TypeVar
 
 import numpy as np
 
-from ..._utils import _to_grid, check_is_univariate
+from ..._utils import _to_grid
+from ...misc.validation import check_fdata_dimensions
 from ...representation import FData
-from .base import RegistrationTransformer
+from ...typing._numpy import NDArrayFloat
+from ._base import RegistrationTransformer
+
+Input = TypeVar("Input", bound=FData)
+Output = TypeVar("Output", bound=FData)
 
 
-class RegistrationScorer(ABC):
+class RegistrationScorer(ABC, Generic[Input, Output]):
     """Cross validation scoring for registration procedures.
 
     It calculates the score of a registration procedure, used to perform
@@ -47,9 +52,9 @@ class RegistrationScorer(ABC):
 
     def __call__(
         self,
-        estimator: RegistrationTransformer,
-        X: FData,
-        y: Optional[FData] = None,
+        estimator: RegistrationTransformer[Input, Output],
+        X: Input,
+        y: Output | None = None,
     ) -> float:
         """Compute the score of the transformation.
 
@@ -74,8 +79,8 @@ class RegistrationScorer(ABC):
     @abstractmethod
     def score_function(
         self,
-        X: FData,
-        y: FData,
+        X: Input,
+        y: Output,
     ) -> float:
         """Compute the score of the transformation performed.
 
@@ -113,7 +118,7 @@ class AmplitudePhaseDecompositionStats():
 
 
 class AmplitudePhaseDecomposition(
-    RegistrationScorer,
+    RegistrationScorer[FData, FData],
 ):
     r"""Compute mean square error measures for amplitude and phase variation.
 
@@ -272,8 +277,16 @@ class AmplitudePhaseDecomposition(
         """
         from ...misc.metrics import l2_distance, l2_norm
 
-        check_is_univariate(X)
-        check_is_univariate(y)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_dimensions(
+            y,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         if len(y) != len(X):
             raise ValueError(
@@ -320,7 +333,7 @@ class AmplitudePhaseDecomposition(
         return float(self.stats(X, y).r_squared)
 
 
-class LeastSquares(RegistrationScorer):
+class LeastSquares(RegistrationScorer[FData, FData]):
     r"""Cross-validated measure of the registration procedure.
 
     Computes a cross-validated measure of the level of synchronization
@@ -410,8 +423,16 @@ class LeastSquares(RegistrationScorer):
         """
         from ...misc.metrics import l2_distance
 
-        check_is_univariate(X)
-        check_is_univariate(y)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_dimensions(
+            y,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         # Instead of compute f_i - 1/(N-1) sum(j!=i)f_j for each i = 1 ... N
         # It is used (1 + 1/(N-1))f_i - 1/(N-1) sum(j=1 ... N) f_j =
@@ -436,19 +457,19 @@ class LeastSquares(RegistrationScorer):
         return float(1 - np.mean(quotient))
 
 
-class SobolevLeastSquares(RegistrationScorer):
+class SobolevLeastSquares(RegistrationScorer[FData, FData]):
     r"""Cross-validated measure of the registration procedure.
 
     Computes a cross-validated measure of the level of synchronization
     [S11-5-2-3]_:
 
     .. math::
-        sls=1 - \frac{\sum_{i=1}^{N} \int\left(\dot{\tilde{f}}_{i}(t)-
-        \frac{1}{N} \sum_{j=1}^{N} \dot{\tilde{f}}_{j}\right)^{2} dt}
-        {\sum_{i=1}^{N} \int\left(\dot{f}_{i}(t)-\frac{1}{N} \sum_{j=1}^{N}
-        \dot{f}_{j}\right)^{2} dt}
+        sls=1 - \frac{\sum_{i=1}^{N} \int\left(\tilde{f}_i'(t)-
+        \frac{1}{N} \sum_{j=1}^{N} \tilde{f}_j'\right)^{2} dt}
+        {\sum_{i=1}^{N} \int\left(f_i'(t)-\frac{1}{N} \sum_{j=1}^{N}
+        f_j'\right)^{2} dt}
 
-    where :math:`\dot{f}_i` and :math:`\dot{\tilde{f}}_i` are the derivatives
+    where :math:`f_i'` and :math:`\tilde{f}_i'` are the derivatives
     of the original and the registered data respectively.
 
     This criterion measures the total cross-sectional variance of the
@@ -523,8 +544,16 @@ class SobolevLeastSquares(RegistrationScorer):
         """
         from ...misc.metrics import l2_distance
 
-        check_is_univariate(X)
-        check_is_univariate(y)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_dimensions(
+            y,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         # Compute derivative
         X = X.derivative()
@@ -537,7 +566,7 @@ class SobolevLeastSquares(RegistrationScorer):
         return float(1 - sls_y.sum() / sls_x.sum())
 
 
-class PairwiseCorrelation(RegistrationScorer):
+class PairwiseCorrelation(RegistrationScorer[FData, FData]):
     r"""Cross-validated measure of pairwise correlation between functions.
 
     Computes a cross-validated pairwise correlation between functions
@@ -605,7 +634,7 @@ class PairwiseCorrelation(RegistrationScorer):
 
     """
 
-    def __init__(self, eval_points: Optional[np.ndarray] = None) -> None:
+    def __init__(self, eval_points: NDArrayFloat | None = None) -> None:
         self.eval_points = eval_points
 
     def score_function(self, X: FData, y: FData) -> float:
@@ -619,8 +648,16 @@ class PairwiseCorrelation(RegistrationScorer):
             float: Score of the transformation.
 
         """
-        check_is_univariate(X)
-        check_is_univariate(y)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_dimensions(
+            y,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         # Discretize functional data if needed
         X, y = _to_grid(X, y, eval_points=self.eval_points)

@@ -10,9 +10,18 @@ this category deal with this problem.
    :caption: Modules:
    :hidden:
 
+   preprocessing/missing
    preprocessing/smoothing
    preprocessing/registration
    preprocessing/dim_reduction
+   preprocessing/feature_construction
+
+Missing data
+------------
+
+When the observations contains missing data, it is necessary to reconstruct
+the invalid information before processing it further.
+:doc:`Here <preprocessing/missing>` you can learn more about this procedure.
 
 Smoothing
 ---------
@@ -40,3 +49,14 @@ the data with clarity. To better understand the data, we need to use
 while still preserving the most relevant information.
 :doc:`Here <preprocessing/dim_reduction>` you can learn more about the
 dimension reduction methods available in the library.
+
+Feature construction
+--------------------
+
+When dealing with functional data we might want to construct new features
+that can be used as additional inputs to the machine learning algorithms.
+The expectation is that these features make explicit characteristics that
+facilitate the learning process. To construct new features from the curves,
+*feature construction* methods are available.
+:doc:`Here <preprocessing/feature_construction>` you can learn more about the
+feature construction methods available in the library.

@@ -9,7 +9,8 @@ from ...misc.hat_matrix import (
     LocalLinearRegressionHatMatrix,
     NadarayaWatsonHatMatrix,
 )
-from ...representation._typing import GridPointsLike, NDArrayFloat
+from ...typing._base import GridPointsLike
+from ...typing._numpy import NDArrayFloat
 from . import KernelSmoother
 from ._linear import _LinearSmoother
 

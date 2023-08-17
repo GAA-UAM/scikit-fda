@@ -8,13 +8,14 @@ import numpy as np
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Literal
 
-from ... import FData, FDataGrid
-from ..._utils import check_is_univariate
 from ...misc._math import inner_product
 from ...misc.metrics._lp_norms import l2_norm
-from ...representation._typing import ArrayLike, GridPointsLike, NDArrayFloat
+from ...misc.validation import check_fdata_dimensions
+from ...representation import FData, FDataGrid
 from ...representation.extrapolation import ExtrapolationLike
-from .base import InductiveRegistrationTransformer
+from ...typing._base import GridPointsLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
+from ._base import InductiveRegistrationTransformer
 
 SelfType = TypeVar("SelfType", bound="LeastSquaresShiftRegistration[FData]")
 T = TypeVar("T", bound=FData)
@@ -27,7 +28,7 @@ class LeastSquaresShiftRegistration(
     r"""Register data using shift alignment by least squares criterion.
 
     Realizes the registration of a set of curves using a shift aligment
-    :footcite:`ramsay+silverman_2005_functional_shift`.
+    :footcite:`ramsay+silverman_2005_registration`.
     Let :math:`\{x_i(t)\}_{i=1}^{N}` be a functional dataset, calculates
     :math:`\delta_{i}` for each sample such that :math:`x_i(t + \delta_{i})`
     minimizes the least squares criterion:
@@ -39,7 +40,7 @@ class LeastSquaresShiftRegistration(
     Estimates each shift parameter :math:`\delta_i` iteratively by
     using a modified Newton-Raphson algorithm, updating the template
     :math:`\mu` in each iteration as is described in detail in
-    :footcite:`ramsay+silverman_2005_functional_newton-raphson`.
+    :footcite:`ramsay+silverman_2005_registration`.
 
     Method only implemented for univariate functional data.
 
@@ -60,7 +61,7 @@ class LeastSquaresShiftRegistration(
             template to the registration, if it is a callable or "mean" the
             template is computed iteratively constructing a temporal template
             in each iteration.
-            In :footcite:`ramsay+silverman_2005_functional_newton-raphson`
+            In :footcite:`ramsay+silverman_2005_registration`
             is described in detail this procedure. Defaults to "mean".
         extrapolation: Controls the
             extrapolation mode for points outside the :term:`domain` range.
@@ -68,7 +69,7 @@ class LeastSquaresShiftRegistration(
             See the `extrapolation` documentation to obtain more information.
         step_size: Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see
-            :footcite:`ramsay+silverman_2005_functional_newton-raphson`.
+            :footcite:`ramsay+silverman_2005_registration`.
             Defaults to 1.
         restrict_domain: If True restricts the :term:`domain`
             to avoid the need of using extrapolation, in which
@@ -100,7 +101,7 @@ class LeastSquaresShiftRegistration(
         ...     LeastSquaresShiftRegistration,
         ... )
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.representation.basis import Fourier
+        >>> from skfda.representation.basis import FourierBasis
 
 
         Registration and creation of dataset in discretized form:
@@ -125,7 +126,7 @@ class LeastSquaresShiftRegistration(
 
         >>> fd = make_sinusoidal_process(n_samples=2, error_std=0,
         ...                              random_state=2)
-        >>> fd_basis = fd.to_basis(Fourier())
+        >>> fd_basis = fd.to_basis(FourierBasis())
         >>> reg.transform(fd_basis)
         FDataGrid(...)
 
@@ -173,7 +174,11 @@ class LeastSquaresShiftRegistration(
             A tuple with an array of deltas and an FDataGrid with the template.
 
         """
-        check_is_univariate(fd)
+        check_fdata_dimensions(
+            fd,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         domain_range = fd.domain_range[0]
 
@@ -222,8 +227,8 @@ class LeastSquaresShiftRegistration(
             # Updates the limits for non periodic functions ignoring the ends
             if self.restrict_domain:
                 # Calculates the new limits
-                a = domain_range[0] - min(np.min(delta), 0)
-                b = domain_range[1] - max(np.max(delta), 0)
+                a = domain_range[0] - min(float(np.min(delta)), 0)
+                b = domain_range[1] - max(float(np.max(delta)), 0)
 
                 restricted_domain = (
                     max(a, template_iter.domain_range[0][0]),
@@ -254,7 +259,7 @@ class LeastSquaresShiftRegistration(
 
         return delta, template_iter
 
-    def fit_transform(self, X: T, y: None = None) -> T:
+    def fit_transform(self, X: T, y: object = None) -> T:
 
         deltas, template = self._compute_deltas(X, self.template)
 
@@ -267,13 +272,13 @@ class LeastSquaresShiftRegistration(
             extrapolation=self.extrapolation,
             grid_points=self.grid_points,
         )
-        shifted.argument_names = None
+        shifted.argument_names = None  # type: ignore[assignment]
         return shifted
 
     def fit(
         self: SelfType,
         X: FData,
-        y: None = None,
+        y: object = None,
     ) -> SelfType:
 
         # If the template is an FData, fit doesnt learn anything
@@ -287,7 +292,7 @@ class LeastSquaresShiftRegistration(
 
         return self
 
-    def transform(self, X: FData, y: None = None) -> FDataGrid:
+    def transform(self, X: FData, y: object = None) -> FDataGrid:
 
         if self.restrict_domain:
             raise AttributeError(
@@ -310,10 +315,10 @@ class LeastSquaresShiftRegistration(
             extrapolation=self.extrapolation,
             grid_points=self.grid_points,
         )
-        shifted.argument_names = None
+        shifted.argument_names = None  # type: ignore[assignment]
         return shifted
 
-    def inverse_transform(self, X: FData, y: None = None) -> FDataGrid:
+    def inverse_transform(self, X: FData, y: object = None) -> FDataGrid:
         """
         Apply the inverse transformation.
 

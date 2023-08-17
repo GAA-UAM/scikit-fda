@@ -352,7 +352,6 @@ class TestEvaluateFDataGrid(unittest.TestCase):
             [0.5, 1, 1.5],
             [0.5, 1, 2],
         )
-        
         for r, e in zip(res, expected):
             np.testing.assert_array_equal(r, e)
 

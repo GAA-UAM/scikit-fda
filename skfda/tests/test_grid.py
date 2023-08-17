@@ -343,7 +343,8 @@ class TestEvaluateFDataGrid(unittest.TestCase):
         grid_points = ([0, 1], [0, 1, 2], [0, 1, 2, 3])
         data_matrix = np.ones((1, 2, 3, 4, 5))
         fd = FDataGrid(data_matrix, grid_points)
-        fd_restricted = fd.restrict(((0, 1), (.5, 1.5), (.5, 2)))
+        restricted_domain = ((0, 1), (.5, 1.5), (.5, 2))
+        fd_restricted = fd.restrict(restricted_domain, with_bounds=True)
         res = fd_restricted.grid_points
         expected = ([0, 1], [.5, 1, 1.5], [.5, 1, 2])
         for r, e in zip(res, expected):

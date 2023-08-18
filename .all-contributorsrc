@@ -542,6 +542,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "eliegoudout",
+      "name": "eliegoudout",
+      "avatar_url": "https://avatars.githubusercontent.com/u/114467748?v=4",
+      "profile": "https://github.com/eliegoudout",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,

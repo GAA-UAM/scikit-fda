@@ -126,6 +126,7 @@ def std(X: F, ddof: int = 1) -> F:
 
 @std.register(FDataGrid)
 def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
+    """Standard deviation of a FDataGrid."""
     return X.copy(
         data_matrix=np.std(X.data_matrix, axis=0, ddof=ddof)[np.newaxis, ...],
         sample_names=("standard deviation",),
@@ -134,7 +135,8 @@ def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
 
 @std.register(FDataBasis)
 def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
-    from ...misc._math import function_to_fdatabasis
+    """Standard deviation of a FDataBasis."""
+    from ..._utils import function_to_fdatabasis
 
     if X.dim_domain != 1 or X.dim_codomain != 1:
         raise NotImplementedError(

@@ -20,6 +20,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "_same_domain",
             "_to_grid",
             "_to_grid_points",
+            "function_to_fdatabasis",
             "nquad_vec",
         ],
         '_warping': [

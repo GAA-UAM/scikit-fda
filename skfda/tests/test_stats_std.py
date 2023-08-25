@@ -106,5 +106,5 @@ def test_std_fdatagrid(
     """Test some FDataGrids' stds."""
     np.testing.assert_allclose(
         std(fdatagrid).data_matrix,
-        expected_std_data_matrix
+        expected_std_data_matrix,
     )

@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from skfda import FDataGrid
+from skfda.typing._numpy import NDArrayFloat
 from skfda.datasets import make_gaussian_process
 from skfda.exploratory.stats import std
 from skfda.misc.covariances import Gaussian
@@ -80,4 +81,30 @@ def test_std_gaussian_fourier(
         std_fd(outer_grid),
         almost_std_fd(outer_grid),
         rtol=1e-2,
+    )
+
+
+@pytest.mark.parametrize("fdatagrid, expected_std_data_matrix", [
+    (
+        FDataGrid(
+            data_matrix=[
+                [[0, 1, 2, 3, 4, 5], [0, -1, -2, -3, -4, -5]],
+                [[2, 3, 4, 5, 6, 7], [-2, -3, -4, -5, -6, -7]],
+            ],
+            grid_points=[
+                [-2, -1],
+                [0, 1, 2, 3, 4, 5]
+            ],
+        ),
+        np.full((1, 2, 6, 1), np.sqrt(2))
+    ),
+])
+def test_std_fdatagrid(
+    fdatagrid: FDataGrid,
+    expected_std_data_matrix: NDArrayFloat,
+) -> None:
+    """Test some FDataGrids' stds."""
+    np.testing.assert_allclose(
+        std(fdatagrid).data_matrix,
+        expected_std_data_matrix
     )

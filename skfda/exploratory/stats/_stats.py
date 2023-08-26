@@ -145,17 +145,14 @@ def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
         )
 
     basis = X.basis
-    coeff_matrix = np.cov(X.coefficients, rowvar=False, ddof=ddof)
+    coeff_cov_matrix = np.cov(X.coefficients, rowvar=False, ddof=ddof) \
+        .reshape((basis.n_basis, basis.n_basis))
 
     def std_function(t_points: NDArrayFloat) -> NDArrayFloat:
-        assert len(t_points) == 1, (
-            "Standard deviation function only implemented for "
-            "one-point-at-a-time evaluations."
-        )
-        basis_evaluation = basis(t_points).reshape((-1, 1))
+        basis_evaluation = basis(t_points).reshape((basis.n_basis, -1))
         return np.sqrt(
-            basis_evaluation.T @ coeff_matrix @ basis_evaluation,
-        ).reshape((1, -1, 1))
+            basis_evaluation.T @ coeff_cov_matrix @ basis_evaluation,
+        ).reshape((1, -1, X.dim_codomain))
 
     return function_to_fdatabasis(f=std_function, new_basis=X.basis)
 

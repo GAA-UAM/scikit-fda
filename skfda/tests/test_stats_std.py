@@ -93,7 +93,7 @@ def test_std_gaussian_fourier(
             ],
             grid_points=[
                 [-2, -1],
-                [0, 1, 2, 3, 4, 5]
+                [0, 1, 2, 3, 4, 5],
             ],
         ),
         np.full((1, 2, 6, 1), np.sqrt(2)),
@@ -112,17 +112,17 @@ def test_std_gaussian_fourier(
             ],
             grid_points=[
                 [0, 1],
-                [0, 1, 2]
+                [0, 1, 2],
             ],
         ),
-        np.full((1, 2, 3, 2), np.sqrt(1/2)),
+        np.full((1, 2, 3, 2), np.sqrt(1 / 2)),
     ),
 ])
 def test_std_fdatagrid(
     fdatagrid: FDataGrid,
     expected_std_data_matrix: NDArrayFloat,
 ) -> None:
-    """Test some FDataGrids' stds."""
+    """Test some std_fdatagrid cases."""
     np.testing.assert_allclose(
         std(fdatagrid).data_matrix,
         expected_std_data_matrix,

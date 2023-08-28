@@ -126,7 +126,7 @@ def std(X: F, ddof: int = 1) -> F:
 
 @std.register(FDataGrid)
 def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
-    """Standard deviation of a FDataGrid."""
+    """Compute the standard deviation of a FDataGrid."""
     return X.copy(
         data_matrix=np.std(X.data_matrix, axis=0, ddof=ddof)[np.newaxis, ...],
         sample_names=("standard deviation",),
@@ -135,23 +135,23 @@ def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
 
 @std.register(FDataBasis)
 def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
-    """Standard deviation of a FDataBasis."""
+    """Compute the standard deviation of a FDataBasis."""
     from ..._utils import function_to_fdatabasis
 
     if X.dim_domain != 1 or X.dim_codomain != 1:
         raise NotImplementedError(
-            "Standard deviation only implemented "
-            "for univariate functions.",
+            "Standard deviation only implemented for univariate functions.",
         )
 
     basis = X.basis
-    coeff_cov_matrix = np.cov(X.coefficients, rowvar=False, ddof=ddof) \
-        .reshape((basis.n_basis, basis.n_basis))
+    coeff_cov_matrix = np.cov(
+        X.coefficients, rowvar=False, ddof=ddof,
+    ).reshape((basis.n_basis, basis.n_basis))
 
     def std_function(t_points: NDArrayFloat) -> NDArrayFloat:
         basis_evaluation = basis(t_points).reshape((basis.n_basis, -1))
         return np.sqrt(
-            basis_evaluation.T @ coeff_cov_matrix @ basis_evaluation,
+            np.diag(basis_evaluation.T @ coeff_cov_matrix @ basis_evaluation),
         ).reshape((1, -1, X.dim_codomain))
 
     return function_to_fdatabasis(f=std_function, new_basis=X.basis)

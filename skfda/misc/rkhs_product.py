@@ -15,27 +15,32 @@ from ._math import inner_product
 from .validation import check_fdata_dimensions
 
 
-def _check_compatible_fdata(
+def _broadcast_samples(
     fdata1: FData,
     fdata2: FData,
-) -> None:
-    """Check terms of the inner product are compatible.
+) -> tuple[FData, FData]:
+    """Broadcast samples of two FData objects.
 
     Args:
-        fdata1: First functional data object.
-        fdata2: Second functional data object.
+        fdata1: First FData object.
+        fdata2: Second FData object.
+
+    Returns:
+        Tuple of FData objects with the same number of samples.
 
     Raises:
-        ValueError: If the data is not univariate or if the number of samples
-            is not the same.
+        ValueError: If the number of samples is not the same or if the number
     """
-    check_fdata_dimensions(fdata1, dim_domain=1, dim_codomain=1)
-    check_fdata_dimensions(fdata2, dim_domain=1, dim_codomain=1)
-    if fdata1.n_samples != fdata2.n_samples:
+    if fdata1.n_samples == 1:
+        fdata1 = fdata1.repeat(fdata2.n_samples)
+    elif fdata2.n_samples == 1:
+        fdata2 = fdata2.repeat(fdata1.n_samples)
+    elif fdata1.n_samples != fdata2.n_samples:
         raise ValueError(
             "Invalid number of samples for functional data objects:"
             f"{fdata1.n_samples} != {fdata2.n_samples}.",
         )
+    return fdata1, fdata2
 
 
 def _get_coeff_matrix(
@@ -82,6 +87,29 @@ def _get_coeff_matrix(
 
 @multimethod.multidispatch
 def rkhs_inner_product(
+    fdata1: FData,
+    fdata2: FData,
+    *,
+    cov_function: Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
+) -> NDArrayFloat:
+    """RKHS inner product of two FData objects.
+
+    Args:
+        fdata1: First FData object.
+        fdata2: Second FData object.
+        cov_function: Covariance function as a callable.
+
+    Returns:
+        Matrix of the RKHS inner product between paired samples of
+        fdata1 and fdata2.
+    """
+    raise NotImplementedError(
+        "RKHS inner product not implemented for the given types.",
+    )
+
+
+@rkhs_inner_product.register(FDataGrid, FDataGrid)
+def rkhs_inner_product_fdatagrid(
     fdata1: FDataGrid,
     fdata2: FDataGrid,
     *,
@@ -103,6 +131,9 @@ def rkhs_inner_product(
     In case of having different discretization grids, the left inverse of the
     transposed covariace matrix is used instead.
 
+    If one of the FDataGrid terms consists of only one sample, it is repeated
+    to match the number of samples of the other term.
+
     Args:
         fdata1: First FDataGrid object.
         fdata2: Second FDataGrid object.
@@ -116,7 +147,10 @@ def rkhs_inner_product(
         Matrix of the RKHS inner product between paired samples of
         fdata1 and fdata2.
     """
-    _check_compatible_fdata(fdata1, fdata2)
+    # Check univariate and apply broadcasting
+    check_fdata_dimensions(fdata1, dim_domain=1, dim_codomain=1)
+    check_fdata_dimensions(fdata2, dim_domain=1, dim_codomain=1)
+    fdata1, fdata2 = _broadcast_samples(fdata1, fdata2)
 
     data_matrix_1 = fdata1.data_matrix
     data_matrix_2 = fdata2.data_matrix
@@ -171,6 +205,9 @@ def rkhs_inner_product_fdatabasis(
     in the tensor basis formed by the two given bases, it can be passed as
     an argument to avoid the calculation of it.
 
+    If one of the FDataBasis terms consists of only one sample, it is repeated
+    to match the number of samples of the other term.
+
     Args:
         fdata1: First FDataBasis object.
         fdata2: Second FDataBasis object.
@@ -182,7 +219,10 @@ def rkhs_inner_product_fdatabasis(
         Matrix of the RKHS inner product between paired samples of
         fdata1 and fdata2.
     """
-    _check_compatible_fdata(fdata1, fdata2)
+    # Check univariate and apply broadcasting
+    check_fdata_dimensions(fdata1, dim_domain=1, dim_codomain=1)
+    check_fdata_dimensions(fdata2, dim_domain=1, dim_codomain=1)
+    fdata1, fdata2 = _broadcast_samples(fdata1, fdata2)
 
     if isinstance(cov_function, EmpiricalBasis):
         cov_coeff_matrix = cov_function.coeff_matrix

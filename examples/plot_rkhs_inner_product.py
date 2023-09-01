@@ -34,22 +34,15 @@ def brownian_bridge_covariance(
     t: NDArrayFloat,
     s: NDArrayFloat,
 ) -> NDArrayFloat:
-    """Covariance function of the Brownian Bridge process.
+    """
+    Covariance function of the Brownian Bridge process.
 
     This function must receive two vectors of points while returning the
     matrix of values of the covariance function in the corresponding grid.
     """
-    # Compute the matrix of minimum values between the points of the vectors
-    min_values = np.amin(
-        np.transpose(
-            np.meshgrid(t, s),
-            (2, 1, 0),
-        ),
-        axis=2,
-    )
-    return (  # type: ignore[no-any-return]
-        min_values - np.outer(t, s)
-    )
+    t_col = t[:, None]
+    s_row = s[None, :]
+    return np.minimum(t_col, s_row) - t_col * s_row
 
 
 ###############################################################################
@@ -99,7 +92,7 @@ def brownian_bridge_rkhs_inner_product(
 
 
 # Plot the functions f and g in the same figure
-FDataGrid(
+plt = FDataGrid(
     np.concatenate(
         [
             1 - (2 * np.linspace(0, 1, 100) - 1)**2,
@@ -110,6 +103,7 @@ FDataGrid(
     np.linspace(0, 1, 100),
 ).plot()
 
+plt.show()
 
 ###############################################################################
 # The inner product of two functions :math:`f, g` in this RKHS
@@ -163,19 +157,7 @@ for num_points in num_points_list:
     error = np.abs(computed_value - expected_value)
 
     # Add new row to the dataframe
-    errors_df = pd.concat(
-        [
-            errors_df,
-            pd.DataFrame(
-                [[num_points, error]],
-                columns=[
-                    "Number of points of discretization",
-                    "Absolute error",
-                ],
-            ),
-        ],
-        ignore_index=True,
-    )
+    errors_df.loc[len(errors_df)] = [num_points, error]
 
 # Plot the errors
 errors_df.plot(

@@ -11,6 +11,7 @@ reproducing kernel Hilbert space (RKHS) of the Brownian Bridge.
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from skfda.misc.rkhs_product import rkhs_inner_product
 from skfda.representation import FDataGrid
@@ -92,7 +93,7 @@ def brownian_bridge_rkhs_inner_product(
 
 
 # Plot the functions f and g in the same figure
-plt = FDataGrid(
+FDataGrid(
     np.concatenate(
         [
             1 - (2 * np.linspace(0, 1, 100) - 1)**2,
@@ -102,7 +103,6 @@ plt = FDataGrid(
     ).reshape(2, 100),
     np.linspace(0, 1, 100),
 ).plot()
-
 plt.show()
 
 ###############################################################################
@@ -167,6 +167,7 @@ errors_df.plot(
     xlabel="Number of points of discretization",
     ylabel="Absolute error",
 )
+plt.show()
 
 
 ###############################################################################
@@ -180,6 +181,7 @@ errors_df.plot(
     ylabel="Absolute error",
     logy=True,
 )
+plt.show()
 
 ###############################################################################
 # This example shows the convergence of the method

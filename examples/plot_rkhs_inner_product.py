@@ -9,9 +9,9 @@ reproducing kernel Hilbert space (RKHS) of the Brownian Bridge.
 # Author: Martín Sánchez Signorini
 # License: MIT
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from skfda.misc.rkhs_product import rkhs_inner_product
 from skfda.representation import FDataGrid

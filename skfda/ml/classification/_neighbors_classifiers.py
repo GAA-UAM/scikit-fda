@@ -10,17 +10,17 @@ from sklearn.neighbors import (
 )
 from typing_extensions import Literal
 
-from ...misc.metrics import l2_distance
-from ...representation import FData
-from ...typing._metric import Metric
-from ...typing._numpy import NDArrayFloat, NDArrayInt
-from .._neighbors_base import (
+from ..._utils._neighbors_base import (
     AlgorithmType,
     KNeighborsMixin,
     NeighborsClassifierMixin,
     RadiusNeighborsMixin,
     WeightsType,
 )
+from ...misc.metrics import l2_distance
+from ...representation import FData
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 InputBound = Union[NDArrayFloat, FData]
 Input = TypeVar("Input", contravariant=True, bound=InputBound)

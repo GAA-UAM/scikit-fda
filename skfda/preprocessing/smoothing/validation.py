@@ -331,6 +331,7 @@ class SmoothingParameterSearch(
             return_train_score=False,
         )
         self.param_values = param_values
+        self.param_name = param_name
 
     def fit(  # noqa: D102
         self,

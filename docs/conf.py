@@ -72,6 +72,7 @@ needs_sphinx = "3.0"
 # Sphinx extensions
 extensions = [
     "jupyter_sphinx",
+    "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.autodoc.typehints",
     "sphinx.ext.autosummary",

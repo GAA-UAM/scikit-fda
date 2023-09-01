@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import abc
-import copy
 import math
 from typing import (
     TYPE_CHECKING,
@@ -23,9 +22,14 @@ import numpy.linalg as linalg
 import numpy.ma as ma
 import scipy.stats
 import sklearn.utils
+from sklearn.base import clone
 from typing_extensions import Literal
 
 import dcor
+from skfda.exploratory.stats.covariance import (
+    CovarianceEstimator,
+    EmpiricalCovariance,
+)
 
 from ...._utils._sklearn_adapter import (
     BaseEstimator,
@@ -132,7 +136,7 @@ class Correction(BaseEstimator):
 
     """
 
-    def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
+    def fit(self, X: FDataGrid, y: NDArrayFloat) -> None:
         """
         Initialize the correction for a run.
 
@@ -239,8 +243,6 @@ class GaussianCorrection(ConditionalMeanCorrection):
     Parameters:
         mean: Mean function of the Gaussian process.
         cov: Covariance function of the Gaussian process.
-        fit_hyperparameters: If ``True`` the hyperparameters of the
-            covariance function are optimized for the data.
 
     """
 
@@ -249,40 +251,11 @@ class GaussianCorrection(ConditionalMeanCorrection):
         *,
         mean: Union[float, Callable[[NDArrayFloat], NDArrayFloat]] = 0,
         cov: Union[float, CovarianceLike] = 1,
-        fit_hyperparameters: bool = False,
     ) -> None:
         super().__init__()
 
         self.mean = mean
         self.cov = make_kernel(cov)
-        self.fit_hyperparameters = fit_hyperparameters
-
-    def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
-        if self.fit_hyperparameters:
-            # TODO: Migrate this to scikit-learn
-            import GPy
-
-            T = X.grid_points[0]
-            X_copy = np.copy(X.data_matrix[..., 0])
-
-            y = np.ravel(y)
-            for class_label in np.unique(y):
-                trajectories = X_copy[y == class_label, :]
-
-                mean = np.mean(trajectories, axis=0)
-                X_copy[y == class_label, :] -= mean
-
-            gpy_kernel = getattr(self.cov, "_PicklableKernel__kernel")
-
-            m = GPy.models.GPRegression(
-                T[:, None],
-                X_copy.T,
-                kernel=gpy_kernel,
-            )
-            m.constrain_positive('')
-            m.optimize()
-
-            self.cov_ = copy.deepcopy(make_kernel(m.kern))
 
     def _evaluate_mean(self, t: NDArrayFloat) -> NDArrayFloat:
 
@@ -501,39 +474,41 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
     Correction assuming that the process is Gaussian and using as the kernel
     the sample covariance.
 
+    Parameters:
+        cov_estimator: Covariance estimator to use.
+
     """
 
-    def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
+    def __init__(
+        self,
+        cov_estimator: CovarianceEstimator[FDataGrid] | None = None,
+    ):
+        self.cov_estimator = cov_estimator
 
-        X_copy = np.copy(X.data_matrix[..., 0])
+    def fit(self, X: FDataGrid, y: NDArrayFloat) -> None:
+
+        self.cov_estimator_ = (
+            EmpiricalCovariance()
+            if self.cov_estimator is None
+            else clone(self.cov_estimator)
+        )
+
+        X_matrix_copy = np.copy(X.data_matrix[..., 0])
 
         y = np.ravel(y)
         for class_label in np.unique(y):
-            trajectories = X_copy[y == class_label, :]
+            class_index = (y == class_label)
+            trajectories = X_matrix_copy[class_index]
 
             mean = np.mean(trajectories, axis=0)
-            X_copy[y == class_label, :] -= mean
+            X_matrix_copy[class_index] -= mean
 
-        self.cov_matrix_ = np.cov(X_copy, rowvar=False)
-        self.t_ = np.ravel(X.grid_points)
+        X_copy = X.copy(data_matrix=X_matrix_copy)
+
+        self.cov_estimator_.fit(X_copy)
         self.gaussian_correction_ = GaussianCorrection(
-            cov=self.cov_fun,
+            cov=self.cov_estimator_.covariance_,
         )
-
-    def cov_fun(
-        self,
-        t_0: ArrayLike,
-        t_1: ArrayLike,
-    ) -> NDArrayFloat:
-        i = np.searchsorted(self.t_, t_0)
-        j = np.searchsorted(self.t_, t_1)
-
-        i_r = np.ravel(i)
-        j_r = np.ravel(j)
-
-        return self.cov_matrix_[  # type: ignore[no-any-return]
-            np.ix_(i_r, j_r)
-        ]
 
     def conditioned(
         self,
@@ -977,10 +952,10 @@ class RecursiveMaximaHunting(
 
         y = np.asfarray(y)
 
-        correction = (
-            self.correction
-            if self.correction
-            else UniformCorrection()
+        self.correction_ = (
+            UniformCorrection()
+            if self.correction is None
+            else clone(self.correction)
         )
 
         redundancy_condition = (
@@ -1007,7 +982,7 @@ class RecursiveMaximaHunting(
         relevances = []
         first_pass = True
 
-        correction.begin(X, y)
+        self.correction_.fit(X, y)
 
         while True:
             dependences = _compute_dependence(
@@ -1060,12 +1035,12 @@ class RecursiveMaximaHunting(
             mask |= influence_mask
 
             # Correct the influence of t_max
-            X = correction(
+            X = self.correction_(
                 X=X,
                 selected_index=t_max_index,
             )
 
-            correction = correction.conditioned(
+            self.correction_ = self.correction_.conditioned(
                 X=X.data_matrix,
                 T=X.grid_points[0],
                 t_0=X.grid_points[0][t_max_index],
@@ -1087,7 +1062,7 @@ class RecursiveMaximaHunting(
 
         output = X_matrix[(slice(None),) + self.indexes_]
 
-        return output.reshape(  # type: ignore[no-any-return]
+        return output.reshape(
             X.n_samples,
             -1,
         )

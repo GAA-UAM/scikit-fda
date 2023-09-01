@@ -41,19 +41,22 @@ def mean(
     return (X * weight).sum()
 
 
-def var(X: FData) -> FDataGrid:
+def var(X: FData, ddof: int = 1) -> FDataGrid:
     """
     Compute the variance of a set of samples in a FData object.
 
     Args:
         X: Object containing all the set of samples whose variance is desired.
+        ddof: "Delta Degrees of Freedom": the divisor used in the calculation
+            is `N - ddof`, where `N` represents the number of elements. By
+            default `ddof` is 1.
 
     Returns:
         Variance of all the samples in the original object, as a
         :term:`functional data object` with just one sample.
 
     """
-    return X.var()  # type: ignore[no-any-return]
+    return X.var(ddof=ddof)  # type: ignore[no-any-return]
 
 
 def gmean(X: FDataGrid) -> FDataGrid:
@@ -71,7 +74,10 @@ def gmean(X: FDataGrid) -> FDataGrid:
     return X.gmean()
 
 
-def cov(X: FData) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
+def cov(
+    X: FData,
+    ddof: int = 1
+) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
     """
     Compute the covariance.
 
@@ -80,13 +86,17 @@ def cov(X: FData) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
 
     Args:
         X: Object containing different samples of a functional variable.
+        ddof: "Delta Degrees of Freedom": the divisor used in the calculation
+            is `N - ddof`, where `N` represents the number of elements. By
+            default `ddof` is 1.
+
 
     Returns:
         Covariance of all the samples in the original object, as a
         callable.
 
     """
-    return X.cov()
+    return X.cov(ddof=ddof)
 
 
 def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:

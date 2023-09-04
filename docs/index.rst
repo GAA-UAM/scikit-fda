@@ -35,6 +35,7 @@ Github you can find more information related to the development of the package.
 
    apilist
    glossary
+   contributors
 
 An exhaustive list of all the contents of the package can be found in the
 :ref:`genindex`.
@@ -86,8 +87,7 @@ All contributions are welcome. You can help this project grow in multiple ways,
 from creating an issue, reporting an improvement or a bug, to doing a
 repository fork and creating a pull request to the development branch.
 The people involved at some point in the development of the package can be
-found in the `contributors file
-<https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
+found in the :doc:`contributors page <contributors>`.
 
 .. Citation
    --------

@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 
 from skfda import FDataGrid
-from skfda.typing._numpy import NDArrayFloat
 from skfda.datasets import make_gaussian_process
 from skfda.exploratory.stats import std
 from skfda.misc.covariances import Gaussian
 from skfda.representation.basis import FourierBasis
+from skfda.typing._numpy import NDArrayFloat
 
 
 @pytest.fixture(params=[61, 71])

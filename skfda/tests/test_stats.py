@@ -2,15 +2,8 @@ import unittest
 
 import numpy as np
 
-from skfda.datasets import (
-    fetch_phoneme,
-    fetch_tecator,
-    fetch_weather,
-)
-from skfda.exploratory.stats import (
-    geometric_median,
-    modified_epigraph_index,
-)
+from skfda.datasets import fetch_phoneme, fetch_tecator, fetch_weather
+from skfda.exploratory.stats import geometric_median, modified_epigraph_index
 
 
 class TestGeometricMedian(unittest.TestCase):

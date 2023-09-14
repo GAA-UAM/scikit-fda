@@ -7,11 +7,16 @@ from typing import Any
 import numpy as np
 import pytest
 
-from skfda import FDataGrid
+from skfda import FDataBasis, FDataGrid
 from skfda.datasets import make_gaussian_process
 from skfda.exploratory.stats import std
 from skfda.misc.covariances import Gaussian
-from skfda.representation.basis import FourierBasis
+from skfda.representation.basis import (
+    FourierBasis,
+    MonomialBasis,
+    TensorBasis,
+    VectorValuedBasis,
+)
 from skfda.typing._numpy import NDArrayFloat
 
 
@@ -126,4 +131,77 @@ def test_std_fdatagrid(
     np.testing.assert_allclose(
         std(fdatagrid).data_matrix,
         expected_std_data_matrix,
+    )
+
+
+@pytest.mark.parametrize("fdatabasis, expected_std_coefficients", [
+    (
+        FDataBasis(
+            basis=VectorValuedBasis([
+                MonomialBasis(domain_range=(0, 1), n_basis=3),
+                MonomialBasis(domain_range=(0, 1), n_basis=3),
+            ]),
+            coefficients=[
+                [0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 1, 0, 0],
+            ],
+        ),
+        np.array([[np.sqrt(1 / 2), 0, 0, np.sqrt(1 / 2), 0, 0]]),
+    ),
+    (
+        FDataBasis(
+            basis=VectorValuedBasis([
+                FourierBasis(domain_range=(0, 1), n_basis=5),
+                MonomialBasis(domain_range=(0, 1), n_basis=4),
+            ]),
+            coefficients=[
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 1, 0, 0, 0],
+            ],
+        ),
+        np.array([[np.sqrt(1 / 2), 0, 0, 0, 0, np.sqrt(1 / 2), 0, 0, 0]]),
+    ),
+    (
+        FDataBasis(
+            basis=TensorBasis([
+                MonomialBasis(domain_range=(0, 1), n_basis=4),
+                MonomialBasis(domain_range=(0, 1), n_basis=4),
+            ]),
+            coefficients=[
+                np.zeros(16),
+                np.pad([1], (0, 15)),
+            ],
+        ),
+        [np.pad([np.sqrt(1 / 2)], (0, 15))],
+    ),
+    (
+        FDataBasis(
+            basis=VectorValuedBasis([
+                TensorBasis([
+                    MonomialBasis(domain_range=(0, 1), n_basis=2),
+                    MonomialBasis(domain_range=(0, 1), n_basis=2),
+                ]),
+                TensorBasis([
+                    MonomialBasis(domain_range=(0, 1), n_basis=2),
+                    MonomialBasis(domain_range=(0, 1), n_basis=2),
+                ]),
+            ]),
+            coefficients=[
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 1, 0, 0, 0],
+            ],
+        ),
+        np.array([[np.sqrt(1 / 2), 0, 0, 0] * 2]),
+    ),
+])
+def test_std_fdatabasis(
+    fdatabasis: FDataBasis,
+    expected_std_coefficients: NDArrayFloat,
+) -> None:
+    """Test some std_fdatabasis cases."""
+    np.testing.assert_allclose(
+        std(fdatabasis).coefficients,
+        expected_std_coefficients,
+        rtol=1e-7,
+        atol=1e-7,
     )

@@ -138,11 +138,6 @@ def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
     """Compute the standard deviation of a FDataBasis."""
     from ..._utils import function_to_fdatabasis
 
-    if X.dim_domain != 1 or X.dim_codomain != 1:
-        raise NotImplementedError(
-            "Standard deviation only implemented for univariate functions.",
-        )
-
     basis = X.basis
     coeff_cov_matrix = np.cov(
         X.coefficients, rowvar=False, ddof=ddof,

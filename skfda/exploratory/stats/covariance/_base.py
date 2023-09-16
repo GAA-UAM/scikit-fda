@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Generic, TypeVar
+from typing import Callable, Generic, TypeVar
 
 from ...._utils._sklearn_adapter import BaseEstimator
 from ....representation import FData
+from ....typing._numpy import NDArrayFloat
 
 Input = TypeVar("Input", bound=FData)
 
@@ -15,7 +16,7 @@ class CovarianceEstimator(
 ):
 
     location_: Input
-    covariance_: Input
+    covariance_: Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]
 
     def __init__(
         self,

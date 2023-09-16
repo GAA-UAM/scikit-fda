@@ -5,15 +5,15 @@ from typing import Any, TypeVar, Union, overload
 
 from typing_extensions import Literal
 
-from ...misc.metrics import l2_distance
-from ...representation import FData
-from ...typing._metric import Metric
-from ...typing._numpy import NDArrayFloat
-from .._neighbors_base import (
+from ..._utils._neighbors_base import (
     AlgorithmType,
     KNeighborsMixin,
     RadiusNeighborsMixin,
 )
+from ...misc.metrics import l2_distance
+from ...representation import FData
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayFloat
 
 InputBound = Union[NDArrayFloat, FData]
 Input = TypeVar("Input", contravariant=True, bound=InputBound)

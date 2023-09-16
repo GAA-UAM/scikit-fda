@@ -207,7 +207,10 @@ class QuadraticDiscriminantAnalysis(
 
             cov_estimators.append(cov_estimator)
             means.append(cov_estimator.location_)
-            covariance.append(cov_estimator.covariance_.data_matrix[0, ..., 0])
+            # TODO: QDA should use the covariance estimators interface
+            covariance.append(
+                cov_estimator.covariance_.cov_fdata.data_matrix[0, ..., 0],
+            )
 
         self.means_ = means
         self._covariances = np.asarray(covariance)

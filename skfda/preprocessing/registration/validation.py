@@ -464,12 +464,12 @@ class SobolevLeastSquares(RegistrationScorer[FData, FData]):
     [S11-5-2-3]_:
 
     .. math::
-        sls=1 - \frac{\sum_{i=1}^{N} \int\left(\dot{\tilde{f}}_{i}(t)-
-        \frac{1}{N} \sum_{j=1}^{N} \dot{\tilde{f}}_{j}\right)^{2} dt}
-        {\sum_{i=1}^{N} \int\left(\dot{f}_{i}(t)-\frac{1}{N} \sum_{j=1}^{N}
-        \dot{f}_{j}\right)^{2} dt}
+        sls=1 - \frac{\sum_{i=1}^{N} \int\left(\tilde{f}_i'(t)-
+        \frac{1}{N} \sum_{j=1}^{N} \tilde{f}_j'\right)^{2} dt}
+        {\sum_{i=1}^{N} \int\left(f_i'(t)-\frac{1}{N} \sum_{j=1}^{N}
+        f_j'\right)^{2} dt}
 
-    where :math:`\dot{f}_i` and :math:`\dot{\tilde{f}}_i` are the derivatives
+    where :math:`f_i'` and :math:`\tilde{f}_i'` are the derivatives
     of the original and the registered data respectively.
 
     This criterion measures the total cross-sectional variance of the

@@ -624,7 +624,7 @@ def function_to_fdatabasis(
     from ..misc._math import inner_product_matrix
 
     if isinstance(f, FDataBasis) and f.basis == new_basis:
-        return f
+        return f.copy()
 
     inner_prod = inner_product_matrix(
         new_basis,

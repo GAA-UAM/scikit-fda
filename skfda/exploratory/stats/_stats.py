@@ -129,7 +129,7 @@ def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
     """Compute the standard deviation of a FDataGrid."""
     return X.copy(
         data_matrix=np.std(X.data_matrix, axis=0, ddof=ddof)[np.newaxis, ...],
-        sample_names=("standard deviation",),
+        sample_names=(None,),
     )
 
 

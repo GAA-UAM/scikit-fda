@@ -146,7 +146,7 @@ def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
     def std_function(t_points: NDArrayFloat) -> NDArrayFloat:
         basis_evaluation = basis(t_points).reshape((basis.n_basis, -1))
         std_values = np.sqrt(
-            np.diag(basis_evaluation.T @ coeff_cov_matrix @ basis_evaluation)
+            np.diag(basis_evaluation.T @ coeff_cov_matrix @ basis_evaluation),
         )
         return np.reshape(std_values, (1, -1, X.dim_codomain))
 

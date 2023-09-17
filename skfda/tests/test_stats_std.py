@@ -20,6 +20,7 @@ from skfda.representation.basis import (
 
 # Fixtures for test_std_fdatabasis_vector_valued_basis
 
+
 @pytest.fixture(params=[3, 5])
 def vv_n_basis1(request: Any) -> int:
     """n_basis for 1st coordinate of vector valued basis."""

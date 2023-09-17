@@ -620,7 +620,7 @@ def function_to_fdatabasis(
         FDataBasis: FDataBasis with calculated coefficients and the new
         basis.
     """
-    from .. import FDataBasis
+    from .. import FDataBasis  # noqa: WPS442
     from ..misc._math import inner_product_matrix
 
     if isinstance(f, FDataBasis) and f.basis == new_basis:

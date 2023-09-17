@@ -8,200 +8,202 @@ import numpy as np
 import pytest
 
 from skfda import FDataBasis, FDataGrid
-from skfda.datasets import make_gaussian_process
 from skfda.exploratory.stats import std
-from skfda.misc.covariances import Gaussian
 from skfda.representation.basis import (
+    Basis,
+    BSplineBasis,
     FourierBasis,
     MonomialBasis,
     TensorBasis,
     VectorValuedBasis,
 )
-from skfda.typing._numpy import NDArrayFloat
 
 
-@pytest.fixture(params=[61, 71])
-def n_basis(request: Any) -> int:
-    """Fixture for n_basis to test."""
-    return request.param
+# Fixtures for test_std_fdatabasis_vector_valued_basis
+
+@pytest.fixture(params=[3, 5])
+def vv_n_basis1(request: Any) -> int:
+    """n_basis for 1st coordinate of vector valued basis."""
+    return request.param  # type: ignore
 
 
-@pytest.fixture
-def start() -> int:
-    """Fixture for the infimum of the domain."""
-    return 0
-
-
-@pytest.fixture
-def stop() -> int:
-    """Fixture for the supremum of the domain."""
-    return 1
+@pytest.fixture(params=[3])
+def vv_n_basis2(request: Any) -> int:
+    """n_basis for 2nd coordinate of vector valued basis."""
+    return request.param  # type: ignore
 
 
 @pytest.fixture
-def n_features() -> int:
-    """Fixture for the number of features."""
-    return 1000
-
-
-@pytest.fixture
-def gaussian_process(start: int, stop: int, n_features: int) -> FDataGrid:
-    """Fixture for a Gaussian process."""
-    return make_gaussian_process(
-        start=start,
-        stop=stop,
-        n_samples=100,
-        n_features=n_features,
-        mean=0.0,
-        cov=Gaussian(variance=1, length_scale=0.1),
-        random_state=0,
+def vv_basis1(vv_n_basis1: int) -> Basis:
+    """1-dimensional basis to test for vector valued basis."""
+    # First element of the basis is assumed to be the 1 function
+    return BSplineBasis(
+        n_basis=vv_n_basis1,
+        domain_range=(0, 1),
+        order=vv_n_basis1 - 1,
     )
 
 
-def test_std_gaussian_fourier(
-    start: int,
-    stop: int,
-    n_features: int,
-    n_basis: int,
-    gaussian_process: FDataGrid,
-) -> None:
-    """Test standard deviation: Gaussian processes and a Fourier basis."""
-    fourier_basis = FourierBasis(n_basis=n_basis, domain_range=(0, 1))
-    fd = gaussian_process.to_basis(fourier_basis)
-
-    std_fd = std(fd)
-    grid = np.linspace(start, stop, n_features)
-    almost_std_fd = std(fd.to_grid(grid)).to_basis(fourier_basis)
-
-    inner_grid_limit = n_features // 10
-    inner_grid = grid[inner_grid_limit:-inner_grid_limit]
-    np.testing.assert_allclose(
-        std_fd(inner_grid),
-        almost_std_fd(inner_grid),
-        rtol=1e-3,
-    )
-
-    outer_grid = grid[:inner_grid_limit] + grid[-inner_grid_limit:]
-    np.testing.assert_allclose(
-        std_fd(outer_grid),
-        almost_std_fd(outer_grid),
-        rtol=1e-2,
+@pytest.fixture(params=[FourierBasis, MonomialBasis])
+def vv_basis2(request: Any, vv_n_basis2: int) -> Basis:
+    """1-dimensional basis to test for vector valued basis."""
+    # First element of the basis is assumed to be the 1 function
+    return request.param(  # type: ignore
+        domain_range=(0, 1), n_basis=vv_n_basis2,
     )
 
 
-@pytest.mark.parametrize("fdatagrid, expected_std_data_matrix", [
-    (
-        FDataGrid(
-            data_matrix=[
-                [[0, 1, 2, 3, 4, 5], [0, -1, -2, -3, -4, -5]],
-                [[2, 3, 4, 5, 6, 7], [-2, -3, -4, -5, -6, -7]],
-            ],
-            grid_points=[
-                [-2, -1],
-                [0, 1, 2, 3, 4, 5],
-            ],
-        ),
-        np.full((1, 2, 6, 1), np.sqrt(2)),
-    ),
-    (
-        FDataGrid(
-            data_matrix=[
-                [
-                    [[10, 11], [10, 12], [11, 14]],
-                    [[15, 16], [12, 15], [20, 13]],
-                ],
-                [
-                    [[11, 12], [11, 13], [12, 13]],
-                    [[14, 15], [11, 16], [21, 12]],
-                ],
-            ],
-            grid_points=[
-                [0, 1],
-                [0, 1, 2],
-            ],
-        ),
-        np.full((1, 2, 3, 2), np.sqrt(1 / 2)),
-    ),
-])
-def test_std_fdatagrid(
-    fdatagrid: FDataGrid,
-    expected_std_data_matrix: NDArrayFloat,
-) -> None:
-    """Test some std_fdatagrid cases."""
+# Fixtures for test_std_fdatabasis_tensor_basis
+
+@pytest.fixture(params=[3])
+def t_n_basis1(request: Any) -> int:
+    """n_basis for 1st input argument of tensor basis."""
+    return request.param  # type: ignore
+
+
+@pytest.fixture(params=[5])
+def t_n_basis2(request: Any) -> int:
+    """n_basis for 2nd input argument of tensor basis."""
+    return request.param  # type: ignore
+
+
+@pytest.fixture(params=[FourierBasis])
+def t_basis1(request: Any, t_n_basis2: int) -> Basis:
+    """1-dimensional basis to test for tensor basis."""
+    # First element of the basis is assumed to be the 1 function
+    return request.param(  # type: ignore
+        domain_range=(0, 1), n_basis=t_n_basis2,
+    )
+
+
+@pytest.fixture(params=[MonomialBasis])
+def t_basis2(request: Any, t_n_basis2: int) -> Basis:
+    """1-dimensional basis to test for tensor basis."""
+    # First element of the basis is assumed to be the 1 function
+    return request.param(  # type: ignore
+        domain_range=(0, 1), n_basis=t_n_basis2,
+    )
+
+
+# Tests
+
+def test_std_fdatagrid_1d_to_2d() -> None:
+    """Test std_fdatagrid with R to R^2 functions."""
+    fd = FDataGrid(
+        data_matrix=[
+            [[0, 1, 2, 3, 4, 5], [0, -1, -2, -3, -4, -5]],
+            [[2, 3, 4, 5, 6, 7], [-2, -3, -4, -5, -6, -7]],
+        ],
+        grid_points=[
+            [-2, -1],
+            [0, 1, 2, 3, 4, 5],
+        ],
+    )
+    expected_std_data_matrix = np.full((1, 2, 6, 1), np.sqrt(2))
     np.testing.assert_allclose(
-        std(fdatagrid).data_matrix,
+        std(fd).data_matrix,
         expected_std_data_matrix,
     )
 
 
-@pytest.mark.parametrize("fdatabasis, expected_std_coefficients", [
-    (
-        FDataBasis(
-            basis=VectorValuedBasis([
-                MonomialBasis(domain_range=(0, 1), n_basis=3),
-                MonomialBasis(domain_range=(0, 1), n_basis=3),
-            ]),
-            coefficients=[
-                [0, 0, 0, 0, 0, 0],
-                [1, 0, 0, 1, 0, 0],
+def test_std_fdatagrid_2d_to_2d() -> None:
+    """Test std_fdatagrid with R to R^2 functions."""
+    fd = FDataGrid(
+        data_matrix=[
+            [
+                [[10, 11], [10, 12], [11, 14]],
+                [[15, 16], [12, 15], [20, 13]],
             ],
-        ),
-        np.array([[np.sqrt(1 / 2), 0, 0, np.sqrt(1 / 2), 0, 0]]),
-    ),
-    (
-        FDataBasis(
-            basis=VectorValuedBasis([
-                FourierBasis(domain_range=(0, 1), n_basis=5),
-                MonomialBasis(domain_range=(0, 1), n_basis=4),
-            ]),
-            coefficients=[
-                [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [1, 0, 0, 0, 0, 1, 0, 0, 0],
+            [
+                [[11, 12], [11, 13], [12, 13]],
+                [[14, 15], [11, 16], [21, 12]],
             ],
-        ),
-        np.array([[np.sqrt(1 / 2), 0, 0, 0, 0, np.sqrt(1 / 2), 0, 0, 0]]),
-    ),
-    (
-        FDataBasis(
-            basis=TensorBasis([
-                MonomialBasis(domain_range=(0, 1), n_basis=4),
-                MonomialBasis(domain_range=(0, 1), n_basis=4),
-            ]),
-            coefficients=[
-                np.zeros(16),
-                np.pad([1], (0, 15)),
-            ],
-        ),
-        [np.pad([np.sqrt(1 / 2)], (0, 15))],
-    ),
-    (
-        FDataBasis(
-            basis=VectorValuedBasis([
-                TensorBasis([
-                    MonomialBasis(domain_range=(0, 1), n_basis=2),
-                    MonomialBasis(domain_range=(0, 1), n_basis=2),
-                ]),
-                TensorBasis([
-                    MonomialBasis(domain_range=(0, 1), n_basis=2),
-                    MonomialBasis(domain_range=(0, 1), n_basis=2),
-                ]),
-            ]),
-            coefficients=[
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [1, 0, 0, 0, 1, 0, 0, 0],
-            ],
-        ),
-        np.array([[np.sqrt(1 / 2), 0, 0, 0] * 2]),
-    ),
-])
-def test_std_fdatabasis(
-    fdatabasis: FDataBasis,
-    expected_std_coefficients: NDArrayFloat,
-) -> None:
-    """Test some std_fdatabasis cases."""
+        ],
+        grid_points=[
+            [0, 1],
+            [0, 1, 2],
+        ],
+    )
+    expected_std_data_matrix = np.full((1, 2, 3, 2), np.sqrt(1 / 2))
     np.testing.assert_allclose(
-        std(fdatabasis).coefficients,
-        expected_std_coefficients,
+        std(fd).data_matrix,
+        expected_std_data_matrix,
+    )
+
+
+def test_std_fdatabasis_vector_valued_basis(
+    vv_basis1: Basis,
+    vv_basis2: Basis,
+) -> None:
+    """Test std_fdatabasis with a vector valued basis."""
+    basis = VectorValuedBasis([vv_basis1, vv_basis2])
+
+    # coefficients of the function===(1, 1)
+    one_coefficients = np.concatenate((
+        np.pad([1], (0, vv_basis1.n_basis - 1)),
+        np.pad([1], (0, vv_basis2.n_basis - 1)),
+    ))
+
+    fd = FDataBasis(
+        basis=basis,
+        coefficients=[np.zeros(basis.n_basis), one_coefficients],
+    )
+
+    np.testing.assert_allclose(
+        std(fd).coefficients,
+        np.array([np.sqrt(1 / 2) * one_coefficients]),
+        rtol=1e-7,
+        atol=1e-7,
+    )
+
+
+def test_std_fdatabasis_tensor_basis(
+    t_basis1: Basis,
+    t_basis2: Basis,
+) -> None:
+    """Test std_fdatabasis with a vector valued basis."""
+    basis = TensorBasis([t_basis1, t_basis2])
+
+    # coefficients of the function===1
+    one_coefficients = np.pad([1], (0, basis.n_basis - 1))
+
+    fd = FDataBasis(
+        basis=basis,
+        coefficients=[np.zeros(basis.n_basis), one_coefficients],
+    )
+
+    np.testing.assert_allclose(
+        std(fd).coefficients,
+        np.array([np.sqrt(1 / 2) * one_coefficients]),
+        rtol=1e-7,
+        atol=1e-7,
+    )
+
+
+def test_std_fdatabasis_2d_to_2d() -> None:
+    """Test std_fdatabasis with R^2 to R^2 basis."""
+    basis = VectorValuedBasis([
+        TensorBasis([
+            MonomialBasis(domain_range=(0, 1), n_basis=2),
+            MonomialBasis(domain_range=(0, 1), n_basis=2),
+        ]),
+        TensorBasis([
+            MonomialBasis(domain_range=(0, 1), n_basis=2),
+            MonomialBasis(domain_range=(0, 1), n_basis=2),
+        ]),
+    ])
+    fd = FDataBasis(
+        basis=basis,
+        coefficients=[
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 1, 0, 0, 0],
+        ],
+    )
+    expected_coefficients = np.array([[np.sqrt(1 / 2), 0, 0, 0] * 2])
+
+    np.testing.assert_allclose(
+        std(fd).coefficients,
+        expected_coefficients,
         rtol=1e-7,
         atol=1e-7,
     )

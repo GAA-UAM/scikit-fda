@@ -1,0 +1,13 @@
+[
+    {
+        "name": "dev",
+        "version": "dev",
+        "url": "https://fda.readthedocs.io/en/latest/"
+    },
+    {
+    	"name": "0.8.1 (stable)",
+        "version": "stable",
+        "url": "https://fda.readthedocs.io/en/stable/",
+        "preferred": true
+    }
+]

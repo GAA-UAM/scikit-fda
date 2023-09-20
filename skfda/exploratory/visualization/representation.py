@@ -627,7 +627,10 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         # There may be different points for each function
         self.grid_points = []
         self.evaluated_points = []
-        indices = np.append(self.fdata.function_indices, self.fdata.n_samples)
+        indices = np.append(
+            self.fdata.function_indices,
+            self.fdata.num_observations,
+        )
         for index_start, index_end in zip(
             indices,
             indices[1:],

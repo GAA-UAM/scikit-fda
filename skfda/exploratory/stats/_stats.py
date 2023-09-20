@@ -143,7 +143,7 @@ def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
         X.coefficients, rowvar=False, ddof=ddof,
     ).reshape((basis.n_basis, basis.n_basis))
 
-    def std_function(t_points: NDArrayFloat) -> NDArrayFloat:
+    def std_function(t_points: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         basis_evaluation = basis(t_points).reshape((basis.n_basis, -1))
         std_values = np.sqrt(
             np.diag(basis_evaluation.T @ coeff_cov_matrix @ basis_evaluation),

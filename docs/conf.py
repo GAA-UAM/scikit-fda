@@ -52,7 +52,7 @@ rtd_version_type = os.environ.get("READTHEDOCS_VERSION_TYPE")
 switcher_version = rtd_version
 if switcher_version == "latest":
     switcher_version = "dev"
-elif rtd_version_type not in ["branch", "tag"]:
+elif rtd_version_type not in {"branch", "tag"}:
     switcher_version = skfda.__version__
 
 rtd_branch = os.environ.get(" READTHEDOCS_GIT_IDENTIFIER", "develop")

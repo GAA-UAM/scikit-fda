@@ -1082,12 +1082,16 @@ class FDataGrid(FData):  # noqa: WPS214
     def restrict(
         self: T,
         domain_range: DomainRangeLike,
+        *,
+        with_bounds: bool = False,
     ) -> T:
         """
         Restrict the functions to a new domain range.
 
         Args:
             domain_range: New domain range.
+            with_bounds: Whether or not to ensure domain boundaries
+                appear in `grid_points`.
 
         Returns:
             Restricted function.
@@ -1101,30 +1105,29 @@ class FDataGrid(FData):  # noqa: WPS214
             for ((a, b), (c, d)) in zip(domain_range, self.domain_range)
         )
 
-        index_list = []
-        new_grid_points = []
-
         # Eliminate points outside the new range.
-        for dr, grid_points in zip(
-            domain_range,
-            self.grid_points,
-        ):
-            keep_index = (
-                (dr[0] <= grid_points)
-                & (grid_points <= dr[1])
-            )
+        slice_list = []
+        for (a, b), dim_points in zip(domain_range, self.grid_points):
+            ia = np.searchsorted(dim_points, a)
+            ib = np.searchsorted(dim_points, b, 'right')
+            slice_list.append(slice(ia, ib))
+        grid_points = [g[s] for g, s in zip(self.grid_points, slice_list)]
+        data_matrix = self.data_matrix[(slice(None),) + tuple(slice_list)]
 
-            index_list.append(keep_index)
-
-            new_grid_points.append(
-                grid_points[keep_index],
-            )
-
-        data_matrix = self.data_matrix[(slice(None),) + tuple(index_list)]
+        # Ensure that boundaries are in grid_points.
+        if with_bounds:
+            # Update `grid_points`
+            for dim, (a, b) in enumerate(domain_range):
+                dim_points = grid_points[dim]
+                left = [a] if a < dim_points[0] else []
+                right = [b] if b > dim_points[-1] else []
+                grid_points[dim] = np.concatenate((left, dim_points, right))
+            # Evaluate
+            data_matrix = self(grid_points, grid=True)
 
         return self.copy(
             domain_range=domain_range,
-            grid_points=new_grid_points,
+            grid_points=grid_points,
             data_matrix=data_matrix,
         )
 

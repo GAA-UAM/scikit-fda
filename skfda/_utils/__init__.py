@@ -45,9 +45,9 @@ if TYPE_CHECKING:
         _same_domain as _same_domain,
         _to_grid as _to_grid,
         _to_grid_points as _to_grid_points,
+        function_to_fdatabasis as function_to_fdatabasis,
         nquad_vec as nquad_vec,
     )
-
     from ._warping import (
         invert_warping as invert_warping,
         normalize_scale as normalize_scale,

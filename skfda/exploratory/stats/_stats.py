@@ -1,10 +1,10 @@
 """Functional data descriptive statistics."""
 from __future__ import annotations
 
+import functools
 from builtins import isinstance
 from typing import Callable, TypeVar, Union
 
-import functools
 import numpy as np
 from scipy import integrate
 from scipy.stats import rankdata

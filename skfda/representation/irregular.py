@@ -230,13 +230,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         if len(self.function_values.shape) == 1:
             self.function_values = self.function_values.reshape(-1, 1)
 
-        # Set dimensions
-        self._dim_domain = self.function_arguments.shape[1]
-        self._dim_codomain = self.function_values.shape[1]
-
-        # Set structure to given data
-        self.num_functions = self.function_indices.shape[0]
-
         if self.function_arguments.shape[0] != self.function_values.shape[0]:
             raise ValueError(
                 "Dimension mismatch in function_arguments and function_values",
@@ -509,11 +502,11 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     @property
     def dim_domain(self) -> int:
-        return self._dim_domain
+        return self.function_arguments.shape[1]
 
     @property
     def dim_codomain(self) -> int:
-        return self._dim_codomain
+        return self.function_values.shape[1]
 
     @property
     def coordinates(self: T) -> _IrregularCoordinateIterator[T]:
@@ -521,7 +514,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     @property
     def n_samples(self) -> int:
-        return self.num_functions
+        return self.function_indices.shape[0]
 
     @property
     def sample_range(self) -> DomainRange:
@@ -998,9 +991,9 @@ class FDataIrregular(FData):  # noqa: WPS214
                 x.check_same_dimensions(y)
 
         # Allocate all required memory
-        total_functions = self.num_functions + sum(
+        total_functions = self.n_samples + sum(
             [
-                o.num_functions
+                o.n_samples
                 for o in others
             ],
         )
@@ -1024,7 +1017,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         # Add samples sequentially
         for f_data in [self] + list(others):
             function_indices[
-                index:index + f_data.num_functions
+                index:index + f_data.n_samples
             ] = f_data.function_indices
             function_args[
                 head:head + f_data.num_observations
@@ -1033,8 +1026,8 @@ class FDataIrregular(FData):  # noqa: WPS214
                 head:head + f_data.num_observations
             ] = f_data.function_values
             # Adjust pointers to the concatenated array
-            function_indices[index:index + f_data.num_functions] += head
-            index += f_data.num_functions
+            function_indices[index:index + f_data.n_samples] += head
+            index += f_data.n_samples
             head += f_data.num_observations
             total_sample_names = total_sample_names + list(f_data.sample_names)
 
@@ -1441,11 +1434,11 @@ class FDataIrregular(FData):  # noqa: WPS214
     ) -> T:
         required_slices = []
         key = _check_array_key(self.function_indices, key)
-        indices = range(self.num_functions)
+        indices = range(self.n_samples)
         required_indices = indices[key]
         for i in required_indices:
             next_index = None
-            if i + 1 < self.num_functions:
+            if i + 1 < self.n_samples:
                 next_index = self.function_indices[i + 1]
             s = slice(self.function_indices[i], next_index)
             required_slices.append(s)

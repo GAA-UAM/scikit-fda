@@ -1296,15 +1296,8 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         # Eliminate points outside the new range.
         # Must also modify function indices to point to new array
-        iterable_indices = np.append(
-            self.function_indices,
-            self.n_measurements,
-        )
 
-        for i, index_tuple in enumerate(zip(
-            iterable_indices,
-            iterable_indices[1:],
-        )):
+        for i, index_tuple in enumerate(self.indices_start_end()):
             prev_index, index = index_tuple
             s = slice(prev_index, index)
             masks = set(range(self.function_arguments[s].shape[0]))
@@ -1422,6 +1415,17 @@ class FDataIrregular(FData):  # noqa: WPS214
             '\n',
             '\n    ',
         )
+
+    def indices_start_end(self) -> Sequence[Tuple[int, int]]:
+        """Return the indices of the start and end of each function.
+
+        Returns:
+            Sequence[Tuple[int, int]]: Sequence of tuples with the indices of
+                the start and end of each function.
+
+        """
+        indices = np.append(self.function_indices, self.n_measurements)
+        return list(zip(indices, indices[1:]))
 
     def __getitem__(
         self: T,

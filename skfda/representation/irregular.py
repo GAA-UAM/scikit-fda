@@ -280,8 +280,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         cls,
         dataframe: pandas.DataFrame,
         id_column: str,
-        argument_columns: LabelTupleLike,
-        coordinate_columns: LabelTupleLike,
+        argument_columns: Sequence[str | None],
+        coordinate_columns: Sequence[str | None],
         **kwargs,
     ) -> FDataIrregular:
         """Create a FDataIrregular object from a pandas dataframe.
@@ -296,9 +296,9 @@ class FDataIrregular(FData):  # noqa: WPS214
                 irregular functional dataset.
             id_column (str): Name of the column which contains the information
                 about which curve does each each row belong to.
-            argument_columns (LabelTupleLike): list of columns where
+            argument_columns (Sequence[str | None]): list of columns where
                 the arguments for each dimension of the domain can be found.
-            coordinate_columns (LabelTupleLike): list of columns where
+            coordinate_columns (Sequence[str | None]): list of columns where
                 the values for each dimension of the image can be found.
             kwargs: Arguments for the FDataIrregular constructor.
 

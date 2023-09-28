@@ -64,7 +64,7 @@ class FDataGrid(FData):  # noqa: WPS214
             contains the points of dicretisation for each axis of data_matrix.
         domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
-            is considered to exist for each one of the axies.
+            is considered to exist for each one of the axes.
         dataset_name: name of the dataset.
         argument_names: tuple containing the names of the different
             arguments.

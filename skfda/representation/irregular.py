@@ -122,7 +122,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             every curve in the sample. Each row contains an observation.
         domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
-            is considered to exist for each one of the axies.
+            is considered to exist for each one of the axes.
         dataset_name: name of the dataset.
         argument_names: tuple containing the names of the different
             arguments.

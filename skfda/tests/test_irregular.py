@@ -436,3 +436,15 @@ def test_fdatairregular_to_grid(
     assert fdatagrid.equals(FDataIrregular.from_datagrid(fdatagrid).to_grid())
     # FDataIrregular -> FDataGrid -> FDataIrregular
     assert fdatairregular.equals(FDataIrregular.from_datagrid(f_data_grid))
+
+
+def test_fdatairregular_isna(
+    fdatairregular: FDataIrregular,
+) -> None:
+    """Test the shape of isna function output for FDataIrregular.
+
+    Args:
+        fdatairregular (FDataIrregular): FDataIrregular object
+            which can be unidimensional or multidimensional.
+    """
+    assert fdatairregular.isna().shape == (len(fdatairregular),)

@@ -724,8 +724,7 @@ class LinearPlotIrregular(PlotIrregular):
                 )
         else:
             # TODO Implementar para multidimension. Como hacer mesh?
-            import warnings
-            warnings.warn("Not implemented")
+            raise NotImplementedError()
 
         _set_labels(self.fdata, fig, axes, self.patches)
 
@@ -767,8 +766,7 @@ class ScatterPlotIrregular(PlotIrregular):
         else:
 
             # TODO Implement for multidimensional
-            import warnings
-            warnings.warn("Not implemented")
+            raise NotImplementedError()
 
         _set_labels(self.fdata, fig, axes, self.patches)
 

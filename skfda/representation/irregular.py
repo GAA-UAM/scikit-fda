@@ -1383,7 +1383,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             Shifted functions.
         """
-        pass
+        raise NotImplementedError()
 
     def compose(
         self: T,
@@ -1404,7 +1404,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             Function representing the composition.
 
         """
-        pass
+        raise NotImplementedError()
 
     def __str__(self) -> str:
         """Return str(self)."""
@@ -1584,10 +1584,9 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             na_values (NDArrayBool): Positions of NA.
         """
-        return np.all(  # type: ignore[no-any-return]
-            np.isnan(self.function_values),
-            axis=tuple(range(1, self.function_values.ndim)),
-        )
+        return np.array([
+            np.all(np.isnan(v.function_values)) for v in self
+        ])
 
 
 class FDataIrregularDType(

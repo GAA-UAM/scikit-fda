@@ -282,7 +282,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         id_column: str,
         argument_columns: Sequence[str | None],
         coordinate_columns: Sequence[str | None],
-        **kwargs,
+        **kwargs: Any,
     ) -> FDataIrregular:
         """Create a FDataIrregular object from a pandas dataframe.
 

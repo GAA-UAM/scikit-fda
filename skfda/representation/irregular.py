@@ -39,13 +39,15 @@ T = TypeVar("T", bound='FDataIrregular')
 
 
 def _get_sample_range_from_data(
-    function_indices,
-    function_arguments,
-    dim_domain,
-):
-    dim_ranges = []
+    function_indices: NDArrayInt,
+    function_arguments: NDArrayFloat,
+    dim_domain: int,
+) -> DomainRange:
+    dim_ranges = []  # sample range for each dimension
     for dim in range(dim_domain):
         i = 0
+
+        # Sample range for each function in current dimension:
         dim_sample_ranges = []
         for f in function_indices[1:]:
             min_argument = min(
@@ -86,13 +88,13 @@ def _get_sample_range_from_data(
             ),
         )
 
-    return sample_range
+    return tuple(sample_range)
 
 
 def _get_domain_range_from_sample_range(
-    sample_range,
-    dim_domain,
-):
+    sample_range: DomainRange,
+    dim_domain: int,
+) -> DomainRange:
     ranges = []
     for dim in range(dim_domain):
         min_argument = min([x[dim][0] for x in sample_range])
@@ -113,22 +115,22 @@ class FDataIrregular(FData):  # noqa: WPS214
     allowing basic operations, representation and conversion to basis format.
 
     Attributes:
-        functional_indices: a unidimensional array which stores the index of
+        functional_indices: A unidimensional array which stores the index of
             the functional_values and functional_values arrays where the data
             of each individual curve of the sample begins.
-        functional_arguments: an array of every argument of the domain for
+        functional_arguments: An array of every argument of the domain for
             every curve in the sample. Each row contains an observation.
-        functional_values: an array of every value of the codomain for
+        functional_values: An array of every value of the codomain for
             every curve in the sample. Each row contains an observation.
         domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
             is considered to exist for each one of the axes.
-        dataset_name: name of the dataset.
-        argument_names: tuple containing the names of the different
+        dataset_name: Name of the dataset.
+        argument_names: Tuple containing the names of the different
             arguments.
-        coordinate_names: tuple containing the names of the different
+        coordinate_names: Tuple containing the names of the different
             coordinate functions.
-        extrapolation: defines the default type of
+        extrapolation: Defines the default type of
             extrapolation. By default None, which does not apply any type of
             extrapolation. See `Extrapolation` for detailled information of the
             types of extrapolation.

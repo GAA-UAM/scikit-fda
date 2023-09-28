@@ -115,12 +115,12 @@ class FDataIrregular(FData):  # noqa: WPS214
     allowing basic operations, representation and conversion to basis format.
 
     Attributes:
-        functional_indices: A unidimensional array which stores the index of
+        function_indices: A unidimensional array which stores the index of
             the functional_values and functional_values arrays where the data
             of each individual curve of the sample begins.
-        functional_arguments: An array of every argument of the domain for
+        function_arguments: An array of every argument of the domain for
             every curve in the sample. Each row contains an observation.
-        functional_values: An array of every value of the codomain for
+        function_values: An array of every value of the codomain for
             every curve in the sample. Each row contains an observation.
         domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
@@ -235,9 +235,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                 "Dimension mismatch in function_arguments and function_values",
             )
 
-        self.num_observations = self.function_arguments.shape[0]
-
-        if max(self.function_indices) >= self.num_observations:
+        if max(self.function_indices) >= self.n_measurements:
             raise ValueError("Index in function_indices out of bounds")
 
         # Ensure arguments are in order within each function
@@ -316,16 +314,16 @@ class FDataIrregular(FData):  # noqa: WPS214
             coordinate_columns = [coordinate_columns]
 
         # Obtain num functions and num observations from data
-        num_observations = dataframe.shape[0]
+        n_measurements = dataframe.shape[0]
         num_functions = dataframe[id_column].nunique()
 
         # Create data structure of function pointers and coordinates
         function_indices = np.zeros((num_functions, ), dtype=np.uint32)
         function_arguments = np.zeros(
-            (num_observations, len(argument_columns)),
+            (n_measurements, len(argument_columns)),
         )
         function_values = np.zeros(
-            (num_observations, len(coordinate_columns)),
+            (n_measurements, len(coordinate_columns)),
         )
 
         head = 0
@@ -371,16 +369,16 @@ class FDataIrregular(FData):  # noqa: WPS214
             as the source but with an irregular structure.
         """
         # Obtain num functions and num observations from data
-        num_observations = np.sum(~(np.isnan(f_data.data_matrix).all(axis=-1)))
+        n_measurements = np.sum(~(np.isnan(f_data.data_matrix).all(axis=-1)))
         num_functions = f_data.data_matrix.shape[0]
 
         # Create data structure of function pointers and coordinates
         function_indices = np.zeros((num_functions, ), dtype=np.uint32)
         function_arguments = np.zeros(
-            (num_observations, f_data.dim_domain),
+            (n_measurements, f_data.dim_domain),
         )
         function_values = np.zeros(
-            (num_observations, f_data.dim_codomain),
+            (n_measurements, f_data.dim_codomain),
         )
 
         # Find all the combinations of grid points and indices
@@ -428,7 +426,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         """
         indices_start_end = np.append(
             self.function_indices,
-            self.num_observations,
+            self.n_measurements,
         )
 
         slices = list(zip(indices_start_end, indices_start_end[1:]))
@@ -515,6 +513,10 @@ class FDataIrregular(FData):  # noqa: WPS214
     @property
     def n_samples(self) -> int:
         return self.function_indices.shape[0]
+
+    @property
+    def n_measurements(self) -> int:
+        return self.function_arguments.shape[0]
 
     @property
     def sample_range(self) -> DomainRange:
@@ -774,7 +776,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                 values_after = np.concatenate(
                     (
                         self.function_indices,
-                        np.array([self.num_observations]),
+                        np.array([self.n_measurements]),
                     ),
                 )
 
@@ -806,7 +808,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                 values_after = np.concatenate(
                     (
                         self.function_indices,
-                        np.array([self.num_observations]),
+                        np.array([self.n_measurements]),
                     ),
                 )
 
@@ -997,9 +999,9 @@ class FDataIrregular(FData):  # noqa: WPS214
                 for o in others
             ],
         )
-        total_values = self.num_observations + sum(
+        total_values = self.n_measurements + sum(
             [
-                o.num_observations
+                o.n_measurements
                 for o in others
             ],
         )
@@ -1020,15 +1022,15 @@ class FDataIrregular(FData):  # noqa: WPS214
                 index:index + f_data.n_samples
             ] = f_data.function_indices
             function_args[
-                head:head + f_data.num_observations
+                head:head + f_data.n_measurements
             ] = f_data.function_arguments
             function_values[
-                head:head + f_data.num_observations
+                head:head + f_data.n_measurements
             ] = f_data.function_values
             # Adjust pointers to the concatenated array
             function_indices[index:index + f_data.n_samples] += head
             index += f_data.n_samples
-            head += f_data.num_observations
+            head += f_data.n_measurements
             total_sample_names = total_sample_names + list(f_data.sample_names)
 
         # Check domain range
@@ -1172,7 +1174,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         # Fill with each function
         next_indices = np.append(
             self.function_indices,
-            self.num_observations,
+            self.n_measurements,
         )
 
         for i, index in enumerate(self.function_indices):
@@ -1303,7 +1305,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         # Must also modify function indices to point to new array
         iterable_indices = np.append(
             self.function_indices,
-            self.num_observations,
+            self.n_measurements,
         )
 
         for i, index_tuple in enumerate(zip(
@@ -1459,7 +1461,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         chunk_sizes = np.array(
             [
                 s.stop - s.start if s.stop is not None
-                else self.num_observations - s.start
+                else self.n_measurements - s.start
                 for s in required_slices
             ],
         )
@@ -1605,7 +1607,6 @@ class FDataIrregularDType(
         self.function_indices = function_indices
         self.function_arguments = function_arguments
         self.dim_domain = function_arguments.shape[1]
-        self.num_observations = len(function_arguments)
 
         if domain_range is None:
             sample_range = _get_sample_range_from_data(
@@ -1621,6 +1622,11 @@ class FDataIrregularDType(
         self.domain_range = validate_domain_range(domain_range)
         self.dim_codomain = dim_codomain
 
+    @property
+    def n_measurements(self) -> int:
+        """Number of measurements."""
+        return self.function_arguments.shape[0]
+
     @classmethod
     def construct_array_type(cls) -> Type[FDataIrregular]:  # noqa: D102
         return FDataIrregular
@@ -1628,7 +1634,7 @@ class FDataIrregularDType(
     def _na_repr(self) -> FDataIrregular:
 
         shape = (
-            (self.num_observations,)
+            (self.n_measurements,)
             + (self.dim_codomain,)
         )
 

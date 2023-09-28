@@ -629,7 +629,7 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         self.evaluated_points = []
         indices = np.append(
             self.fdata.function_indices,
-            self.fdata.num_observations,
+            self.fdata.n_measurements,
         )
         for index_start, index_end in zip(
             indices,

@@ -722,7 +722,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             FDataIrregular with the covariance function.
         """
         # TODO Implementation to be decided
-        pass
+        raise NotImplementedError()
 
     def equals(self, other: object) -> bool:
         """Comparison of FDataIrregular objects."""

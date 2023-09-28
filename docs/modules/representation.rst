@@ -89,14 +89,15 @@ methods.
 Irregular representation
 ------------------------
 
-In practice, most functional datasets do not contain functions evaluated
+In practice, many functional datasets do not contain functions evaluated
 uniformly over a fixed grid. In other words, it is paramount to be able
 to represent irregular functional data.
 
-While the FDataGrid class could support these kind of datasets, it is
-inefficient to store a complete grid with low data density. Furthermore,
-there are specific methods that can be applied to irregular data in order
-to obtain, among other things, a better convesion to basis representation.
+While the FDataGrid class could support these kind of datasets by filling a
+common grid with possibly emtpy (or nan) values, it is inefficient to store a
+complete grid with low data density. Furthermore, there are specific methods
+that can be applied to irregular data in order to obtain, among other things,
+a better conversion to basis representation.
 
 The FDataIrregular class provides the functionality which suits these purposes.
 

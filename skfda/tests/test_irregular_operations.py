@@ -799,7 +799,7 @@ def test_fdatairregular_to_basis_consistency(
         fdatagrid (FDataGrid): FDataGrid object
         all_basis (Basis): FDataBasis object.
     """
-    fd_irregular = FDataIrregular.from_datagrid(fdatagrid)
+    fd_irregular = FDataIrregular.from_fdatagrid(fdatagrid)
 
     if fd_irregular.dim_domain == 1:
         basis = all_basis(

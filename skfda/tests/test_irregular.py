@@ -242,7 +242,7 @@ def test_fdatairregular_from_fdatagrid(
         fdatagrid (FDataGrid): FDataGrid object. Can be dense or sparse
             (contain NaNs)
     """
-    f_data_irreg = FDataIrregular.from_datagrid(fdatagrid)
+    f_data_irreg = FDataIrregular.from_fdatagrid(fdatagrid)
 
     assert f_data_irreg is not None
     assert len(f_data_irreg) == len(fdatagrid)
@@ -433,9 +433,9 @@ def test_fdatairregular_to_grid(
     f_data_grid = fdatairregular.to_grid()
 
     # FDataGrid -> FDataIrregular -> FDataGrid
-    assert fdatagrid.equals(FDataIrregular.from_datagrid(fdatagrid).to_grid())
+    assert fdatagrid.equals(FDataIrregular.from_fdatagrid(fdatagrid).to_grid())
     # FDataIrregular -> FDataGrid -> FDataIrregular
-    assert fdatairregular.equals(FDataIrregular.from_datagrid(f_data_grid))
+    assert fdatairregular.equals(FDataIrregular.from_fdatagrid(f_data_grid))
 
 
 def test_fdatairregular_isna(

@@ -353,7 +353,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         )
 
     @classmethod
-    def from_datagrid(
+    def from_fdatagrid(
         cls: Type[T],
         f_data: FDataGrid,
         **kwargs,

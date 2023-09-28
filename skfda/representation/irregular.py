@@ -222,11 +222,11 @@ class FDataIrregular(FData):  # noqa: WPS214
         coordinate_names: Optional[LabelTupleLike] = None,
     ):
         """Construct a FDataIrregular object."""
-        self.function_indices = np.array(function_indices)
-        self.function_arguments = np.array(function_arguments)
+        self.function_indices = np.asarray(function_indices)
+        self.function_arguments = np.asarray(function_arguments)
         if len(self.function_arguments.shape) == 1:
             self.function_arguments = self.function_arguments.reshape(-1, 1)
-        self.function_values = np.array(function_values)
+        self.function_values = np.asarray(function_values)
         if len(self.function_values.shape) == 1:
             self.function_values = self.function_values.reshape(-1, 1)
 

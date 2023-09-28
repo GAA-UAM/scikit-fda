@@ -581,7 +581,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             FDataIrregular with the derivative of the dataset.
         """
-        pass
+        raise NotImplementedError()
 
     def integrate(
         self: T,
@@ -597,10 +597,10 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             FDataIrregular with the integral.
         """
-        pass
+        raise NotImplementedError()
 
     def check_same_dimensions(self: T, other: T) -> None:
-        """Ensure that other FDataIrregular object ahs compatible dimensions.
+        """Ensure that other FDataIrregular object has compatible dimensions.
 
         Args:
             other (T): FDataIrregular object to compare dimensions

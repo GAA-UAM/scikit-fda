@@ -26,7 +26,7 @@ DIMENSIONS = 2
 N_BASIS = 5
 DECIMALS = 4
 
-random_state = np.random.RandomState(seed=SEED)
+random_state = np.random.default_rng(seed=SEED)
 
 ############
 # FIXTURES
@@ -49,11 +49,11 @@ def input_arrays(
     num_values_per_curve = num_values_per_curve.astype(int)
 
     values_per_curve = [
-        random_state.rand(num_values, dimensions)
+        random_state.random((num_values, dimensions))
         for num_values in num_values_per_curve
     ]
     args_per_curve = [
-        random_state.rand(num_values, dimensions)
+        random_state.random((num_values, dimensions))
         for num_values in num_values_per_curve
     ]
 
@@ -80,11 +80,11 @@ def input_arrays_2d(
     num_values_per_curve = num_values_per_curve.astype(int)
 
     values_per_curve = [
-        random_state.rand(num_values, dimensions)
+        random_state.random((num_values, dimensions))
         for num_values in num_values_per_curve
     ]
     args_per_curve = [
-        random_state.rand(num_values, dimensions)
+        random_state.random((num_values, dimensions))
         for num_values in num_values_per_curve
     ]
 
@@ -101,9 +101,9 @@ def fdatagrid_1d(
     """Generate FDataGrid."""
     num_values_per_curve = NUM_CURVES
 
-    data_matrix = random_state.rand(NUM_CURVES, num_values_per_curve, 1)
+    data_matrix = random_state.random((NUM_CURVES, num_values_per_curve, 1))
     # Grid points must be sorted
-    grid_points = np.sort(random_state.rand(num_values_per_curve))
+    grid_points = np.sort(random_state.random((num_values_per_curve,)))
 
     return FDataGrid(
         data_matrix=data_matrix,
@@ -117,14 +117,14 @@ def fdatagrid_2d(
     """Generate multidimensional FDataGrid."""
     num_values_per_curve = NUM_CURVES
 
-    data_matrix = random_state.rand(
+    data_matrix = random_state.random((
         NUM_CURVES,
         num_values_per_curve,
         DIMENSIONS,
-    )
+    ))
 
     # Grid points must be sorted
-    grid_points = np.sort(random_state.rand(num_values_per_curve))
+    grid_points = np.sort(random_state.random((num_values_per_curve,)))
 
     return FDataGrid(
         data_matrix=data_matrix,
@@ -781,10 +781,7 @@ class TestBasisOperations:
         ]
 
         assert all(
-            [
-                isinstance(fd_basis, FDataBasis)
-                for fd_basis in fd_basis_coords
-            ],
+            isinstance(fd_basis, FDataBasis) for fd_basis in fd_basis_coords
         )
 
 
@@ -840,8 +837,6 @@ def test_fdatairregular_to_basis_consistency(
     ]
 
     assert all(
-        [
-            np.all(irregular_coefs[i] == g_coef)
-            for i, g_coef in enumerate(grid_coefs)
-        ],
+        np.all(irregular_coefs[i] == g_coef)
+        for i, g_coef in enumerate(grid_coefs)
     )

@@ -744,7 +744,9 @@ class FDataIrregular(FData):  # noqa: WPS214
         )
 
     def __eq__(self, other: object) -> NDArrayBool:
-        return self.equals(other)
+        return np.array([
+            f.equals(o) for f, o in zip(self, other)
+        ])
 
     def _get_op_matrix(  # noqa: WPS212
         self,

@@ -190,7 +190,7 @@ def test_fdatairregular_copy(
         fdatairregular (FDataIrregular): FDataIrregular object
             which can be unidimensional or multidimensional.
     """
-    assert fdatairregular == fdatairregular.copy()
+    assert np.all(fdatairregular == fdatairregular.copy())
 
 
 @pytest.mark.parametrize("kwargs", COPY_KWARGS)

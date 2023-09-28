@@ -351,7 +351,9 @@ class TestArithmeticOperations1D:
         # Account for single curve test
         other_1d = self._single_curve(fdatairregular_1d, other_1d)
 
-        assert fdatairregular_1d + other_1d == other_1d + fdatairregular_1d
+        assert np.all(
+            (fdatairregular_1d + other_1d) == (other_1d + fdatairregular_1d),
+        )
 
     def test_fdatairregular_arithmetic_sub(
         self,
@@ -447,7 +449,9 @@ class TestArithmeticOperations1D:
         # Account for single curve test
         other_1d = self._single_curve(fdatairregular_1d, other_1d)
 
-        assert fdatairregular_1d * other_1d == other_1d * fdatairregular_1d
+        assert np.all(
+            (fdatairregular_1d * other_1d) == (other_1d * fdatairregular_1d),
+        )
 
     def test_fdatairregular_arithmetic_div(
         self,
@@ -567,7 +571,9 @@ class TestArithmeticOperations2D:
         # Account for single curve test
         other_2d = self._single_curve(fdatairregular_2d, other_2d)
 
-        assert fdatairregular_2d + other_2d == other_2d + fdatairregular_2d
+        assert np.all(
+            (fdatairregular_2d + other_2d) == (other_2d + fdatairregular_2d),
+        )
 
     def test_fdatairregular_arithmetic_sub(
         self,
@@ -663,7 +669,9 @@ class TestArithmeticOperations2D:
         # Account for single curve test
         other_2d = self._single_curve(fdatairregular_2d, other_2d)
 
-        assert fdatairregular_2d * other_2d == other_2d * fdatairregular_2d
+        assert np.all(
+            (fdatairregular_2d * other_2d) == (other_2d * fdatairregular_2d),
+        )
 
     def test_fdatairregular_arithmetic_div(
         self,

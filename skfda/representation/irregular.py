@@ -277,7 +277,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     @classmethod
     def from_dataframe(
-        cls: Type[T],
+        cls,
         dataframe: pandas.DataFrame,
         id_column: str,
         argument_columns: LabelTupleLike,
@@ -507,7 +507,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         return self.function_values.shape[1]
 
     @property
-    def coordinates(self: T) -> _IrregularCoordinateIterator[T]:
+    def coordinates(self) -> _IrregularCoordinateIterator[T]:
         return _IrregularCoordinateIterator(self)
 
     @property

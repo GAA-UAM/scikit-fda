@@ -490,15 +490,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         )
 
     @property
-    def sample_points(self) -> GridPoints:
-        warnings.warn(
-            "Parameter sample_points is deprecated. Use the "
-            "parameter grid_points instead.",
-            DeprecationWarning,
-        )
-        return self.grid_points
-
-    @property
     def dim_domain(self) -> int:
         return self.function_arguments.shape[1]
 

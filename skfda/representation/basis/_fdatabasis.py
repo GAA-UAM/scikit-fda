@@ -461,7 +461,7 @@ class FDataBasis(FData):  # noqa: WPS214
                 self.domain_range and the number of points the maximum
                 between 501 and 10 times the number of basis.
             correction: degrees of freedom adjustment. The divisor used in the
-                calculation is `N - correction`, where `N` represents the 
+                calculation is `N - correction`, where `N` represents the
                 number of elements. Default: `1`.
 
         Returns:
@@ -469,7 +469,8 @@ class FDataBasis(FData):  # noqa: WPS214
 
         """
         return self.to_grid(
-            eval_points).var(correction=correction).to_basis(self.basis)
+            eval_points,
+        ).var(correction=correction).to_basis(self.basis)
 
     @overload
     def cov(  # noqa: WPS451

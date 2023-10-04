@@ -124,7 +124,7 @@ def std(X: F, ddof: int = 1) -> F:
     raise NotImplementedError("Not implemented for this type")
 
 
-@std.register(FDataGrid)
+@std.register
 def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
     """Compute the standard deviation of a FDataGrid."""
     return X.copy(
@@ -133,7 +133,7 @@ def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
     )
 
 
-@std.register(FDataBasis)
+@std.register
 def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
     """Compute the standard deviation of a FDataBasis."""
     from ..._utils import function_to_fdatabasis

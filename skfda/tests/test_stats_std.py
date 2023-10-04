@@ -11,7 +11,6 @@ from skfda import FDataBasis, FDataGrid
 from skfda.exploratory.stats import std
 from skfda.representation.basis import (
     Basis,
-    BSplineBasis,
     FourierBasis,
     MonomialBasis,
     TensorBasis,
@@ -27,25 +26,17 @@ def vv_n_basis1(request: Any) -> int:
     return request.param  # type: ignore[no-any-return]
 
 
-@pytest.fixture(params=[3])
-def vv_n_basis2(request: Any) -> int:
-    """n_basis for 2nd coordinate of vector valued basis."""
-    return request.param  # type: ignore[no-any-return]
-
-
 @pytest.fixture
 def vv_basis1(vv_n_basis1: int) -> Basis:
     """1-dimensional basis to test for vector valued basis."""
     # First element of the basis is assumed to be the 1 function
-    return BSplineBasis(
-        n_basis=vv_n_basis1,
-        domain_range=(0, 1),
-        order=vv_n_basis1 - 1,
+    return MonomialBasis(
+        n_basis=vv_n_basis1, domain_range=(0, 1),
     )
 
 
 @pytest.fixture(params=[FourierBasis, MonomialBasis])
-def vv_basis2(request: Any, vv_n_basis2: int) -> Basis:
+def vv_basis2(request: Any, vv_n_basis2: int = 3) -> Basis:
     """1-dimensional basis to test for vector valued basis."""
     # First element of the basis is assumed to be the 1 function
     return request.param(  # type: ignore[no-any-return]
@@ -55,29 +46,17 @@ def vv_basis2(request: Any, vv_n_basis2: int) -> Basis:
 
 # Fixtures for test_std_fdatabasis_tensor_basis
 
-@pytest.fixture(params=[3])
-def t_n_basis1(request: Any) -> int:
-    """n_basis for 1st input argument of tensor basis."""
-    return request.param  # type: ignore[no-any-return]
-
-
-@pytest.fixture(params=[5])
-def t_n_basis2(request: Any) -> int:
-    """n_basis for 2nd input argument of tensor basis."""
-    return request.param  # type: ignore[no-any-return]
-
-
 @pytest.fixture(params=[FourierBasis])
-def t_basis1(request: Any, t_n_basis2: int) -> Basis:
+def t_basis1(request: Any, t_n_basis1: int = 3) -> Basis:
     """1-dimensional basis to test for tensor basis."""
     # First element of the basis is assumed to be the 1 function
     return request.param(  # type: ignore[no-any-return]
-        domain_range=(0, 1), n_basis=t_n_basis2,
+        domain_range=(0, 1), n_basis=t_n_basis1,
     )
 
 
 @pytest.fixture(params=[MonomialBasis])
-def t_basis2(request: Any, t_n_basis2: int) -> Basis:
+def t_basis2(request: Any, t_n_basis2: int = 5) -> Basis:
     """1-dimensional basis to test for tensor basis."""
     # First element of the basis is assumed to be the 1 function
     return request.param(  # type: ignore[no-any-return]

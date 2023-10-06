@@ -416,7 +416,7 @@ class IrregularBasisSmoother(_LinearSmoother):
             self
 
         """
-        self.input_points_ = X.function_arguments
+        self.input_points_ = X.points
         self.output_points_ = (
             self.output_points
             if self.output_points is not None
@@ -447,14 +447,14 @@ class IrregularBasisSmoother(_LinearSmoother):
         assert all(
             np.array_equal(i, s) for i, s in zip(
                 self.input_points_,
-                X.function_arguments,
+                X.points,
             )
         )
 
         if self.return_basis:
             coefficients = self._coef_matrix(
-                input_points=X.function_arguments,
-                function_values=X.function_values,
+                input_points=X.points,
+                function_values=X.values,
             ).T
 
             return FDataBasis(

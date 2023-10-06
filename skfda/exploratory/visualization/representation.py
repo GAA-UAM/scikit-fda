@@ -629,10 +629,10 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         self.evaluated_points = []
         for index_start, index_end in self.fdata.indices_start_end():
             self.grid_points.append(
-                self.fdata.function_arguments[index_start:index_end],
+                self.fdata.points[index_start:index_end],
             )
             self.evaluated_points.append(
-                self.fdata.function_values[index_start:index_end],
+                self.fdata.values[index_start:index_end],
             )
 
         self.domain_range = domain_range

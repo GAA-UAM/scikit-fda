@@ -158,9 +158,9 @@ def fdatairregular_1d(
     """Return FDataIrregular with only 1 curve or NUM_CURVES as requested."""
     indices, arguments, values = input_arrays
     f_data_irreg = FDataIrregular(
-        function_indices=indices,
-        function_arguments=arguments,
-        function_values=values,
+        start_indices=indices,
+        points=arguments,
+        values=values,
     )
 
     if request.param == "single_curve":
@@ -177,9 +177,9 @@ def fdatairregular_2d(
     """Return FDataIrregular with only 1 curve or NUM_CURVES as requested."""
     indices, arguments, values = input_arrays_2d
     f_data_irreg = FDataIrregular(
-        function_indices=indices,
-        function_arguments=arguments,
-        function_values=values,
+        start_indices=indices,
+        points=arguments,
+        values=values,
     )
 
     if request.param == "single_curve":
@@ -284,7 +284,7 @@ class TestArithmeticOperations1D:
         if isinstance(other, np.ndarray):
             return other[0]
         elif isinstance(other, FDataIrregular):
-            return other.function_values
+            return other.values
         return other
 
     def _single_curve(
@@ -313,9 +313,9 @@ class TestArithmeticOperations1D:
 
         f_data_sum = fdatairregular_1d + other_1d
 
-        result = fdatairregular_1d.function_values + self._take_first(other_1d)
+        result = fdatairregular_1d.values + self._take_first(other_1d)
 
-        assert np.all(f_data_sum.function_values == result)
+        assert np.all(f_data_sum.values == result)
 
     def test_fdatairregular_arithmetic_rsum(
         self,
@@ -333,9 +333,9 @@ class TestArithmeticOperations1D:
 
         f_data_sum = other_1d + fdatairregular_1d
 
-        result = self._take_first(other_1d) + fdatairregular_1d.function_values
+        result = self._take_first(other_1d) + fdatairregular_1d.values
 
-        assert np.all(f_data_sum.function_values == result)
+        assert np.all(f_data_sum.values == result)
 
     def test_fdatairregular_arithmetic_sum_commutative(  # noqa: WPS118
         self,
@@ -371,9 +371,9 @@ class TestArithmeticOperations1D:
 
         f_data_sub = fdatairregular_1d - other_1d
 
-        result = fdatairregular_1d.function_values - self._take_first(other_1d)
+        result = fdatairregular_1d.values - self._take_first(other_1d)
 
-        assert np.all(f_data_sub.function_values == result)
+        assert np.all(f_data_sub.values == result)
 
     def test_fdatairregular_arithmetic_rsub(
         self,
@@ -391,9 +391,9 @@ class TestArithmeticOperations1D:
 
         f_data_sub = other_1d - fdatairregular_1d
 
-        result = self._take_first(other_1d) - fdatairregular_1d.function_values
+        result = self._take_first(other_1d) - fdatairregular_1d.values
 
-        assert np.all(f_data_sub.function_values == result)
+        assert np.all(f_data_sub.values == result)
 
     def test_fdatairregular_arithmetic_mul(
         self,
@@ -411,9 +411,9 @@ class TestArithmeticOperations1D:
 
         f_data_mul = fdatairregular_1d * other_1d
 
-        result = fdatairregular_1d.function_values * self._take_first(other_1d)
+        result = fdatairregular_1d.values * self._take_first(other_1d)
 
-        assert np.all(f_data_mul.function_values == result)
+        assert np.all(f_data_mul.values == result)
 
     def test_fdatairregular_arithmetic_rmul(
         self,
@@ -431,9 +431,9 @@ class TestArithmeticOperations1D:
 
         f_data_mul = other_1d * fdatairregular_1d
 
-        result = self._take_first(other_1d) * fdatairregular_1d.function_values
+        result = self._take_first(other_1d) * fdatairregular_1d.values
 
-        assert np.all(f_data_mul.function_values == result)
+        assert np.all(f_data_mul.values == result)
 
     def test_fdatairregular_arithmetic_mul_commutative(  # noqa: WPS118
         self,
@@ -469,9 +469,9 @@ class TestArithmeticOperations1D:
 
         f_data_div = fdatairregular_1d / other_1d
 
-        result = fdatairregular_1d.function_values / self._take_first(other_1d)
+        result = fdatairregular_1d.values / self._take_first(other_1d)
 
-        assert np.all(f_data_div.function_values == result)
+        assert np.all(f_data_div.values == result)
 
     def test_fdatairregular_arithmetic_rdiv(
         self,
@@ -489,9 +489,9 @@ class TestArithmeticOperations1D:
 
         f_data_div = other_1d / fdatairregular_1d
 
-        result = self._take_first(other_1d) / fdatairregular_1d.function_values
+        result = self._take_first(other_1d) / fdatairregular_1d.values
 
-        assert np.all(f_data_div.function_values == result)
+        assert np.all(f_data_div.values == result)
 
 
 class TestArithmeticOperations2D:
@@ -504,7 +504,7 @@ class TestArithmeticOperations2D:
         if isinstance(other, np.ndarray):
             return other[0]
         elif isinstance(other, FDataIrregular):
-            return other.function_values
+            return other.values
         return other
 
     def _single_curve(
@@ -533,9 +533,9 @@ class TestArithmeticOperations2D:
 
         f_data_sum = fdatairregular_2d + other_2d
 
-        result = fdatairregular_2d.function_values + self._take_first(other_2d)
+        result = fdatairregular_2d.values + self._take_first(other_2d)
 
-        assert np.all(f_data_sum.function_values == result)
+        assert np.all(f_data_sum.values == result)
 
     def test_fdatairregular_arithmetic_rsum(
         self,
@@ -553,9 +553,9 @@ class TestArithmeticOperations2D:
 
         f_data_sum = other_2d + fdatairregular_2d
 
-        result = self._take_first(other_2d) + fdatairregular_2d.function_values
+        result = self._take_first(other_2d) + fdatairregular_2d.values
 
-        assert np.all(f_data_sum.function_values == result)
+        assert np.all(f_data_sum.values == result)
 
     def test_fdatairregular_arithmetic_sum_commutative(  # noqa: WPS118
         self,
@@ -591,9 +591,9 @@ class TestArithmeticOperations2D:
 
         f_data_sub = fdatairregular_2d - other_2d
 
-        result = fdatairregular_2d.function_values - self._take_first(other_2d)
+        result = fdatairregular_2d.values - self._take_first(other_2d)
 
-        assert np.all(f_data_sub.function_values == result)
+        assert np.all(f_data_sub.values == result)
 
     def test_fdatairregular_arithmetic_rsub(
         self,
@@ -611,9 +611,9 @@ class TestArithmeticOperations2D:
 
         f_data_sub = other_2d - fdatairregular_2d
 
-        result = self._take_first(other_2d) - fdatairregular_2d.function_values
+        result = self._take_first(other_2d) - fdatairregular_2d.values
 
-        assert np.all(f_data_sub.function_values == result)
+        assert np.all(f_data_sub.values == result)
 
     def test_fdatairregular_arithmetic_mul(
         self,
@@ -631,9 +631,9 @@ class TestArithmeticOperations2D:
 
         f_data_mul = fdatairregular_2d * other_2d
 
-        result = fdatairregular_2d.function_values * self._take_first(other_2d)
+        result = fdatairregular_2d.values * self._take_first(other_2d)
 
-        assert np.all(f_data_mul.function_values == result)
+        assert np.all(f_data_mul.values == result)
 
     def test_fdatairregular_arithmetic_rmul(
         self,
@@ -651,9 +651,9 @@ class TestArithmeticOperations2D:
 
         f_data_mul = other_2d * fdatairregular_2d
 
-        result = self._take_first(other_2d) * fdatairregular_2d.function_values
+        result = self._take_first(other_2d) * fdatairregular_2d.values
 
-        assert np.all(f_data_mul.function_values == result)
+        assert np.all(f_data_mul.values == result)
 
     def test_fdatairregular_arithmetic_mul_commutative(  # noqa: WPS118
         self,
@@ -689,9 +689,9 @@ class TestArithmeticOperations2D:
 
         f_data_div = fdatairregular_2d / other_2d
 
-        result = fdatairregular_2d.function_values / self._take_first(other_2d)
+        result = fdatairregular_2d.values / self._take_first(other_2d)
 
-        assert np.all(f_data_div.function_values == result)
+        assert np.all(f_data_div.values == result)
 
     def test_fdatairregular_arithmetic_rdiv(
         self,
@@ -709,9 +709,9 @@ class TestArithmeticOperations2D:
 
         f_data_div = other_2d / fdatairregular_2d
 
-        result = self._take_first(other_2d) / fdatairregular_2d.function_values
+        result = self._take_first(other_2d) / fdatairregular_2d.values
 
-        assert np.all(f_data_div.function_values == result)
+        assert np.all(f_data_div.values == result)
 
 
 ##########################

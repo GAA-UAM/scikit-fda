@@ -175,10 +175,10 @@ def test_fdatairregular_init(
         fdatairregular (FDataIrregular): FDataIrregular object
             which can be unidimensional or multidimensional.
     """
-    arguments = fdatairregular.function_arguments
+    arguments = fdatairregular.points
     assert fdatairregular is not None
-    assert len(fdatairregular) == len(fdatairregular.function_indices)
-    assert len(arguments) == len(fdatairregular.function_values)
+    assert len(fdatairregular) == len(fdatairregular.start_indices)
+    assert len(arguments) == len(fdatairregular.values)
 
 
 def test_fdatairregular_copy(
@@ -228,8 +228,8 @@ def test_fdatairregular_copy_kwargs(
     # Check everything equal except specified kwarg
     assert len(f_data_copy) == len(fdatairregular)
     assert (
-        len(f_data_copy.function_arguments) 
-            == len(fdatairregular.function_arguments)
+        len(f_data_copy.points) 
+            == len(fdatairregular.points)
     )
     assert f_data_copy.dim_domain == fdatairregular.dim_domain
     assert f_data_copy.dim_domain == fdatairregular.dim_codomain
@@ -275,7 +275,7 @@ def test_fdatairregular_from_dataframe(
     )
 
     assert len(f_irreg) == 423
-    assert len(f_irreg.function_values) == 1003
+    assert len(f_irreg.values) == 1003
 
 
 def test_fdatairregular_getitem(
@@ -317,8 +317,8 @@ def test_fdatairregular_coordinates(
         assert len(f_data_coordinate) == len(fdatairregular)
         assert f_data_coordinate.dim_codomain == 1
         assert np.all(
-            f_data_coordinate.function_values[:, 0]
-            == fdatairregular.function_values[:, dim],
+            f_data_coordinate.values[:, 0]
+            == fdatairregular.values[:, dim],
         )
 
 
@@ -335,8 +335,8 @@ def test_fdatairregular_round(
         decimals (int): Number of decimal places to round.
     """
     assert np.all(
-        fdatairregular.round(decimals).function_values
-        == np.round(fdatairregular.function_values, decimals),
+        fdatairregular.round(decimals).values
+        == np.round(fdatairregular.values, decimals),
     )
 
 
@@ -351,21 +351,21 @@ def test_fdatairregular_concatenate(
     """
     fd_concat = fdatairregular.concatenate(fdatairregular)
 
-    function_indices_halves = np.split(fd_concat.function_indices, 2)
-    indices = fdatairregular.function_indices
-    second_half_indices = indices + len(fdatairregular.function_arguments)
+    start_indices_halves = np.split(fd_concat.start_indices, 2)
+    indices = fdatairregular.start_indices
+    second_half_indices = indices + len(fdatairregular.points)
 
-    function_args_halves = np.split(fd_concat.function_arguments, 2)
-    function_values_halves = np.split(fd_concat.function_values, 2)
+    function_args_halves = np.split(fd_concat.points, 2)
+    values_halves = np.split(fd_concat.values, 2)
 
     assert len(fd_concat) == 2 * len(fdatairregular)
-    assert np.all(function_indices_halves[1] == second_half_indices)
+    assert np.all(start_indices_halves[1] == second_half_indices)
     assert (
-        len(fd_concat.function_arguments)
-            == 2 * len(fdatairregular.function_arguments)
+        len(fd_concat.points)
+            == 2 * len(fdatairregular.points)
     )
-    assert np.all(function_args_halves[1] == fdatairregular.function_arguments)
-    assert np.all(function_values_halves[1] == fdatairregular.function_values)
+    assert np.all(function_args_halves[1] == fdatairregular.points)
+    assert np.all(values_halves[1] == fdatairregular.values)
 
 
 def test_fdatairregular_equals(
@@ -401,7 +401,7 @@ def test_fdatairregular_restrict(
     restricted_fdata = fdatairregular.restrict(restricted_domain)
 
     samples_by_dim = [
-        restricted_fdata.function_arguments[:, dim]
+        restricted_fdata.points[:, dim]
         for dim in range(fdatairregular.dim_domain)
     ]
 

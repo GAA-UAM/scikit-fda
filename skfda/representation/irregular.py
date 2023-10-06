@@ -43,13 +43,15 @@ def _get_sample_range_from_data(
     function_arguments: NDArrayFloat,
     dim_domain: int,
 ) -> DomainRange:
-    dim_ranges = []  # sample range for each dimension
+    dim_ranges = []  # Sample range for each dimension
     for dim in range(dim_domain):
         i = 0
 
         # Sample range for each function in current dimension:
         dim_sample_ranges = []
         for f in function_indices[1:]:
+            # i, f: first and last+1 index of the current function.
+            # Get min and max argument for the current function and dimension.
             min_argument = min(
                 [function_arguments[j][dim] for j in range(i, f)],
             )
@@ -61,23 +63,24 @@ def _get_sample_range_from_data(
             )
             i = f
 
+        # Get min and max argument for the last function and dimension.
         min_argument = min(
             [
                 function_arguments[i + j][dim]
                 for j in range(function_arguments.shape[0] - i)
             ],
         )
-
         max_argument = max(
             [
                 function_arguments[i + j][dim]
                 for j in range(function_arguments.shape[0] - i)
             ],
         )
-
         dim_sample_ranges.append(
             (min_argument, max_argument),
         )
+
+        # Append sample ranges for current dimension
         dim_ranges.append(dim_sample_ranges)
 
     sample_range = []

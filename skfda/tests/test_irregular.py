@@ -178,7 +178,7 @@ def test_fdatairregular_init(
     arguments = fdatairregular.function_arguments
     assert fdatairregular is not None
     assert len(fdatairregular) == len(fdatairregular.function_indices)
-    assert len(arguments) == fdatairregular.n_measurements
+    assert len(arguments) == len(fdatairregular.function_values)
 
 
 def test_fdatairregular_copy(
@@ -227,7 +227,10 @@ def test_fdatairregular_copy_kwargs(
 
     # Check everything equal except specified kwarg
     assert len(f_data_copy) == len(fdatairregular)
-    assert f_data_copy.n_measurements == fdatairregular.n_measurements
+    assert (
+        len(f_data_copy.function_arguments) 
+            == len(fdatairregular.function_arguments)
+    )
     assert f_data_copy.dim_domain == fdatairregular.dim_domain
     assert f_data_copy.dim_domain == fdatairregular.dim_codomain
     assert og_attribute != copy_attribute
@@ -350,14 +353,17 @@ def test_fdatairregular_concatenate(
 
     function_indices_halves = np.split(fd_concat.function_indices, 2)
     indices = fdatairregular.function_indices
-    second_half_indices = indices + fdatairregular.n_measurements
+    second_half_indices = indices + len(fdatairregular.function_arguments)
 
     function_args_halves = np.split(fd_concat.function_arguments, 2)
     function_values_halves = np.split(fd_concat.function_values, 2)
 
     assert len(fd_concat) == 2 * len(fdatairregular)
     assert np.all(function_indices_halves[1] == second_half_indices)
-    assert fd_concat.n_measurements == 2 * fdatairregular.n_measurements
+    assert (
+        len(fd_concat.function_arguments)
+            == 2 * len(fdatairregular.function_arguments)
+    )
     assert np.all(function_args_halves[1] == fdatairregular.function_arguments)
     assert np.all(function_values_halves[1] == fdatairregular.function_values)
 

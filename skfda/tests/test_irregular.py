@@ -227,10 +227,7 @@ def test_fdatairregular_copy_kwargs(
 
     # Check everything equal except specified kwarg
     assert len(f_data_copy) == len(fdatairregular)
-    assert (
-        len(f_data_copy.points) 
-            == len(fdatairregular.points)
-    )
+    assert len(f_data_copy.points) == len(fdatairregular.points)
     assert f_data_copy.dim_domain == fdatairregular.dim_domain
     assert f_data_copy.dim_domain == fdatairregular.dim_codomain
     assert og_attribute != copy_attribute
@@ -317,8 +314,7 @@ def test_fdatairregular_coordinates(
         assert len(f_data_coordinate) == len(fdatairregular)
         assert f_data_coordinate.dim_codomain == 1
         assert np.all(
-            f_data_coordinate.values[:, 0]
-            == fdatairregular.values[:, dim],
+            f_data_coordinate.values[:, 0] == fdatairregular.values[:, dim],
         )
 
 
@@ -360,10 +356,7 @@ def test_fdatairregular_concatenate(
 
     assert len(fd_concat) == 2 * len(fdatairregular)
     assert np.all(start_indices_halves[1] == second_half_indices)
-    assert (
-        len(fd_concat.points)
-            == 2 * len(fdatairregular.points)
-    )
+    assert len(fd_concat.points) == 2 * len(fdatairregular.points)
     assert np.all(function_args_halves[1] == fdatairregular.points)
     assert np.all(values_halves[1] == fdatairregular.values)
 

@@ -1529,7 +1529,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         array_nbytes = [
             self.start_indices.nbytes,
             self.points.nbytes,
-            self.values,
+            self.values.nbytes,
         ]
         return sum(array_nbytes)
 

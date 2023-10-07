@@ -675,7 +675,8 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def equals(self, other: object) -> bool:
         """Comparison of FDataIrregular objects."""
-        other = cast(FDataIrregular, other)
+        if not isinstance(other, FDataIrregular):
+            return False
 
         if not self._eq_elemenwise(other):
             return False

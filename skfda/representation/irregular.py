@@ -677,6 +677,9 @@ class FDataIrregular(FData):  # noqa: WPS214
         """Comparison of FDataIrregular objects."""
         if not isinstance(other, FDataIrregular):
             return False
+        
+        if not super().equals(other):
+            return False
 
         if not self._eq_elemenwise(other):
             return False
@@ -688,7 +691,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if self.interpolation != other.interpolation:
             return False
 
-        return super().equals(other)
+        return True
 
     def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
         """Elementwise equality of FDataIrregular."""

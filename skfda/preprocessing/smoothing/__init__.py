@@ -10,7 +10,7 @@ _normal_getattr, __dir__, __all__ = lazy.attach(
         "validation",
     ],
     submod_attrs={
-        "_basis": ["BasisSmoother", "IrregularBasisSmoother"],
+        "_basis": ["BasisSmoother"],
         "_kernel_smoothers": ["KernelSmoother"],
     },
 )

@@ -24,3 +24,4 @@ if TYPE_CHECKING:
     from ._functional_data import FData as FData, concatenate as concatenate
     from .basis import FDataBasis as FDataBasis
     from .grid import FDataGrid as FDataGrid
+    from .irregular import FDataIrregular as FDataIrregular

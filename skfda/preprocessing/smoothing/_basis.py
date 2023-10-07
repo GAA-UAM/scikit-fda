@@ -16,10 +16,45 @@ from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization
 from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
 from ...representation.basis import Basis
-from ...typing._base import GridPointsLike
+from ...typing._base import GridPointsLike, GridPoints
 from ...typing._numpy import NDArrayFloat
 from ._linear import _LinearSmoother
 
+#############################
+# Auxiliary functions to treat with FDataGrid and FDataIrregular
+#############################
+
+def _eval_points(fd: FData) -> NDArrayFloat:
+    """Get the eval points of a FDataGrid or FDataIrregular."""
+    if isinstance(fd, FDataGrid):
+        return _cartesian_product(_to_grid_points(fd.grid_points))
+    if isinstance(fd, FDataIrregular):
+        return fd.points
+    raise ValueError("fd must be a FDataGrid or FDataIrregular")
+
+
+def _input_points(fd: FData) -> GridPoints:
+    """Get the input points of a FDataGrid or FDataIrregular."""
+    if isinstance(fd, FDataGrid):
+        return fd.grid_points
+    if isinstance(fd, FDataIrregular):
+        # There exists no equivalent in FDataIrregular to grid_points
+        return fd.points  # type: ignore[return-value]
+    raise ValueError("fd must be a FDataGrid or FDataIrregular")
+
+
+def _function_values(fd: FData) -> NDArrayFloat:
+    """Get the function values of a FDataGrid or FDataIrregular."""
+    if isinstance(fd, FDataGrid):
+        return fd.data_matrix.reshape((fd.n_samples, -1)).T
+    if isinstance(fd, FDataIrregular):
+        return fd.values
+    raise ValueError("fd must be a FDataGrid or FDataIrregular")
+
+
+#############################
+# BasisSmoother
+#############################
 
 class BasisSmoother(_LinearSmoother):
     r"""
@@ -225,144 +260,7 @@ class BasisSmoother(_LinearSmoother):
 
     def _coef_matrix(
         self,
-        input_points: GridPointsLike,
-        *,
-        data_matrix: Optional[NDArrayFloat] = None,
-    ) -> NDArrayFloat:
-        """Get the matrix that gives the coefficients."""
-        from ...misc.regularization import compute_penalty_matrix
-
-        basis_values_input = self.basis(
-            _cartesian_product(_to_grid_points(input_points)),
-        ).reshape((self.basis.n_basis, -1)).T
-
-        penalty_matrix = compute_penalty_matrix(
-            basis_iterable=(self.basis,),
-            regularization_parameter=self.smoothing_parameter,
-            regularization=self.regularization,
-        )
-
-        # Get the matrix for computing the coefficients if no
-        # data_matrix is passed
-        if data_matrix is None:
-            data_matrix = np.eye(basis_values_input.shape[0])
-
-        return solve_regularized_weighted_lstsq(
-            coefs=basis_values_input,
-            result=data_matrix,
-            weights=self.weights,
-            penalty_matrix=penalty_matrix,
-            lstsq_method=self.method,
-        )
-
-    def _hat_matrix(
-        self,
-        input_points: GridPointsLike,
-        output_points: GridPointsLike,
-    ) -> NDArrayFloat:
-        basis_values_output = self.basis(
-            _cartesian_product(
-                _to_grid_points(output_points),
-            ),
-        ).reshape((self.basis.n_basis, -1)).T
-
-        return basis_values_output @ self._coef_matrix(input_points)
-
-    def fit(
-        self,
-        X: FDataGrid,
-        y: object = None,
-    ) -> BasisSmoother:
-        """Compute the hat matrix for the desired output points.
-
-        Args:
-            X: The data whose points are used to compute the matrix.
-            y: Ignored.
-
-        Returns:
-            self
-
-        """
-        self.input_points_ = X.grid_points
-        self.output_points_ = (
-            _to_grid_points(self.output_points)
-            if self.output_points is not None
-            else self.input_points_
-        )
-
-        if not self.return_basis:
-            super().fit(X, y)
-
-        return self
-
-    def transform(
-        self,
-        X: FDataGrid,
-        y: object = None,
-    ) -> FData:
-        """
-        Smooth the data.
-
-        Args:
-            X: The data to smooth.
-            y: Ignored
-
-        Returns:
-            Smoothed data.
-
-        """
-        assert all(
-            np.array_equal(i, s) for i, s in zip(
-                self.input_points_,
-                X.grid_points,
-            )
-        )
-
-        if self.return_basis:
-            coefficients = self._coef_matrix(
-                input_points=X.grid_points,
-                data_matrix=X.data_matrix.reshape((X.n_samples, -1)).T,
-            ).T
-
-            return FDataBasis(
-                basis=self.basis,
-                coefficients=coefficients,
-                dataset_name=X.dataset_name,
-                argument_names=X.argument_names,
-                coordinate_names=X.coordinate_names,
-                sample_names=X.sample_names,
-            )
-
-        return super().transform(X, y)
-
-
-class IrregularBasisSmoother(_LinearSmoother):
-    """Transform irregular data to a smooth basis functional form."""
-
-    _required_parameters = ["basis"]
-
-    def __init__(
-        self,
-        basis: Basis,
-        *,
-        smoothing_parameter: float = 1.0,
-        weights: Optional[NDArrayFloat] = None,
-        regularization: Optional[L2Regularization[FDataGrid]] = None,
-        output_points: Optional[GridPointsLike] = None,
-        method: LstsqMethod = 'svd',
-        return_basis: bool = False,
-    ) -> None:
-        self.basis = basis
-        self.smoothing_parameter = smoothing_parameter
-        self.weights = weights
-        self.regularization = regularization
-        self.output_points = output_points
-        self.method = method
-        self.return_basis: Final = return_basis
-
-    def _coef_matrix(
-        self,
-        input_points: NDArrayFloat,
+        eval_points: NDArrayFloat,
         *,
         function_values: Optional[NDArrayFloat] = None,
     ) -> NDArrayFloat:
@@ -370,7 +268,7 @@ class IrregularBasisSmoother(_LinearSmoother):
         from ...misc.regularization import compute_penalty_matrix
 
         basis_values_input = self.basis(
-            input_points,
+            eval_points,
         ).reshape((self.basis.n_basis, -1)).T
 
         penalty_matrix = compute_penalty_matrix(
@@ -380,7 +278,7 @@ class IrregularBasisSmoother(_LinearSmoother):
         )
 
         # Get the matrix for computing the coefficients if no
-        # data_matrix is passed
+        # function_values is passed
         if function_values is None:
             function_values = np.eye(basis_values_input.shape[0])
 
@@ -397,15 +295,21 @@ class IrregularBasisSmoother(_LinearSmoother):
         input_points: GridPointsLike,
         output_points: GridPointsLike,
     ) -> NDArrayFloat:
-        raise NotImplementedError(
-            "Not implemented for as_coordinates = True",
+        basis_values_output = self.basis(
+            _cartesian_product(
+                _to_grid_points(output_points),
+            ),
+        ).reshape((self.basis.n_basis, -1)).T
+
+        return basis_values_output @ self._coef_matrix(
+            _cartesian_product(_to_grid_points(input_points)),
         )
 
     def fit(
         self,
-        X: FDataIrregular,
+        X: FDataGrid | FDataIrregular,
         y: object = None,
-    ) -> IrregularBasisSmoother:
+    ) -> BasisSmoother:
         """Compute the hat matrix for the desired output points.
 
         Args:
@@ -416,9 +320,9 @@ class IrregularBasisSmoother(_LinearSmoother):
             self
 
         """
-        self.input_points_ = X.points
+        self.input_points_ = _input_points(X)
         self.output_points_ = (
-            self.output_points
+            _to_grid_points(self.output_points)
             if self.output_points is not None
             else self.input_points_
         )
@@ -430,7 +334,7 @@ class IrregularBasisSmoother(_LinearSmoother):
 
     def transform(
         self,
-        X: FDataIrregular,
+        X: FDataGrid | FDataIrregular,
         y: object = None,
     ) -> FData:
         """
@@ -447,14 +351,14 @@ class IrregularBasisSmoother(_LinearSmoother):
         assert all(
             np.array_equal(i, s) for i, s in zip(
                 self.input_points_,
-                X.points,
+                _input_points(X),
             )
         )
 
         if self.return_basis:
             coefficients = self._coef_matrix(
-                input_points=X.points,
-                function_values=X.values,
+                eval_points=_eval_points(X),
+                function_values=_function_values(X),
             ).T
 
             return FDataBasis(

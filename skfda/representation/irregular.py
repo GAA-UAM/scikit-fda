@@ -1058,7 +1058,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             FDataBasis: Basis representation of the funtional data
             object.
         """
-        from ..preprocessing.smoothing import IrregularBasisSmoother
+        from ..preprocessing.smoothing import BasisSmoother
 
         if self.dim_domain != basis.dim_domain:
             raise ValueError(
@@ -1079,7 +1079,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if not basis.is_domain_range_fixed():
             basis = basis.copy(domain_range=self.domain_range)
 
-        smoother = IrregularBasisSmoother(
+        smoother = BasisSmoother(
             basis=basis,
             **kwargs,
             return_basis=True,

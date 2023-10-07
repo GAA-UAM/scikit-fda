@@ -618,11 +618,9 @@ class FDataIrregular(FData):  # noqa: WPS214
             mean of all curves the across each value.
         """
         # Find all distinct arguments (ordered) and corresponding values
-        distinct_args = np.unique(np.matrix.flatten(self.points))
+        distinct_args = np.unique(self.points.flatten())
         values = [
-            np.matrix.flatten(self.values[
-                np.where(self.points == arg)[0]
-            ])
+            self.values[np.where(self.points == arg)[0]].flatten()
             for arg in distinct_args
         ]
 
@@ -649,11 +647,9 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         """
         # Find all distinct arguments (ordered) and corresponding values
-        distinct_args = np.unique(np.matrix.flatten(self.points))
+        distinct_args = np.unique(self.points.flatten())
         values = [
-            np.matrix.flatten(self.values[
-                np.where(self.points == arg)[0]
-            ])
+            self.values[np.where(self.points == arg)[0]].flatten()
             for arg in distinct_args
         ]
 

@@ -85,26 +85,24 @@ def _get_sample_range_from_data(
 
     sample_range = []
     for sample, _ in enumerate(dim_sample_ranges):
-        sample_range.append(
-            tuple(
-                [dim_ranges[d][sample] for d in range(dim_domain)],
-            ),
-        )
+        # For each function, get the sample range for each dimension
+        sample_range.append(tuple(
+            (dim_ranges[d][sample] for d in range(dim_domain)),
+        ))
 
+    # sample_range[f][d] => (min_point, max_point)
+    # is the sample range for the function f and dimension d
     return tuple(sample_range)
 
 
 def _get_domain_range_from_sample_range(
     sample_range: DomainRange,
-    dim_domain: int,
 ) -> DomainRange:
-    ranges = []
-    for dim in range(dim_domain):
-        min_argument = min([x[dim][0] for x in sample_range])
-        max_argument = max([x[dim][1] for x in sample_range])
-        ranges.append((min_argument, max_argument))
+    sample_range_array = np.asarray(sample_range)
+    min_arguments = sample_range_array[..., 0].min(axis=0)
+    max_arguments = sample_range_array[..., 1].max(axis=0)
+    return tuple(zip(min_arguments, max_arguments))
 
-    return tuple(ranges)  # domain_range
 
 ######################
 # FDataIrregular#
@@ -258,7 +256,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         if domain_range is None:
             domain_range = _get_domain_range_from_sample_range(
                 self._sample_range,
-                self.dim_domain,
             )
 
         # Default value for domain_range is a list of tuples with
@@ -1607,10 +1604,7 @@ class FDataIrregularDType(
                 self.points,
                 self.dim_domain,
             )
-            domain_range = _get_domain_range_from_sample_range(
-                sample_range,
-                self.dim_domain,
-            )
+            domain_range = _get_domain_range_from_sample_range(sample_range)
 
         self.domain_range = validate_domain_range(domain_range)
         self.dim_codomain = dim_codomain

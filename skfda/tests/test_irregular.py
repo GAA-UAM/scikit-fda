@@ -403,18 +403,14 @@ def test_fdatairregular_restrict(
     # The min arg is larger than the domain min constraint
     assert len(restricted_fdata) > 0
     assert all(
-        [
-            sr[0] > restricted_domain[i][0]
-            for i, sr in enumerate(sample_ranges)
-        ],
+        sr[0] > restricted_domain[i][0]
+        for i, sr in enumerate(sample_ranges)
     )
 
     # The max arg is lesser than the domain max constraint
     assert all(
-        [
-            sr[1] < restricted_domain[i][1]
-            for i, sr in enumerate(sample_ranges)
-        ],
+        sr[1] < restricted_domain[i][1]
+        for i, sr in enumerate(sample_ranges)
     )
 
 

@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import numbers
 import warnings
-from typing import Any, Optional, Sequence, Tuple, Type, TypeVar, Union, cast
+from typing import (
+    Any, List, Optional, Sequence, Tuple, Type, TypeVar, Union, cast,
+)
 
 import numpy as np
 import pandas.api.extensions
@@ -19,7 +21,6 @@ from .._utils import _check_array_key
 from ..typing._base import (
     DomainRange,
     DomainRangeLike,
-    GridPoints,
     GridPointsLike,
     LabelTupleLike,
 )
@@ -38,61 +39,30 @@ T = TypeVar("T", bound='FDataIrregular')
 ######################
 
 
+def _get_array_slices_by_function(
+    start_indices: NDArrayInt,
+    array: NDArrayFloat,
+) -> List[NDArrayFloat]:
+    return np.split(array, start_indices[1:])
+
+
 def _get_sample_range_from_data(
     start_indices: NDArrayInt,
     points: NDArrayFloat,
-    dim_domain: int,
 ) -> DomainRange:
-    dim_ranges = []  # Sample range for each dimension
-    for dim in range(dim_domain):
-        i = 0
-
-        # Sample range for each function in current dimension:
-        dim_sample_ranges = []
-        for f in start_indices[1:]:
-            # i, f: first and last+1 index of the current function.
-            # Get min and max argument for the current function and dimension.
-            min_argument = min(
-                [points[j][dim] for j in range(i, f)],
-            )
-            max_argument = max(
-                [points[j][dim] for j in range(i, f)],
-            )
-            dim_sample_ranges.append(
-                ((min_argument, max_argument)),
-            )
-            i = f
-
-        # Get min and max argument for the last function and dimension.
-        min_argument = min(
-            [
-                points[i + j][dim]
-                for j in range(points.shape[0] - i)
-            ],
+    """Computes the domain ranges of each sample.
+    
+    Returns:
+        sample_range: A tuple of tuples. Where
+            sample_range[f][d] = (min_point, max_point) is the domain range for
+            the function f in dimension d. 
+    """
+    return tuple(
+        tuple(
+            zip(np.min(f_points, axis=0), np.max(f_points, axis=0)),
         )
-        max_argument = max(
-            [
-                points[i + j][dim]
-                for j in range(points.shape[0] - i)
-            ],
-        )
-        dim_sample_ranges.append(
-            (min_argument, max_argument),
-        )
-
-        # Append sample ranges for current dimension
-        dim_ranges.append(dim_sample_ranges)
-
-    sample_range = []
-    for sample, _ in enumerate(dim_sample_ranges):
-        # For each function, get the sample range for each dimension
-        sample_range.append(tuple(
-            (dim_ranges[d][sample] for d in range(dim_domain)),
-        ))
-
-    # sample_range[f][d] => (min_point, max_point)
-    # is the sample range for the function f and dimension d
-    return tuple(sample_range)
+        for f_points in _get_array_slices_by_function(start_indices, points)
+    )
 
 
 def _get_domain_range_from_sample_range(
@@ -247,7 +217,6 @@ class FDataIrregular(FData):  # noqa: WPS214
         self._sample_range = _get_sample_range_from_data(
             self.start_indices,
             self.points,
-            self.dim_domain,
         )
 
         # Default value for sample_range is a list of tuples with
@@ -1602,7 +1571,6 @@ class FDataIrregularDType(
             sample_range = _get_sample_range_from_data(
                 self.start_indices,
                 self.points,
-                self.dim_domain,
             )
             domain_range = _get_domain_range_from_sample_range(sample_range)
 

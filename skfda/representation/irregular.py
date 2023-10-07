@@ -618,20 +618,20 @@ class FDataIrregular(FData):  # noqa: WPS214
             mean of all curves the across each value.
         """
         # Find all distinct arguments (ordered) and corresponding values
-        distinct_args = np.unique(self.points.flatten())
+        distinct_args = np.unique(self.points, axis=0)
         values = [
-            self.values[np.where(self.points == arg)[0]].flatten()
+            self.values[np.where(self.points == arg)[0]]
             for arg in distinct_args
         ]
 
         # Obtain mean of all available values for each argument point
-        means = np.array([np.mean(value) for value in values])
+        means = np.array([np.mean(value, axis=0) for value in values])
 
         # Create a FDataIrregular object with only 1 curve, the mean curve
         return FDataIrregular(
             start_indices=np.array([0]),
-            points=distinct_args.reshape(-1, 1),
-            values=means.reshape(-1, 1),
+            points=distinct_args,
+            values=means,
             sample_names=("mean",),
         )
 
@@ -647,20 +647,20 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         """
         # Find all distinct arguments (ordered) and corresponding values
-        distinct_args = np.unique(self.points.flatten())
+        distinct_args = np.unique(self.points, axis=0)
         values = [
-            self.values[np.where(self.points == arg)[0]].flatten()
+            self.values[np.where(self.points == arg)[0]]
             for arg in distinct_args
         ]
 
         # Obtain variance of all available values for each argument point
-        variances = np.array([np.var(value) for value in values])
+        variances = np.array([np.var(value, axis=0) for value in values])
 
         # Create a FDataIrregular object with only 1 curve, the variance curve
         return FDataIrregular(
             start_indices=np.array([0]),
-            points=distinct_args.reshape(-1, 1),
-            values=variances.reshape(-1, 1),
+            points=distinct_args,
+            values=variances,
             sample_names=("var",),
         )
 

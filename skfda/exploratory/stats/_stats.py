@@ -124,7 +124,7 @@ def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:
     integrand = num_functions_above
 
     for d, s in zip(X.domain_range, X.grid_points):
-        integrand = integrate.simps(
+        integrand = integrate.simpson(
             integrand,
             x=s,
             axis=1,

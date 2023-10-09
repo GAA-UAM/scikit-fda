@@ -92,7 +92,7 @@ class IntegratedDepth(Depth[FDataGrid]):
         integrand = pointwise_depth
 
         for d, s in zip(X.domain_range, X.grid_points):
-            integrand = scipy.integrate.simps(
+            integrand = scipy.integrate.simpson(
                 integrand,
                 x=s,
                 axis=1,

@@ -213,7 +213,7 @@ def directional_outlyingness_stats(  # noqa: WPS218
     )
     assert weighted_dir_outlyingness.shape == dir_outlyingness.shape
 
-    mean_dir_outlyingness = scipy.integrate.simps(
+    mean_dir_outlyingness = scipy.integrate.simpson(
         weighted_dir_outlyingness,
         fdatagrid.grid_points[0],
         axis=1,
@@ -230,7 +230,7 @@ def directional_outlyingness_stats(  # noqa: WPS218
         axis=-1,
     ))
     weighted_norm = norm * pointwise_weights
-    variation_dir_outlyingness = scipy.integrate.simps(
+    variation_dir_outlyingness = scipy.integrate.simpson(
         weighted_norm,
         fdatagrid.grid_points[0],
         axis=1,

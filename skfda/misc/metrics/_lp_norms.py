@@ -161,7 +161,7 @@ class LpNorm():
 
                 # Computes the norm, approximating the integral with Simpson's
                 # rule.
-                res = scipy.integrate.simps(
+                res = scipy.integrate.simpson(
                     data_matrix[..., 0] ** self.p,
                     x=vector.grid_points,
                 ) ** (1 / self.p)

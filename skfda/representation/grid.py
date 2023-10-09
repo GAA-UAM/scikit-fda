@@ -515,7 +515,7 @@ class FDataGrid(FData):  # noqa: WPS214
         integrand = data.data_matrix
 
         for g in data.grid_points[::-1]:
-            integrand = scipy.integrate.simps(
+            integrand = scipy.integrate.simpson(
                 integrand,
                 x=g,
                 axis=-2,

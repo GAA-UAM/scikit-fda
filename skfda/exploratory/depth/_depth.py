@@ -11,9 +11,9 @@ import itertools
 from typing import TypeVar
 
 import numpy as np
-import scipy.integrate
 
 from ..._utils._sklearn_adapter import BaseEstimator
+from ..._utils.ndfunction import average_function_value
 from ...misc.metrics import l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData, FDataGrid
@@ -82,25 +82,11 @@ class IntegratedDepth(Depth[FDataGrid]):
 
     def transform(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102
 
-        pointwise_depth = self.multivariate_depth_.transform(X.data_matrix)
-
-        interval_len = (
-            self._domain_range[0][1]
-            - self._domain_range[0][0]
+        pointwise_depth = X.copy(
+            data_matrix=self.multivariate_depth_.transform(X.data_matrix),
         )
 
-        integrand = pointwise_depth
-
-        for d, s in zip(X.domain_range, X.grid_points):
-            integrand = scipy.integrate.simpson(
-                integrand,
-                x=s,
-                axis=1,
-            )
-            interval_len = d[1] - d[0]
-            integrand /= interval_len
-
-        return integrand
+        return average_function_value(pointwise_depth).ravel()
 
     @property
     def max(self) -> float:

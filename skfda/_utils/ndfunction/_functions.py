@@ -2,14 +2,7 @@
 from __future__ import annotations
 
 import math
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeVar
 
 from ...misc.validation import validate_domain_range
 from .. import nquad_vec

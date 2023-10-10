@@ -28,6 +28,7 @@ class _LinearSmoother(
     ``hat_matrix`` to define the smoothing or 'hat' matrix.
 
     """
+
     input_points_: GridPoints
     output_points_: GridPoints
 

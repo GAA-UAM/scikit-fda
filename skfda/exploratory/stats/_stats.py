@@ -8,6 +8,8 @@ import numpy as np
 from scipy import integrate
 from scipy.stats import rankdata
 
+from skfda._utils.ndfunction import average_function_value
+
 from ...misc.metrics._lp_distances import l2_distance
 from ...representation import FData, FDataGrid
 from ...typing._metric import Metric
@@ -108,33 +110,20 @@ def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:
     with all the other curves of our dataset.
 
     """
-    interval_len = (
-        X.domain_range[0][1]
-        - X.domain_range[0][0]
+    # Functions containing at each point the number of curves
+    # are above it.
+    num_functions_above = X.copy(
+        data_matrix=rankdata(
+            -X.data_matrix,
+            method='max',
+            axis=0,
+        ) - 1,
     )
 
-    # Array containing at each point the number of curves
-    # are above it.
-    num_functions_above: NDArrayFloat = rankdata(
-        -X.data_matrix,
-        method='max',
-        axis=0,
-    ) - 1
-
-    integrand = num_functions_above
-
-    for d, s in zip(X.domain_range, X.grid_points):
-        integrand = integrate.simpson(
-            integrand,
-            x=s,
-            axis=1,
-        )
-        interval_len = d[1] - d[0]
-        integrand /= interval_len
-
-    integrand /= X.n_samples
-
-    return integrand.flatten()
+    return (
+        average_function_value(num_functions_above)
+        / num_functions_above.n_samples
+    ).ravel()
 
 
 def depth_based_median(

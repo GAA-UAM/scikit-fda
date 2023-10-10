@@ -7,7 +7,7 @@ import numpy as np
 import scipy.integrate
 from typing_extensions import Final
 
-from ...representation import FData, FDataBasis
+from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
 
@@ -135,20 +135,21 @@ class LpNorm():
             )
             res = np.sqrt(integral[0]).flatten()
 
-        else:
+        elif isinstance(vector, FDataGrid):
             data_matrix = vector.data_matrix
-            original_shape = data_matrix.shape
-            data_matrix = data_matrix.reshape(-1, original_shape[-1])
 
-            data_matrix = (np.linalg.norm(
-                vector.data_matrix,
-                ord=vector_norm,
-                axis=-1,
-                keepdims=True,
-            ) if isinstance(vector_norm, (float, int))
-                else vector_norm(data_matrix)
-            )
-            data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
+            if isinstance(vector_norm, (float, int)):
+                data_matrix = np.linalg.norm(
+                    vector.data_matrix,
+                    ord=vector_norm,
+                    axis=-1,
+                    keepdims=True,
+                )
+            else:
+                original_shape = data_matrix.shape
+                data_matrix = data_matrix.reshape(-1, original_shape[-1])
+                data_matrix = vector_norm(data_matrix)
+                data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
 
             if np.isinf(self.p):
 
@@ -157,18 +158,19 @@ class LpNorm():
                     axis=tuple(range(1, data_matrix.ndim)),
                 )
 
-            elif vector.dim_domain == 1:
+            else:
 
+                integrand = vector.copy(
+                    data_matrix=data_matrix ** self.p,
+                    coordinate_names=(None,),
+                )
                 # Computes the norm, approximating the integral with Simpson's
                 # rule.
-                res = scipy.integrate.simpson(
-                    data_matrix[..., 0] ** self.p,
-                    x=vector.grid_points,
-                ) ** (1 / self.p)
-
-            else:
-                # Needed to perform surface integration
-                return NotImplemented
+                res = integrand.integrate().ravel() ** (1 / self.p)
+        else:
+            raise NotImplementedError(
+                f"LpNorm not implemented for type {type(vector)}",
+            )
 
         if len(res) == 1:
             return res[0]  # type: ignore[no-any-return]

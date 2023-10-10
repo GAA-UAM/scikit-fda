@@ -234,7 +234,7 @@ def fisher_rao_amplitude_distance(
         penalty = np.sqrt(penalty, out=penalty)
         penalty -= 1
         penalty = np.square(penalty, out=penalty)
-        penalty = scipy.integrate.simps(penalty, x=eval_points_normalized)
+        penalty = scipy.integrate.simpson(penalty, x=eval_points_normalized)
 
         distance = np.sqrt(distance**2 + lam * penalty)
 
@@ -322,7 +322,7 @@ def fisher_rao_phase_distance(
 
     derivative_warping = np.sqrt(derivative_warping, out=derivative_warping)
 
-    d = scipy.integrate.simps(derivative_warping, x=eval_points_normalized)
+    d = scipy.integrate.simpson(derivative_warping, x=eval_points_normalized)
     d = np.clip(d, -1, 1)
 
     return np.arccos(d)  # type: ignore[no-any-return]
@@ -394,7 +394,7 @@ def _fisher_rao_warping_distance(
 
     product = np.multiply(srsf_warping1, srsf_warping2, out=srsf_warping1)
 
-    d = scipy.integrate.simps(product, x=warping1.grid_points[0])
+    d = scipy.integrate.simpson(product, x=warping1.grid_points[0])
     d = np.clip(d, -1, 1)
 
     return np.arccos(d)  # type: ignore[no-any-return]

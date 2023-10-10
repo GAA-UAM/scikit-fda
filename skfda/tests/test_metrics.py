@@ -89,10 +89,11 @@ class TestLp(unittest.TestCase):
         )
 
     def test_lp_norm_surface(self) -> None:
-        """Test that integration of surfaces has not been implemented."""
-        # Integration of surfaces not implemented, add test case after
-        # implementation
-        self.assertEqual(lp_norm(self.fd_surface, p=1), NotImplemented)
+        """Test the integration of surfaces."""
+        np.testing.assert_allclose(
+            lp_norm(self.fd_surface, p=1),
+            [0.12566256, 0.12563755, 0.12566133],
+        )
 
     def test_lp_error_dimensions(self) -> None:
         """Test error on metric between different kind of objects."""

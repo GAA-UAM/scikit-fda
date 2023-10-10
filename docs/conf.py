@@ -46,8 +46,16 @@ copyright = (
     "Universidad Autónoma de Madrid"
 )
 github_url = "https://github.com/GAA-UAM/scikit-fda"
-rtd_version = os.environ.get("READTHEDOCS_VERSION", "latest")
-branch = "master" if rtd_version == "stable" else "develop"
+rtd_version = os.environ.get("READTHEDOCS_VERSION")
+rtd_version_type = os.environ.get("READTHEDOCS_VERSION_TYPE")
+
+switcher_version = rtd_version
+if switcher_version == "latest":
+    switcher_version = "dev"
+elif rtd_version_type not in {"branch", "tag"}:
+    switcher_version = skfda.__version__
+
+rtd_branch = os.environ.get(" READTHEDOCS_GIT_IDENTIFIER", "develop")
 language = "en"
 
 try:
@@ -112,6 +120,14 @@ html_logo = "logo.png"
 html_theme_options = {
     "use_edit_page_button": True,
     "github_url": github_url,
+    "switcher": {
+        "json_url": (
+            "https://fda.readthedocs.io/en/latest/_static/switcher.json"
+        ),
+        "version_match": switcher_version,
+    },
+    "show_version_warning_banner": True,
+    "navbar_start": ["navbar-logo", "version-switcher"],
     "icon_links": [
         {
             "name": "PyPI",
@@ -289,7 +305,7 @@ def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
     else:
         linespec = ""
 
-    return f"{github_url}/tree/{branch}/skfda/{fn}{linespec}"
+    return f"{github_url}/tree/{rtd_branch}/skfda/{fn}{linespec}"
 
 # -- Options for "sphinx.ext.mathjax" --
 
@@ -391,7 +407,7 @@ sphinx_gallery_conf = {
     "binder": {
         "org": "GAA-UAM",
         "repo": "scikit-fda",
-        "branch": branch,
+        "branch": rtd_branch,
         "binderhub_url": "https://mybinder.org",
         "dependencies": ["../binder/requirements.txt"],
         "notebooks_dir": "../examples",

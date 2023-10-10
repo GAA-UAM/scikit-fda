@@ -347,7 +347,9 @@
       "profile": "https://github.com/ego-thales",
       "contributions": [
         "doc",
-        "bug"
+        "bug",
+        "code",
+        "ideas"
       ]
     },
     {
@@ -540,8 +542,18 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "eliegoudout",
+      "name": "eliegoudout",
+      "avatar_url": "https://avatars.githubusercontent.com/u/114467748?v=4",
+      "profile": "https://github.com/eliegoudout",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
-  "linkToUsage": true
+  "linkToUsage": true,
+  "commitType": "docs"
 }

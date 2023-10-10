@@ -98,7 +98,7 @@ def directional_outlyingness_stats(  # noqa: WPS218
             Method used to order the data. Defaults to :func:`projection
             depth <skfda.exploratory.depth.multivariate.ProjectionDepth>`.
         pointwise_weights (array_like, optional): an array containing the
-            weights of each point of discretisation where values have been
+            weights of each point of discretization where values have been
             recorded. Defaults to the same weight for each of the points:
             1/len(interval).
 
@@ -183,58 +183,67 @@ def directional_outlyingness_stats(  # noqa: WPS218
             fdatagrid.domain_range[0][1] - fdatagrid.domain_range[0][0]
         )
 
+    if not isinstance(pointwise_weights, FDataGrid):
+        pointwise_weights = fdatagrid.copy(
+            data_matrix=pointwise_weights,
+            sample_names=(None,),
+        )
+
     depth_pointwise = multivariate_depth(fdatagrid.data_matrix)
     assert depth_pointwise.shape == fdatagrid.data_matrix.shape[:-1]
+
+    depth_pointwise_fd = fdatagrid.copy(
+        data_matrix=depth_pointwise,
+    )
 
     # Obtaining the pointwise median sample Z, to calculate
     # v(t) = {X(t) − Z(t)}/|| X(t) − Z(t) ||
     median_index = np.argmax(depth_pointwise, axis=0)
-    pointwise_median = fdatagrid.data_matrix[
-        median_index,
-        range(fdatagrid.data_matrix.shape[1]),
-    ]
-    assert pointwise_median.shape == fdatagrid.data_matrix.shape[1:]
-    v = fdatagrid.data_matrix - pointwise_median
-    assert v.shape == fdatagrid.data_matrix.shape
-    v_norm = la.norm(v, axis=-1, keepdims=True)
+    pointwise_median = fdatagrid.copy(
+        data_matrix=fdatagrid.data_matrix[
+            median_index,
+            range(fdatagrid.data_matrix.shape[1]),
+        ][np.newaxis],
+        sample_names=(None,),
+    )
+
+    v = fdatagrid - pointwise_median
+    v_norm = la.norm(v.data_matrix, axis=-1, keepdims=True)
 
     # To avoid ZeroDivisionError, the zeros are substituted by ones (the
     # reference implementation also does this).
     v_norm[np.where(v_norm == 0)] = 1
 
-    v_unitary = v / v_norm
+    v.data_matrix /= v_norm
 
-    # Calculation directinal outlyingness
-    dir_outlyingness = (1 / depth_pointwise[..., np.newaxis] - 1) * v_unitary
+    # Calculation directional outlyingness
+    dir_outlyingness = (
+        1 / depth_pointwise_fd - 1
+    ) * v
 
     # Calculation mean directional outlyingness
     weighted_dir_outlyingness = (
-        dir_outlyingness * pointwise_weights[:, np.newaxis]
+        dir_outlyingness * pointwise_weights
     )
-    assert weighted_dir_outlyingness.shape == dir_outlyingness.shape
 
-    mean_dir_outlyingness = scipy.integrate.simps(
-        weighted_dir_outlyingness,
-        fdatagrid.grid_points[0],
-        axis=1,
-    )
+    mean_dir_outlyingness = weighted_dir_outlyingness.integrate()
     assert mean_dir_outlyingness.shape == (
         fdatagrid.n_samples,
         fdatagrid.dim_codomain,
     )
 
     # Calculation variation directional outlyingness
-    norm = np.square(la.norm(
-        dir_outlyingness
-        - mean_dir_outlyingness[:, np.newaxis, :],
-        axis=-1,
-    ))
-    weighted_norm = norm * pointwise_weights
-    variation_dir_outlyingness = scipy.integrate.simps(
-        weighted_norm,
-        fdatagrid.grid_points[0],
-        axis=1,
+    norm = dir_outlyingness.copy(
+        data_matrix=np.square(
+            la.norm(
+                dir_outlyingness.data_matrix
+                - mean_dir_outlyingness[:, np.newaxis, :],
+                axis=-1,
+            )
+        )
     )
+    weighted_norm = norm * pointwise_weights
+    variation_dir_outlyingness = weighted_norm.integrate().ravel()
     assert variation_dir_outlyingness.shape == (fdatagrid.n_samples,)
 
     functional_dir_outlyingness = (
@@ -244,7 +253,7 @@ def directional_outlyingness_stats(  # noqa: WPS218
     assert functional_dir_outlyingness.shape == (fdatagrid.n_samples,)
 
     return DirectionalOutlyingnessStats(
-        directional_outlyingness=dir_outlyingness,
+        directional_outlyingness=dir_outlyingness.data_matrix,
         functional_directional_outlyingness=functional_dir_outlyingness,
         mean_directional_outlyingness=mean_dir_outlyingness,
         variation_directional_outlyingness=variation_dir_outlyingness,

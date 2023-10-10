@@ -11,19 +11,20 @@ from __future__ import annotations
 
 import abc
 import math
-from typing import Callable, TypeVar, Union, overload
+from typing import Callable, Final, TypeVar, Union, overload
 
 import numpy as np
 
 from .._utils._sklearn_adapter import BaseEstimator
 from ..representation._functional_data import FData
 from ..representation.basis import FDataBasis
-from ..typing._base import GridPointsLike
 from ..typing._numpy import NDArrayFloat
 from . import kernels
 
-Input = TypeVar("Input", bound=Union[FData, GridPointsLike])
+Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
 Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])
+
+DEFAULT_BANDWIDTH_PERCENTILE: Final = 15
 
 
 class HatMatrix(
@@ -52,8 +53,8 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input | None = None,
-        X: Input | None = None,
+        X_train: Input,
+        X: Input,
         y_train: None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -65,8 +66,8 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input | None = None,
-        X: Input | None = None,
+        X_train: Input,
+        X: Input,
         y_train: Prediction | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -77,8 +78,8 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input | None = None,
-        X: Input | None = None,
+        X_train: Input,
+        X: Input,
         y_train: NDArrayFloat | FData | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -186,7 +187,7 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     ) -> NDArrayFloat:
 
         bandwidth = (
-            np.percentile(delta_x, 15)
+            float(np.percentile(delta_x, DEFAULT_BANDWIDTH_PERCENTILE))
             if self.bandwidth is None
             else self.bandwidth
         )
@@ -278,8 +279,8 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | NDArrayFloat | None = None,
-        X: FData | NDArrayFloat | None = None,
+        X_train: FData | NDArrayFloat,
+        X: FData | NDArrayFloat,
         y_train: None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -291,8 +292,8 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | GridPointsLike | None = None,
-        X: FData | GridPointsLike | None = None,
+        X_train: FData | NDArrayFloat,
+        X: FData | NDArrayFloat,
         y_train: Prediction | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -303,25 +304,27 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | GridPointsLike | None = None,
-        X: FData | GridPointsLike | None = None,
+        X_train: FData | NDArrayFloat,
+        X: FData | NDArrayFloat,
         y_train: NDArrayFloat | FData | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
     ) -> NDArrayFloat | FData:
 
         bandwidth = (
-            np.percentile(delta_x, 15)
+            float(np.percentile(delta_x, DEFAULT_BANDWIDTH_PERCENTILE))
             if self.bandwidth is None
             else self.bandwidth
         )
-        
+
         # Smoothing for functions of one variable
         if not isinstance(X_train, FDataBasis) and X_train[0].shape[0] == 1:
             delta_x = np.subtract.outer(
                 X.flatten(),
                 X_train.flatten(),
             )
+
+            assert y_train is None
 
             return super().__call__(  # noqa: WPS503
                 delta_x=delta_x,
@@ -341,7 +344,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
                 and isinstance(X, FDataBasis)
             ):
                 raise ValueError("Only FDataBasis is supported for now.")
-                
+
             m1 = X_train.coefficients
             m2 = X.coefficients
 

@@ -18,6 +18,7 @@ warnings.warn(
     "The \"kernel_smoothers\" module is deprecated. "
     "Use the \"KernelSmoother\" class instead",
     DeprecationWarning,
+    stacklevel=2,
 )
 
 

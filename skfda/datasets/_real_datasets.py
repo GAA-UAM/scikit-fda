@@ -5,11 +5,10 @@ from typing import Any, Mapping, Tuple, overload
 
 import numpy as np
 import pandas as pd
+import rdata
 from pandas import DataFrame, Series
 from sklearn.utils import Bunch
 from typing_extensions import Literal
-
-import rdata
 
 from ..representation import FDataGrid
 from ..typing._numpy import NDArrayFloat, NDArrayInt
@@ -180,7 +179,7 @@ def fetch_ucr(
     The UCR/UEA Time Series Classification repository, hosted at
     www.timeseriesclassification.com includes plenty of
     classification problems with univariate and multivariate time series
-    \ :footcite:p:`dau++_2019_ucr,bagnall++_2018_uea`.
+    :footcite:p:`dau++_2019_ucr,bagnall++_2018_uea`.
     They are widely used in the functional data classification literature.
 
     Args:

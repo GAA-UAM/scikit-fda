@@ -51,11 +51,15 @@ def _get_sample_range_from_data(
     points: NDArrayFloat,
 ) -> DomainRange:
     """Computes the domain ranges of each sample.
-    
+
+    Args:
+        start_indices: start_indices of the FDataIrregular object.
+        points: points of the FDataIrregular object.
+
     Returns:
-        sample_range: A tuple of tuples. Where
+        DomainRange: (sample_range) a tuple of tuples of 2-tuples where
             sample_range[f][d] = (min_point, max_point) is the domain range for
-            the function f in dimension d. 
+            the function f in dimension d.
     """
     return tuple(
         tuple(
@@ -68,6 +72,16 @@ def _get_sample_range_from_data(
 def _get_domain_range_from_sample_range(
     sample_range: DomainRange,
 ) -> DomainRange:
+    """Computes the domain range of the whole dataset.
+
+    Args:
+        sample_range: sample_range of the FDataIrregular object.
+
+    Returns:
+        DomainRange: (domain_range) a tuple of 2-tuples where
+            domain_range[d] = (min_point, max_point) is the domain range for
+            the dimension d.
+    """
     sample_range_array = np.asarray(sample_range)
     min_arguments = sample_range_array[..., 0].min(axis=0)
     max_arguments = sample_range_array[..., 1].max(axis=0)

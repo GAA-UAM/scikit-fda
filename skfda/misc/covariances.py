@@ -817,7 +817,7 @@ class EmpiricalGrid(Empirical):
     cov_fdata: FDataGrid
     correction: int
 
-    def __init__(self, data: FDataGrid, correction: int = 1) -> None:
+    def __init__(self, data: FDataGrid, correction: int = 0) -> None:
         super().__init__(data=data)
 
         self.correction = correction
@@ -853,7 +853,7 @@ class EmpiricalBasis(Empirical):
     coeff_matrix: NDArrayFloat
     correction: int
 
-    def __init__(self, data: FDataBasis, correction: int = 1) -> None:
+    def __init__(self, data: FDataBasis, correction: int = 0) -> None:
         super().__init__(data=data)
 
         self.correction = correction

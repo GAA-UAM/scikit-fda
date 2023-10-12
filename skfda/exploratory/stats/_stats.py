@@ -103,20 +103,20 @@ def cov(
 
 
 @functools.singledispatch
-def std(X: F, ddof: int = 1) -> F:
+def std(X: F, correction: int = 1) -> F:
     r"""
     Compute the standard deviation of all the samples in a FData object.
 
     .. math::
-        \text{std}_X(t) = \sqrt{\frac{1}{N-\text{ddof}}
+        \text{std}_X(t) = \sqrt{\frac{1}{N-\text{correction}}
         \sum_{n=1}^{N}{\left(X_n(t) - \overline{X}(t)\right)^2}}
 
     Args:
         X: Object containing all the samples whose standard deviation is
             wanted.
-        ddof: Means "Delta Degrees of Freedom". The divisor used in
-            calculations is `N - ddof`, where `N` represents the number of
-            samples in `X`. By default ddof is 1.
+        correction: degrees of freedom adjustment. The divisor used in the
+            calculation is `N - correction`, where `N` represents the number of
+            elements. Default: `0`.
 
     Returns:
         Standard deviation of all the samples in the original object, as a
@@ -127,22 +127,24 @@ def std(X: F, ddof: int = 1) -> F:
 
 
 @std.register
-def std_fdatagrid(X: FDataGrid, ddof: int = 1) -> FDataGrid:
+def std_fdatagrid(X: FDataGrid, correction: int = 1) -> FDataGrid:
     """Compute the standard deviation of a FDataGrid."""
     return X.copy(
-        data_matrix=np.std(X.data_matrix, axis=0, ddof=ddof)[np.newaxis, ...],
+        data_matrix=np.std(
+            X.data_matrix, axis=0, ddof=correction,
+        )[np.newaxis, ...],
         sample_names=(None,),
     )
 
 
 @std.register
-def std_fdatabasis(X: FDataBasis, ddof: int = 1) -> FDataBasis:
+def std_fdatabasis(X: FDataBasis, correction: int = 1) -> FDataBasis:
     """Compute the standard deviation of a FDataBasis."""
     from ..._utils import function_to_fdatabasis
 
     basis = X.basis
     coeff_cov_matrix = np.cov(
-        X.coefficients, rowvar=False, ddof=ddof,
+        X.coefficients, rowvar=False, ddof=correction,
     ).reshape((basis.n_basis, basis.n_basis))
 
     def std_function(t_points: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430

@@ -133,7 +133,7 @@ def _fisher_rao_warping_mean(
         # Compute shooting vectors
         for psi_i in psi_data:
 
-            inner = scipy.integrate.simps(mu * psi_i, x=eval_points)
+            inner = scipy.integrate.simpson(mu * psi_i, x=eval_points)
             inner = max(min(inner, 1), -1)
 
             theta = np.arccos(inner)
@@ -143,7 +143,7 @@ def _fisher_rao_warping_mean(
 
         # Mean of shooting vectors
         vmean /= warping.n_samples
-        v_norm = np.sqrt(scipy.integrate.simps(np.square(vmean)))
+        v_norm = np.sqrt(scipy.integrate.simpson(np.square(vmean)))
 
         # Convergence criterion
         if v_norm < tol:
@@ -266,7 +266,7 @@ def fisher_rao_karcher_mean(
     # Initialize with function closest to the L2 mean with the L2 distance
     centered = (srsf.T - srsf.mean(axis=0, keepdims=True).T).T
 
-    distances = scipy.integrate.simps(
+    distances = scipy.integrate.simpson(
         np.square(centered, out=centered),
         eval_points_normalized,
         axis=1,
@@ -304,14 +304,14 @@ def fisher_rao_karcher_mean(
 
         # Convergence criterion
         mu_norm = np.sqrt(
-            scipy.integrate.simps(
+            scipy.integrate.simpson(
                 np.square(mu, out=mu_aux),
                 eval_points_normalized,
             ),
         )
 
         mu_diff = np.sqrt(
-            scipy.integrate.simps(
+            scipy.integrate.simpson(
                 np.square(mu - mu_1, out=mu_aux),
                 eval_points_normalized,
             ),

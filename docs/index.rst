@@ -34,7 +34,7 @@ Github you can find more information related to the development of the package.
    :caption: More documentation
 
    apilist
-   glossary
+   Glossary <glossary>
    contributors
 
 An exhaustive list of all the contents of the package can be found in the

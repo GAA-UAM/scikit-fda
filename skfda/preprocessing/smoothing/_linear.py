@@ -28,6 +28,7 @@ class _LinearSmoother(
     ``hat_matrix`` to define the smoothing or 'hat' matrix.
 
     """
+
     input_points_: GridPoints
     output_points_: GridPoints
 
@@ -116,9 +117,25 @@ class _LinearSmoother(
             )
         )
 
+        dims = [len(e) for e in self.output_points_]
+        dims += [len(e) for e in self.input_points_]
+
+        hat_matrix = np.reshape(
+            self.hat_matrix_,
+            dims,
+        )
+
+        data_matrix = np.einsum(
+            hat_matrix,
+            [Ellipsis, *range(1, len(self.output_points_) + 1)],
+            X.data_matrix,
+            [0, *range(1, len(self.output_points_) + 2)],
+            [0, Ellipsis, len(self.output_points_) + 1],
+        )
+
         # The matrix is cached
         return X.copy(
-            data_matrix=self.hat_matrix_ @ X.data_matrix,
+            data_matrix=data_matrix,
             grid_points=self.output_points_,
         )
 

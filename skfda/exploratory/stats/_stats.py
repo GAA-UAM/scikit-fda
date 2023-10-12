@@ -9,6 +9,8 @@ import numpy as np
 from scipy import integrate
 from scipy.stats import rankdata
 
+from skfda._utils.ndfunction import average_function_value
+
 from ...misc.metrics._lp_distances import l2_distance
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Metric
@@ -42,22 +44,22 @@ def mean(
     return (X * weight).sum()
 
 
-def var(X: FData, ddof: int = 1) -> FDataGrid:
+def var(X: FData, correction: int = 0) -> FDataGrid:
     """
     Compute the variance of a set of samples in a FData object.
 
     Args:
         X: Object containing all the set of samples whose variance is desired.
-        ddof: "Delta Degrees of Freedom": the divisor used in the calculation
-            is `N - ddof`, where `N` represents the number of elements. By
-            default `ddof` is 1.
+        correction: degrees of freedom adjustment. The divisor used in the
+            calculation is `N - correction`, where `N` represents the number of
+            elements. Default: `0`.
 
     Returns:
         Variance of all the samples in the original object, as a
         :term:`functional data object` with just one sample.
 
     """
-    return X.var(ddof=ddof)  # type: ignore[no-any-return]
+    return X.var(correction=correction)  # type: ignore[no-any-return]
 
 
 def gmean(X: FDataGrid) -> FDataGrid:
@@ -77,7 +79,7 @@ def gmean(X: FDataGrid) -> FDataGrid:
 
 def cov(
     X: FData,
-    ddof: int = 1,
+    correction: int = 0,
 ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
     """
     Compute the covariance.
@@ -87,9 +89,9 @@ def cov(
 
     Args:
         X: Object containing different samples of a functional variable.
-        ddof: "Delta Degrees of Freedom": the divisor used in the calculation
-            is `N - ddof`, where `N` represents the number of elements. By
-            default `ddof` is 1.
+        correction: degrees of freedom adjustment. The divisor used in the
+            calculation is `N - correction`, where `N` represents the number of
+            elements. Default: `0`.
 
 
     Returns:
@@ -97,7 +99,7 @@ def cov(
         callable.
 
     """
-    return X.cov(ddof=ddof)
+    return X.cov(correction=correction)
 
 
 @functools.singledispatch
@@ -165,33 +167,20 @@ def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:
     with all the other curves of our dataset.
 
     """
-    interval_len = (
-        X.domain_range[0][1]
-        - X.domain_range[0][0]
+    # Functions containing at each point the number of curves
+    # are above it.
+    num_functions_above = X.copy(
+        data_matrix=rankdata(
+            -X.data_matrix,
+            method='max',
+            axis=0,
+        ) - 1,
     )
 
-    # Array containing at each point the number of curves
-    # are above it.
-    num_functions_above: NDArrayFloat = rankdata(
-        -X.data_matrix,
-        method='max',
-        axis=0,
-    ) - 1
-
-    integrand = num_functions_above
-
-    for d, s in zip(X.domain_range, X.grid_points):
-        integrand = integrate.simps(
-            integrand,
-            x=s,
-            axis=1,
-        )
-        interval_len = d[1] - d[0]
-        integrand /= interval_len
-
-    integrand /= X.n_samples
-
-    return integrand.flatten()
+    return (
+        average_function_value(num_functions_above)
+        / num_functions_above.n_samples
+    ).ravel()
 
 
 def depth_based_median(

@@ -4,6 +4,7 @@ from typing import Tuple
 
 import numpy as np
 import sklearn
+from sklearn.datasets import load_digits
 from typing_extensions import Literal
 
 import skfda
@@ -171,6 +172,39 @@ class TestKernelSmoother(unittest.TestCase):
             [0.000000000, 0.000000000, 0.000000000, 0.500000000, 0.500000000],
         ]
         np.testing.assert_allclose(hat_matrix, hat_matrix_r)
+
+
+class TestSurfaceSmoother(unittest.TestCase):
+    """Test that smoothing works on surfaces."""
+
+    def test_knn(self) -> None:
+        """Check 2D smoothing using digits dataset."""
+        X, y = load_digits(return_X_y=True)
+        X = X.reshape(-1, 8, 8)
+
+        fd = skfda.FDataGrid(X)
+
+        ks = KernelSmoother(
+            kernel_estimator=KNeighborsHatMatrix(n_neighbors=1))
+        fd_trans = ks.fit_transform(fd)
+
+        np.testing.assert_allclose(fd_trans.data_matrix, fd.data_matrix)
+
+        ks = KernelSmoother(
+            kernel_estimator=KNeighborsHatMatrix(n_neighbors=3))
+        fd_trans = ks.fit_transform(fd)
+
+        res = [
+            [0, 1.25, 7.75, 10.5, 8.25, 6.25, 1.5, 0],
+            [0, 3.2, 9.6, 10.6, 9.8, 8.4, 5.6, 1.25],
+            [0.75, 4.4, 9, 6.4, 4.6, 8.4, 6.4, 2],
+            [1, 4.8, 7.8, 2.8, 1.6, 7.2, 6.4, 2],
+            [1.25, 4.2, 7.2, 1.6, 2, 7.4, 6.4, 2],
+            [1, 4.4, 7.4, 3.4, 4.6, 8.2, 5.4, 1.75],
+            [0.5, 4, 7.6, 8.4, 7.6, 6.8, 3.8, 0],
+            [0, 2, 8.25, 8.5, 8.25, 5.5, 0, 0],
+        ]
+        np.testing.assert_allclose(fd_trans.data_matrix[0, ..., 0], res)
 
 
 class TestBasisSmoother(unittest.TestCase):

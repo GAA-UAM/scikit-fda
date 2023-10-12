@@ -82,7 +82,7 @@ class TestRMH(unittest.TestCase):
         join.
 
         """
-        n_samples = 10000
+        n_samples = 1000
         n_features = 100
 
         def mean_1(  # noqa: WPS430

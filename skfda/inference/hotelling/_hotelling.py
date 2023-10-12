@@ -103,10 +103,12 @@ def hotelling_t2(
         k1 = fd1.cov(
             fd1.grid_points[0],
             fd1.grid_points[0],
+            correction=1,
         )
         k2 = fd2.cov(
             fd2.grid_points[0],
             fd2.grid_points[0],
+            correction=1,
         )
 
     m = m.reshape((-1, 1))  # Reshaping the mean for a proper matrix product

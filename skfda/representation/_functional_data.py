@@ -826,7 +826,7 @@ class FData(  # noqa: WPS214
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> NDArrayFloat:
         pass
 
@@ -834,7 +834,7 @@ class FData(  # noqa: WPS214
     def cov(  # noqa: WPS451
         self: T,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
@@ -844,7 +844,7 @@ class FData(  # noqa: WPS214
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,
@@ -866,7 +866,7 @@ class FData(  # noqa: WPS214
             t_points: Points where the covariance function is evaluated.
             correction: degrees of freedom adjustment. The divisor used in the
                 calculation is `N - correction`, where `N` represents the
-                number of elements. Default: `1`.
+                number of elements. Default: `0`.
 
         Returns:
             Covariance function.

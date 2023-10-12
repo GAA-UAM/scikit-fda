@@ -582,13 +582,13 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T, correction: int = 1) -> T:
+    def var(self: T, correction: int = 0) -> T:
         """Compute the variance of a set of samples in a FDataGrid object.
 
         Args:
-            correction: "Delta Degrees of Freedom": the divisor used in the
-                calculation is `N - correction`, where `N` represents the number of
-                elements. By default `correction` is 1.
+            correction: degrees of freedom adjustment. The divisor used in the
+                calculation is `N - correction`, where `N` represents the
+                number of elements. Default: `0`.
 
         Returns:
             A FDataGrid object with just one sample representing the
@@ -610,7 +610,7 @@ class FDataGrid(FData):  # noqa: WPS214
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> NDArrayFloat:
         pass
 
@@ -618,7 +618,7 @@ class FDataGrid(FData):  # noqa: WPS214
     def cov(  # noqa: WPS451
         self: T,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
@@ -627,7 +627,7 @@ class FDataGrid(FData):  # noqa: WPS214
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,
@@ -645,7 +645,7 @@ class FDataGrid(FData):  # noqa: WPS214
             t_points: Grid points where the covariance function is evaluated.
             correction: degrees of freedom adjustment. The divisor used in the
                 calculation is `N - correction`, where `N` represents the
-                number of elements. Default: `1`.
+                number of elements. Default: `0`.
 
         Returns:
             Covariance function.

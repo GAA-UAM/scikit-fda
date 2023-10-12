@@ -43,7 +43,7 @@ def mean(
     return (X * weight).sum()
 
 
-def var(X: FData, correction: int = 1) -> FDataGrid:
+def var(X: FData, correction: int = 0) -> FDataGrid:
     """
     Compute the variance of a set of samples in a FData object.
 
@@ -51,7 +51,7 @@ def var(X: FData, correction: int = 1) -> FDataGrid:
         X: Object containing all the set of samples whose variance is desired.
         correction: degrees of freedom adjustment. The divisor used in the
             calculation is `N - correction`, where `N` represents the number of
-            elements. Default: `1`.
+            elements. Default: `0`.
 
     Returns:
         Variance of all the samples in the original object, as a
@@ -78,7 +78,7 @@ def gmean(X: FDataGrid) -> FDataGrid:
 
 def cov(
     X: FData,
-    correction: int = 1,
+    correction: int = 0,
 ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
     """
     Compute the covariance.
@@ -90,7 +90,7 @@ def cov(
         X: Object containing different samples of a functional variable.
         correction: degrees of freedom adjustment. The divisor used in the
             calculation is `N - correction`, where `N` represents the number of
-            elements. Default: `1`.
+            elements. Default: `0`.
 
 
     Returns:

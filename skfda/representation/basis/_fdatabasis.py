@@ -445,7 +445,7 @@ class FDataBasis(FData):  # noqa: WPS214
     def var(
         self: T,
         eval_points: Optional[NDArrayFloat] = None,
-        correction: int = 1,
+        correction: int = 0,
     ) -> T:
         """Compute the variance of the functional data object.
 
@@ -462,7 +462,7 @@ class FDataBasis(FData):  # noqa: WPS214
                 between 501 and 10 times the number of basis.
             correction: degrees of freedom adjustment. The divisor used in the
                 calculation is `N - correction`, where `N` represents the
-                number of elements. Default: `1`.
+                number of elements. Default: `0`.
 
         Returns:
             Variance of the original object.
@@ -478,7 +478,7 @@ class FDataBasis(FData):  # noqa: WPS214
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> NDArrayFloat:
         pass
 
@@ -486,7 +486,7 @@ class FDataBasis(FData):  # noqa: WPS214
     def cov(    # noqa: WPS451
         self: T,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
@@ -495,7 +495,7 @@ class FDataBasis(FData):  # noqa: WPS214
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
         /,
-        correction: int = 1,
+        correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,
@@ -519,7 +519,7 @@ class FDataBasis(FData):  # noqa: WPS214
             t_points: Points where the covariance function is evaluated.
             correction: degrees of freedom adjustment. The divisor used in the
                 calculation is `N - correction`, where `N` represents the
-                number of elements. Default: `1`.
+                number of elements. Default: `0`.
 
         Returns:
             Covariance function.

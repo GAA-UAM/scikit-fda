@@ -173,7 +173,7 @@ class AgglomerativeClustering(  # noqa: WPS230
 
         self._estimator = sklearn.cluster.AgglomerativeClustering(
             n_clusters=self.n_clusters,
-            affinity='precomputed',
+            metric='precomputed',
             memory=self.memory,
             connectivity=self.connectivity,
             compute_full_tree=self.compute_full_tree,

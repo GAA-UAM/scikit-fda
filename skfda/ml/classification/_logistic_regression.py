@@ -132,11 +132,9 @@ class LogisticRegression(
             (self.max_features, n_features),
         )
 
-        penalty = 'none' if self.penalty is None else self.penalty
-
         # multivariate logistic regression
         mvlr = mvLogisticRegression(
-            penalty=penalty,
+            penalty=self.penalty,
             C=self.C,
             solver=self.solver,
             max_iter=self.max_iter,

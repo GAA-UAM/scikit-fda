@@ -31,4 +31,5 @@ statistics can be used.
 
    skfda.exploratory.stats.cov
    skfda.exploratory.stats.var
+   skfda.exploratory.stats.std
 

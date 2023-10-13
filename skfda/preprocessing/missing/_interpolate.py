@@ -134,7 +134,7 @@ class MissingValuesInterpolation(
 
         For multivariate functions, such as surfaces all dimensions are
         considered. This is currently done using
-        :external:class:`~scipy.interpolation.LinearNDInterpolator`, which
+        :external:class:`~scipy.interpolate.LinearNDInterpolator`, which
         triangulates the space and performs linear barycentric interpolation:
 
         >>> X = FDataGrid(

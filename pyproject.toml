@@ -45,6 +45,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+docs = [
+  "basemap",
+  "basemap-data",
+  "basemap-data-hires",
+  "ipykernel",
+  "jupyter-sphinx",
+  "myst-parser",
+  "pillow",
+  "pydata-sphinx-theme",
+  "pytest",
+  "setuptools>=41.2",
+  "sphinx>=3",
+  "sphinx-gallery",
+  "sphinxcontrib-bibtex",
+]
 test = [
   "pytest",
   "pytest-env",

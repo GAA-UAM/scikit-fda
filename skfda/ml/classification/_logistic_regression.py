@@ -62,8 +62,8 @@ class LogisticRegression(
         >>> from skfda.datasets import make_gaussian_process
         >>> from skfda.ml.classification import LogisticRegression
         >>>
-        >>> n_samples = 10000
-        >>> n_features = 200
+        >>> n_samples = 2000
+        >>> n_features = 101
         >>>
         >>> def mean_1(t):
         ...     return (np.abs(t - 0.25)
@@ -90,7 +90,7 @@ class LogisticRegression(
         >>> np.allclose(sorted(lr.points_), [0.25, 0.5, 0.75], rtol=1e-2)
         True
         >>> lr.score(X[1::2],y[1::2])
-        0.7498
+        0.768
 
         References:
             .. footbibliography::

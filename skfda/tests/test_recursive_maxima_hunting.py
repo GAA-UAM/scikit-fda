@@ -25,8 +25,8 @@ class TestRMH(unittest.TestCase):
         join.
 
         """
-        n_samples = 10000
-        n_features = 100
+        n_samples = 1000
+        n_features = 101
 
         def mean_1(  # noqa: WPS430
             t: np.typing.NDArray[np.float_],
@@ -66,7 +66,7 @@ class TestRMH(unittest.TestCase):
         rmh.fit(X, y)
         point_mask = rmh.get_support()
         points = X.grid_points[0][point_mask]
-        np.testing.assert_allclose(points, [0.25, 0.5, 0.75], rtol=1e-1)
+        np.testing.assert_allclose(points, [0.25, 0.5, 0.75], rtol=1e-2)
 
     @pytest.mark.filterwarnings(
         'ignore::sklearn.exceptions.ConvergenceWarning'
@@ -83,7 +83,7 @@ class TestRMH(unittest.TestCase):
 
         """
         n_samples = 1000
-        n_features = 100
+        n_features = 101
 
         def mean_1(  # noqa: WPS430
             t: np.typing.NDArray[np.float_],
@@ -129,7 +129,7 @@ class TestRMH(unittest.TestCase):
         rmh.fit(X, y)
         point_mask = rmh.get_support()
         points = X.grid_points[0][point_mask]
-        np.testing.assert_allclose(points, [0.25, 0.5, 0.75], rtol=1e-1)
+        np.testing.assert_allclose(points, [0.25, 0.5, 0.75], rtol=1e-2)
 
 
 if __name__ == '__main__':

@@ -460,6 +460,7 @@ class BSpline(BSplineBasis):
             knots=knots,
         )
         warnings.warn(
-            "The BSplines class is deprecated. Use BSplineBasis instead.",
+            "The BSpline class is deprecated. Use BSplineBasis instead.",
             DeprecationWarning,
+            stacklevel=2,
         )

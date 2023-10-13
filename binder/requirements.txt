@@ -1,4 +1,4 @@
--r ../readthedocs-requirements.txt
+scikit-fda[docs]
 jupytext
 sphinx-gallery<=0.7.0
 .

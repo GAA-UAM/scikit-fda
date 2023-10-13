@@ -211,4 +211,5 @@ class Monomial(MonomialBasis):
         warnings.warn(
             "The Monomial class is deprecated. Use MonomialBasis instead.",
             DeprecationWarning,
+            stacklevel=2,
         )

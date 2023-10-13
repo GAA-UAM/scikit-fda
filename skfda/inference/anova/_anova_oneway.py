@@ -5,6 +5,7 @@ from typing import Sequence, Tuple, TypeVar, overload
 import numpy as np
 from typing_extensions import Literal
 
+from ..._utils import constants
 from ...datasets import make_gaussian
 from ...misc.metrics import lp_distance
 from ...misc.validation import validate_random_state
@@ -68,7 +69,7 @@ def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
         Finally the value of the statistic is calculated:
 
         >>> v_sample_stat(fd, weights)
-        0.01649448843348894
+        0.01649...
 
     References:
         .. footbibliography::
@@ -203,25 +204,35 @@ def _anova_bootstrap(
             )
 
     # List with sizes of each group
-    sizes = [fd.n_samples for fd in fd_grouped]
+    sizes = [fdg.n_samples for fdg in fd_grouped]
 
     # Instance a random state object in case random_state is an int
     random_state = validate_random_state(random_state)
-
-    if equal_var:
-        k_est = concatenate(fd_grouped).cov().data_matrix[0, ..., 0]
-        k_est = [k_est] * len(fd_grouped)
-    else:
-        # Estimating covariances for each group
-        k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
 
     # Simulating n_reps observations for each of the n_groups gaussian
     # processes
     grid_points = getattr(fd_grouped[0], "grid_points", None)
     if grid_points is None:
         start, stop = fd_grouped[0].domain_range[0]
-        n_features = k_est[0].shape[0]
-        grid_points = np.linspace(start, stop, n_features)
+        grid_points = np.linspace(start, stop, constants.N_POINTS_FINE_MESH)
+
+    if equal_var:
+        cov_est = concatenate(fd_grouped).cov(
+            grid_points,
+            grid_points,
+            correction=1,
+        )
+        k_est = [cov_est] * len(fd_grouped)
+    else:
+        # Estimating covariances for each group
+        k_est = [
+            fdg.cov(
+                grid_points,
+                grid_points,
+                correction=1,
+            )
+            for fdg in fd_grouped
+        ]
 
     sim = [
         make_gaussian(

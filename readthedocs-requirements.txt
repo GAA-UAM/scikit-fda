@@ -2,11 +2,13 @@
 basemap
 basemap-data
 basemap-data-hires
+ipykernel
 Sphinx>=3
 pydata-sphinx-theme
 sphinx-gallery
 pillow
 setuptools>=41.2
 jupyter-sphinx
+myst-parser
 pytest
 sphinxcontrib-bibtex

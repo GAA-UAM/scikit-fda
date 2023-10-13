@@ -1,24 +1,27 @@
 from __future__ import annotations
 
 import numbers
-from typing import Callable, Sequence, Union
+from typing import Callable, Sequence, Tuple, Union
 
+import findiff
 import numpy as np
 import scipy.integrate
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
-from ...representation import FData, FDataGrid
+from ...representation import FData, FDataBasis, FDataGrid
 from ...representation.basis import (
     Basis,
     BSplineBasis,
     ConstantBasis,
+    CustomBasis,
     FourierBasis,
     MonomialBasis,
+    _GridBasis,
 )
 from ...typing._base import DomainRangeLike
-from ...typing._numpy import NDArrayFloat
-from ._operators import Operator, gram_matrix_optimization
+from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ._operators import Operator, gram_matrix, gram_matrix_optimization
 
 Order = int
 
@@ -576,30 +579,244 @@ def bspline_penalty_matrix_optimized(
     return penalty_matrix
 
 
+def _optimized_operator_evaluation_in_grid(
+    linear_operator: LinearDifferentialOperator,
+    grid_points: NDArrayFloat,
+    findiff_accuracy: int,
+) -> Tuple[NDArrayFloat, NDArrayInt]:
+    """
+    Compute the linear operator applied to the delta basis of the grid.
+
+    The delta basis is the basis where the i-th basis function is 1 in the
+    i-th point and 0 in the rest of points.
+
+    Returns:
+    If the linear operator does not have constant weights, NotImplemented.
+    Otherwise, returns a tuple with:
+     - A matrix where the i-th row contains the values of the linear operator
+        applied to the i-th basis function of the delta basis.
+
+    - The domain limits of each basis function of the delta basis. Outside
+        these limits, the result of applying the linear operator to the
+        given basis function is zero.
+
+    Example:
+        >>> import numpy as np
+        >>> from skfda.misc.operators import LinearDifferentialOperator
+        >>> _optimized_operator_evaluation_in_grid(
+        ...     LinearDifferentialOperator(2),
+        ...     np.linspace(0, 7, 8),
+        ...     2,
+        ... )
+        (array([[ 2.,  1.,  0.,  0.,  0.,  0.,  0.,  0.],
+        [-5., -2.,  1.,  0.,  0.,  0.,  0.,  0.],
+        [ 4.,  1., -2.,  1.,  0.,  0.,  0.,  0.],
+        [-1.,  0.,  1., -2.,  1.,  0.,  0.,  0.],
+        [ 0.,  0.,  0.,  1., -2.,  1.,  0., -1.],
+        [ 0.,  0.,  0.,  0.,  1., -2.,  1.,  4.],
+        [ 0.,  0.,  0.,  0.,  0.,  1., -2., -5.],
+        [ 0.,  0.,  0.,  0.,  0.,  0.,  1.,  2.]]),
+        array([[0, 1],
+                [0, 2],
+                [0, 3],
+                [0, 4],
+                [3, 7],
+                [4, 7],
+                [5, 7],
+                [6, 7]]))
+
+    Explanation:
+        Each row of the first array contains the values of the linear operator
+        applied to the delta basis function.
+        As it can be seen, each row of the second array cointains the domain
+        limits of the corresponding row of the first array. That is to say,
+        the range in which their values are not 0.
+        For example, the third row of the first array is non-zero until the
+        fourth element, so the third row of the second array is [0, 3].
+    """
+    n_points = grid_points.shape[0]
+    diff_coefficients = np.zeros((n_points, n_points))
+
+    domain_limits = np.hstack(
+        [
+            np.ones((n_points, 1)) * n_points,
+            np.zeros((n_points, 1)),
+        ],
+    ).astype(int)
+
+    linear_operator_weights = linear_operator.constant_weights()
+    if linear_operator_weights is None:
+        return NotImplemented, NotImplemented
+
+    # The desired matrix can be obtained by appending the coefficients
+    # of the finite differences for each point column-wise.
+    for dif_order, w in enumerate(linear_operator_weights):
+        if w == 0:
+            continue
+        for point_index in range(n_points):
+            # Calculate the finite differences coefficients
+            # the point point_index. These coefficients express the
+            # contribution of a function in each of the points in the
+            # grid to the value of the operator applied to the function
+            # in the point point_index.
+            finite_diff = findiff.coefs.coefficients_non_uni(
+                deriv=dif_order,
+                acc=findiff_accuracy,
+                coords=grid_points,
+                idx=point_index,
+            )
+
+            # The offsets are the relative positions of the
+            # points for which the coefficients are being
+            # calculated
+            offsets = finite_diff["offsets"]
+            coefficients = finite_diff["coefficients"]
+
+            # Add the position of the point where the finite
+            # difference is calculated to get the absolute position
+            # of the points where each coefficient is applied
+            positions = offsets + point_index
+
+            # If the coefficients for calculating the value of
+            # the operator in this point (point_index)
+            # include a coefficient for the i-th point,
+            # then the i-th basis function contains the point point_index
+            # in its domain.
+            # (by definition that fuction is 1 in the i-th point).
+            domain_limits[positions, 0] = np.minimum(
+                domain_limits[positions, 0],
+                np.ones(positions.shape) * point_index,
+            )
+            domain_limits[positions, 1] = np.maximum(
+                domain_limits[positions, 1],
+                np.ones(positions.shape) * point_index,
+            )
+
+            w_eval = w(grid_points[point_index]) if callable(w) else w
+            diff_coefficients[positions, point_index] += w_eval * coefficients
+
+    return (diff_coefficients, domain_limits)
+
+
+@gram_matrix_optimization.register
+def gridbasis_penalty_matrix_optimized(
+    linear_operator: LinearDifferentialOperator,
+    basis: _GridBasis,
+) -> NDArrayFloat:
+    """
+    Optimized version for GridBasis.
+
+    It evaluates the operator in the grid points.
+    """
+    n_points = basis.grid_points[0].shape[0]
+    findiff_accuracy = 2
+
+    evaluated_basis, domain_limits = _optimized_operator_evaluation_in_grid(
+        linear_operator,
+        basis.grid_points[0],
+        findiff_accuracy=findiff_accuracy,
+    )
+
+    # If the operator does not have constant weights, the
+    # optimized evaluation is not implemented.
+    if evaluated_basis is NotImplemented:
+        return NotImplemented
+
+    # The support of the result of applying the linear operator
+    # is a small subset of the grid points. We calculate the
+    # maximum number of points to the left and right of the
+    # point where the linear operator is applied that can be
+    # different from zero.
+
+    max_domain_width = np.max(
+        np.abs(domain_limits[:, 0] - domain_limits[:, 1]),
+    )
+
+    # Precompute the simpson quadrature for the entire domain.
+    # This is done to avoid computing it for each subinterval of integration.
+    quadrature = scipy.integrate.simpson(
+        np.identity(n_points),
+        basis.grid_points[0],
+    )
+
+    product_matrix = np.zeros((basis.n_basis, basis.n_basis))
+    for i in range(n_points):
+        # Maximum index of another function with not-disjoint support
+        max_no_disjoint_index = min(n_points, i + 2 * max_domain_width)
+
+        for j in range(i, max_no_disjoint_index):
+            if domain_limits[i, 1] < domain_limits[j, 0]:
+                continue
+
+            left_lim = min(
+                domain_limits[i, 0],
+                domain_limits[j, 0],
+            )
+            right_lim = max(
+                domain_limits[i, 1],
+                domain_limits[j, 1],
+            )
+
+            # The right limit of the interval is excluded when slicing
+            right_lim += 1
+
+            # Limit both the multiplication and the integration to
+            # the interval where the functions are not 0.
+            operator_product = (
+                evaluated_basis[i, left_lim:right_lim]
+                * evaluated_basis[j, left_lim:right_lim]
+            )
+            sub_quadrature = quadrature[left_lim:right_lim]
+
+            product_matrix[i, j] = np.dot(operator_product, sub_quadrature)
+            product_matrix[j, i] = product_matrix[i, j]
+
+    return product_matrix
+
+
+@gram_matrix_optimization.register
+def fdatabasis_penalty_matrix_optimized(
+    linear_operator: LinearDifferentialOperator,
+    fdatabasis: FDataBasis,
+) -> NDArrayFloat:
+    """Optimized version for FDataBasis."""
+    # By calculating the gram matrix of the basis first, we can
+    # take advantage of the optimized implementations for
+    # several basis types.
+    # Then we can calculate the penalty matrix using the
+    # coefficients of the functions in the basis
+    # and the penalty matrix of the basis.
+    basis_pen_matrix = gram_matrix(
+        linear_operator,
+        fdatabasis.basis,
+    )
+
+    coef_matrix = fdatabasis.coefficients
+    return coef_matrix @ basis_pen_matrix @ coef_matrix.T
+
+
 @gram_matrix_optimization.register
 def fdatagrid_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
-    basis: FDataGrid,
+    fdatagrid: FDataGrid,
 ) -> NDArrayFloat:
-    """Optimized version for FDatagrid."""
-    evaluated_basis = sum(
-        w(basis.grid_points[0]) if callable(w) else w
-        * basis.derivative(order=i)(basis.grid_points[0])
-        for i, w in enumerate(linear_operator.weights)
+    """Optimized version for FDataGrid."""
+    from ...misc import inner_product_matrix
+
+    operator_evaluated = linear_operator(fdatagrid)(
+        fdatagrid.grid_points[0],
     )
-    assert not isinstance(evaluated_basis, int)
+    fdatagrid_evaluated = FDataGrid(
+        data_matrix=operator_evaluated[..., 0],
+        grid_points=fdatagrid.grid_points[0],
+    )
+    return inner_product_matrix(fdatagrid_evaluated)
 
-    indices = np.triu_indices(basis.n_samples)
-    product = evaluated_basis[indices[0]] * evaluated_basis[indices[1]]
 
-    triang_vec = scipy.integrate.simps(product[..., 0], x=basis.grid_points)
-
-    matrix = np.empty((basis.n_samples, basis.n_samples))
-
-    # Set upper matrix
-    matrix[indices] = triang_vec
-
-    # Set lower matrix
-    matrix[(indices[1], indices[0])] = triang_vec
-
-    return matrix
+@gram_matrix_optimization.register
+def custombasis_penalty_matrix_optimized(
+    linear_operator: LinearDifferentialOperator,
+    basis: CustomBasis,
+) -> NDArrayFloat:
+    """Optimized version for CustomBasis."""
+    return gram_matrix(linear_operator, basis.fdata)

@@ -101,7 +101,7 @@ class RelativeLocalMaximaSelector(BaseEstimator):
             values = X.data_matrix[:, indexes]
             partition_indexes = np.argpartition(
                 values,
-                -self.max_points,
+                -min(self.max_points, len(values)),
                 axis=None,
             )
             indexes = indexes[np.sort(partition_indexes[-self.max_points:])]
@@ -134,7 +134,7 @@ class MaximaHunting(
 
     For a longer explanation about the method, and comparison with other
     functional variable selection methods, we refer the reader to the
-    original article :footcite:`berrendero+cuevas+torrecilla_2016_hunting`.
+    original article :footcite:`berrendero++_2016_variable`.
 
     Parameters:
         dependence_measure (callable): Dependence measure to use. By default,

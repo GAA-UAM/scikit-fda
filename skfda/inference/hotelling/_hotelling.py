@@ -8,7 +8,7 @@ import scipy.special
 from typing_extensions import Literal
 
 from ...misc.validation import validate_random_state
-from ...representation import FData, FDataBasis
+from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._base import RandomStateLike
 from ...typing._numpy import NDArrayFloat
 
@@ -46,7 +46,7 @@ def hotelling_t2(
     the discrete representation, depending on the input.
 
     This statistic is defined in Pini, Stamm and Vantini
-    :footcite:`pini+stamm+vantini_2018_hotellings`.
+    :footcite:`pini++_2018_hotelling`.
 
     Args:
         fd1: Object with the first sample.
@@ -85,7 +85,7 @@ def hotelling_t2(
     n = n1 + n2  # Size of full sample
     m = fd1.mean() - fd2.mean()  # Delta mean
 
-    if isinstance(fd1, FDataBasis):
+    if isinstance(fd1, FDataBasis) and isinstance(fd2, FDataBasis):
         if fd1.basis != fd2.basis:
             raise ValueError(
                 "Both FDataBasis objects must share the same basis.",
@@ -97,11 +97,19 @@ def hotelling_t2(
         # If no weight matrix is passed, then we compute the Gram Matrix
         weights = fd1.basis.gram_matrix()
         weights = np.sqrt(weights)
-    else:
+    elif isinstance(fd1, FDataGrid) and isinstance(fd2, FDataGrid):
         # Working with standard discretized data
         m = m.data_matrix[0, ..., 0]
-        k1 = fd1.cov().data_matrix[0, ..., 0]
-        k2 = fd2.cov().data_matrix[0, ..., 0]
+        k1 = fd1.cov(
+            fd1.grid_points[0],
+            fd1.grid_points[0],
+            correction=1,
+        )
+        k2 = fd2.cov(
+            fd2.grid_points[0],
+            fd2.grid_points[0],
+            correction=1,
+        )
 
     m = m.reshape((-1, 1))  # Reshaping the mean for a proper matrix product
     k_pool = ((n1 - 1) * k1 + (n2 - 1) * k2) / (n - 2)  # Combination of covs
@@ -167,7 +175,7 @@ def hotelling_test_ind(
     tested are generated randomly.
 
     This procedure is from Pini, Stamm and Vantinni
-    :footcite:`pini+stamm+vantini_2018_hotellings`.
+    :footcite:`pini++_2018_hotelling`.
 
     Args:
         fd1: First sample of data.

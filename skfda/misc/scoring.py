@@ -74,7 +74,7 @@ def _var(
     from ..exploratory.stats import mean, var
 
     if weights is None:
-        return var(x)
+        return var(x, correction=0)
 
     return mean(  # type: ignore[no-any-return]
         np.power(x - mean(x, weights=weights), 2),

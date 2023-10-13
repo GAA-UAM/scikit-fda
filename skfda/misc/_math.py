@@ -363,7 +363,7 @@ def _inner_product_fdatagrid(
         # Perform quadrature inside the einsum
         for i, s in enumerate(arg1.grid_points[::-1]):
             identity = np.eye(len(s))
-            weights = scipy.integrate.simps(identity, x=s)
+            weights = scipy.integrate.simpson(identity, x=s)
             index = (slice(None),) + (np.newaxis,) * (i + 1)
             d1 *= weights[index]
 
@@ -476,9 +476,11 @@ def _inner_product_integrate(
         len_arg1 = len(arg1(left_domain))
         len_arg2 = len(arg2(left_domain))
 
-    def integrand(args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
-        f1 = arg1(args)[:, 0, :]
-        f2 = arg2(args)[:, 0, :]
+    def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+        f_args = np.asarray(args)
+
+        f1 = arg1(f_args)[:, 0, :]
+        f2 = arg2(f_args)[:, 0, :]
 
         if _matrix:
             ret = np.einsum('n...,m...->nm...', f1, f2)

@@ -14,6 +14,7 @@ The following functions are used to retrieve specific functional datasets:
    skfda.datasets.fetch_aemet
    skfda.datasets.fetch_gait
    skfda.datasets.fetch_growth
+   skfda.datasets.fetch_handwriting
    skfda.datasets.fetch_mco
    skfda.datasets.fetch_medflies
    skfda.datasets.fetch_nox

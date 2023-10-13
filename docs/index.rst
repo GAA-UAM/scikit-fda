@@ -34,7 +34,8 @@ Github you can find more information related to the development of the package.
    :caption: More documentation
 
    apilist
-   glossary
+   Glossary <glossary>
+   contributors
 
 An exhaustive list of all the contents of the package can be found in the
 :ref:`genindex`.
@@ -42,14 +43,20 @@ An exhaustive list of all the contents of the package can be found in the
 Installation
 ------------
 
-Currently, scikit-fda is available in Python 3.6 and 3.7, regardless of the
-platform. The stable version can be installed via
+Currently, *scikit-fda* is available in Python versions above 3.8, regardless of the
+platform.
+The stable version can be installed via
 `PyPI <https://pypi.org/project/scikit-fda/>`_:
 
 .. code-block:: bash
 
    pip install scikit-fda
 
+It is also available from conda-forge:
+
+.. code-block:: bash
+
+    conda install -c conda-forge scikit-fda
 
 It is possible to install the latest version of the package, available in
 the develop branch, by cloning this repository and doing a manual installation.
@@ -80,8 +87,7 @@ All contributions are welcome. You can help this project grow in multiple ways,
 from creating an issue, reporting an improvement or a bug, to doing a
 repository fork and creating a pull request to the development branch.
 The people involved at some point in the development of the package can be
-found in the `contributors file
-<https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
+found in the :doc:`contributors page <contributors>`.
 
 .. Citation
    --------

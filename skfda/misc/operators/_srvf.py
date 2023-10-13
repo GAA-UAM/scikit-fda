@@ -24,12 +24,12 @@ class SRSF(
     function, the SRSF transform is defined as
 
     .. math::
-        SRSF(f(t)) = sgn(f(t)) \sqrt{|\dot f(t)|} = q(t)
+        SRSF(f(t)) = sgn(f'(t)) \sqrt{|f'(t)|} = q(t)
 
     This representation it is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
     becomes the usual :math:`\mathbb{L}^2` distance between functions.
-    See :footcite:`srivastava+klassen_2016_analysis_square`.
+    See :footcite:`srivastava+klassen_2016_functionala`.
 
     The inverse SRSF transform is defined as
 
@@ -133,11 +133,11 @@ class SRSF(
 
         Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely
         continuous function, the SRSF transform is defined as
-        :footcite:`srivastava+klassen_2016_analysis_square`:
+        :footcite:`srivastava+klassen_2016_functionala`:
 
         .. math::
 
-            SRSF(f(t)) = sgn(f(t)) \sqrt{\dot f(t)|} = q(t)
+            SRSF(f(t)) = sgn(f'(t)) \sqrt{f'(t)|} = q(t)
 
         Args:
             X: Functions to be transformed.
@@ -166,7 +166,7 @@ class SRSF(
         # Evaluation with the corresponding interpolation
         data_matrix = g(output_points)[..., 0]
 
-        # SRSF(f) = sign(f) * sqrt|Df| (avoiding multiple allocation)
+        # SRSF(f) = sign(f') * sqrt|f'| (avoiding multiple allocation)
         sign_g = np.sign(data_matrix)
         data_matrix = np.abs(data_matrix, out=data_matrix)
         data_matrix = np.sqrt(data_matrix, out=data_matrix)
@@ -184,7 +184,7 @@ class SRSF(
         Compute the inverse SRSF transform.
 
         Given the srsf and the initial value the original function can be
-        obtained as :footcite:`srivastava+klassen_2016_analysis_square`:
+        obtained as :footcite:`srivastava+klassen_2016_functionala`:
 
         .. math::
             f(t) = f(a) + \int_{a}^t q(t)|q(t)|dt

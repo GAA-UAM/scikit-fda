@@ -1,8 +1,8 @@
 """Functional Principal Component Analysis Module."""
-
 from __future__ import annotations
 
-from typing import Callable, Optional, TypeVar, Union
+import warnings
+from typing import Callable, TypeVar
 
 import numpy as np
 import scipy.integrate
@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
-from ...representation.basis import Basis, FDataBasis
+from ...representation.basis import Basis, FDataBasis, _GridBasis
 from ...representation.grid import FDataGrid
 from ...typing._numpy import ArrayLike, NDArrayFloat
 
@@ -34,7 +34,13 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
     Parameters:
         n_components: Number of principal components to keep from
-            functional principal component analysis. Defaults to 3.
+            functional principal component analysis.
+
+            .. versionchanged:: 0.9
+               In future versions, it will default to the maximum number
+               of components that can be extracted.
+               Currently, it still defaults to 3 but do not assume this
+               behavior as it will change.
         centering: Set to ``False`` when the functional data is already known
             to be centered and there is no need to center it. Otherwise,
             the mean of the functional data object is calculated and the data
@@ -86,13 +92,23 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
     def __init__(
         self,
-        n_components: int = 3,
+        n_components: int | None = None,
         *,
         centering: bool = True,
-        regularization: Optional[L2Regularization[FData]] = None,
-        components_basis: Optional[Basis] = None,
-        _weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
+        regularization: L2Regularization[FData] | None = None,
+        components_basis: Basis | None = None,
+        _weights: ArrayLike | WeightsCallable | None = None,
     ) -> None:
+
+        if n_components is None:
+            warnings.warn(
+                "The default value of n_components will change in a future "
+                "version to the maximum number of components that can be "
+                "extracted. Update your code to specify explicitly the "
+                "number of components to avoid this warning.",
+                DeprecationWarning,
+            )
+            n_components = 3
         self.n_components = n_components
         self.centering = centering
         self.regularization = regularization
@@ -332,7 +348,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         if self._weights is None:
             # grid_points is a list with one array in the 1D case
             identity = np.eye(len(X.grid_points[0]))
-            self._weights = scipy.integrate.simps(identity, X.grid_points[0])
+            self._weights = scipy.integrate.simpson(identity, X.grid_points[0])
         elif callable(self._weights):
             self._weights = self._weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
@@ -344,13 +360,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         weights_matrix = np.diag(self._weights)
 
-        basis = FDataGrid(
-            data_matrix=np.identity(n_points_discretization),
-            grid_points=X.grid_points,
-        )
-
         regularization_matrix = compute_penalty_matrix(
-            basis_iterable=(basis,),
+            basis_iterable=(_GridBasis(grid_points=X.grid_points),),
             regularization_parameter=1,
             regularization=self.regularization,
         )

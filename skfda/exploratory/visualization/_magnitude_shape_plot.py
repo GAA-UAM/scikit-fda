@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
@@ -41,7 +40,7 @@ class MagnitudeShapePlot(BasePlot):
     The outliers are detected using an instance of
     :class:`MSPlotOutlierDetector`.
 
-    For more information see :footcite:ts:`dai+genton_2018_visualization`.
+    For more information see :footcite:ts:`dai+genton_2018_multivariate`.
 
     Args:
         fdata: Object containing the data.
@@ -193,7 +192,7 @@ class MagnitudeShapePlot(BasePlot):
 
         self._fdata = fdata
         self._outliers = outliers
-        self._colormap = plt.cm.get_cmap('seismic')
+        self._colormap = matplotlib.colormaps['seismic']
         self._color = 0.2
         self._outliercol = 0.8
         self.xlabel = 'MO'

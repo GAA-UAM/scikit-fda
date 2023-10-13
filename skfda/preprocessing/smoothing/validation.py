@@ -331,6 +331,7 @@ class SmoothingParameterSearch(
             return_train_score=False,
         )
         self.param_values = param_values
+        self.param_name = param_name
 
     def fit(  # noqa: D102
         self,
@@ -351,11 +352,14 @@ def _default_penalization_function(hat_matrix: NDArrayFloat) -> float:
 
 
 def akaike_information_criterion(hat_matrix: NDArrayFloat) -> float:
-    r"""Akaike's information criterion for cross validation
-    :footcite:`febrero-bande+oviedo_2012_fda.usc`.
+    r"""
+    Akaike's information criterion for cross validation.
 
     .. math::
         \Xi(\nu,n) = \exp\left(2 * \frac{tr(\hat{H}^\nu)}{n}\right)
+
+    See :footcite:`febrero-bande+oviedodelafuente_2012_statistical` for
+    additional details.
 
     Args:
         hat_matrix: Smoothing matrix whose penalization
@@ -364,19 +368,23 @@ def akaike_information_criterion(hat_matrix: NDArrayFloat) -> float:
     Returns:
         Penalization given by the Akaike's information criterion.
 
-    .. footbibliography::
+    References:
+        .. footbibliography::
 
     """
     return float(np.exp(2 * hat_matrix.diagonal().mean()))
 
 
 def finite_prediction_error(hat_matrix: NDArrayFloat) -> float:
-    r"""Finite prediction error for cross validation
-    :footcite:`febrero-bande+oviedo_2012_fda.usc`.
+    r"""
+    Finite prediction error for cross validation.
 
     .. math::
         \Xi(\nu,n) = \frac{1 + \frac{tr(\hat{H}^\nu)}{n}}{1 -
         \frac{tr(\hat{H}^\nu)}{n}}
+
+    See :footcite:`febrero-bande+oviedodelafuente_2012_statistical` for
+    additional details.
 
     Args:
         hat_matrix: Smoothing matrix whose penalization
@@ -385,7 +393,8 @@ def finite_prediction_error(hat_matrix: NDArrayFloat) -> float:
     Returns:
          Penalization given by the finite prediction error.
 
-    .. footbibliography::
+    References:
+        .. footbibliography::
 
     """
     return float(
@@ -395,11 +404,14 @@ def finite_prediction_error(hat_matrix: NDArrayFloat) -> float:
 
 
 def shibata(hat_matrix: NDArrayFloat) -> float:
-    r"""Shibata's model selector for cross validation
-    :footcite:`febrero-bande+oviedo_2012_fda.usc`.
+    r"""
+    Shibata's model selector for cross validation.
 
     .. math::
         \Xi(\nu,n) = 1 + 2 * \frac{tr(\hat{H}^\nu)}{n}
+
+    See :footcite:`febrero-bande+oviedodelafuente_2012_statistical` for
+    additional details.
 
     Args:
         hat_matrix: Smoothing matrix whose penalization
@@ -408,18 +420,21 @@ def shibata(hat_matrix: NDArrayFloat) -> float:
     Returns:
         Penalization given by the Shibata's model selector.
 
-    .. footbibliography::
+    References:
+        .. footbibliography::
 
     """
     return float(1 + 2 * hat_matrix.diagonal().mean())
 
 
 def rice(hat_matrix: NDArrayFloat) -> float:
-    r"""Rice's bandwidth selector for cross validation
-    :footcite:`febrero-bande+oviedo_2012_fda.usc`.
+    r"""Rice's bandwidth selector for cross validation.
 
     .. math::
         \Xi(\nu,n) = \left(1 - 2 * \frac{tr(\hat{H}^\nu)}{n}\right)^{-1}
+
+    See :footcite:`febrero-bande+oviedodelafuente_2012_statistical` for
+    additional details.
 
     Args:
         hat_matrix: Smoothing matrix whose penalization
@@ -428,7 +443,8 @@ def rice(hat_matrix: NDArrayFloat) -> float:
     Returns:
          Penalization given by the Rice's bandwidth selector.
 
-    .. footbibliography::
+    References:
+        .. footbibliography::
 
     """
     return float(1 - 2 * hat_matrix.diagonal().mean()) ** -1

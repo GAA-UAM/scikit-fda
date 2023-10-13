@@ -9,6 +9,8 @@ import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
 from scipy.special import gamma, kv
 
+from ..representation import FData, FDataBasis, FDataGrid
+from ..representation.basis import TensorBasis
 from ..typing._numpy import ArrayLike, NDArrayFloat
 
 
@@ -757,4 +759,112 @@ class Matern(Covariance):
         return (
             self.variance
             * sklearn_kern.Matern(length_scale=self.length_scale, nu=self.nu)
+        )
+
+
+class Empirical(Covariance):
+    r"""
+    Sample covariance function.
+
+    The sample covariance function is defined as
+    . math::
+        K(t, s) = \frac{1}{N-\text{correction}}\sum_{n=1}^N\left(x_n(t) -
+        \bar{x}(t)\right) \left(x_n(s) - \bar{x}(s)\right)
+
+    where :math:`x_n(t)` is the n-th sample and :math:`\bar{x}(t)` is the
+    mean of the samples. :math:`N` is the number of samples,
+    :math:`\text{correction}` is the degrees of freedom adjustment and is such
+    that :math:`N-\text{correction}` is the divisor used in the calculation of
+    the covariance function.
+
+    """
+
+    _latex_formula = (
+        r"K(t, s) = \frac{1}{N-\text{correction}}\sum_{n=1}^N"
+        r"(x_n(t) - \bar{x}(t))(x_n(s) - \bar{x}(s))"
+    )
+    _parameters_str = [
+        ("data", "data"),
+    ]
+
+    cov_fdata: FData
+    correction: int
+
+    @abc.abstractmethod
+    def __init__(self, data: FData) -> None:
+        if data.dim_domain != 1 or data.dim_codomain != 1:
+            raise NotImplementedError(
+                "Covariance only implemented "
+                "for univariate functions",
+            )
+
+    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+        """Evaluate the covariance function.
+
+        Args:
+            x: First array of points of evaluation.
+            y: Second array of points of evaluation.
+
+        Returns:
+            Covariance function evaluated at the grid formed by x and y.
+        """
+        return self.cov_fdata([x, y], grid=True)[0, ..., 0]
+
+
+class EmpiricalGrid(Empirical):
+    """Sample covariance function for FDataGrid."""
+
+    cov_fdata: FDataGrid
+    correction: int
+
+    def __init__(self, data: FDataGrid, correction: int = 0) -> None:
+        super().__init__(data=data)
+
+        self.correction = correction
+        self.cov_fdata = data.copy(
+            data_matrix=np.cov(
+                data.data_matrix[..., 0],
+                rowvar=False,
+                ddof=correction,
+            )[np.newaxis, ...],
+            grid_points=[
+                data.grid_points[0],
+                data.grid_points[0],
+            ],
+            domain_range=[
+                data.domain_range[0],
+                data.domain_range[0],
+            ],
+            argument_names=data.argument_names * 2,
+            sample_names=("covariance",),
+        )
+
+
+class EmpiricalBasis(Empirical):
+    """
+    Sample covariance function for FDataBasis.
+
+    In this case one may use the basis expression of the samples to
+    express the sample covariance function in the tensor product basis
+    of the original basis.
+    """
+
+    cov_fdata: FDataBasis
+    coeff_matrix: NDArrayFloat
+    correction: int
+
+    def __init__(self, data: FDataBasis, correction: int = 0) -> None:
+        super().__init__(data=data)
+
+        self.correction = correction
+        self.coeff_matrix = np.cov(
+            data.coefficients,
+            rowvar=False,
+            ddof=correction,
+        )
+        self.cov_fdata = FDataBasis(
+            basis=TensorBasis([data.basis, data.basis]),
+            coefficients=self.coeff_matrix.flatten(),
+            argument_names=data.argument_names * 2,
+            sample_names=("covariance",),
         )

@@ -1,3 +1,4 @@
+# fmt: off
 """
 Getting the data
 ================
@@ -20,7 +21,7 @@ literature.
 #
 # sphinx_gallery_thumbnail_number = 6
 
-##############################################################################
+# %%
 # The FDataGrid class
 # -------------------
 #
@@ -38,7 +39,7 @@ literature.
 # grid points for that particular dimension,
 #
 # .. math::
-#     ((t_1, \ldots, t_{M_i}))_{i=1}^p,
+#     ((t_{i 1}, \ldots, t_{i M_i}))_{i=1}^p,
 #
 # where :math:`M_i` is the number of measurement points for each "argument"
 # or domain coordinate of the function :math:`i` and :math:`p` is the domain
@@ -47,10 +48,10 @@ literature.
 # The attribute ``data_matrix`` is a
 # numpy :class:`~numpy.ndarray` containing the measured values of the
 # functions in the grid spanned by the grid points. For functions
-# :math:`\{x_i: \mathbb{R}^p \to \mathbb{R}^q\}_{i=1}^N` this is a tensor
+# :math:`\{x_n: \mathbb{R}^p \to \mathbb{R}^q\}_{n=1}^N` this is a tensor
 # with dimensions :math:`N \times M_1 \times \ldots \times M_p \times q`.
 
-##############################################################################
+# %%
 # In order to create a :class:`~skfda.representation.grid.FDataGrid`, these
 # attributes may be provided. The attributes are converted to
 # :class:`~numpy.ndarray` when necessary.
@@ -67,7 +68,7 @@ literature.
 #     If the codomain dimension is 1, the last dimension of ``data_matrix``
 #     can be dropped.
 
-##############################################################################
+# %%
 # The following example shows the creation of a
 # :class:`~skfda.representation.grid.FDataGrid` with two functions (curves)
 # :math:`\{x_i: \mathbb{R} \to \mathbb{R}\}, i=1,2` measured at the same
@@ -90,7 +91,7 @@ fd = skfda.FDataGrid(
 fd.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Advanced example
 # ^^^^^^^^^^^^^^^^
 #
@@ -142,41 +143,93 @@ fd = skfda.FDataGrid(
 fd.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Importing data
 # --------------
 #
-# Usually one does not construct manually the functions, but instead uses
-# measurements already formatted in a common format, such as comma-separated
-# values (CSV), attribute-relation file format (ARFF) or Matlab and R formats.
-#
-# If your data is in one of these formats, you can import it into a numpy
-# array using the IO functions available in
-# `Numpy <https://numpy.org/devdocs/reference/routines.io.html>`_ (for simple
-# text-based or binary formats, such as CSV) or in
-# `Scipy <https://docs.scipy.org/doc/scipy/reference/io.html>`_ (for Matlab,
-# Fortran or ARFF files). For importing data in the R format one can also
-# use the package `RData <https://rdata.readthedocs.io>`_ with is already a
-# dependency of scikit-fda, as it is used to load the example datasets.
+# Usually the data used in the analysis comes from previous measurements of
+# an experiment, that have been stored in some file format, such as
+# comma-separated values (CSV), attribute-relation file format (ARFF) or
+# Matlab and R formats.
+# Users should know the particular layout used for representing functional data
+# on their files, as there is currently no standard format for storing this
+# kind of data.
 
-##############################################################################
-# Once your data has been introduced as a :class:`~numpy.ndarray` instance,
-# you will need to give it the proper dimensions and use it to instantiate
-# a functional data object.
-
-##############################################################################
+# %%
 # .. note::
-#     :class:`Pandas DataFrames <pandas.DataFrame>` are also popular as
-#     datasets containers in the Python scientific ecosystem. If you have
-#     data in a Pandas DataFrame, you can extract its content as a Numpy
-#     array using the method :meth:`~pandas.DataFrame.to_numpy` of the
-#     DataFrame.
+#     scikit-fda does not offer input/output functions right now.
+#     You can parse the grid points and values of the functions using the
+#     available tools in the Scientific Python ecosystem:
+#
+#     * `Numpy <https://numpy.org/devdocs/reference/routines.io.html>`_:
+#       for simple text-based or binary formats, such as CSV.
+#     * `Scipy <https://docs.scipy.org/doc/scipy/reference/io.html>`_:
+#       for Matlab, Fortran or ARFF files.
+#     * `RData <https://rdata.readthedocs.io>`_: for loading data in the
+#       R file formats.
+#     * `Pandas <https://pandas.pydata.org/docs/user_guide/io.html>`_:
+#       includes tools for reading a variety of file formats, such as CSV,
+#       JSON, HTML, LaTeX, XML, Excel, HDF5, Parquet, SPSS or SQL.
+#
+#     Once the data is loaded as NumPy arrays, you can construct the
+#     :class:`~skfda.representation.grid.FDataGrid` as explained above.
 
-##############################################################################
-# As an example, we will load the
+# %%
+# For example, consider the following file, containing unidimensional
+# functional data in CSV form.
+# The first row (the header) contains the grid points, common for all
+# observations.
+# Each of the following rows is a functional observation.
+
+import pathlib
+import textwrap
+
+file_content = textwrap.dedent(
+    """\
+    0.0, 0.1, 0.3, 0.4, 0.7, 1.0
+    109.5, 115.8, 121.9, 130.0, 138.2, 141.1
+    104.6, 112.3, 118.9, 125.0, 130.1, 133.0
+    100.4, 107.1, 112.3, 118.6, 124.0, 126.5
+    """,
+)
+
+test_file = pathlib.Path("data.csv")
+test_file.write_text(file_content)
+text = test_file.read_text()
+print(text)
+
+# %%
+# We can now load the CSV using the functions in Pandas.
+# Note that by default, Pandas reads the header as text and uses it to name
+# the columns.
+# Thus, we need to convert it to float before we can pass it to the
+# :class:`~skfda.representation.grid.FDataGrid` constructor.
+
+import pandas
+
+data = pandas.read_csv("data.csv")
+
+grid_points = data.columns.astype(float)
+data_matrix = data
+
+# %%
+# We can now construct the :class:`~skfda.representation.grid.FDataGrid`
+# as before and plot it:
+
+fd = skfda.FDataGrid(
+    data_matrix=data_matrix,
+    grid_points=grid_points,
+)
+
+fd.plot()
+plt.show()
+
+# %%
+# If you have data that is already a NumPy array, you can use it directly.
+# For example, we will load the
 # :func:`digits dataset <sklearn.datasets.load_digits>` of scikit-learn, which
-# is a preprocessed subset of the MNIST dataset, containing digit images. The
-# data is already a numpy array. As the data has been flattened into a 1D
+# is a preprocessed subset of the MNIST dataset, containing digit images.
+# The data is already a NumPy array. As the data has been flattened into a 1D
 # vector of pixels, we need to reshape the arrays to their original 8x8 shape.
 # Then this array can be used to construct the digits as surfaces.
 
@@ -193,7 +246,7 @@ fd[1].plot()
 plt.show()
 
 
-##############################################################################
+# %%
 # Common datasets
 # ---------------
 #
@@ -210,7 +263,7 @@ X, y = skfda.datasets.fetch_growth(return_X_y=True)
 X.plot(group=y)
 plt.show()
 
-##############################################################################
+# %%
 # Datasets from CRAN
 # ^^^^^^^^^^^^^^^^^^
 #
@@ -224,7 +277,7 @@ plt.show()
 # particular structure, you will need to know how it is structured internally
 # in order to use it properly.
 
-##############################################################################
+# %%
 # .. note::
 #     Functional data objects from some packages, such as
 #     `fda.usc <https://cran.r-project.org/web/packages/fda.usc/index.html>`_
@@ -237,7 +290,7 @@ data = skfda.datasets.fetch_cran("MCO", "fda.usc")
 data["MCO"]["intact"].plot()
 plt.show()
 
-##############################################################################
+# %%
 # Datasets from the UEA & UCR Time Series Classification Repository
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
@@ -258,14 +311,14 @@ dataset = skfda.datasets.fetch_ucr("ArrowHead")
 dataset["data"].plot()
 plt.show()
 
-##############################################################################
+# %%
 
 # Load BasicMotions dataset from UEA
 dataset = skfda.datasets.fetch_ucr("BasicMotions")
 dataset["data"].plot()
 plt.show()
 
-##############################################################################
+# %%
 # Synthetic data
 # --------------
 #
@@ -286,8 +339,6 @@ plt.show()
 # :func:`skfda.datasets.make_gaussian` which can be used to generate Gaussian
 # processes and Gaussian fields with different covariance functions.
 
-import numpy as np
-
 cov = skfda.misc.covariances.Exponential(length_scale=0.1)
 
 fd = skfda.datasets.make_gaussian_process(
@@ -295,14 +346,14 @@ fd = skfda.datasets.make_gaussian_process(
     stop=4,
     n_samples=5,
     n_features=100,
-    mean=lambda t: np.power(t, 2),
+    mean=lambda t: t**2,
     cov=cov,
 )
 
 fd.plot()
 plt.show()
 
-##############################################################################
+# %%
 # In order to know all the available functionalities to load existing and
 # synthetic datasets it is recommended to look at the documentation of the
 # :doc:`datasets </modules/datasets>` module.

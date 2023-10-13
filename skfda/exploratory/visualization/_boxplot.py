@@ -11,7 +11,6 @@ from abc import abstractmethod
 from typing import Sequence, Tuple
 
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
@@ -117,7 +116,7 @@ class Boxplot(FDataBoxplot):
     detected in a functional boxplot by the 1.5 times the 50% central region
     empirical rule, analogous to the rule for classical boxplots.
 
-    For more information see :footcite:ts:`sun+genton_2011_boxplots`.
+    For more information see :footcite:ts:`sun+genton_2011_functional`.
 
     Args:
         fdatagrid: Object containing the data.
@@ -376,7 +375,7 @@ class Boxplot(FDataBoxplot):
 
         self._fdatagrid = fdatagrid
         self._prob = prob
-        self._colormap = plt.cm.get_cmap('RdPu')
+        self._colormap = matplotlib.colormaps['RdPu']
         self.barcol = "blue"
         self.outliercol = "red"
         self.mediancol = "black"
@@ -538,7 +537,7 @@ class SurfaceBoxplot(FDataBoxplot):
     :ref:`depth measure <depth-measures>`
     for functional data, it represents the envelope of the
     50% central region, the median curve, and the maximum non-outlying
-    envelope :footcite:`sun+genton_2011_boxplots`.
+    envelope :footcite:`sun+genton_2011_functional`.
 
     Args:
         fdatagrid: Object containing the data.
@@ -701,7 +700,7 @@ class SurfaceBoxplot(FDataBoxplot):
         self._non_outlying_envelope = _envelopes.compute_envelope(inliers)
 
         self._fdatagrid = fdatagrid
-        self.colormap = plt.cm.get_cmap('Greys')
+        self.colormap = matplotlib.colormaps['Greys']
         self._boxcol = 1.0
         self._outcol = 0.7
 

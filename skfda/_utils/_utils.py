@@ -364,10 +364,6 @@ def _evaluate_grid(  # noqa: WPS234
             object.
         aligned: If False evaluates each sample
             in a different grid.
-        evaluate_method: method to use to evaluate the points
-        n_samples: number of samples
-        dim_domain: dimension of the domain
-        dim_codomain: dimensions of the codomain
 
     Returns:
         Numpy array with dim_domain + 1 dimensions with
@@ -551,7 +547,11 @@ def _pairwise_symmetric(
 
 def _int_to_real(array: Union[NDArrayInt, NDArrayFloat]) -> NDArrayFloat:
     """Convert integer arrays to floating point."""
-    return array + 0.0
+    if np.issubdtype(array.dtype, np.integer):
+        return array.astype(np.float64)
+
+    assert np.issubdtype(array.dtype, np.floating)
+    return cast(NDArrayFloat, array)
 
 
 def _check_array_key(array: NDArrayAny, key: Any) -> Any:

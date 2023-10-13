@@ -1,5 +1,3 @@
-"""Abstract base class for basis."""
-
 from __future__ import annotations
 
 from typing import Any, Tuple, TypeVar
@@ -19,7 +17,7 @@ T = TypeVar("T", bound="CustomBasis")
 class CustomBasis(Basis):
     """Basis composed of custom functions.
 
-    Defines a basis composed of the functions in the :class: `FData` object
+    Defines a basis composed of the functions in the :class:`FData` object
     passed as argument.
     The functions must be linearly independent, otherwise
     an exception is raised.
@@ -39,9 +37,8 @@ class CustomBasis(Basis):
             domain_range=fdata.domain_range,
             n_basis=fdata.n_samples,
         )
-        self._check_linearly_independent(fdata)
-
         self.fdata = fdata
+        self._check_linearly_independent(fdata)
 
     @multimethod.multidispatch
     def _check_linearly_independent(self, fdata: FData) -> None:
@@ -194,6 +191,17 @@ class CustomBasis(Basis):
         eval_points: NDArrayFloat,
     ) -> NDArrayFloat:
         return self.fdata(eval_points)
+
+    def _gram_matrix(self) -> NDArrayFloat:
+        """
+        Compute the Gram matrix.
+
+        Subclasses may override this method for improving computation
+        of the Gram matrix.
+
+        """
+        from ...misc import inner_product_matrix
+        return inner_product_matrix(self.fdata)
 
     def __len__(self) -> int:
         return self.n_basis

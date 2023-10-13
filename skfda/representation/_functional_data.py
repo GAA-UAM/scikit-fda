@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Iterable,
     Iterator,
     NoReturn,
@@ -786,7 +787,7 @@ class FData(  # noqa: WPS214
     def sum(  # noqa: WPS125
         self: T,
         *,
-        axis: Optional[int] = None,
+        axis: int | None = None,
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
@@ -819,10 +820,64 @@ class FData(  # noqa: WPS214
 
         return self
 
+    @overload
+    def cov(  # noqa: WPS451
+        self: T,
+        s_points: NDArrayFloat,
+        t_points: NDArrayFloat,
+        /,
+        correction: int = 0,
+    ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def cov(  # noqa: WPS451
+        self: T,
+        /,
+        correction: int = 0,
+    ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
+        pass
+
+    @abstractmethod
+    def cov(  # noqa: WPS320, WPS451
+        self: T,
+        s_points: Optional[NDArrayFloat] = None,
+        t_points: Optional[NDArrayFloat] = None,
+        /,
+        correction: int = 0,
+    ) -> Union[
+        Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
+        NDArrayFloat,
+    ]:
+        """Compute the covariance of the functional data object.
+
+        Calculates the unbiased sample covariance function of the data.
+        This is expected to be only defined for univariate functions.
+        The resulting covariance function is defined in the cartesian
+        product of the domain of the functions.
+        If s_points or t_points are not provided, this method returns
+        a callable object representing the covariance function.
+        If s_points and t_points are provided, this method returns the
+        evaluation of the covariance function at the grid formed by the
+        cartesian product of the points in s_points and t_points.
+
+        Args:
+            s_points: Points where the covariance function is evaluated.
+            t_points: Points where the covariance function is evaluated.
+            correction: degrees of freedom adjustment. The divisor used in the
+                calculation is `N - correction`, where `N` represents the
+                number of elements. Default: `0`.
+
+        Returns:
+            Covariance function.
+
+        """
+        pass
+
     def mean(
         self: T,
         *,
-        axis: None = None,
+        axis: int | None = None,
         dtype: None = None,
         out: None = None,
         keepdims: bool = False,
@@ -1170,12 +1225,14 @@ class FData(  # noqa: WPS214
         Parameters:
             indices: Indices to be taken.
             allow_fill: How to handle negative values in `indices`.
+
                 * False: negative values in `indices` indicate positional
                   indices from the right (the default). This is similar to
                   :func:`numpy.take`.
                 * True: negative values in `indices` indicate
                   missing values. These values are set to `fill_value`. Any
                   other negative values raise a ``ValueError``.
+
             fill_value: Fill value to use for NA-indices
                 when `allow_fill` is True.
                 This may be ``None``, in which case the default NA value for

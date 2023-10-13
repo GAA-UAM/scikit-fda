@@ -245,4 +245,5 @@ class VectorValued(VectorValuedBasis):
             "The VectorValued class is deprecated. "
             "Use VectorValuedBasis instead.",
             DeprecationWarning,
+            stacklevel=2,
         )

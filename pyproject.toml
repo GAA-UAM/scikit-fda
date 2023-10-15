@@ -46,9 +46,7 @@ dependencies = [
 
 [project.optional-dependencies]
 docs = [
-  "basemap",
-  "basemap-data",
-  "basemap-data-hires",
+  "cartopy",
   "ipykernel",
   "jupyter-sphinx",
   "myst-parser",

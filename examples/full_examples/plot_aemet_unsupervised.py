@@ -14,11 +14,13 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Tuple
 
+import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.cluster
+from cartopy.io.img_tiles import GoogleTiles
 from matplotlib.axes import Axes
-from mpl_toolkits.basemap import Basemap
+from matplotlib.figure import Figure
 
 from skfda.datasets import fetch_aemet
 from skfda.exploratory.depth import ModifiedBandDepth
@@ -68,8 +70,8 @@ fda_clusters = fda_kmeans.fit_predict(X)
 ##############################################################################
 # We want to plot the cluster of each station in the map of Spain. We need to
 # define first auxiliary variables and functions for plotting.
-coords_spain = (-10, 34.98, 5, 44.8)
-coords_canary = (-18.5, 27.5, -13, 29.5)
+coords_spain = (-10, 5, 34.98, 44.8)
+coords_canary = (-18.5, -13, 27.5, 29.5)
 
 # It is easier to obtain the longitudes and latitudes from the data in
 # a Pandas dataframe.
@@ -81,24 +83,20 @@ station_latitudes = aemet.loc[:, "latitude"].values
 
 def create_map(
     coords: Tuple[float, float, float, float],
-    ax: Axes,
-) -> Basemap:
+    figsize: Tuple[float, float],
+) -> Figure:
     """Create a map for a region of the world."""
-    basemap = Basemap(
-        *coords,
-        projection='merc',
-        resolution="h",
-        epsg=4326,
-        ax=ax,
-        fix_aspect=False,
-    )
-    basemap.arcgisimage(
-        service='World_Imagery',
-        xpixels=1000,
-        dpi=100,
-    )
+    tiler = GoogleTiles(style="satellite")
+    mercator = tiler.crs
 
-    return basemap
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_axes([0, 0, 1, 1], projection=mercator)
+    ax.set_extent(coords, crs=ccrs.PlateCarree())
+
+    ax.add_image(tiler, 8)
+    ax.set_adjustable('datalim')
+
+    return fig
 
 
 def plot_cluster_points(
@@ -106,19 +104,18 @@ def plot_cluster_points(
     latitudes: np.typing.NDArray[np.floating[Any]],
     clusters: np.typing.NDArray[np.integer[Any]],
     color_map: Mapping[int, str],
-    basemap: Basemap,
     ax: Axes,
 ) -> None:
     """Plot the stations in a map with their cluster color."""
-    x, y = basemap(longitudes, latitudes)
     for cluster in range(n_clusters):
         selection = (clusters == cluster)
         ax.scatter(
-            x[selection],
-            y[selection],
+            longitudes[selection],
+            latitudes[selection],
             s=64,
             color=color_map[cluster],
             edgecolors='white',
+            transform=ccrs.Geodetic(),
         )
 
 
@@ -144,29 +141,23 @@ climate_names = {
 # We now plot the obtained clustering in the maps.
 
 # Mainland
-fig_spain = plt.figure(figsize=(8, 6))
-ax_spain = fig_spain.add_axes([0, 0, 1, 1])
-map_spain = create_map(coords_spain, ax=ax_spain)
+fig_spain = create_map(coords_spain, figsize=(8, 6))
 plot_cluster_points(
     longitudes=station_longitudes,
     latitudes=station_latitudes,
     clusters=fda_clusters,
     color_map=fda_color_map,
-    basemap=map_spain,
-    ax=ax_spain,
+    ax=fig_spain.axes[0],
 )
 
 # Canary Islands
-fig_canary = plt.figure(figsize=(8, 3))
-ax_canary = fig_canary.add_axes([0, 0, 1, 1])
-map_canary = create_map(coords_canary, ax=ax_canary)
+fig_canary = create_map(coords_canary, figsize=(8, 3))
 plot_cluster_points(
     longitudes=station_longitudes,
     latitudes=station_latitudes,
     clusters=fda_clusters,
     color_map=fda_color_map,
-    basemap=map_canary,
-    ax=ax_canary,
+    ax=fig_canary.axes[0],
 )
 plt.show()
 
@@ -228,36 +219,30 @@ mv_clusters = mv_kmeans.fit_predict(X_red)
 # color map to match cluster colors with the previously obtained ones.
 
 mv_color_map = {
-    0: "red",
-    1: "purple",
-    2: "yellow",
-    3: "green",
-    4: "orange",
+    0: "yellow",
+    1: "orange",
+    2: "red",
+    3: "purple",
+    4: "green",
 }
 
 # Mainland
-fig_spain = plt.figure(figsize=(8, 6))
-ax_spain = fig_spain.add_axes([0, 0, 1, 1])
-map_spain = create_map(coords_spain, ax=ax_spain)
+fig_spain = create_map(coords_spain, figsize=(8, 6))
 plot_cluster_points(
     longitudes=station_longitudes,
     latitudes=station_latitudes,
     clusters=mv_clusters,
     color_map=mv_color_map,
-    basemap=map_spain,
-    ax=ax_spain,
+    ax=fig_spain.axes[0],
 )
 
 # Canary Islands
-fig_canary = plt.figure(figsize=(8, 3))
-ax_canary = fig_canary.add_axes([0, 0, 1, 1])
-map_canary = create_map(coords_canary, ax=ax_canary)
+fig_canary = create_map(coords_canary, figsize=(8, 3))
 plot_cluster_points(
     longitudes=station_longitudes,
     latitudes=station_latitudes,
     clusters=mv_clusters,
     color_map=mv_color_map,
-    basemap=map_canary,
-    ax=ax_canary,
+    ax=fig_canary.axes[0],
 )
 plt.show()

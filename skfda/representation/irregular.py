@@ -1115,7 +1115,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             extrapolation=self.extrapolation,
         )
 
-    def to_matrix(self) -> ArrayLike:
+    def _to_data_matrix(self) -> ArrayLike:
         """Convert FDataIrregular values to numpy matrix.
 
         Undefined values in the grid will be represented with np.nan.
@@ -1166,7 +1166,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             FDataGrid: FDataGrid with the irregular functional data.
         """
-        data_matrix, grid_points = self.to_matrix()
+        data_matrix, grid_points = self._to_data_matrix()
 
         return FDataGrid(
             data_matrix=data_matrix,

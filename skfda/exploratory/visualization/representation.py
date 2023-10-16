@@ -708,8 +708,8 @@ class LinearPlotIrregular(PlotIrregular):
                 set_color_dict(self.sample_colors, j, color_dict)
 
                 self.artists[j, 0] = axes[0].plot(
-                    np.matrix.flatten(self.grid_points[j]),
-                    np.matrix.flatten(self.evaluated_points[j]),
+                    self.grid_points[j].flatten(),
+                    self.evaluated_points[j].flatten(),
                     **color_dict,
                     picker=True,
                     pickradius=2,

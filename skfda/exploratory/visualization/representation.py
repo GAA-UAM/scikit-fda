@@ -625,15 +625,12 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         self.fdata = fdata
 
         # There may be different points for each function
-        self.grid_points = []
-        self.evaluated_points = []
-        for index_start, index_end in self.fdata.indices_start_end():
-            self.grid_points.append(
-                self.fdata.points[index_start:index_end],
-            )
-            self.evaluated_points.append(
-                self.fdata.values[index_start:index_end],
-            )
+        self.grid_points = np.split(
+            self.fdata.points, self.fdata.start_indices[1:],
+        )
+        self.evaluated_points = np.split(
+            self.fdata.values, self.fdata.start_indices[1:],
+        )
 
         self.domain_range = domain_range
         self.group = group

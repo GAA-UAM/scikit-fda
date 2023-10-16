@@ -39,18 +39,11 @@ T = TypeVar("T", bound='FDataIrregular')
 ######################
 
 
-def _get_array_slices_by_function(
-    start_indices: NDArrayInt,
-    array: NDArrayFloat,
-) -> List[NDArrayFloat]:
-    return np.split(array, start_indices[1:])
-
-
 def _get_sample_range_from_data(
     start_indices: NDArrayInt,
     points: NDArrayFloat,
 ) -> DomainRange:
-    """Computes the domain ranges of each sample.
+    """Compute the domain ranges of each sample.
 
     Args:
         start_indices: start_indices of the FDataIrregular object.
@@ -65,14 +58,14 @@ def _get_sample_range_from_data(
         tuple(
             zip(np.min(f_points, axis=0), np.max(f_points, axis=0)),
         )
-        for f_points in _get_array_slices_by_function(start_indices, points)
+        for f_points in np.split(points, start_indices[1:])
     )
 
 
 def _get_domain_range_from_sample_range(
     sample_range: DomainRange,
 ) -> DomainRange:
-    """Computes the domain range of the whole dataset.
+    """Compute the domain range of the whole dataset.
 
     Args:
         sample_range: sample_range of the FDataIrregular object.
@@ -275,13 +268,13 @@ class FDataIrregular(FData):  # noqa: WPS214
         belong to.
 
         Args:
-            dataframe (pandas.DataFrame): Pandas dataframe containing the
+            dataframe: Pandas dataframe containing the
                 irregular functional dataset.
-            id_column (str): Name of the column which contains the information
+            id_column: Name of the column which contains the information
                 about which curve does each each row belong to.
-            argument_columns (Sequence[str | None]): list of columns where
+            argument_columns: list of columns where
                 the arguments for each dimension of the domain can be found.
-            coordinate_columns (Sequence[str | None]): list of columns where
+            coordinate_columns: list of columns where
                 the values for each dimension of the image can be found.
             kwargs: Arguments for the FDataIrregular constructor.
 

@@ -612,7 +612,7 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,
         legend: bool = False,
-        marker: Optional[str] = None,
+        marker: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(

@@ -24,6 +24,7 @@ from ._linear import _LinearSmoother
 # Auxiliary functions to treat with FDataGrid and FDataIrregular
 #############################
 
+
 def _eval_points(fd: FData) -> NDArrayFloat:
     """Get the eval points of a FDataGrid or FDataIrregular."""
     if isinstance(fd, FDataGrid):

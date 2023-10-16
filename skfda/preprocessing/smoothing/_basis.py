@@ -262,7 +262,7 @@ class BasisSmoother(_LinearSmoother):
         self,
         eval_points: NDArrayFloat,
         *,
-        function_values: Optional[NDArrayFloat] = None,
+        function_values: NDArrayFloat | None = None,
     ) -> NDArrayFloat:
         """Get the matrix that gives the coefficients."""
         from ...misc.regularization import compute_penalty_matrix

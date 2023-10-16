@@ -400,9 +400,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
         """
-        slices = self.indices_start_end()
-        slice_args = [self.points[slice(*s)] for s in slices]
-        slice_values = [self.values[slice(*s)] for s in slices]
+        slice_args = np.split(self.points, self.start_indices[1:])
+        slice_values = np.split(self.values, self.start_indices[1:])
 
         # Sort lexicographically, first to last dimension
         sorting_masks = [
@@ -1264,16 +1263,18 @@ class FDataIrregular(FData):  # noqa: WPS214
         # Eliminate points outside the new range.
         # Must also modify function indices to point to new array
 
-        for i, index_tuple in enumerate(self.indices_start_end()):
-            prev_index, index = index_tuple
-            s = slice(prev_index, index)
-            masks = set(range(self.points[s].shape[0]))
+        slice_points = np.split(self.points, self.start_indices[1:])
+        slice_values = np.split(self.values, self.start_indices[1:])
+
+        for i, points_values in enumerate(zip(slice_points, slice_values)):
+            sample_points, sample_values = points_values
+            masks = set(range(sample_points.shape[0]))
             for dim, dr in enumerate(domain_range):
                 dr_start, dr_end = dr
                 select_mask = np.where(
                     (
-                        (dr_start <= self.points[s][:, dim])
-                        & (self.points[s][:, dim] <= dr_end)
+                        (dr_start <= sample_points[:, dim])
+                        & (sample_points[:, dim] <= dr_end)
                     ),
                 )
 
@@ -1283,8 +1284,8 @@ class FDataIrregular(FData):  # noqa: WPS214
             masks = list(masks)
             if len(masks) > 0:
                 indices.append(head)
-                arguments.append(self.points[s][masks, :])
-                values.append(self.values[s][masks, :])
+                arguments.append(sample_points[masks, :])
+                values.append(sample_values[masks, :])
                 sample_names.append(self.sample_names[i])
                 head += len(masks)
 
@@ -1382,19 +1383,6 @@ class FDataIrregular(FData):  # noqa: WPS214
             '\n',
             '\n    ',
         )
-
-    def indices_start_end(self) -> Sequence[Tuple[int, int]]:
-        """Return the indices of the start and end of each function.
-
-        Returns:
-            Sequence[Tuple[int, int]]: Sequence of tuples with the indices of
-                the start and end of each function.
-
-        """
-        indices = np.append(
-            self.start_indices, len(self.points)
-        )
-        return list(zip(indices, indices[1:]))
 
     def __getitem__(
         self: T,

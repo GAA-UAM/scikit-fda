@@ -17,7 +17,11 @@ import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
 
-from .._utils import _check_array_key
+from .._utils import (
+    _cartesian_product,
+    _check_array_key,
+    _to_grid_points,
+)
 from ..typing._base import (
     DomainRange,
     DomainRangeLike,
@@ -345,46 +349,33 @@ class FDataIrregular(FData):  # noqa: WPS214
             FDataIrregular: FDataIrregular containing the same data
             as the source but with an irregular structure.
         """
-        # Obtain num functions and num observations from data
-        n_measurements = np.sum(~(np.isnan(f_data.data_matrix).all(axis=-1)))
-        num_functions = f_data.data_matrix.shape[0]
-
-        # Create data structure of function pointers and coordinates
-        start_indices = np.zeros((num_functions, ), dtype=np.uint32)
-        points = np.zeros(
-            (n_measurements, f_data.dim_domain),
+        all_points_single_function = _cartesian_product(
+            _to_grid_points(f_data.grid_points),
         )
-        values = np.zeros(
-            (n_measurements, f_data.dim_codomain),
+        # Repeat points for each function
+        flat_points = np.tile(
+            all_points_single_function, (f_data.n_samples, 1),
         )
 
-        # Find all the combinations of grid points and indices
-        from itertools import product
-        grid_point_indexes = [
-            np.indices(np.array(gp).shape)[0]
-            for gp in f_data.grid_points
-        ]
-        combinations = list(product(*f_data.grid_points))
-        index_combinations = list(product(*grid_point_indexes))
+        # Array with values of each function
+        all_values = f_data.data_matrix.reshape(
+            (f_data.n_samples, -1, f_data.dim_codomain),
+        )
+        # Concatenated values of all functions
+        flat_values = all_values.reshape((-1, f_data.dim_codomain))
+        # Which values are not nan with shape: all_values.shape
+        nonnan_all_values = ~np.all(np.isnan(all_values), axis=-1)
+        # Which values are not nan with shape: flat_values.shape
+        nonnan_flat_values = nonnan_all_values.reshape((-1,))
 
-        head = 0
-        for i in range(num_functions):
-            start_indices[i] = head
-            num_values = 0
+        values = flat_values[nonnan_flat_values]
+        points = flat_points[nonnan_flat_values]
 
-            for g_index, g in enumerate(index_combinations):
-                if np.all(np.isnan(f_data.data_matrix[(i,) + g])):
-                    continue
-
-                arg = combinations[g_index]
-                value = f_data.data_matrix[(i, ) + g]
-
-                points[head + num_values, :] = arg
-                values[head + num_values, :] = value
-
-                num_values += 1
-
-            head += num_values
+        # Count non-nan values per function to obtain start_indices
+        n_points_per_function = np.sum(nonnan_all_values, axis=-1)
+        start_indices = np.concatenate((
+            np.zeros(1, np.int32), np.cumsum(n_points_per_function[:-1]),
+        ))
 
         return cls(
             start_indices,

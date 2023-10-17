@@ -16,6 +16,7 @@ from typing import (
     Callable,
     Optional,
     Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -30,7 +31,13 @@ import scipy.integrate
 import scipy.stats.mstats
 from matplotlib.figure import Figure
 
-from .._utils import _check_array_key, _int_to_real, _to_grid_points, constants
+from .._utils import (
+    _cartesian_product,
+    _check_array_key,
+    _int_to_real,
+    _to_grid_points,
+    constants,
+)
 from ..typing._base import (
     DomainRange,
     DomainRangeLike,
@@ -528,6 +535,15 @@ class FDataGrid(FData):  # noqa: WPS214
             raise ValueError("Error in columns dimensions")
         if not np.array_equal(self.grid_points, other.grid_points):
             raise ValueError("Grid points for both objects must be equal")
+
+    def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:
+        return (
+            _cartesian_product(_to_grid_points(self.grid_points)),
+            self.data_matrix.reshape((self.n_samples, -1)).T,
+        )
+
+    def _get_input_points(self: T) -> GridPoints:
+        return self.grid_points
 
     def sum(  # noqa: WPS125
         self: T,

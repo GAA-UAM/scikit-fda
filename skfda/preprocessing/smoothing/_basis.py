@@ -20,38 +20,6 @@ from ...typing._base import GridPointsLike, GridPoints
 from ...typing._numpy import NDArrayFloat
 from ._linear import _LinearSmoother
 
-#############################
-# Auxiliary functions to treat with FDataGrid and FDataIrregular
-#############################
-
-
-def _eval_points(fd: FData) -> NDArrayFloat:
-    """Get the eval points of a FDataGrid or FDataIrregular."""
-    if isinstance(fd, FDataGrid):
-        return _cartesian_product(_to_grid_points(fd.grid_points))
-    if isinstance(fd, FDataIrregular):
-        return fd.points
-    raise ValueError("fd must be a FDataGrid or FDataIrregular")
-
-
-def _input_points(fd: FData) -> GridPoints:
-    """Get the input points of a FDataGrid or FDataIrregular."""
-    if isinstance(fd, FDataGrid):
-        return fd.grid_points
-    if isinstance(fd, FDataIrregular):
-        # There exists no equivalent in FDataIrregular to grid_points
-        return fd.points  # type: ignore[return-value]
-    raise ValueError("fd must be a FDataGrid or FDataIrregular")
-
-
-def _function_values(fd: FData) -> NDArrayFloat:
-    """Get the function values of a FDataGrid or FDataIrregular."""
-    if isinstance(fd, FDataGrid):
-        return fd.data_matrix.reshape((fd.n_samples, -1)).T
-    if isinstance(fd, FDataIrregular):
-        return fd.values
-    raise ValueError("fd must be a FDataGrid or FDataIrregular")
-
 
 #############################
 # BasisSmoother
@@ -321,7 +289,7 @@ class BasisSmoother(_LinearSmoother):
             self
 
         """
-        self.input_points_ = _input_points(X)
+        self.input_points_ = X._get_input_points()
         self.output_points_ = (
             _to_grid_points(self.output_points)
             if self.output_points is not None
@@ -352,14 +320,16 @@ class BasisSmoother(_LinearSmoother):
         assert all(
             np.array_equal(i, s) for i, s in zip(
                 self.input_points_,
-                _input_points(X),
+                X._get_input_points(),
             )
         )
 
+        eval_points, function_values = X._get_points_and_values()
+
         if self.return_basis:
             coefficients = self._coef_matrix(
-                eval_points=_eval_points(X),
-                function_values=_function_values(X),
+                eval_points=eval_points,
+                function_values=function_values,
             ).T
 
             return FDataBasis(

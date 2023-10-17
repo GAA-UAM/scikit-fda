@@ -21,6 +21,7 @@ from .._utils import _check_array_key
 from ..typing._base import (
     DomainRange,
     DomainRangeLike,
+    GridPoints,
     GridPointsLike,
     LabelTupleLike,
 )
@@ -572,6 +573,12 @@ class FDataIrregular(FData):  # noqa: WPS214
         if self.dim_domain != other.dim_domain:
             raise ValueError("Dimension mismatch in arguments")
 
+    def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:
+        return (self.points, self.values)
+
+    def _get_input_points(self: T) -> GridPoints:
+        return self.points  # type: ignore[return-value]
+
     def sum(  # noqa: WPS125
         self: T,
         *,
@@ -683,7 +690,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         """Comparison of FDataIrregular objects."""
         if not isinstance(other, FDataIrregular):
             return False
-        
+
         if not super().equals(other):
             return False
 

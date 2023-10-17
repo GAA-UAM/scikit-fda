@@ -8,9 +8,8 @@ data function, and the overall density of the observations may be low
 from __future__ import annotations
 
 import numbers
-import warnings
 from typing import (
-    Any, List, Optional, Sequence, Tuple, Type, TypeVar, Union, cast,
+    Any, Optional, Sequence, Tuple, Type, TypeVar, Union,
 )
 
 import numpy as np

@@ -16,7 +16,7 @@ from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization
 from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
 from ...representation.basis import Basis
-from ...typing._base import GridPointsLike, GridPoints
+from ...typing._base import GridPointsLike
 from ...typing._numpy import NDArrayFloat
 from ._linear import _LinearSmoother
 

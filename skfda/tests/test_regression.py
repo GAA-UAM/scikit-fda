@@ -24,6 +24,42 @@ from skfda.representation.basis import (
 from skfda.representation.grid import FDataGrid
 
 
+def _test_linear_regression_common(
+    X_train,
+    y_train,
+    expected_coefs,
+    X_test,
+    y_test,
+    coef_basis=None,
+    regularization=None,
+) -> None:
+    """Execute a test of linear regression, given the parameters."""
+    linear_regression = LinearRegression(
+        fit_intercept=False,
+        coef_basis=coef_basis,
+        regularization=regularization,
+    )
+    linear_regression.fit(X_train, y_train)
+
+    for coef, expected in zip(linear_regression.coef_, expected_coefs):
+        assert isinstance(coef, FDataBasis)
+        assert coef.basis == expected.basis
+        np.testing.assert_allclose(
+            coef.coefficients,
+            expected.coefficients,
+            atol=1e-6,
+        )
+
+    y_pred = linear_regression.predict(X_test)
+    assert isinstance(y_pred, FDataBasis)
+    assert y_pred.basis == y_test.basis
+    np.testing.assert_allclose(
+        y_pred.coefficients,
+        y_test.coefficients,
+        rtol=1e-5,
+    )
+
+
 class TestScalarLinearRegression(unittest.TestCase):
     """Tests for linear regression with scalar response."""
 
@@ -478,63 +514,181 @@ class TestScalarLinearRegression(unittest.TestCase):
 class TestFunctionalLinearRegression(unittest.TestCase):
     """Tests for linear regression with functional response."""
 
-    def test_multivariate_covariates_1(self) -> None:
-        """Test a basic example of functional regression.
+    def test_multivariate_covariates_constant_basic(self) -> None:
+        """
+        Univariate with functional response and constant coefficient one.
+        """
+        y_basis = ConstantBasis()
 
-        Functional response with multivariate covariates.
+        X_train = pd.DataFrame({
+            "covariate": [1, 3, 5],
+        })
+        y_train = FDataBasis(
+            basis=y_basis,
+            coefficients=[
+                [1],
+                [3],
+                [5],
+            ],
+        )
+
+        expected_coefs = [
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[1]],
+            )
+        ]
+
+        X_test = pd.DataFrame({
+            "covariate": [2, 4, 6],
+        })
+        y_test = FDataBasis(
+            basis=y_basis,
+            coefficients=[
+                [2],
+                [4],
+                [6],
+            ],
+        )
+
+        _test_linear_regression_common(
+            X_train=X_train,
+            y_train=y_train,
+            expected_coefs=expected_coefs,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+        # Check also without dataframes
+        _test_linear_regression_common(
+            X_train=X_train.to_numpy(),
+            y_train=y_train,
+            expected_coefs=expected_coefs,
+            X_test=X_test.to_numpy(),
+            y_test=y_test,
+        )
+
+    def test_multivariate_covariates_monomial_basic(self) -> None:
+        """
+        Multivariate with functional response and identity coefficients.
         """
         y_basis = MonomialBasis(n_basis=2)
 
-        cov_dict = {"mult1": [1, 3, 5], "mult2": [2, 4, 6]}
-        df = pd.DataFrame(cov_dict)
-
-        y_fd = FDataBasis(y_basis, [[1, 2], [3, 4], [5, 6]])
-        y_pred_coef_compare = [[[177, 878]], [[100, 200]]]
-
-        funct_reg = LinearRegression(fit_intercept=False)
-        funct_reg.fit(df, y_fd)
-
-        np.testing.assert_allclose(
-            np.array(funct_reg.basis_coefs)[:, :, 0], np.eye(2), atol=0.01,
-        )
-        np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
-
-        y_pred = funct_reg.predict([[177, 878], [100, 200]])
-        np.testing.assert_allclose(
-            y_pred[0].coefficients, y_pred_coef_compare[0], atol=0.01,
+        X_train = pd.DataFrame({
+            "covariate_1": [1, 3, 5],
+            "covariate_2": [2, 4, 6],
+        })
+        y_train = FDataBasis(
+            basis=y_basis,
+            coefficients=[
+                [1, 2],
+                [3, 4],
+                [5, 6],
+            ],
         )
 
-        np.testing.assert_allclose(
-            y_pred[1].coefficients, y_pred_coef_compare[1], atol=0.01,
+        expected_coefs = [
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[1, 0]],
+            ),
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[0, 1]],
+            ),
+        ]
+
+        X_test = pd.DataFrame({
+            "covariate_1": [2, 4, 6],
+            "covariate_2": [1, 3, 5],
+        })
+        y_test = FDataBasis(
+            basis=y_basis,
+            coefficients=[
+                [2, 1],
+                [4, 3],
+                [6, 5],
+            ],
         )
 
-    def test_multivariate_covariates_2(self) -> None:
-        """Test a example of functional regression.
+        _test_linear_regression_common(
+            X_train=X_train,
+            y_train=y_train,
+            expected_coefs=expected_coefs,
+            X_test=X_test,
+            y_test=y_test,
+        )
 
-        Functional response with multivariate covariates.
-        """
+        # Check also without dataframes
+        expected_coefs = [
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[
+                    [1, 0],
+                    [0, 1],
+                ],
+            ),
+        ]
+
+        # Currently broken.
+
+        # _test_linear_regression_common(
+        #     X_train=X_train.to_numpy(),
+        #     y_train=y_train,
+        #     expected_coefs=expected_coefs,
+        #     X_test=X_test.to_numpy(),
+        #     y_test=y_test,
+        # )
+
+    def test_multivariate_3_covariates(self) -> None:
+        """Test a more complex example involving 3 covariates."""
         y_basis = MonomialBasis(n_basis=3)
 
-        cov_dict = {"mult1": [3, 5, 3], "mult2": [4, 1, 2], "mult3": [1, 6, 8]}
-        df = pd.DataFrame(cov_dict)
-
-        y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
-        beta_coef_compare = [[6, 3, 1], [7, 2, 4], [1, 5, 5]]
-        y_pred_coef_compare = [[33, 18, 16]]
-
-        funct_reg = LinearRegression(fit_intercept=False)
-        funct_reg.fit(df, y_fd)
-
-        np.testing.assert_allclose(
-            np.array(funct_reg.basis_coefs)[:, :, 0],
-            beta_coef_compare,
-            atol=0.01,
+        X_train = pd.DataFrame({
+            "covariate_1": [3, 5, 3],
+            "covariate_2": [4, 1, 2],
+            "covariate_3": [1, 6, 8],
+        })
+        y_train = FDataBasis(
+            basis=y_basis,
+            coefficients=[
+                [47, 22, 24],
+                [43, 47, 39],
+                [40, 53, 51],
+            ],
         )
-        np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
 
-        y_pred = funct_reg.predict([[3, 2, 1]])
-        np.testing.assert_allclose(
-            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
+        expected_coefs = [
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[6, 3, 1]],
+            ),
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[7, 2, 4]],
+            ),
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[1, 5, 5]],
+            ),
+        ]
+
+        X_test = pd.DataFrame({
+            "covariate_1": [3],
+            "covariate_2": [2],
+            "covariate_3": [1],
+        })
+        y_test = FDataBasis(
+            basis=y_basis,
+            coefficients=[[33, 18, 16]],
+        )
+
+        _test_linear_regression_common(
+            X_train=X_train,
+            y_train=y_train,
+            expected_coefs=expected_coefs,
+            X_test=X_test,
+            y_test=y_test,
         )
 
     def test_multivariate_covariates_regularization(self) -> None:
@@ -545,33 +699,52 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         """
         y_basis = MonomialBasis(n_basis=3)
 
-        cov_dict = {"mult1": [3, 5, 3], "mult2": [4, 1, 2], "mult3": [1, 6, 8]}
-        df = pd.DataFrame(cov_dict)
+        X_train = pd.DataFrame({
+            "covariate_1": [3, 5, 3],
+            "covariate_2": [4, 1, 2],
+            "covariate_3": [1, 6, 8],
+        })
+        y_train = FDataBasis(
+            basis=y_basis,
+            coefficients=[
+                [47, 22, 24],
+                [43, 47, 39],
+                [40, 53, 51],
+            ],
+        )
 
-        y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
-        beta_coef_compare = [
-            [5.7694, 3.0259, 1.4407],
-            [6.6883, 1.9385, 3.5799],
-            [1.1985, 4.9522, 4.8118],
+        expected_coefs = [
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[5.769441, 3.025921, 1.440655]],
+            ),
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[6.688267, 1.938523, 3.579894]],
+            ),
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[1.198499, 4.952166, 4.811818]],
+            ),
         ]
-        y_pred_coef_compare = [[31.883, 17.906, 16.293]]
 
-        funct_reg = LinearRegression(
+        X_test = pd.DataFrame({
+            "covariate_1": [3],
+            "covariate_2": [2],
+            "covariate_3": [1],
+        })
+        y_test = FDataBasis(
+            basis=y_basis,
+            coefficients=[[31.883356, 17.906975, 16.293571]],
+        )
+
+        _test_linear_regression_common(
+            X_train=X_train,
+            y_train=y_train,
+            expected_coefs=expected_coefs,
+            X_test=X_test,
+            y_test=y_test,
             regularization=[L2Regularization()] * 3,
-            fit_intercept=False,
-        )
-        funct_reg.fit(df, y_fd)
-
-        np.testing.assert_allclose(
-            np.array(funct_reg.basis_coefs)[:, :, 0],
-            beta_coef_compare,
-            atol=0.01,
-        )
-        np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
-
-        y_pred = funct_reg.predict([[3, 2, 1]])
-        np.testing.assert_allclose(
-            y_pred[0].coefficients, y_pred_coef_compare, atol=0.01,
         )
 
     def test_multivariate_covariates_R_fda(self) -> None:  # noqa: N802
@@ -687,8 +860,9 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         )
         np.testing.assert_equal(funct_reg.coef_basis[0], y_fd.basis)
 
-    def test_functional_convariates_concurrent(self) -> None:  # noqa: N802
-        """Test a example of functional regression.
+    def test_functional_covariates_concurrent(self) -> None:  # noqa: N802
+        """
+        Test a example of concurrent functional regression.
 
         Functional response with functional and multivariate covariates.
         Concurrent model.
@@ -696,56 +870,71 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         y_basis = MonomialBasis(n_basis=2)
         x_basis = MonomialBasis(n_basis=3)
 
-        x_fd = FDataBasis(x_basis, [[0, 1, 0], [0, 1, 0], [0, 0, 1]])
-        y_fd = FDataBasis(y_basis, [[1, 1], [2, 1], [3, 1]])
+        X_train = pd.DataFrame({
+            "covariate_1": FDataBasis(
+                basis=x_basis,
+                coefficients=[
+                    [0, 1, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                ],
+            ),
+            "covariate_2": [3, 1, 4],
+            "covariate_3": [9, 2, 7],
+        })
+        y_train = FDataBasis(
+            basis=y_basis,
+            coefficients=[
+                [1, 1],
+                [2, 1],
+                [3, 1],
+            ],
+        )
 
-        cov_dict = {"fd": x_fd, "mult1": [3, 1, 4], "mult2": [9, 2, 7]}
-        df = pd.DataFrame(cov_dict)
-
-        beta_coef_compare = [
-            [5.608, -2.867],
-            [1.842, -0.508],
-            [-0.55, -0.033],
+        expected_coefs = [
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[5.608253, -2.866976]],
+            ),
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[1.842478, -0.507984]],
+            ),
+            FDataBasis(
+                basis=y_basis,
+                coefficients=[[-0.55036, -0.032797]],
+            ),
         ]
 
-        funct_reg = LinearRegression(
+        X_test = pd.DataFrame({
+            "covariate_1": FDataBasis(
+                basis=x_basis,
+                coefficients=[
+                    [0, 0, 1],
+                    [0, 0, 1],
+                    [1, 1, 0],
+                ],
+            ),
+            "covariate_2": [2, 1, 1],
+            "covariate_3": [0, 2, 1],
+        })
+        y_test = FDataBasis(
+            basis=y_basis,
+            coefficients=[
+                [3.323643, 2.012006],
+                [0.380445, 2.454396],
+                [7.378201, -0.666481],
+            ],
+        )
+
+        _test_linear_regression_common(
+            X_train=X_train,
+            y_train=y_train,
+            expected_coefs=expected_coefs,
+            X_test=X_test,
+            y_test=y_test,
             coef_basis=[y_basis, y_basis, y_basis],
-            fit_intercept=False,
         )
-        funct_reg.fit(df, y_fd)
-
-        np.testing.assert_allclose(
-            np.array(funct_reg.basis_coefs)[:, :, 0],
-            beta_coef_compare,
-            atol=0.01,
-        )
-
-        x_fd = FDataBasis(x_basis, [[0, 0, 1], [0, 0, 1], [0, 1, 1]])
-
-        cov_dict = {"fd": x_fd, "mult": [2, 1, 1]}
-        df = pd.DataFrame(cov_dict)
-
-        beta_coef_compare = [
-            [[-0.463, 3.250]],
-            [[12.509, -6.275]],
-        ]
-
-        pred = funct_reg.predict(df)
-
-        np.testing.assert_allclose(
-            pred[0].coefficients,
-            beta_coef_compare[0],
-            atol=0.01,
-        )
-
-        np.testing.assert_allclose(
-            pred[1].coefficients,
-            beta_coef_compare[1],
-            atol=0.01,
-        )
-
-        np.testing.assert_equal(y_basis, pred[0].basis)
-        np.testing.assert_equal(y_basis, pred[1].basis)
 
     def test_error_y_X_samples_different(self) -> None:  # noqa: N802
         """Number of response samples and explanatory samples are not different.

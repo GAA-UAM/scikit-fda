@@ -462,7 +462,7 @@ class LinearRegression(
                     if isinstance(x_eval, Callable):
                         x_eval = x_eval(arg)  # noqa: WPS220
 
-                    #TODO: MIRAR ESTO BIEN  
+                    # TODO: MIRAR ESTO BIEN
                     x_eval = x_eval.reshape((-1, 1, 1))
 
                     return coef_eval(arg) * x_eval
@@ -590,7 +590,7 @@ class LinearRegression(
                 Xt.append(x)
             else:
                 x_new = self._check_and_convert(x)
-                Xt.extend(np.split(x_new.T, x_new.shape[1]))
+                Xt.append(x_new.T)
 
         return Xt
 

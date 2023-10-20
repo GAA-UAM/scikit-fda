@@ -143,165 +143,155 @@ class LinearRegression(
             if `fit_intercept = False`.
 
     Examples:
-        >>> from skfda.ml.regression import LinearRegression
-        >>> from skfda.representation.basis import (FDataBasis, MonomialBasis,
-        ...                                         ConstantBasis)
-        >>> import pandas as pd
 
-        Multivariate linear regression can be used with functions expressed in
+        Functional linear regression can be used with functions expressed in
         a basis. Also, a functional basis for the weights can be specified:
 
+        >>> from skfda.ml.regression import LinearRegression
+        >>> from skfda.representation.basis import (
+        ...     FDataBasis,
+        ...     MonomialBasis,
+        ...     ConstantBasis,
+        ... )
+
         >>> x_basis = MonomialBasis(n_basis=3)
-        >>> x_fd = FDataBasis(x_basis, [[0, 0, 1],
-        ...                             [0, 1, 0],
-        ...                             [0, 1, 1],
-        ...                             [1, 0, 1]])
-        >>> y = [2, 3, 4, 5]
-        >>> linear = LinearRegression()
-        >>> _ = linear.fit(x_fd, y)
-        >>> linear.coef_[0]
+        >>> X_train = FDataBasis(
+        ...     basis=x_basis,
+        ...     coefficients=[
+        ...         [0, 0, 1],
+        ...         [0, 1, 0],
+        ...         [0, 1, 1],
+        ...         [1, 0, 1],
+        ...     ],
+        ... )
+        >>> y_train = [2, 3, 4, 5]
+        >>> X_test = X_train  # Just for illustration purposes
+        >>> linear_reg = LinearRegression()
+        >>> _ = linear_reg.fit(X_train, y_train)
+        >>> linear_reg.coef_[0]
         FDataBasis(
             basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
             coefficients=[[-15.  96. -90.]],
             ...)
-        >>> linear.intercept_
+        >>> linear_reg.intercept_
         array([ 1.])
-        >>> linear.predict(x_fd)
+        >>> linear_reg.predict(X_test)
         array([ 2.,  3.,  4.,  5.])
 
-        Covariates can include also multivariate data:
+        Covariates can include also multivariate data.
+        In order to mix functional and multivariate data a dataframe can
+        be used:
 
+        >>> import pandas as pd
         >>> x_basis = MonomialBasis(n_basis=2)
-        >>> x_fd = FDataBasis(x_basis, [[0, 2],
-        ...                             [0, 4],
-        ...                             [1, 0],
-        ...                             [2, 0],
-        ...                             [1, 2],
-        ...                             [2, 2]])
-        >>> x = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
-        >>> y = [11, 10, 12, 6, 10, 13]
-        >>> linear = LinearRegression(
-        ...              coef_basis=[None, ConstantBasis()])
-        >>> _ = linear.fit([x, x_fd], y)
-        >>> linear.coef_[0]
-        array([ 2.,  1.])
-        >>> linear.coef_[1]
+        >>> X_train = pd.DataFrame({
+        ...     "functional_covariate": FDataBasis(
+        ...         basis=x_basis,
+        ...         coefficients=[
+        ...             [0, 2],
+        ...             [0, 4],
+        ...             [1, 0],
+        ...             [2, 0],
+        ...             [1, 2],
+        ...             [2, 2],
+        ...         ]
+        ...     ),
+        ...     "multivariate_covariate_1": [1, 2, 4, 1, 3, 2],
+        ...     "multivariate_covariate_2": [7, 3, 2, 1, 1, 5],
+        ... })
+        >>> y_train = [11, 10, 12, 6, 10, 13]
+        >>> X_test = X_train  # Just for illustration purposes
+        >>> linear_reg = LinearRegression(
+        ...     coef_basis=[ConstantBasis(), None, None],
+        ... )
+        >>> _ = linear_reg.fit(X_train, y_train)
+        >>> linear_reg.coef_[0]
         FDataBasis(
-        basis=ConstantBasis(domain_range=((0.0, 1.0),), n_basis=1),
-        coefficients=[[ 1.]],
-        ...)
-        >>> linear.intercept_
+            basis=ConstantBasis(domain_range=((0.0, 1.0),), n_basis=1),
+            coefficients=[[ 1.]],
+            ...)
+        >>> linear_reg.coef_[1]
+        array([ 2.])
+        >>> linear_reg.coef_[2]
         array([ 1.])
-        >>> linear.predict([x, x_fd])
+        >>> linear_reg.intercept_
+        array([ 1.])
+        >>> linear_reg.predict(X_test)
         array([ 11.,  10.,  12.,   6.,  10.,  13.])
 
         Response can be functional when covariates are multivariate:
 
         >>> y_basis = MonomialBasis(n_basis=3)
-        >>> m1 = [3, 5, 3]
-        >>> m2 = [4, 1, 2]
-        >>> m3 = [1, 6, 8]
-        >>> cov_dict = {"mult1": m1, "mult2": m2, "mult3": m3}
-        >>> df = pd.DataFrame(cov_dict)
-        >>> y = FDataBasis(y_basis, [[47, 22, 24],
-        ...                          [43, 47, 39],
-        ...                          [40, 53, 51]])
-        >>> funct_linear = LinearRegression(
+        >>> X_train = pd.DataFrame({
+        ...     "covariate_1": [3, 5, 3],
+        ...     "covariate_2": [4, 1, 2],
+        ...     "covariate_3": [1, 6, 8],
+        ... })
+        >>> y_train = FDataBasis(
+        ...     basis=y_basis,
+        ...     coefficients=[
+        ...         [47, 22, 24],
+        ...         [43, 47, 39],
+        ...         [40, 53, 51],
+        ...     ],
+        ... )
+        >>> X_test = X_train  # Just for illustration purposes
+        >>> linear_reg = LinearRegression(
         ...     regularization=None,
         ...     fit_intercept=False,
         ... )
-        >>> _ = funct_linear.fit(df, y)
-        >>> funct_linear.coef_[0]
+        >>> _ = linear_reg.fit(X_train, y_train)
+        >>> linear_reg.coef_[0]
         FDataBasis(
             basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
             coefficients=[[ 6.  3.  1.]],
             ...)
-        >>> funct_linear.predict([[3, 4, 1]])
-        array([FDataBasis(
-                   basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
-                   coefficients=[[ 47.  22.  24.]],
-                   ...)
+        >>> linear_reg.predict(X_test)
+        FDataBasis(
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
+            coefficients=[[ 47. 22. 24.]
+                [ 43. 47. 39.]
+                [ 40. 53. 51.]],
+             ...)
 
-        And also when multivariate are functional in a concurrent way:
+        Concurrent function-on-function regression is also supported:
 
         >>> x_basis = MonomialBasis(n_basis=3)
         >>> y_basis = MonomialBasis(n_basis=2)
-        >>> x_fd = FDataBasis(x_basis, [[0, 1, 0],
-        ...                             [0, 1, 0],
-        ...                             [0, 0, 1]])
-        >>> m1 = [3, 1, 4]
-        >>> m2 = [9, 2, 7]
-        >>> cov_dict = {"fd": x_fd, "mult1": m1, "mult2": m2}
-        >>> df = pd.DataFrame(cov_dict)
-        >>> y = FDataBasis(y_basis, [[1, 1],
-        ...                          [2, 1],
-        ...                          [3, 1]])
-        >>> funct_linear = LinearRegression(
-        ...     coef_basis=[y_basis, y_basis, y_basis],
-        ...     regularization=None,
+        >>> X_train = FDataBasis(
+        ...     basis=x_basis,
+        ...     coefficients=[
+        ...         [0, 1, 0],
+        ...         [2, 1, 0],
+        ...         [5, 0, 1],
+        ...     ],
+        ... )
+        >>> y_train = FDataBasis(
+        ...     basis=y_basis,
+        ...     coefficients=[
+        ...         [1, 1],
+        ...         [2, 1],
+        ...         [3, 1],
+        ...     ],
+        ... )
+        >>> X_test = X_train  # Just for illustration purposes
+        >>> linear_reg = LinearRegression(
+        ...     coef_basis=[y_basis],
         ...     fit_intercept=False,
         ... )
-        >>> _ = funct_linear.fit(df, y)
-        >>> funct_linear.coef_[0]
+        >>> _ = linear_reg.fit(X_train, y_train)
+        >>> linear_reg.coef_[0]
         FDataBasis(
             basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=2),
-            coefficients=[[ 5.60825269 -2.86697618]],
+            coefficients=[[ 0.68250377  0.09960705]],
             ...)
-
-        Funcionality with pandas Dataframe.
-
-        First example:
-
-        >>> x_basis = MonomialBasis(n_basis=3)
-        >>> x_fd = FDataBasis(x_basis, [[0, 0, 1],
-        ...                             [0, 1, 0],
-        ...                             [0, 1, 1],
-        ...                             [1, 0, 1]])
-        >>> cov_dict = { "fd": x_fd }
-        >>> y = [2, 3, 4, 5]
-        >>> df = pd.DataFrame(cov_dict)
-        >>> linear = LinearRegression()
-        >>> _ = linear.fit(df, y)
-        >>> linear.coef_[0]
+        >>> linear_reg.predict(X_test)
         FDataBasis(
-            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=3),
-            coefficients=[[-15.  96. -90.]],
-            ...)
-        >>> linear.intercept_
-        array([ 1.])
-        >>> linear.predict(df)
-        array([ 2.,  3.,  4.,  5.])
-
-        Second example:
-
-        >>> x_basis = MonomialBasis(n_basis=2)
-        >>> x_fd = FDataBasis(x_basis, [[0, 2],
-        ...                             [0, 4],
-        ...                             [1, 0],
-        ...                             [2, 0],
-        ...                             [1, 2],
-        ...                             [2, 2]])
-        >>> mult1 = np.asarray([1, 2, 4, 1, 3, 2])
-        >>> mult2 = np.asarray([7, 3, 2, 1, 1, 5])
-        >>> cov_dict = {"m1": mult1, "m2": mult2, "fd": x_fd}
-        >>> df = pd.DataFrame(cov_dict)
-        >>> y = [11, 10, 12, 6, 10, 13]
-        >>> linear = LinearRegression(
-        ...              coef_basis=[None, ConstantBasis(), ConstantBasis()])
-        >>> _ = linear.fit(df, y)
-        >>> linear.coef_[0]
-        array([ 2.])
-        >>> linear.coef_[1]
-        array([ 1.])
-        >>> linear.coef_[2]
-        FDataBasis(
-            basis=ConstantBasis(domain_range=((0.0, 1.0),), n_basis=1),
-            coefficients=[[ 1.]],
-            ...)
-        >>> linear.intercept_
-        array([ 1.])
-        >>> linear.predict(df)
-        array([ 11.,  10.,  12.,   6.,  10.,  13.])
+            basis=MonomialBasis(domain_range=((0.0, 1.0),), n_basis=2),
+            coefficients=[[-0.01660117  0.78211082]
+                [ 1.34840637  0.98132492]
+                [ 3.27884682  1.27018536]],
+             ...)
 
     """
 

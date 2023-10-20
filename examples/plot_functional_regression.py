@@ -57,8 +57,8 @@ y_basis = FourierBasis(n_basis=65)
 y_fd = fd.coordinates[0].to_basis(y_basis)
 
 # %%
-# Intercept is concatenated and all functional coefficients will have the
-# same basis as the response.
+# An intercept term is incorporated.
+# All functional coefficients will have the same basis as the response.
 
 funct_reg = LinearRegression(fit_intercept=True)
 funct_reg.fit(X_df, y_fd)

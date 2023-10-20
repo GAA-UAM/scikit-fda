@@ -81,5 +81,6 @@ class Constant(ConstantBasis):
         warnings.warn(
             "The Constant class is deprecated. Use ConstantBasis instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         super().__init__(domain_range=domain_range)

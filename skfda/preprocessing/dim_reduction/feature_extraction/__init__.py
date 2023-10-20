@@ -8,4 +8,5 @@ warnings.warn(
     'Please use "dim_reduction" for FPCA'
     'or "feature_construction" for feature construction techniques',
     category=DeprecationWarning,
+    stacklevel=2,
 )

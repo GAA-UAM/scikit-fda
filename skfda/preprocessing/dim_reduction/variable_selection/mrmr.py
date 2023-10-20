@@ -160,7 +160,7 @@ def _mrmr(
                 redundancies[last_selected, j] = redundancy_dependence_measure(
                     X[:, last_selected, np.newaxis],
                     X[:, j, np.newaxis],
-                )
+                ).item()
                 redundancies[j, last_selected] = redundancies[last_selected, j]
 
         W = np.mean(
@@ -434,7 +434,7 @@ class MinimumRedundancyMaximumRelevance(
                 )
 
             if self.criterion == "difference":
-                self.criterion = operator.sub
+                self.criterion_ = operator.sub
             elif self.criterion == "quotient":
                 self.criterion_ = operator.truediv
             else:

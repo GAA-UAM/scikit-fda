@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
-from ...representation.basis import Basis, FDataBasis
+from ...representation.basis import Basis, FDataBasis, _GridBasis
 from ...representation.grid import FDataGrid
 from ...typing._numpy import ArrayLike, NDArrayFloat
 
@@ -348,7 +348,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         if self._weights is None:
             # grid_points is a list with one array in the 1D case
             identity = np.eye(len(X.grid_points[0]))
-            self._weights = scipy.integrate.simps(identity, X.grid_points[0])
+            self._weights = scipy.integrate.simpson(identity, X.grid_points[0])
         elif callable(self._weights):
             self._weights = self._weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
@@ -360,13 +360,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         weights_matrix = np.diag(self._weights)
 
-        basis = FDataGrid(
-            data_matrix=np.identity(n_points_discretization),
-            grid_points=X.grid_points,
-        )
-
         regularization_matrix = compute_penalty_matrix(
-            basis_iterable=(basis,),
+            basis_iterable=(_GridBasis(grid_points=X.grid_points),),
             regularization_parameter=1,
             regularization=self.regularization,
         )

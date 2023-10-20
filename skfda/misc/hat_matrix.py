@@ -11,19 +11,20 @@ from __future__ import annotations
 
 import abc
 import math
-from typing import Callable, TypeVar, Union, overload
+from typing import Callable, Final, TypeVar, Union, overload
 
 import numpy as np
 
 from .._utils._sklearn_adapter import BaseEstimator
 from ..representation._functional_data import FData
 from ..representation.basis import FDataBasis
-from ..typing._base import GridPointsLike
 from ..typing._numpy import NDArrayFloat
 from . import kernels
 
-Input = TypeVar("Input", bound=Union[FData, GridPointsLike])
+Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
 Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])
+
+DEFAULT_BANDWIDTH_PERCENTILE: Final = 15
 
 
 class HatMatrix(
@@ -52,8 +53,8 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input | None = None,
-        X: Input | None = None,
+        X_train: Input,
+        X: Input,
         y_train: None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -65,8 +66,8 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input | None = None,
-        X: Input | None = None,
+        X_train: Input,
+        X: Input,
         y_train: Prediction | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -77,8 +78,8 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input | None = None,
-        X: Input | None = None,
+        X_train: Input,
+        X: Input,
         y_train: NDArrayFloat | FData | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -186,7 +187,7 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     ) -> NDArrayFloat:
 
         bandwidth = (
-            np.percentile(np.abs(delta_x), 15)
+            float(np.percentile(delta_x, DEFAULT_BANDWIDTH_PERCENTILE))
             if self.bandwidth is None
             else self.bandwidth
         )
@@ -278,8 +279,8 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | GridPointsLike | None = None,
-        X: FData | GridPointsLike | None = None,
+        X_train: FData | NDArrayFloat,
+        X: FData | NDArrayFloat,
         y_train: None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -291,8 +292,8 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | GridPointsLike | None = None,
-        X: FData | GridPointsLike | None = None,
+        X_train: FData | NDArrayFloat,
+        X: FData | NDArrayFloat,
         y_train: Prediction | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -303,18 +304,36 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | GridPointsLike | None = None,
-        X: FData | GridPointsLike | None = None,
+        X_train: FData | NDArrayFloat,
+        X: FData | NDArrayFloat,
         y_train: NDArrayFloat | FData | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
     ) -> NDArrayFloat | FData:
 
         bandwidth = (
-            np.percentile(np.abs(delta_x), 15)
+            float(np.percentile(delta_x, DEFAULT_BANDWIDTH_PERCENTILE))
             if self.bandwidth is None
             else self.bandwidth
         )
+
+        # Smoothing for functions of one variable
+        if not isinstance(X_train, FDataBasis) and X_train[0].shape[0] == 1:
+            delta_x = np.subtract.outer(
+                X.flatten(),
+                X_train.flatten(),
+            )
+
+            assert y_train is None
+
+            return super().__call__(  # noqa: WPS503
+                delta_x=delta_x,
+                X_train=X_train,
+                X=X,
+                y_train=y_train,
+                weights=weights,
+                _cv=_cv,
+            )
 
         # Regression
         if isinstance(X_train, FData):
@@ -326,44 +345,41 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
             ):
                 raise ValueError("Only FDataBasis is supported for now.")
 
-            if y_train is None:
-                y_train = np.identity(X_train.n_samples)
-
             m1 = X_train.coefficients
             m2 = X.coefficients
 
-            # Subtract previous matrices obtaining a 3D matrix
-            # The i-th element contains the matrix X_train - X[i]
-            C = m1 - m2[:, np.newaxis]
+            if y_train is None:
+                y_train = np.identity(X_train.n_samples)
 
+        else:
+            m1 = X_train
+            m2 = X
+
+            if y_train is None:
+                y_train = np.identity(X_train.shape[0])
+
+        # Subtract previous matrices obtaining a 3D matrix
+        # The i-th element contains the matrix X_train - X[i]
+        C = m1 - m2[:, np.newaxis]
+
+        # Inner product matrix only is applicable in regression
+        if isinstance(X_train, FDataBasis):
             inner_product_matrix = X_train.basis.inner_product_matrix()
 
             # Calculate new coefficients taking into account cross-products
             # if the basis is orthonormal, C would not change
             C = C @ inner_product_matrix  # noqa: WPS350
 
-            # Adding a column of ones in the first position of all matrices
-            dims = (C.shape[0], C.shape[1], 1)
-            C = np.concatenate((np.ones(dims), C), axis=-1)
+        # Adding a column of ones in the first position of all matrices
+        dims = (C.shape[0], C.shape[1], 1)
+        C = np.concatenate((np.ones(dims), C), axis=-1)
 
-            return self._solve_least_squares(
-                delta_x=delta_x,
-                coefs=C,
-                y_train=y_train,
-                bandwidth=bandwidth,
-            )
-
-        # Smoothing
-        else:
-
-            return super().__call__(  # type: ignore[misc, type-var] # noqa: WPS503
-                delta_x=delta_x,
-                X_train=X_train,
-                X=X,
-                y_train=y_train,  # type: ignore[arg-type]
-                weights=weights,
-                _cv=_cv,
-            )
+        return self._solve_least_squares(
+            delta_x=delta_x,
+            coefs=C,
+            y_train=y_train,
+            bandwidth=bandwidth,
+        )
 
     def _solve_least_squares(
         self,
@@ -485,7 +501,7 @@ class KNeighborsHatMatrix(HatMatrix):
         # For each row in the distances matrix, it calculates the furthest
         # point within the k nearest neighbours
         vec = np.sort(
-            np.abs(delta_x),
+            delta_x,
             axis=1,
         )[:, n_neighbors - 1] + tol
 

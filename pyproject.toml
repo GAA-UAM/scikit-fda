@@ -2,7 +2,7 @@
 name = "scikit-fda"
 description = "Functional Data Analysis Python package."
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {file = "LICENSE.txt"}
 keywords = [
 	"functional data",
@@ -20,7 +20,7 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
@@ -45,10 +45,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+docs = [
+  "cartopy",
+  "ipykernel",
+  "jupyter-sphinx",
+  "myst-parser",
+  "pillow",
+  "pydata-sphinx-theme",
+  "pytest",
+  "setuptools>=41.2",
+  "sphinx>=3",
+  "sphinx-gallery",
+  "sphinxcontrib-bibtex",
+]
 test = [
   "pytest",
   "pytest-env",
   "pytest-subtests",
+  "scipy<1.11.0",
 ]
 
 [project.urls]

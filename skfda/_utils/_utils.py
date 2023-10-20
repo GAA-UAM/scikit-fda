@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import functools
 import numbers
-from functools import singledispatch
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -36,7 +35,7 @@ from ._sklearn_adapter import BaseEstimator
 ArrayDTypeT = TypeVar("ArrayDTypeT", bound="np.generic")
 
 if TYPE_CHECKING:
-    from ..representation import FData, FDataGrid
+    from ..representation import FData, FDataBasis, FDataGrid
     from ..representation.basis import Basis
     from ..representation.extrapolation import ExtrapolationLike
 
@@ -364,10 +363,6 @@ def _evaluate_grid(  # noqa: WPS234
             object.
         aligned: If False evaluates each sample
             in a different grid.
-        evaluate_method: method to use to evaluate the points
-        n_samples: number of samples
-        dim_domain: dimension of the domain
-        dim_codomain: dimensions of the codomain
 
     Returns:
         Numpy array with dim_domain + 1 dimensions with
@@ -609,3 +604,36 @@ def _classifier_get_classes(
             f'one; got {classes.size} class',
         )
     return classes, y_ind
+
+
+def function_to_fdatabasis(
+    f: Callable[[NDArrayFloat], NDArrayFloat],
+    new_basis: Basis,
+) -> FDataBasis:
+    """Express a math function as a FDataBasis with a given basis.
+
+    Args:
+        f: math function.
+        new_basis: the basis of the output.
+
+    Returns:
+        FDataBasis: FDataBasis with calculated coefficients and the new
+        basis.
+    """
+    from .. import FDataBasis  # noqa: WPS442
+    from ..misc._math import inner_product_matrix
+
+    if isinstance(f, FDataBasis) and f.basis == new_basis:
+        return f.copy()
+
+    inner_prod = inner_product_matrix(
+        new_basis,
+        f,
+        _domain_range=new_basis.domain_range,
+    )
+
+    gram_matrix = new_basis.gram_matrix()
+
+    coefs = np.linalg.solve(gram_matrix, inner_prod)
+
+    return FDataBasis(new_basis, coefs.T)

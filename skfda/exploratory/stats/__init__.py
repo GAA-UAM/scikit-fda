@@ -19,6 +19,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "gmean",
             "mean",
             "modified_epigraph_index",
+            "std",
             "trim_mean",
             "var",
         ],
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
         gmean as gmean,
         mean as mean,
         modified_epigraph_index as modified_epigraph_index,
+        std as std,
         trim_mean as trim_mean,
         var as var,
     )

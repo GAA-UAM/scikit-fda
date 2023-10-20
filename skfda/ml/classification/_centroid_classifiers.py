@@ -127,7 +127,7 @@ class DTMClassifier(NearestCentroid[Input, Target]):
 
     Test samples are classified to the class that minimizes the distance of
     the observation to the trimmed mean of the group
-    :footcite:`fraiman+muniz_2001_trimmed`.
+    :footcite:`pintado+romo_2005_depthbased`.
 
     Parameters:
         proportiontocut:
@@ -174,6 +174,7 @@ class DTMClassifier(NearestCentroid[Input, Target]):
 
     See also:
         :class:`~skfda.ml.classification.NearestCentroid`
+        :class:`~skfda.exploratory.stats.trim_mean`
 
     References:
         .. footbibliography::

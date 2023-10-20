@@ -180,4 +180,5 @@ class Tensor(TensorBasis):
         warnings.warn(
             "The Tensor class is deprecated. Use TensorBasis instead.",
             DeprecationWarning,
+            stacklevel=2,
         )

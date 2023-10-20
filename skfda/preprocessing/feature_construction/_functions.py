@@ -3,32 +3,21 @@
 from __future__ import annotations
 
 import itertools
-from typing import Optional, Sequence, Tuple, TypeVar, Union, cast, overload
+from typing import Optional, Sequence, Tuple, TypeVar, Union, cast
 
 import numpy as np
-from typing_extensions import Literal, Protocol, TypeGuard
+from typing_extensions import Literal, TypeGuard
 
-from ..._utils import nquad_vec
-from ...misc.validation import check_fdata_dimensions, validate_domain_range
+from ..._utils.ndfunction._functions import (
+    _average_function_ufunc,
+    _UnaryUfunc,
+)
+from ...misc.validation import check_fdata_dimensions
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 
 T = TypeVar("T", bound=Union[NDArrayFloat, FDataGrid])
-
-
-class _BasicUfuncProtocol(Protocol):
-
-    @overload
-    def __call__(self, __arg: FDataGrid) -> FDataGrid:  # noqa: WPS112
-        pass
-
-    @overload
-    def __call__(self, __arg: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS112
-        pass
-
-    def __call__(self, __arg: T) -> T:  # noqa: WPS112
-        pass
 
 
 def _sequence_of_ints(data: Sequence[object]) -> TypeGuard[Sequence[int]]:
@@ -332,7 +321,7 @@ def number_crossings(
 
         >>> from skfda.preprocessing.feature_construction import (
         ...     number_crossings,
-        ... ) 
+        ... )
         >>> from scipy.special import jv
         >>> import numpy as np
         >>> x_grid = np.linspace(0, 14, 14)
@@ -521,7 +510,7 @@ def unconditional_moment(
 
 def unconditional_expected_value(
     data: FData,
-    function: _BasicUfuncProtocol,
+    function: _UnaryUfunc,
     *,
     domain: DomainRangeLike | None = None,
 ) -> NDArrayFloat:
@@ -537,19 +526,19 @@ def unconditional_expected_value(
             f_p(x(t))=\frac{1}{\left( b-a\right)}\int_a^b g
             \left(x_p(t)\right) dt
 
-        Args:
-            data: FDataGrid or FDataBasis where we want to calculate
-                the expected value.
-            function: function that specifies how the expected value to is
-                calculated. It has to be a function of X(t).
-            domain: Integration domain. By default, the whole domain is used.
+    Args:
+        data: FDataGrid or FDataBasis where we want to calculate
+            the expected value.
+        function: function that specifies how the expected value to is
+            calculated. It has to be a function of X(t).
+        domain: Integration domain. By default, the whole domain is used.
 
-        Returns:
-            ndarray of shape (n_dimensions, n_samples) with the values of the
-            expectations.
+    Returns:
+        ndarray of shape (n_dimensions, n_samples) with the values of the
+        expectations.
 
     Examples:
-        We will use this funtion to calculate the logarithmic first moment
+        We will use this function to calculate the logarithmic first moment
         of the first 5 samples of the Berkeley Growth dataset.
         We will start by importing it.
 
@@ -574,26 +563,4 @@ def unconditional_expected_value(
                    [ 4.84]])
 
     """
-    if domain is None:
-        domain = data.domain_range
-    else:
-        domain = validate_domain_range(domain)
-
-    lebesgue_measure = np.prod(
-        [
-            (iterval[1] - iterval[0])
-            for iterval in domain
-        ],
-    )
-
-    if isinstance(data, FDataGrid):
-        return function(data).integrate(domain=domain) / lebesgue_measure
-
-    def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
-        f1 = data(args)[:, 0, :]
-        return function(f1)
-
-    return nquad_vec(
-        integrand,
-        domain,
-    ) / lebesgue_measure
+    return _average_function_ufunc(data, ufunc=function, domain=domain)

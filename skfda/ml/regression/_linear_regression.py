@@ -17,9 +17,8 @@ import numpy as np
 import pandas as pd
 from sklearn.utils.validation import check_is_fitted
 
-from ..._utils import nquad_vec
+from ..._utils import function_to_fdatabasis, nquad_vec
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
-from ...misc._math import inner_product_matrix
 from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData, FDataBasis
@@ -458,7 +457,7 @@ class LinearRegression(
                     return coef_eval(arg) * x_eval
 
                 result.append(
-                    self._change_function_basis(prediction, self.y_basis),
+                    function_to_fdatabasis(prediction, self.y_basis),
                 )
             else:
                 result.append(coef_info.inner_product(coef, x))
@@ -467,7 +466,7 @@ class LinearRegression(
 
         if self.fit_intercept:
             if self.functional_response:
-                result = result + self._change_function_basis(
+                result = result + function_to_fdatabasis(
                     self.intercept_, self.y_basis,
                 )
             else:
@@ -696,33 +695,3 @@ class LinearRegression(
             List: list which elements are the input DataFrame columns.
         """
         return [v.values for k, v in X.items()]
-
-    def _change_function_basis(
-        self,
-        f: Callable | NDArrayFloat,
-        new_basis: Basis,
-    ) -> FDataBasis:
-        """Express a math function as a FDataBasis with a given basis.
-
-        Args:
-            f: math function.
-            new_basis: the basis of the output.
-
-        Returns:
-            FDataBasis: FDataBasis with calculated coefficients and the new
-            basis.
-        """
-        if isinstance(f, FDataBasis) and f.basis == new_basis:
-            return f
-
-        inner_prod = inner_product_matrix(
-            new_basis,
-            f,
-            _domain_range=new_basis.domain_range,
-        )
-
-        gram_matrix = new_basis.gram_matrix()
-
-        coefs = np.linalg.solve(gram_matrix, inner_prod)
-
-        return FDataBasis(new_basis, coefs.T)

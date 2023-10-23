@@ -843,22 +843,22 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             -1.6412, 0.4354, -1.2269, 0.9194, 1.0373, 0.7552, 1.088,
         ]
 
-        funct_reg = LinearRegression()
-        funct_reg.fit(df, y_fd)
+        linear_regression = LinearRegression()
+        linear_regression.fit(df, y_fd)
 
         np.testing.assert_allclose(
-            funct_reg.basis_coefs[0].ravel(), beta_const_R, atol=0.001,
+            linear_regression.basis_coefs[0].ravel(), beta_const_R, atol=0.001,
         )
         np.testing.assert_allclose(
-            funct_reg.basis_coefs[1].ravel(), beta_atlantic_R, atol=0.001,
+            linear_regression.basis_coefs[1].ravel(), beta_atlantic_R, atol=0.001,
         )
         np.testing.assert_allclose(
-            funct_reg.basis_coefs[2].ravel(), beta_continental_R, atol=0.001,
+            linear_regression.basis_coefs[2].ravel(), beta_continental_R, atol=0.001,
         )
         np.testing.assert_allclose(
-            funct_reg.basis_coefs[3].ravel(), beta_pacific_R, atol=0.001,
+            linear_regression.basis_coefs[3].ravel(), beta_pacific_R, atol=0.001,
         )
-        np.testing.assert_equal(funct_reg.coef_basis[0], y_fd.basis)
+        np.testing.assert_equal(linear_regression.coef_[0].basis, y_fd.basis)
 
     def test_functional_covariates_concurrent(self) -> None:  # noqa: N802
         """

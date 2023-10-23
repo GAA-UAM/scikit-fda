@@ -103,9 +103,13 @@ class LinearRegression(
         in methods fit, predict.
         Use covariate parameters of type pandas.DataFrame instead.
 
-    .. warning::
+    Warning:
         For now, only multivariate and concurrent convariates are supported
         when the response is functional.
+
+    Warning:
+        This functionality is still experimental. Users should be aware that
+        the API will suffer heavy changes in the future.
 
     Args:
         coef_basis (iterable): Basis of the coefficient functions of the
@@ -304,7 +308,6 @@ class LinearRegression(
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
         self.regularization = regularization
-        self.y_basis = None
 
     def fit(  # noqa: D102
         self,
@@ -322,15 +325,29 @@ class LinearRegression(
 
         regularization: RegularizationIterableType = self.regularization
 
+        coef_basis = self._coef_basis
+
         if self.fit_intercept:
             new_x = np.ones((len(y), 1))
             X_new = [new_x] + list(X_new)
+
+            intercept_basis = self._choose_beta_basis(
+                coef_basis=None,
+                x_basis=None,
+                y_basis=y.basis if isinstance(y, FDataBasis) else None,
+            )
+            coef_basis = [intercept_basis] + coef_basis
+
             new_coef_info_list: List[AcceptedDataCoefsType] = [
-                coefficient_info_from_covariate(new_x, y),
+                coefficient_info_from_covariate(
+                    new_x,
+                    y,
+                    basis=intercept_basis,
+                ),
             ]
             coef_info = new_coef_info_list + list(coef_info)
 
-            if not self.functional_response:
+            if not self._functional_response:
                 if isinstance(regularization, Iterable):
                     regularization = itertools.chain([None], regularization)
                 elif regularization is not None:
@@ -342,14 +359,14 @@ class LinearRegression(
             regularization=regularization,
         )
 
-        if self.functional_response:
+        if self._functional_response:
             coef_lengths = []
             left_inner_products_list = []
             right_inner_products_list = []
 
             Xt = self._make_transpose(X_new)
 
-            for i, basis_i in enumerate(self.coef_basis):
+            for i, basis_i in enumerate(coef_basis):
                 coef_lengths.append(basis_i.n_basis)
                 row = []
                 right_inner_products_list.append(
@@ -360,7 +377,7 @@ class LinearRegression(
                         y,
                     ),
                 )
-                for j, basis_j in enumerate(self.coef_basis):
+                for j, basis_j in enumerate(coef_basis):
                     row.append(
                         self._weighted_inner_product_integrate(
                             basis_i,
@@ -411,7 +428,11 @@ class LinearRegression(
         basiscoef_list = np.split(basiscoefs, coef_start)
 
         # Express the coefficients in functional form
-        coefs = self._convert_from_constant_coefs(basiscoef_list, coef_info)
+        coefs = self._convert_from_constant_coefs(
+            basiscoef_list,
+            coef_info,
+            coef_basis,
+        )
 
         if self.fit_intercept:
             self.intercept_ = coefs[0]
@@ -435,18 +456,8 @@ class LinearRegression(
         X = self._argcheck_X(X)
         result = []
 
-        """ if self.functional_response:
-            # Predict each covariate (multivariate or functional)
-            if len(X) > 1:
-                return list(
-                    itertools.chain.from_iterable(
-                        [self.predict(x) for x in X],
-                    ),
-                )
-            X = X[0] """
-
         for coef, x, coef_info in zip(self.coef_, X, self._coef_info):
-            if self.functional_response:
+            if self._functional_response:
                 def prediction(arg, x_eval=x, coef_eval=coef):  # noqa: WPS430
                     if isinstance(x_eval, Callable):
                         x_eval = x_eval(arg)  # noqa: WPS220
@@ -457,7 +468,7 @@ class LinearRegression(
                     return coef_eval(arg) * x_eval
 
                 result.append(
-                    function_to_fdatabasis(prediction, self.y_basis),
+                    function_to_fdatabasis(prediction, self._y_basis),
                 )
             else:
                 result.append(coef_info.inner_product(coef, x))
@@ -465,9 +476,9 @@ class LinearRegression(
         result = sum(result[1:], start=result[0])
 
         if self.fit_intercept:
-            if self.functional_response:
+            if self._functional_response:
                 result = result + function_to_fdatabasis(
-                    self.intercept_, self.y_basis,
+                    self.intercept_, self._y_basis,
                 )
             else:
                 result += self.intercept_
@@ -475,7 +486,7 @@ class LinearRegression(
         if self._target_ndim == 1:
             result = result.ravel()
 
-        return result  # type: ignore[no-any-return]
+        return result
 
     def _argcheck_X(  # noqa: N802
         self,
@@ -567,13 +578,13 @@ class LinearRegression(
         return nquad_vec(
             integrand,
             domain_range,
-        )  # type: ignore[no-any-return]
+        )
 
     def _make_transpose(
         self,
         X: Sequence[AcceptedDataType],
     ) -> Sequence[AcceptedDataType]:
-        Xt = []
+        Xt: list[AcceptedDataType] = []
         for x in X:
             if isinstance(x, FData):
                 Xt.append(x)
@@ -604,11 +615,12 @@ class LinearRegression(
         self,
         coef_list: Sequence[NDArrayFloat],
         coef_info: Sequence[AcceptedDataCoefsType],
+        coef_basis: Sequence[Basis],
     ) -> Sequence[FDataBasis]:
-        if self.functional_response:
+        if self._functional_response:
             return [
-                FDataBasis(self.coef_basis[i], coef_list[i].T)
-                for i in range(len(self.coef_basis))
+                FDataBasis(basis=basis, coefficients=coef.T)
+                for basis, coef in zip(coef_basis, coef_list)
             ]
         return [
             c.convert_from_constant_coefs(bcoefs)
@@ -627,20 +639,17 @@ class LinearRegression(
 
         len_new_X = len(new_X)
 
+        self._y_basis = y.basis if isinstance(y, FDataBasis) else None
+
         if isinstance(y, FDataBasis):
-            self.y_basis = y.basis
-            self.functional_response = True
-            len_new_X += self.fit_intercept
-            if coef_basis is None:
-                self.coef_basis = [y.basis] * len_new_X
-                coef_basis = self.coef_basis
+            self._functional_response = True
         else:
             if any(len(y) != len(x) for x in new_X):
                 raise ValueError(
                     "The number of samples on independent and "
                     "dependent variables should be the same",
                 )
-            self.functional_response = False
+            self._functional_response = False
             y = np.asarray(y)
 
         if coef_basis is None:
@@ -656,6 +665,17 @@ class LinearRegression(
                 "basis should be the same",
             )
 
+        coef_basis = [
+            self._choose_beta_basis(
+                coef_basis=c_basis,
+                x_basis=x.basis if isinstance(x, FDataBasis) else None,
+                y_basis=self._y_basis,
+            )
+            for c_basis, x in zip(coef_basis, new_X)
+        ]
+
+        self._coef_basis = coef_basis
+
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)
             for x, b in zip(new_X, coef_basis)
@@ -665,6 +685,19 @@ class LinearRegression(
             self._sample_weight_check(sample_weight, y)
 
         return new_X, y, sample_weight, coef_info
+
+    def _choose_beta_basis(
+        self,
+        coef_basis: Basis | None = None,
+        x_basis: Basis | None = None,
+        y_basis: Basis | None = None,
+    ) -> Basis | None:
+        if coef_basis is not None:
+            return coef_basis
+        elif y_basis is None:
+            return x_basis
+        else:
+            return y_basis
 
     def _sample_weight_check(
         self,

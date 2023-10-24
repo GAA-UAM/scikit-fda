@@ -6,13 +6,12 @@ from builtins import isinstance
 from typing import Callable, TypeVar, Union
 
 import numpy as np
-from scipy import integrate
 from scipy.stats import rankdata
 
 from skfda._utils.ndfunction import average_function_value
 
 from ...misc.metrics._lp_distances import l2_distance
-from ...representation import FData, FDataBasis, FDataGrid
+from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
@@ -136,6 +135,23 @@ def std_fdatagrid(X: FDataGrid, correction: int = 1) -> FDataGrid:
         sample_names=(None,),
     )
 
+
+@std.register
+def std_fdatairregular(
+    X: FDataIrregular, correction: int = 1,
+) -> FDataIrregular:
+    """Compute the standard deviation of a FDataIrregular."""
+    common_points, common_values = X._get_common_points_and_values()
+    std_values = np.std(
+        common_values, axis=0, ddof=correction,
+    )
+
+    return FDataIrregular(
+        start_indices=np.array([0]),
+        points=common_points,
+        values=std_values,
+        sample_names=(None,),
+    )
 
 @std.register
 def std_fdatabasis(X: FDataBasis, correction: int = 1) -> FDataBasis:

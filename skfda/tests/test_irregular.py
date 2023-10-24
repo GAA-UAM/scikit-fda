@@ -159,6 +159,71 @@ def dataframe(
 
     return raw_dataset["bone_ext"]
 
+
+@pytest.fixture(
+    params=[
+        "unidimensional",
+        "multidimensional",
+    ],
+)
+def fdatairregular_and_sum(request: Any) -> FDataIrregular:
+    if request.param == "unidimensional":
+        return (
+            FDataIrregular(
+                start_indices=[0, 3, 7],
+                points=[
+                    -9, -3, 3, -3, 3, 9, 15, -15, -9, -3, 3, 9, 17, 22, 29,
+                ],
+                values=[
+                    548, 893, 657, 752, 459, 181, 434, 846, 1102, 801, 824,
+                    866, 704, 757, 726,
+                ],
+            ),
+            FDataIrregular(
+                start_indices=[0],
+                points=[-3, 3],
+                values=[2446, 1940],
+            ),
+        )
+    if request.param == "multidimensional":
+        return (
+            FDataIrregular(
+                start_indices=[0, 3, 5],
+                points=[
+                    [0, 0], [1, 2], [1, 1],
+                    [0, 0], [1, 1],
+                    [0, 0], [6, 2], [1, 1],
+                ],
+                values=[
+                    [0, 0, -1], [657, 752, 5], [10, 20, 30],
+                    [-1, 0, 0], [1102, 801, 2],
+                    [0, 1, 0], [704, 0, 757], [-11, -21, 31],
+                ],
+            ),
+            FDataIrregular(
+                start_indices=[0],
+                points=[[0, 0], [1, 1]],
+                values=[[-1, 1, -1], [1101, 800, 63]],
+            ),
+        )
+
+
+@pytest.fixture()
+def fdatairregular_no_common_points() -> FDataIrregular:
+    return FDataIrregular(
+        start_indices=[0, 3, 5],
+        points=[
+            [0, 1], [1, 2], [1, 1],
+            [0, -1], [1, 10],
+            [0, -2], [6, 2], [10, 1],
+        ],
+        values=[
+            [0, 0, -1], [657, 752, 5], [10, 20, 30],
+            [-1, 0, 0], [1102, 801, 2],
+            [0, 1, 0], [704, 0, 757], [-11, -21, 31],
+        ],
+    )
+
 ############
 # TESTS
 ############
@@ -443,3 +508,31 @@ def test_fdatairregular_isna(
             which can be unidimensional or multidimensional.
     """
     assert fdatairregular.isna().shape == (len(fdatairregular),)
+
+
+def test_fdatairregular_sum(
+    fdatairregular_and_sum: Tuple[FDataIrregular, FDataIrregular],
+) -> None:
+    """Test the sum function for FDataIrregular.
+
+    Test both unidimensional and multidimensional.
+
+    Args:
+        fdatairregular_and_sum: FDataIrregular object and expected sum.
+    """
+    fdatairregular, expected_sum = fdatairregular_and_sum
+    actual_sum = fdatairregular.sum()
+    assert actual_sum.equals(expected_sum), actual_sum
+
+
+def test_fdatairregular_sum_invalid(
+    fdatairregular_no_common_points: FDataIrregular,
+) -> None:
+    """Test the sum function for FDataIrregular, case with no common points.
+
+    Args:
+        fdatairregular_no_common_points: FDataIrregular object with no common
+            points.
+    """
+    with pytest.raises(ValueError):
+        fdatairregular_no_common_points.sum()

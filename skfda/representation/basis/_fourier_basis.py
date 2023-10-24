@@ -319,6 +319,7 @@ class Fourier(FourierBasis):
         warnings.warn(
             "The Fourier class is deprecated. Use FourierBasis instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         super().__init__(
             domain_range=domain_range,

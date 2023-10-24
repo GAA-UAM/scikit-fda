@@ -180,7 +180,7 @@ def fetch_ucr(
     The UCR/UEA Time Series Classification repository, hosted at
     www.timeseriesclassification.com includes plenty of
     classification problems with univariate and multivariate time series
-    \ :footcite:p:`dau++_2019_ucr,bagnall++_2018_uea`.
+    :footcite:p:`dau++_2019_ucr,bagnall++_2018_uea`.
     They are widely used in the functional data classification literature.
 
     Args:

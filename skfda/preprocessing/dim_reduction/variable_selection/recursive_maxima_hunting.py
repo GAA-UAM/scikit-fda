@@ -17,6 +17,7 @@ from typing import (
     overload,
 )
 
+import dcor
 import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
@@ -25,7 +26,6 @@ import sklearn.utils
 from sklearn.base import clone
 from typing_extensions import Literal
 
-import dcor
 from skfda.exploratory.stats.covariance import (
     CovarianceEstimator,
     EmpiricalCovariance,
@@ -41,7 +41,6 @@ from ._base import _compute_dependence, _DependenceMeasure as _DepMeasure
 
 if TYPE_CHECKING:
     from ....misc.covariances import CovarianceLike
-    import GPy
 
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
@@ -54,48 +53,6 @@ def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
         t = np.atleast_2d(t).T
 
     return t
-
-
-class _PicklableKernel():
-    """Class used to pickle GPy kernels."""
-
-    def __init__(self, kernel: GPy.kern.Kern) -> None:
-        super().__setattr__('_PicklableKernel__kernel', kernel)
-
-    def __getattr__(self, name: str) -> Any:
-        if name != '__deepcopy__':
-            return getattr(self.__kernel, name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        setattr(self.__kernel, name, value)
-
-    def __getstate__(self) -> Mapping[str, Any]:
-        return {
-            'class': self.__kernel.__class__,
-            'input_dim': self.__kernel.input_dim,
-            'values': self.__kernel.param_array,
-        }
-
-    def __setstate__(self, state: Mapping[str, Any]) -> None:
-        super().__setattr__('_PicklableKernel__kernel', state['class'](
-            input_dim=state['input_dim']),
-        )
-        self.__kernel.param_array[...] = state['values']
-
-    def __call__(self, *args: Any, **kwargs: Any) -> NDArrayFloat:
-        return self.__kernel.K(*args, **kwargs)  # type: ignore[no-any-return]
-
-
-def make_kernel(k: CovarianceLike) -> CovarianceLike:
-    try:
-        import GPy
-    except ImportError:
-        return k
-
-    if isinstance(k, GPy.kern.Kern):
-        return _PicklableKernel(k)
-
-    return k
 
 
 def _absolute_argmax(
@@ -255,7 +212,7 @@ class GaussianCorrection(ConditionalMeanCorrection):
         super().__init__()
 
         self.mean = mean
-        self.cov = make_kernel(cov)
+        self.cov = cov
 
     def _evaluate_mean(self, t: NDArrayFloat) -> NDArrayFloat:
 
@@ -625,7 +582,7 @@ class ScoreThresholdStop(StoppingCondition):
         **kwargs: Any,
     ) -> bool:
 
-        score = float(dependences.data_matrix[0, selected_index, 0])
+        score = float(dependences.data_matrix[(0,) + selected_index + (0,)])
 
         return score < self.threshold
 

@@ -522,7 +522,7 @@ class FDataGrid(FData):  # noqa: WPS214
         integrand = data.data_matrix
 
         for g in data.grid_points[::-1]:
-            integrand = scipy.integrate.simps(
+            integrand = scipy.integrate.simpson(
                 integrand,
                 x=g,
                 axis=-2,
@@ -598,13 +598,13 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T, ddof: int = 1) -> T:
+    def var(self: T, correction: int = 0) -> T:
         """Compute the variance of a set of samples in a FDataGrid object.
 
         Args:
-            ddof: "Delta Degrees of Freedom": the divisor used in the
-                calculation is `N - ddof`, where `N` represents the number of
-                elements. By default `ddof` is 1.
+            correction: degrees of freedom adjustment. The divisor used in the
+                calculation is `N - correction`, where `N` represents the
+                number of elements. Default: `0`.
 
         Returns:
             A FDataGrid object with just one sample representing the
@@ -615,7 +615,7 @@ class FDataGrid(FData):  # noqa: WPS214
             data_matrix=np.array([np.var(
                 self.data_matrix,
                 axis=0,
-                ddof=ddof,
+                ddof=correction,
             )]),
             sample_names=("variance",),
         )
@@ -626,7 +626,7 @@ class FDataGrid(FData):  # noqa: WPS214
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
         /,
-        ddof: int = 1,
+        correction: int = 0,
     ) -> NDArrayFloat:
         pass
 
@@ -634,7 +634,7 @@ class FDataGrid(FData):  # noqa: WPS214
     def cov(  # noqa: WPS451
         self: T,
         /,
-        ddof: int = 1,
+        correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
@@ -643,7 +643,7 @@ class FDataGrid(FData):  # noqa: WPS214
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
         /,
-        ddof: int = 1,
+        correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,
@@ -659,9 +659,9 @@ class FDataGrid(FData):  # noqa: WPS214
         Args:
             s_points: Grid points where the covariance function is evaluated.
             t_points: Grid points where the covariance function is evaluated.
-            ddof: "Delta Degrees of Freedom": the divisor used in the
-                calculation is `N - ddof`, where `N` represents the number
-                of elements. By default `ddof` is 1.
+            correction: degrees of freedom adjustment. The divisor used in the
+                calculation is `N - correction`, where `N` represents the
+                number of elements. Default: `0`.
 
         Returns:
             Covariance function.
@@ -669,7 +669,7 @@ class FDataGrid(FData):  # noqa: WPS214
         """
         # To avoid circular imports
         from ..misc.covariances import EmpiricalGrid
-        cov_function = EmpiricalGrid(self, ddof=ddof)
+        cov_function = EmpiricalGrid(self, correction=correction)
         if s_points is None or t_points is None:
             return cov_function
         return cov_function(s_points, t_points)
@@ -750,8 +750,9 @@ class FDataGrid(FData):  # noqa: WPS214
                 return other[other_index]
 
             raise ValueError(
-                f"Invalid dimensions in operator between FDataGrid and Numpy "
-                f"array: {other.shape}"
+                f"Invalid dimensions in operator between "
+                f"FDataGrid (data_matrix.shape={self.data_matrix.shape}) "
+                f"and Numpy array (shape={other.shape})",
             )
 
         elif isinstance(other, FDataGrid):

@@ -351,26 +351,20 @@ class FDataIrregular(FData):  # noqa: WPS214
         all_points_single_function = _cartesian_product(
             _to_grid_points(f_data.grid_points),
         )
-        # Repeat points for each function
         flat_points = np.tile(
             all_points_single_function, (f_data.n_samples, 1),
         )
 
-        # Array with values of each function
         all_values = f_data.data_matrix.reshape(
             (f_data.n_samples, -1, f_data.dim_codomain),
         )
-        # Concatenated values of all functions
         flat_values = all_values.reshape((-1, f_data.dim_codomain))
-        # Which values are not nan with shape: all_values.shape
         nonnan_all_values = ~np.all(np.isnan(all_values), axis=-1)
-        # Which values are not nan with shape: flat_values.shape
         nonnan_flat_values = nonnan_all_values.reshape((-1,))
 
         values = flat_values[nonnan_flat_values]
         points = flat_points[nonnan_flat_values]
 
-        # Count non-nan values per function to obtain start_indices
         n_points_per_function = np.sum(nonnan_all_values, axis=-1)
         start_indices = np.concatenate((
             np.zeros(1, np.int32), np.cumsum(n_points_per_function[:-1]),

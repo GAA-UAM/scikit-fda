@@ -625,34 +625,6 @@ class FDataIrregular(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def mean(self: T) -> T:
-        """Compute the mean pointwise for a sparse dataset.
-
-        Note that, for irregular data, points may be represented in few
-        or even an only curve.
-
-        Returns:
-            A FDataIrregular object with just one sample representing the
-            mean of all curves the across each value.
-        """
-        # Find all distinct arguments (ordered) and corresponding values
-        distinct_args = np.unique(self.points, axis=0)
-        values = [
-            self.values[np.where(self.points == arg)[0]]
-            for arg in distinct_args
-        ]
-
-        # Obtain mean of all available values for each argument point
-        means = np.array([np.mean(value, axis=0) for value in values])
-
-        # Create a FDataIrregular object with only 1 curve, the mean curve
-        return FDataIrregular(
-            start_indices=np.array([0]),
-            points=distinct_args,
-            values=means,
-            sample_names=("mean",),
-        )
-
     def var(self: T) -> T:
         """Compute the variance pointwise for a sparse dataset.
 

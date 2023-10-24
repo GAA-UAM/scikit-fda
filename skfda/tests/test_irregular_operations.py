@@ -201,6 +201,105 @@ def fdatairregular(
         return fdatairregular_2d
 
 
+@pytest.fixture(
+    params=[
+        "unidimensional",
+        "multidimensional",
+    ],
+)
+def fdatairregular_and_sum(request: Any) -> FDataIrregular:
+    if request.param == "unidimensional":
+        return (
+            FDataIrregular(
+                start_indices=[0, 3, 7],
+                points=[
+                    -9, -3, 3, -3, 3, 9, 15, -15, -9, -3, 3, 9, 17, 22, 29,
+                ],
+                values=[
+                    548, 893, 657, 752, 459, 181, 434, 846, 1102, 801, 824,
+                    866, 704, 757, 726,
+                ],
+            ),
+            FDataIrregular(
+                start_indices=[0],
+                points=[-3, 3],
+                values=[2446, 1940],
+            ),
+        )
+    if request.param == "multidimensional":
+        return (
+            FDataIrregular(
+                start_indices=[0, 3, 5],
+                points=[
+                    [0, 0], [1, 2], [1, 1],
+                    [0, 0], [1, 1],
+                    [0, 0], [6, 2], [1, 1],
+                ],
+                values=[
+                    [0, 0, -1], [657, 752, 5], [10, 20, 30],
+                    [-1, 0, 0], [1102, 801, 2],
+                    [0, 1, 0], [704, 0, 757], [-11, -21, 31],
+                ],
+            ),
+            FDataIrregular(
+                start_indices=[0],
+                points=[[0, 0], [1, 1]],
+                values=[[-1, 1, -1], [1101, 800, 63]],
+            ),
+        )
+
+
+@pytest.fixture(
+    params=[
+        "unidimensional",
+        "multidimensional",
+    ],
+)
+def fdatairregular_common_points(request: Any) -> FDataIrregular:
+    if request.param == "unidimensional":
+        return FDataIrregular(
+            start_indices=[0, 3, 7],
+            points=[
+                -9, -3, 3, -3, 3, 9, 15, -15, -9, -3, 3, 9, 17, 22, 29,
+            ],
+            values=[
+                548, 893, 657, 752, 459, 181, 434, 846, 1102, 801, 824,
+                866, 704, 757, 726,
+            ],
+        )
+    if request.param == "multidimensional":
+        return FDataIrregular(
+            start_indices=[0, 3, 5],
+            points=[
+                [0, 0], [1, 2], [1, 1],
+                [0, 0], [1, 1],
+                [0, 0], [6, 2], [1, 1],
+            ],
+            values=[
+                [0, 0, -1], [657, 752, 5], [10, 20, 30],
+                [-1, 0, 0], [1102, 801, 2],
+                [0, 1, 0], [704, 0, 757], [-11, -21, 31],
+            ],
+        )
+
+
+@pytest.fixture()
+def fdatairregular_no_common_points() -> FDataIrregular:
+    return FDataIrregular(
+        start_indices=[0, 3, 5],
+        points=[
+            [0, 1], [1, 2], [1, 1],
+            [0, -1], [1, 10],
+            [0, -2], [6, 2], [10, 1],
+        ],
+        values=[
+            [0, 0, -1], [657, 752, 5], [10, 20, 30],
+            [-1, 0, 0], [1102, 801, 2],
+            [0, 1, 0], [704, 0, 757], [-11, -21, 31],
+        ],
+    )
+
+
 @pytest.fixture(params=["scalar", "vector", "matrix", "fdatairregular"])
 def other_1d(
     request: Any,
@@ -723,7 +822,7 @@ class TestNumericReductions:
 
     def test_fdatairregular_numeric_reduction(
         self,
-        fdatairregular: FDataIrregular,
+        fdatairregular_common_points: FDataIrregular,
         all_numeric_reductions: str,
     ) -> None:
         """Test FDataIrregular numeric statistichal operations.
@@ -732,13 +831,59 @@ class TestNumericReductions:
         dimensions of codomain and domain.
 
         Args:
-            fdatairregular (FDataIrregular): FDataIrregular
-                object.
+            fdatairregular_common_points (FDataIrregular): FDataIrregular
+                object with points common to all samples.
             all_numeric_reductions (str): Method of the class
                 FDataIrregular to be tested.
         """
-        reduction = getattr(fdatairregular, all_numeric_reductions)()
+        reduction = getattr(
+            fdatairregular_common_points, all_numeric_reductions,
+        )()
         assert isinstance(reduction, FDataIrregular)
+
+    def test_fdatairregular_sum(
+        self,
+        fdatairregular_and_sum: Tuple[FDataIrregular, FDataIrregular],
+    ) -> None:
+        """Test the sum function for FDataIrregular.
+
+        Test both unidimensional and multidimensional.
+
+        Args:
+            fdatairregular_and_sum: FDataIrregular object and expected sum.
+        """
+        fdatairregular, expected_sum = fdatairregular_and_sum
+        actual_sum = fdatairregular.sum()
+        assert actual_sum.equals(expected_sum)
+
+    def test_fdatairregular_mean(
+        self,
+        fdatairregular_and_sum: Tuple[FDataIrregular, FDataIrregular],
+    ) -> None:
+        """Test the mean function for FDataIrregular.
+
+        Test both unidimensional and multidimensional.
+
+        Args:
+            fdatairregular_and_sum: FDataIrregular object and expected sum.
+        """
+        fdatairregular, expected_sum = fdatairregular_and_sum
+        actual_mean = fdatairregular.mean()
+        assert actual_mean.equals(expected_sum / fdatairregular.n_samples)
+
+    def test_fdatairregular_sum_invalid(
+        self,
+        fdatairregular_no_common_points: FDataIrregular,
+    ) -> None:
+        """Test the sum function for FDataIrregular.
+
+        Args:
+            fdatairregular_no_common_points: FDataIrregular object with no
+                common points.
+        """
+        with pytest.raises(ValueError):
+            fdatairregular_no_common_points.sum()
+
 
 ########################
 # TEST BASIS OPERATIONS

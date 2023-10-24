@@ -604,7 +604,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                 `True`.
 
         Returns:
-            T: FDataIrregular object with only one curve and one value
+            FDataIrregular object with only one curve and one value
                 representing the sum of all the samples in the original object.
                 The points of the new object are the points common to all the
                 samples in the original object. Only values present in those
@@ -627,33 +627,31 @@ class FDataIrregular(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T) -> T:
-        """Compute the variance pointwise for a sparse dataset.
+    def var(self: T, correction: int = 0) -> T:
+        """Compute the variance of all the samples.
 
-        Note that, for irregular data, points may be represented in few
-        or even an only curve.
+        Args:
+            correction: degrees of freedom adjustment. The divisor used in the
+                calculation is `N - correction`, where `N` represents the
+                number of elements. Default: `0`.
 
         Returns:
-            A FDataIrregular object with just one sample representing the
-            variance of all curves the across each value.
-
+            FDataIrregular object with only one curve and one value
+                representing the pointwise variance of all the samples in the
+                original object. The points of the new object are the points
+                common to all the samples in the original object.
         """
         # Find all distinct arguments (ordered) and corresponding values
-        distinct_args = np.unique(self.points, axis=0)
-        values = [
-            self.values[np.where(self.points == arg)[0]]
-            for arg in distinct_args
-        ]
+        common_points, common_values = self._get_common_points_and_values()
+        var_values = np.var(
+            common_values, axis=0, ddof=correction,
+        )
 
-        # Obtain variance of all available values for each argument point
-        variances = np.array([np.var(value, axis=0) for value in values])
-
-        # Create a FDataIrregular object with only 1 curve, the variance curve
         return FDataIrregular(
             start_indices=np.array([0]),
-            points=distinct_args,
-            values=variances,
-            sample_names=("var",),
+            points=common_points,
+            values=var_values,
+            sample_names=(None,),
         )
 
     def cov(self: T) -> T:

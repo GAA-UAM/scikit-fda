@@ -102,7 +102,7 @@ def cov(
 
 
 @functools.singledispatch
-def std(X: F, correction: int = 1) -> F:
+def std(X: F, correction: int = 0) -> F:
     r"""
     Compute the standard deviation of all the samples in a FData object.
 
@@ -126,7 +126,7 @@ def std(X: F, correction: int = 1) -> F:
 
 
 @std.register
-def std_fdatagrid(X: FDataGrid, correction: int = 1) -> FDataGrid:
+def std_fdatagrid(X: FDataGrid, correction: int = 0) -> FDataGrid:
     """Compute the standard deviation of a FDataGrid."""
     return X.copy(
         data_matrix=np.std(
@@ -138,7 +138,7 @@ def std_fdatagrid(X: FDataGrid, correction: int = 1) -> FDataGrid:
 
 @std.register
 def std_fdatairregular(
-    X: FDataIrregular, correction: int = 1,
+    X: FDataIrregular, correction: int = 0,
 ) -> FDataIrregular:
     """Compute the standard deviation of a FDataIrregular."""
     common_points, common_values = X._get_common_points_and_values()
@@ -153,8 +153,9 @@ def std_fdatairregular(
         sample_names=(None,),
     )
 
+
 @std.register
-def std_fdatabasis(X: FDataBasis, correction: int = 1) -> FDataBasis:
+def std_fdatabasis(X: FDataBasis, correction: int = 0) -> FDataBasis:
     """Compute the standard deviation of a FDataBasis."""
     from ..._utils import function_to_fdatabasis
 

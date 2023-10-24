@@ -1616,7 +1616,7 @@ def fetch_bone_density(
     target_name = "sex"
     coordinate_name = "spnbmd"
 
-    curves = FDataIrregular.from_dataframe(
+    curves = FDataIrregular._from_dataframe(
         data,
         id_column=curve_name,
         argument_columns=argument_name,

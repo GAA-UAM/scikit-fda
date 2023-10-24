@@ -261,7 +261,7 @@ def test_fdatairregular_from_dataframe(
     argument_name = "age"
     coordinate_name = "spnbmd"
 
-    f_irreg = FDataIrregular.from_dataframe(
+    f_irreg = FDataIrregular._from_dataframe(
         dataframe,
         id_column=curve_name,
         argument_columns=argument_name,

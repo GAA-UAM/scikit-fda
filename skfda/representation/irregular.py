@@ -256,7 +256,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         )
 
     @classmethod
-    def from_dataframe(
+    def _from_dataframe(
         cls,
         dataframe: pandas.DataFrame,
         id_column: str,

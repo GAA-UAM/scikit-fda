@@ -4,16 +4,23 @@ from __future__ import annotations
 import math
 import warnings
 from functools import singledispatch
-from typing import Callable, TypeVar, overload
+from typing import Callable, Iterable, Optional, TypeVar, Union, overload
 
 import numpy as np
 import sklearn.metrics
 from typing_extensions import Literal, Protocol
 
 from .._utils import nquad_vec
+
 from ..representation import FData, FDataBasis, FDataGrid, FDataIrregular
-from ..representation._functional_data import EvalPointsType
-from ..typing._numpy import NDArrayFloat
+from ..typing._base import GridPointsLike
+from ..typing._numpy import ArrayLike, NDArrayFloat
+
+EvalPointsType = Union[
+    ArrayLike,
+    GridPointsLike,
+    Iterable[GridPointsLike],
+]
 
 DataType = TypeVar('DataType')
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeVar
 
-from ...misc.validation import validate_domain_range
 from .. import nquad_vec
 
 if TYPE_CHECKING:
@@ -49,6 +48,7 @@ def _average_function_ufunc(
     *,
     domain: DomainRangeLike | None = None,
 ) -> NDArrayFloat:
+    from ...misc.validation import validate_domain_range
 
     if domain is None:
         domain = data.domain_range

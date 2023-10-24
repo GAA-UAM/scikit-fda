@@ -20,11 +20,11 @@ import numpy as np
 import pandas.api.extensions
 
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
+from ..._utils.ndfunction.extrapolation import ExtrapolationLike
 from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
 from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
 from .._functional_data import FData
-from ..extrapolation import ExtrapolationLike
 
 if TYPE_CHECKING:
     from .. import FDataGrid

@@ -27,7 +27,7 @@ from ..typing._base import (
 from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from ._functional_data import FData
 from .basis import Basis, FDataBasis
-from .evaluator import Evaluator
+from .._utils.ndfunction.evaluator import Evaluator
 from .extrapolation import ExtrapolationLike
 from .grid import FDataGrid
 from .interpolation import SplineInterpolation

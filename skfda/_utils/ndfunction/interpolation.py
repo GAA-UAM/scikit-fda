@@ -1,10 +1,14 @@
 """
 Module to interpolate functional data objects.
+
+Defines methods to evaluate points in non-measured regions inside
+the :term:`domain` range.
+
 """
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Sequence, TypeVar
 
 import numpy as np
 from scipy.interpolate import (
@@ -12,13 +16,18 @@ from scipy.interpolate import (
     RegularGridInterpolator,
     make_interp_spline,
 )
+from typing_extensions import override
 
-from ..typing._base import EvaluationPoints
-from ..typing._numpy import ArrayLike, NDArrayFloat
+from ._array_api import Array, DType
 from .evaluator import Evaluator
 
+InputDTypeT = TypeVar("InputDTypeT", bound=DType)
+OutputDTypeT = TypeVar("OutputDTypeT", bound=DType)
+
+
 if TYPE_CHECKING:
-    from .grid import FDataGrid
+    from ._ndfunction import NDFunction
+    from ...representation.grid import FDataGrid
 
 
 class _BaseInterpolation(Evaluator):
@@ -28,43 +37,39 @@ class _BaseInterpolation(Evaluator):
     def _evaluate_aligned(
         self,
         fdata: FDataGrid,
-        eval_points: EvaluationPoints,
-    ) -> NDArrayFloat:
+        eval_points: Array[InputDTypeT],
+    ) -> Array[OutputDTypeT]:
         """Evaluate at aligned points."""
         pass
 
     def _evaluate_unaligned(
         self,
         fdata: FDataGrid,
-        eval_points: EvaluationPoints,
-    ) -> NDArrayFloat:
+        eval_points: Array[InputDTypeT],
+    ) -> Array[OutputDTypeT]:
         """Evaluate at unaligned points."""
         return np.vstack([
             self._evaluate_aligned(f, e)
             for f, e in zip(fdata, eval_points)
         ])
 
-    def _evaluate(  # noqa: D102
+    @override
+    def __call__(  # noqa:D102
         self,
-        fdata: FDataGrid,
-        eval_points: ArrayLike,
+        function: NDFunction,
+        /,
+        eval_points: Array[InputDTypeT],
         *,
         aligned: bool = True,
-    ) -> NDArrayFloat:
+    ) -> Array[OutputDTypeT]:
+        from ...representation.grid import FDataGrid
 
-        from ..misc.validation import validate_evaluation_points
-
-        eval_points = validate_evaluation_points(
-            eval_points,
-            aligned=aligned,
-            n_samples=fdata.n_samples,
-            dim_domain=fdata.dim_domain,
-        )
+        assert isinstance(function, FDataGrid)
 
         return (
-            self._evaluate_aligned(fdata, eval_points)
+            self._evaluate_aligned(function, eval_points)
             if aligned
-            else self._evaluate_unaligned(fdata, eval_points)
+            else self._evaluate_unaligned(function, eval_points)
         )
 
 
@@ -100,8 +105,8 @@ class _RegularGridInterpolatorWrapper():
 
     def __call__(
         self,
-        eval_points: EvaluationPoints,
-    ) -> NDArrayFloat:
+        eval_points: Array[InputDTypeT],
+    ) -> Array[OutputDTypeT]:
         return np.moveaxis(
             self.interpolator(eval_points),
             0,
@@ -149,7 +154,7 @@ class SplineInterpolation(_BaseInterpolation):
     def _get_interpolator_1d(
         self,
         fdatagrid: FDataGrid,
-    ) -> Callable[[EvaluationPoints], NDArrayFloat]:
+    ) -> Callable[[Array[InputDTypeT]], Array[OutputDTypeT]]:
         if (
             isinstance(self.interpolation_order, Sequence)
             or not 1 <= self.interpolation_order <= 5
@@ -190,7 +195,7 @@ class SplineInterpolation(_BaseInterpolation):
     def _get_interpolator_nd(
         self,
         fdatagrid: FDataGrid,
-    ) -> Callable[[EvaluationPoints], NDArrayFloat]:
+    ) -> Callable[[Array[InputDTypeT]], Array[OutputDTypeT]]:
 
         return _RegularGridInterpolatorWrapper(
             fdatagrid,
@@ -200,7 +205,7 @@ class SplineInterpolation(_BaseInterpolation):
     def _get_interpolator(
         self,
         fdatagrid: FDataGrid,
-    ) -> Callable[[EvaluationPoints], NDArrayFloat]:
+    ) -> Callable[[Array[InputDTypeT]], Array[OutputDTypeT]]:
 
         if fdatagrid.dim_domain == 1:
             return self._get_interpolator_1d(fdatagrid)
@@ -216,8 +221,8 @@ class SplineInterpolation(_BaseInterpolation):
     def _evaluate_aligned(  # noqa: D102
         self,
         fdata: FDataGrid,
-        eval_points: EvaluationPoints,
-    ) -> NDArrayFloat:
+        eval_points: Array[InputDTypeT],
+    ) -> Array[OutputDTypeT]:
 
         interpolator = self._get_interpolator(fdata)
         return np.reshape(

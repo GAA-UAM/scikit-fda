@@ -7,15 +7,17 @@ objects of the package and contains some commons methods.
 from __future__ import annotations
 
 import warnings
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     Iterable,
     Iterator,
+    Literal,
     NoReturn,
     Optional,
+    Protocol,
     Sequence,
     TypeVar,
     Union,
@@ -26,30 +28,30 @@ from typing import (
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
-from typing_extensions import Literal, Protocol
+from typing_extensions import Self
 
-from .._utils import _evaluate_grid, _to_grid_points
-from ..typing._base import (
+from ...typing._base import (
     DomainRange,
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
 )
-from ..typing._numpy import (
+from ...typing._numpy import (
     ArrayLike,
     NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
     NDArrayObject,
 )
+from .._utils import _evaluate_grid, _to_grid_points
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
-    from .basis import Basis, FDataBasis
-    from .grid import FDataGrid
+    from ...representation.basis import Basis, FDataBasis
+    from ...representation.grid import FDataGrid
 
-T = TypeVar('T', bound='FData')
+T = TypeVar('T', bound='NDFunction')
 
 EvalPointsType = Union[
     ArrayLike,
@@ -58,26 +60,18 @@ EvalPointsType = Union[
 ]
 
 
-class FData(  # noqa: WPS214
-    ABC,
-    pandas.api.extensions.ExtensionArray,  # type: ignore[misc]
+class NDFunction(
+    Protocol,
 ):
-    """Defines the structure of a functional data object.
+    """
+    Protocol for an arbitrary-dimensional array of functions.
 
-    Attributes:
-        n_samples (int): Number of samples.
-        dim_domain (int): Dimension of the domain.
-        dim_codomain (int): Dimension of the image.
-        extrapolation (Extrapolation): Default extrapolation mode.
-        dataset_name (str): name of the dataset.
-        argument_names (tuple): tuple containing the names of the different
-            arguments.
-        coordinate_names (tuple): tuple containing the names of the different
-            coordinate functions.
-
+    Objects of this class define vectors, matrices or tensors containing
+    functions of a (multidimensional) array returning a (multidimensional)
+    array.
     """
 
-    dataset_name: Optional[str]
+    dataset_name: str | None
 
     def __init__(
         self,
@@ -190,7 +184,7 @@ class FData(  # noqa: WPS214
 
     @property
     @abstractmethod
-    def coordinates(self: T) -> _CoordinateSequence:
+    def coordinates(self) -> _CoordinateSequence:
         r"""Return a component of the FDataGrid.
 
         If the functional object contains multivariate samples
@@ -512,7 +506,7 @@ class FData(  # noqa: WPS214
             function at the values specified in eval_points.
 
         """
-        from ..misc.validation import validate_evaluation_points
+        from ...misc.validation import validate_evaluation_points
 
         if derivative != 0:
             warnings.warn(
@@ -606,7 +600,7 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def derivative(self: T, *, order: int = 1) -> T:
+    def derivative(self, *, order: int = 1) -> Self:
         """Differentiate a FData object.
 
         Args:
@@ -620,7 +614,7 @@ class FData(  # noqa: WPS214
 
     @abstractmethod
     def integrate(
-        self: T,
+        self,
         *,
         domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
@@ -765,13 +759,13 @@ class FData(  # noqa: WPS214
             Figure object in which the graphs are plotted.
 
         """
-        from ..exploratory.visualization.representation import GraphPlot
+        from ...exploratory.visualization.representation import GraphPlot
 
         return GraphPlot(self, *args, **kwargs).plot()
 
     @abstractmethod
     def copy(
-        self: T,
+        self,
         *,
         deep: bool = False,  # For Pandas compatibility
         dataset_name: Optional[str] = None,
@@ -779,20 +773,20 @@ class FData(  # noqa: WPS214
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
-    ) -> T:
+    ) -> Self:
         """Make a copy of the object."""
         pass
 
     @abstractmethod  # noqa: WPS125
     def sum(  # noqa: WPS125
-        self: T,
+        self,
         *,
         axis: int | None = None,
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
         min_count: int = 0,
-    ) -> T:
+    ) -> Self:
         """Compute the sum of all the samples.
 
         Args:
@@ -822,7 +816,7 @@ class FData(  # noqa: WPS214
 
     @overload
     def cov(  # noqa: WPS451
-        self: T,
+        self,
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
         /,
@@ -832,7 +826,7 @@ class FData(  # noqa: WPS214
 
     @overload
     def cov(  # noqa: WPS451
-        self: T,
+        self,
         /,
         correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
@@ -840,7 +834,7 @@ class FData(  # noqa: WPS214
 
     @abstractmethod
     def cov(  # noqa: WPS320, WPS451
-        self: T,
+        self,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
         /,
@@ -875,14 +869,14 @@ class FData(  # noqa: WPS214
         pass
 
     def mean(
-        self: T,
+        self,
         *,
         axis: int | None = None,
         dtype: None = None,
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
-    ) -> T:
+    ) -> Self:
         """Compute the mean of all the samples.
 
         Args:
@@ -947,7 +941,7 @@ class FData(  # noqa: WPS214
         pass
 
     @abstractmethod
-    def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
+    def concatenate(self, *others: Self, as_coordinates: bool = False) -> Self:
         """Join samples from a similar FData object.
 
         Joins samples from another FData object if it has the same
@@ -968,11 +962,11 @@ class FData(  # noqa: WPS214
 
     @abstractmethod
     def compose(
-        self: T,
-        fd: T,
+        self,
+        fd: Self,
         *,
         eval_points: Optional[NDArrayFloat] = None,
-    ) -> FData:
+    ) -> Self:
         """Composition of functions.
 
         Performs the composition of functions.
@@ -988,9 +982,9 @@ class FData(  # noqa: WPS214
 
     @abstractmethod
     def __getitem__(
-        self: T,
+        self,
         key: Union[int, slice, NDArrayInt],
-    ) -> T:
+    ) -> Self:
         """Return self[key]."""
         pass
 
@@ -1005,7 +999,7 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
+    def _eq_elemenwise(self, other: Self) -> NDArrayBool:
         """Elementwise equality."""
         pass
 
@@ -1040,10 +1034,10 @@ class FData(  # noqa: WPS214
         return ~result
 
     def _copy_op(
-        self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        self,
+        other: Union[Self, NDArrayFloat, NDArrayInt, float],
         **kwargs: Any,
-    ) -> T:
+    ) -> Self:
 
         base_copy = (
             other if isinstance(other, type(self))
@@ -1054,63 +1048,63 @@ class FData(  # noqa: WPS214
         return base_copy.copy(**kwargs)
 
     @abstractmethod
-    def __add__(self: T, other: T) -> T:
+    def __add__(self, other: Self) -> Self:
         """Addition for FData object."""
         pass
 
     @abstractmethod
-    def __radd__(self: T, other: T) -> T:
+    def __radd__(self, other: Self) -> Self:
         """Addition for FData object."""
         pass
 
     @abstractmethod
-    def __sub__(self: T, other: T) -> T:
+    def __sub__(self, other: Self) -> Self:
         """Subtraction for FData object."""
         pass
 
     @abstractmethod
-    def __rsub__(self: T, other: T) -> T:
+    def __rsub__(self, other: Self) -> Self:
         """Right subtraction for FData object."""
         pass
 
     @abstractmethod
     def __mul__(
-        self: T,
+        self,
         other: Union[NDArrayFloat, NDArrayInt, float],
-    ) -> T:
+    ) -> Self:
         """Multiplication for FData object."""
         pass
 
     @abstractmethod
     def __rmul__(
-        self: T,
+        self,
         other: Union[NDArrayFloat, NDArrayInt, float],
-    ) -> T:
+    ) -> Self:
         """Multiplication for FData object."""
         pass
 
     @abstractmethod
     def __truediv__(
-        self: T,
+        self,
         other: Union[NDArrayFloat, NDArrayInt, float],
-    ) -> T:
+    ) -> Self:
         """Division for FData object."""
         pass
 
     @abstractmethod
     def __rtruediv__(
-        self: T,
+        self,
         other: Union[NDArrayFloat, NDArrayInt, float],
-    ) -> T:
+    ) -> Self:
         """Right division for FData object."""
         pass
 
     @abstractmethod
-    def __neg__(self: T) -> T:
+    def __neg__(self) -> Self:
         """Negation of FData object."""
         pass
 
-    def __iter__(self: T) -> Iterator[T]:
+    def __iter__(self) -> Iterator[Self]:
         """Iterate over the samples."""
         yield from (self[i] for i in range(self.n_samples))
 
@@ -1202,10 +1196,10 @@ class FData(  # noqa: WPS214
 
     @abstractmethod
     def _take_allow_fill(
-        self: T,
+        self,
         indices: NDArrayInt,
-        fill_value: T,
-    ) -> T:
+        fill_value: Self,
+    ) -> Self:
         pass
 
     @abstractmethod
@@ -1213,12 +1207,12 @@ class FData(  # noqa: WPS214
         pass
 
     def take(  # noqa: WPS238
-        self: T,
+        self,
         indices: Union[int, Sequence[int], NDArrayInt],
         allow_fill: bool = False,
-        fill_value: Optional[T] = None,
+        fill_value: Optional[Self] = None,
         axis: int = 0,
-    ) -> T:
+    ) -> Self:
         """
         Take elements from an array.
 

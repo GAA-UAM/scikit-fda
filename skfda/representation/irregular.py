@@ -563,6 +563,23 @@ class FDataIrregular(FData):  # noqa: WPS214
     def _get_input_points(self: T) -> GridPoints:
         return self.points  # type: ignore[return-value]
 
+    def _get_common_points_and_values(
+        self: T,
+    ) -> Tuple[NDArrayFloat, NDArrayFloat]:
+        unique_points, counts = (
+            np.unique(self.points, axis=0, return_counts=True)
+        )
+        common_points = unique_points[counts == self.n_samples]
+
+        # Find which points are common to all curves by subtracting each point
+        # to each of the common points
+        subtraction = self.points[:, np.newaxis, :] - common_points
+        is_common_point = np.any(~np.any(subtraction, axis=-1), axis=-1)
+        common_points_values = self.values[is_common_point].reshape(
+            (self.n_samples, len(common_points), self.dim_codomain),
+        )
+        return common_points, common_points_values
+
     def sum(  # noqa: WPS125
         self: T,
         *,
@@ -595,32 +612,17 @@ class FDataIrregular(FData):  # noqa: WPS214
         """
         super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        unique_points, counts = (
-            np.unique(self.points, axis=0, return_counts=True)
-        )
-        common_points = unique_points[counts == self.n_samples]
+        common_points, common_values = self._get_common_points_and_values()
 
         if len(common_points) == 0:
             raise ValueError("No common points in FDataIrregular object")
 
-        sum_points = common_points[
-            np.lexsort(np.flip(common_points, axis=1).T),
-        ]
-
-        # Find which points are common to all curves by subtracting each point
-        # to each of the common points
-        subtraction = self.points[:, np.newaxis, :] - sum_points
-        is_common_point = np.any(~np.any(subtraction, axis=-1), axis=-1)
-        common_points_values = self.values[is_common_point].reshape(
-            (self.n_samples, len(sum_points), self.dim_codomain),
-        )
-
         sum_function = np.nansum if skipna else np.sum
-        sum_values = sum_function(common_points_values, axis=0)
+        sum_values = sum_function(common_values, axis=0)
 
         return FDataIrregular(
             start_indices=np.array([0]),
-            points=sum_points,
+            points=common_points,
             values=sum_values,
             sample_names=(None,),
         )

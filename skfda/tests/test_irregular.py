@@ -522,7 +522,22 @@ def test_fdatairregular_sum(
     """
     fdatairregular, expected_sum = fdatairregular_and_sum
     actual_sum = fdatairregular.sum()
-    assert actual_sum.equals(expected_sum), actual_sum
+    assert actual_sum.equals(expected_sum)
+
+
+def test_fdatairregular_mean(
+    fdatairregular_and_sum: Tuple[FDataIrregular, FDataIrregular],
+) -> None:
+    """Test the mean function for FDataIrregular.
+
+    Test both unidimensional and multidimensional.
+
+    Args:
+        fdatairregular_and_sum: FDataIrregular object and expected sum.
+    """
+    fdatairregular, expected_sum = fdatairregular_and_sum
+    actual_mean = fdatairregular.mean()
+    assert actual_mean.equals(expected_sum / fdatairregular.n_samples)
 
 
 def test_fdatairregular_sum_invalid(

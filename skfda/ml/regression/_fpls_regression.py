@@ -36,12 +36,6 @@ class FPLSRegression(
             applicable if X is a FDataBasis. Otherwise it must be None.
         weight_basis_Y: Basis to use for the Y block. Only
             applicable if Y is a FDataBasis. Otherwise it must be None.
-        _integration_weights_X: One-dimensional array with the integration
-            weights for the X block.
-            Only applicable if X is a FDataGrid. Otherwise it must be None.
-        _integration_weights_Y: One-dimensional array with the integration
-            weights for the Y block.
-            Only applicable if Y is a FDataGrid. Otherwise it must be None.
 
     Attributes:
         coef\_: Coefficients of the linear model.
@@ -54,6 +48,7 @@ class FPLSRegression(
         >>> from skfda.datasets import fetch_tecator
         >>> from skfda.representation import FDataGrid
         >>> from skfda.typing._numpy import NDArrayFloat
+
         >>> X, y = fetch_tecator(return_X_y=True)
         >>> fpls = FPLSRegression[FDataGrid, NDArrayFloat](n_components=2)
         >>> fpls = fpls.fit(X, y)
@@ -62,7 +57,7 @@ class FPLSRegression(
 
     def __init__(
         self,
-        n_components: int = 5,
+        n_components: int = 2,
         regularization_X: L2Regularization[Any] | None = None,
         weight_basis_X: Basis | None = None,
         weight_basis_Y: Basis | None = None,

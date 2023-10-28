@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Generic, Optional, Tuple, TypeVar, Union, cast
+from typing import Any, Generic, Literal, Optional, Tuple, TypeVar, Union, cast
 
 import numpy as np
 import scipy
@@ -184,12 +184,14 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
         >>> from skfda.datasets import fetch_tecator
         >>> from skfda.representation import FDataGrid
         >>> from skfda.typing._numpy import NDArrayFloat
+
         >>> X, y = fetch_tecator(return_X_y=True)
         >>> fpls = FPLS[FDataGrid, NDArrayFloat](n_components=2)
         >>> fpls = fpls.fit(X, y)
 
     """
 
+    # Attributes that must be defined in the subclasses
     mean: BlockType
     data_matrix: NDArrayFloat
     G_weights: NDArrayFloat
@@ -479,28 +481,32 @@ def _fpls_block_factory(
     if isinstance(data, np.ndarray):
         return cast(
             _FPLSBlock[BlockType],
-            _FPLSBlockMultivariate(data, n_components, label),
+            _FPLSBlockMultivariate(
+                data=data,
+                n_components=n_components,
+                label=label,
+            ),
         )
     elif isinstance(data, FDataBasis):
         return cast(
             _FPLSBlock[BlockType],
             _FPLSBlockBasis(
-                data,
-                n_components,
-                label,
-                regularization,
-                weights_basis,
+                data=data,
+                n_components=n_components,
+                label=label,
+                regularization=regularization,
+                weights_basis=weights_basis,
             ),
         )
     elif isinstance(data, FDataGrid):
         return cast(
             _FPLSBlock[BlockType],
             _FPLSBlockGrid(
-                data,
-                n_components,
-                label,
-                integration_weights,
-                regularization,
+                data=data,
+                n_components=n_components,
+                label=label,
+                integration_weights=integration_weights,
+                regularization=regularization,
             ),
         )
 
@@ -515,6 +521,8 @@ InputTypeY = TypeVar(
     "InputTypeY",
     bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
 )
+
+DeflationMode = Literal["reg", "can"]
 
 
 # Ignore too many public instance attributes
@@ -539,12 +547,6 @@ class FPLS(  # noqa: WPS230
             applicable if Y is a FDataBasis. Otherwise it must be None.
         _deflation_mode: Mode to use for deflation. Can be "can"
             (dimensionality reduction) or "reg" (regression).
-        _integration_weights_X: One-dimensional array with the integration
-            weights for the X block.
-            Only applicable if X is a FDataGrid. Otherwise it must be None.
-        _integration_weights_Y: One-dimensional array with the integration
-            weights for the Y block.
-            Only applicable if Y is a FDataGrid. Otherwise it must be None.
 
     Attributes:
         x_weights\_: (n_features_X, n_components) array with the X weights
@@ -572,7 +574,7 @@ class FPLS(  # noqa: WPS230
 
     def __init__(
         self,
-        n_components: int = 5,
+        n_components: int = 2,
         *,
         regularization_X: L2Regularization[InputTypeX] | None = None,
         regularization_Y: L2Regularization[InputTypeY] | None = None,
@@ -580,7 +582,7 @@ class FPLS(  # noqa: WPS230
         component_basis_Y: Basis | None = None,
         tol: float = 1e-6,
         max_iter: int = 500,
-        _deflation_mode: str = "can",
+        _deflation_mode: DeflationMode = "can",
         _integration_weights_X: NDArrayFloat | None = None,
         _integration_weights_Y: NDArrayFloat | None = None,
     ) -> None:

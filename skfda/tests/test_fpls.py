@@ -270,7 +270,7 @@ class TestFPLS(LatentVariablesModel):
         fpls.fit(X, y)
 
         fpls = FPLS(n_components=5)
-        
+
         # Check that a warning is raised when the rank is lower than the
         # number of components
         if rank < 5:

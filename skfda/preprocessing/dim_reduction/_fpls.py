@@ -634,8 +634,16 @@ class FPLS(  # noqa: WPS230
         L_Y_inv = self._y_block.get_cholesky_inv_penalty_matrix()
 
         # Determine some tolerances to stop the algorithm
-        x_epsilon = np.finfo(X.dtype).eps * np.linalg.norm(X)
-        y_epsilon = np.finfo(Y.dtype).eps * np.linalg.norm(Y)
+        x_epsilon = (
+            10
+            * np.finfo(X.dtype).eps
+            * np.abs(self._x_block.data_matrix).mean()
+        )
+        y_epsilon = (
+            10
+            * np.finfo(Y.dtype).eps
+            * np.abs(self._y_block.data_matrix).mean()
+        )
 
         for _ in range(self.n_components):
             w, c = _calculate_weights(
@@ -672,8 +680,12 @@ class FPLS(  # noqa: WPS230
             P.append(p)
             Q.append(q)
 
-            # Check if the algorithm has converged
-            if np.linalg.norm(X) < x_epsilon or np.linalg.norm(Y) < y_epsilon:
+            # Set to zero the values that are close to zero
+            X[abs(X) < x_epsilon] = 0
+            Y[abs(Y) < y_epsilon] = 0
+
+            # Stop if the matrix is all zeros
+            if np.all(X == 0) or np.all(Y == 0):
                 break
 
         # Convert each list of columns to a matrix

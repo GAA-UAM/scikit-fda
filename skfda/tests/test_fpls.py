@@ -231,6 +231,7 @@ class TestFPLS(LatentVariablesModel):
         )
 
     def _generate_random_matrix_by_rank(self, n_samples, n_features, rank):
+
         random_data = np.random.random(n_samples * rank).reshape(
             n_samples,
             rank,
@@ -252,6 +253,7 @@ class TestFPLS(LatentVariablesModel):
         """Check that the behaviour is correct with collinear matrices."""
         n_samples = 100
         n_features = 10
+        np.random.seed(0)
 
         X = self._generate_random_matrix_by_rank(
             n_samples=n_samples,
@@ -279,6 +281,7 @@ class TestFPLS(LatentVariablesModel):
         """Check error when number of components is too large."""
         n_samples = 100
         n_features = 10
+        np.random.seed(0)
 
         X = self._generate_random_matrix_by_rank(
             n_samples=n_samples,

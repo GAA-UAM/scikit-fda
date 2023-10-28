@@ -3,6 +3,7 @@
 from typing import Tuple
 
 import numpy as np
+import pytest
 from sklearn.cross_decomposition import PLSCanonical
 
 from skfda.datasets import fetch_tecator
@@ -228,3 +229,67 @@ class TestFPLS(LatentVariablesModel):
             fpsl_grid_y(grid_points),
             rtol=0.13,
         )
+
+    def _generate_random_matrix_by_rank(self, n_samples, n_features, rank):
+        random_data = np.random.random(n_samples * rank).reshape(
+            n_samples,
+            rank,
+        )
+        if rank == n_features:
+            return random_data
+        repeated_data = np.array([random_data[:, 0]] * (n_features - rank)).T
+
+        return np.concatenate(
+            [random_data, repeated_data],
+            axis=1,
+        )
+
+    @pytest.mark.parametrize("rank", [1, 2, 5])
+    def test_collinear_matrix(
+        self,
+        rank: int,
+    ) -> None:
+        """Check that the behaviour is correct with collinear matrices."""
+        n_samples = 100
+        n_features = 10
+
+        X = self._generate_random_matrix_by_rank(
+            n_samples=n_samples,
+            n_features=n_features,
+            rank=rank,
+        )
+        y = self._generate_random_matrix_by_rank(
+            n_samples=n_samples,
+            n_features=n_features,
+            rank=rank,
+        )
+
+        fpls = FPLS(n_components=rank)
+        fpls.fit(X, y)
+
+        fpls = FPLS(n_components=5)
+        fpls.fit(X, y)
+
+        # Check that only as many components as rank are returned
+        assert fpls.x_weights_.shape == (n_features, rank)
+
+    def test_number_of_components(
+        self,
+    ) -> None:
+        """Check error when number of components is too large."""
+        n_samples = 100
+        n_features = 10
+
+        X = self._generate_random_matrix_by_rank(
+            n_samples=n_samples,
+            n_features=n_features,
+            rank=n_features,
+        )
+        y = self._generate_random_matrix_by_rank(
+            n_samples=n_samples,
+            n_features=n_features,
+            rank=n_features,
+        )
+
+        with pytest.raises(ValueError):
+            FPLS(n_components=n_features + 1).fit(X, y)

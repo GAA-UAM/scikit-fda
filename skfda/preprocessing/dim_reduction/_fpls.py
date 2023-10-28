@@ -13,8 +13,6 @@ from ...representation import FDataGrid
 from ...representation.basis import Basis, FDataBasis, _GridBasis
 from ...typing._numpy import NDArrayFloat
 
-INV_EPS = 1e-15
-
 
 def _power_solver(
     X: NDArrayFloat,
@@ -23,7 +21,7 @@ def _power_solver(
 ) -> NDArrayFloat:
     """Return the dominant eigenvector of a matrix using the power method."""
     t = X[:, 0]
-    t_prev = np.ones(t.shape) * np.max(t) * 2
+    t_prev = np.ones(t.shape) * max(np.max(t), 1) * 2
     iter_count = 0
     while np.linalg.norm(t - t_prev) > tol:
         t_prev = t
@@ -104,13 +102,13 @@ def _calculate_weights(
     w = L_X_inv.T @ w
 
     # Normalize
-    w /= np.sqrt(np.dot(w.T, G_ww @ w)) + INV_EPS
+    w /= np.sqrt(np.dot(w.T, G_ww @ w))
 
     # Undo the transformation
     c = L_Y_inv.T @ c
 
     # Normalize the other weight
-    c /= np.sqrt(np.dot(c.T, G_cc @ c)) + INV_EPS
+    c /= np.sqrt(np.dot(c.T, G_cc @ c))
 
     return w, c
 
@@ -572,7 +570,8 @@ class FPLS(  # noqa: WPS230
 
     """
 
-    def __init__(
+    # Ignore too many arguments
+    def __init__(  # noqa: WPS211
         self,
         n_components: int = 2,
         *,
@@ -615,7 +614,8 @@ class FPLS(  # noqa: WPS230
             weights_basis=self.component_basis_Y,
         )
 
-    def _perform_nipals(self) -> None:
+    # Ignore too many local variables
+    def _perform_nipals(self) -> None:  # noqa: WPS210
         X = self._x_block.data_matrix
         Y = self._y_block.data_matrix
         X = X - np.mean(X, axis=0)
@@ -632,6 +632,10 @@ class FPLS(  # noqa: WPS230
         # Calculate the penalty matrices in advance
         L_X_inv = self._x_block.get_cholesky_inv_penalty_matrix()
         L_Y_inv = self._y_block.get_cholesky_inv_penalty_matrix()
+
+        # Determine some tolerances to stop the algorithm
+        x_epsilon = np.finfo(X.dtype).eps * np.linalg.norm(X)
+        y_epsilon = np.finfo(Y.dtype).eps * np.linalg.norm(Y)
 
         for _ in range(self.n_components):
             w, c = _calculate_weights(
@@ -650,12 +654,12 @@ class FPLS(  # noqa: WPS230
             t = np.dot(X @ self._x_block.G_data_weights, w)
             u = np.dot(Y @ self._y_block.G_data_weights, c)
 
-            p = np.dot(X.T, t) / (np.dot(t.T, t) + INV_EPS)
+            p = np.dot(X.T, t) / (np.dot(t.T, t))
 
             y_proyection = t if self._deflation_mode == "reg" else u
 
             q = np.dot(Y.T, y_proyection) / (
-                np.dot(y_proyection, y_proyection) + INV_EPS
+                np.dot(y_proyection, y_proyection)
             )
 
             X = X - np.outer(t, p)
@@ -667,6 +671,10 @@ class FPLS(  # noqa: WPS230
             U.append(u)
             P.append(p)
             Q.append(q)
+
+            # Check if the algorithm has converged
+            if np.linalg.norm(X) < x_epsilon or np.linalg.norm(Y) < y_epsilon:
+                break
 
         # Convert each list of columns to a matrix
         self.x_weights_ = np.array(W).T
@@ -692,6 +700,22 @@ class FPLS(  # noqa: WPS230
             self
         """
         self._initialize_blocks(X, y)
+
+        # In regression mode, the number of components is limited
+        # only by the rank of the X data matrix since components are
+        # only extracted from the X block.
+        if self._deflation_mode == "reg":
+            range_upper_bound = min(*self._x_block.data_matrix.shape)
+        else:
+            range_upper_bound = min(
+                *self._x_block.data_matrix.shape,
+                *self._y_block.data_matrix.shape,
+            )
+
+        if self.n_components > range_upper_bound:
+            raise ValueError(
+                f"n_components must be less or equal than {range_upper_bound}",
+            )
 
         self._perform_nipals()
 

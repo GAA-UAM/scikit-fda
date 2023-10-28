@@ -270,7 +270,14 @@ class TestFPLS(LatentVariablesModel):
         fpls.fit(X, y)
 
         fpls = FPLS(n_components=5)
-        fpls.fit(X, y)
+        
+        # Check that a warning is raised when the rank is lower than the
+        # number of components
+        if rank < 5:
+            with pytest.warns(UserWarning):
+                fpls.fit(X, y)
+        else:
+            fpls.fit(X, y)
 
         # Check that only as many components as rank are returned
         assert fpls.x_weights_.shape == (n_features, rank)

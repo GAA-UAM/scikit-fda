@@ -654,7 +654,7 @@ class FPLS(  # noqa: WPS230
                     "one of the matrices is completely deflated. "
                     f"The algorithm will return {n_comp} components,"
                     f"instead of {self.n_components}.",
-                    stacklevel=2,
+                    stacklevel=3,
                 )
                 break
 

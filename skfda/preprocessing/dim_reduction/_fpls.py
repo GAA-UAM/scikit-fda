@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from typing import Any, Generic, Literal, Optional, Tuple, TypeVar, Union, cast
+import warnings
 
 import numpy as np
 import scipy
@@ -645,7 +646,18 @@ class FPLS(  # noqa: WPS230
             * np.abs(self._y_block.data_matrix).mean()
         )
 
-        for _ in range(self.n_components):
+        for n_comp in range(self.n_components):
+            # Stop if either matrix is all zeros
+            if np.all(X == 0) or np.all(Y == 0):
+                warnings.warn(
+                    f"After extracting {n_comp} components, "
+                    "one of the matrices is completely deflated. "
+                    f"The algorithm will return {n_comp} components,"
+                    f"instead of {self.n_components}.",
+                    stacklevel=2,
+                )
+                break
+
             w, c = _calculate_weights(
                 X,
                 Y,
@@ -683,10 +695,6 @@ class FPLS(  # noqa: WPS230
             # Set to zero the values that are close to zero
             X[abs(X) < x_epsilon] = 0
             Y[abs(Y) < y_epsilon] = 0
-
-            # Stop if the matrix is all zeros
-            if np.all(X == 0) or np.all(Y == 0):
-                break
 
         # Convert each list of columns to a matrix
         self.x_weights_ = np.array(W).T

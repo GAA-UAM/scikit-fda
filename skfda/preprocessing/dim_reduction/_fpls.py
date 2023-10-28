@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import warnings
 from abc import abstractmethod
 from typing import Any, Generic, Literal, Optional, Tuple, TypeVar, Union, cast
-import warnings
 
 import numpy as np
 import scipy

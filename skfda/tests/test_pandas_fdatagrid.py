@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generator, NoReturn, Union
+from typing import Any, Callable, Generator, NoReturn, Sequence, Union
 
 import numpy as np
 import pandas
@@ -287,6 +287,20 @@ _all_numeric_reductions = [
 def all_numeric_reductions(request: Any) -> Any:
     """
     Fixture for numeric reduction names.
+    """
+    return request.param
+
+
+_all_boolean_reductions: Sequence[str] = [
+    # "all",
+    # "any",
+]
+
+
+@pytest.fixture(params=_all_boolean_reductions)
+def all_boolean_reductions(request: Any) -> Any:
+    """
+    Fixture for boolean reduction names.
     """
     return request.param
 

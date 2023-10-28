@@ -71,7 +71,7 @@ class DDClassifier(
     Depth-versus-depth (DD) classifer for functional data.
 
     Transforms the data into a DD-plot and then classifies using a polynomial
-    of a chosen degree\ :footcite:p:`li++_2012_ddclassifier`.
+    of a chosen degree :footcite:p:`li++_2012_ddclassifier`.
     The polynomial passes through zero and maximizes the accuracy of the
     classification on the train dataset.
 
@@ -117,7 +117,7 @@ class DDClassifier(
     See also:
         :class:`~skfda.ml.classification.DDGClassifier`
         :class:`~skfda.ml.classification.MaximumDepthClassifier`
-        :class:`~skfda.preprocessing.dim_reduction.feature_extraction._ddg_transformer`
+        :class:`~skfda.preprocessing.dim_reduction.feature_construction._ddg_transformer`
 
     References:
         .. footbibliography::
@@ -307,7 +307,7 @@ class DDGClassifier(
     See also:
         :class:`~skfda.ml.classification.DDClassifier`
         :class:`~skfda.ml.classification.MaximumDepthClassifier`
-        :class:`~skfda.preprocessing.dim_reduction.feature_extraction._ddg_transformer`
+        :class:`~skfda.preprocessing.dim_reduction.feature_construction._ddg_transformer`
 
     References:
         .. footbibliography::

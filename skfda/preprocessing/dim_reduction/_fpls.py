@@ -13,21 +13,24 @@ from ...representation import FData, FDataGrid
 from ...representation.basis import Basis, FDataBasis, _GridBasis
 from ...typing._numpy import NDArrayFloat
 
-POWER_SOLVER_EPS = 1e-15
 INV_EPS = 1e-15
 
 
-def _power_solver(X: NDArrayFloat) -> NDArrayFloat:
+def _power_solver(
+    X: NDArrayFloat,
+    tol: float,
+    max_iter: int,
+) -> NDArrayFloat:
     """Return the dominant eigenvector of a matrix using the power method."""
     t = X[:, 0]
     t_prev = np.ones(t.shape) * np.max(t) * 2
     iter_count = 0
-    while np.linalg.norm(t - t_prev) > POWER_SOLVER_EPS:
+    while np.linalg.norm(t - t_prev) > tol:
         t_prev = t
         t = X @ t
         t /= np.linalg.norm(t)
         iter_count += 1
-        if iter_count > 1000:
+        if iter_count > max_iter:
             break
     return t
 
@@ -41,62 +44,11 @@ def _calculate_weights(
     G_yc: NDArrayFloat,
     L_X_inv: NDArrayFloat,
     L_Y_inv: NDArrayFloat,
+    tol: float,
+    max_iter: int,
 ) -> Tuple[NDArrayFloat, NDArrayFloat]:
     """
     Calculate the weights for the PLS algorithm.
-
-    Parameters as in _pls_nipals.
-    Returns:
-        - w: (n_features, 1)
-            The X block weights.
-        - c: (n_targets, 1)
-            The Y block weights.
-    """
-    X = X @ G_xw @ L_X_inv.T
-    Y = Y @ G_yc @ L_Y_inv.T
-    S = X.T @ Y
-    w = _power_solver(S @ S.T)
-
-    # Calculate the other weight
-    c = np.dot(Y.T, np.dot(X, w))
-
-    # Undo the transformation
-    w = L_X_inv.T @ w
-
-    # Normalize
-    w /= np.sqrt(np.dot(w.T, G_ww @ w)) + INV_EPS
-
-    # Undo the transformation
-    c = L_Y_inv.T @ c
-
-    # Normalize the other weight
-    c /= np.sqrt(np.dot(c.T, G_cc @ c)) + INV_EPS
-
-    return w, c
-
-
-# ignore flake8 multi-line function annotation
-def _pls_nipals(  # noqa: WPS320
-    X: NDArrayFloat,
-    Y: NDArrayFloat,
-    n_components: int,
-    G_ww: NDArrayFloat,
-    G_xw: NDArrayFloat,
-    G_cc: NDArrayFloat,
-    G_yc: NDArrayFloat,
-    L_X_inv: NDArrayFloat,
-    L_Y_inv: NDArrayFloat,
-    deflation: str = "reg",
-) -> Tuple[
-    NDArrayFloat,
-    NDArrayFloat,
-    NDArrayFloat,
-    NDArrayFloat,
-    NDArrayFloat,
-    NDArrayFloat,
-]:
-    """
-    Perform the NIPALS algorithm for PLS.
 
     Parameters:
         - X: (n_samples, n_features)
@@ -128,76 +80,39 @@ def _pls_nipals(  # noqa: WPS320
             L_Y @ L_Y.T = G_cc + P_y,
             where P_y is a the penalty matrix for the Y block.
 
-        - deflation: The deflation method to use.
-            Can be "reg" for regression or "can" for dimensionality reduction.
+        - tol: The tolerance for the power method.
+        - max_iter: The maximum number of iterations for the power method.
     Returns:
-        - W: (n_features, n_components)
+        - w: (n_features, 1)
             The X block weights.
-        - C: (n_targets, n_components)
+        - c: (n_targets, 1)
             The Y block weights.
-        - T: (n_samples, n_components)
-            The X block scores.
-        - U: (n_samples, n_components)
-            The Y block scores.
-        - P: (n_features, n_components)
-            The X block loadings.
-        - Q: (n_targets, n_components)
-            The Y block loadings.
     """
-    X = X.copy()
-    Y = Y.copy()
-    X = X - np.mean(X, axis=0)
-    Y = Y - np.mean(Y, axis=0)
-
-    if len(Y.shape) == 1:
-        Y = Y[:, np.newaxis]
-
-    # Store the matrices as list of columns
-    W, C = [], []
-    T, U = [], []
-    P, Q = [], []
-    for _ in range(n_components):
-        w, c = _calculate_weights(
-            X,
-            Y,
-            G_ww=G_ww,
-            G_xw=G_xw,
-            G_cc=G_cc,
-            G_yc=G_yc,
-            L_X_inv=L_X_inv,
-            L_Y_inv=L_Y_inv,
-        )
-
-        t = np.dot(X @ G_xw, w)
-        u = np.dot(Y @ G_yc, c)
-
-        p = np.dot(X.T, t) / (np.dot(t.T, t) + INV_EPS)
-
-        y_proyection = t if deflation == "reg" else u
-
-        q = np.dot(Y.T, y_proyection) / (
-            np.dot(y_proyection, y_proyection) + INV_EPS
-        )
-
-        X = X - np.outer(t, p)
-        Y = Y - np.outer(y_proyection, q)
-
-        W.append(w)
-        C.append(c)
-        T.append(t)
-        U.append(u)
-        P.append(p)
-        Q.append(q)
-
-    # Convert each least of columns to a matrix
-    return (  # noqa: WPS227 (too long output tuple)
-        np.array(W).T,
-        np.array(C).T,
-        np.array(T).T,
-        np.array(U).T,
-        np.array(P).T,
-        np.array(Q).T,
+    X = X @ G_xw @ L_X_inv.T
+    Y = Y @ G_yc @ L_Y_inv.T
+    S = X.T @ Y
+    w = _power_solver(
+        S @ S.T,
+        tol=tol,
+        max_iter=max_iter,
     )
+
+    # Calculate the other weight
+    c = np.dot(Y.T, np.dot(X, w))
+
+    # Undo the transformation
+    w = L_X_inv.T @ w
+
+    # Normalize
+    w /= np.sqrt(np.dot(w.T, G_ww @ w)) + INV_EPS
+
+    # Undo the transformation
+    c = L_Y_inv.T @ c
+
+    # Normalize the other weight
+    c /= np.sqrt(np.dot(c.T, G_cc @ c)) + INV_EPS
+
+    return w, c
 
 
 BlockType = TypeVar(
@@ -601,6 +516,8 @@ class FPLS(  # noqa: WPS230
         regularization_Y: L2Regularization[InputTypeY] | None = None,
         component_basis_X: Basis | None = None,
         component_basis_Y: Basis | None = None,
+        tol: float = 1e-6,
+        max_iter: int = 500,
         _deflation_mode: str = "can",
         _integration_weights_X: NDArrayFloat | None = None,
         _integration_weights_Y: NDArrayFloat | None = None,
@@ -613,6 +530,8 @@ class FPLS(  # noqa: WPS230
         self.component_basis_X = component_basis_X
         self.component_basis_Y = component_basis_Y
         self._deflation_mode = _deflation_mode
+        self.tol = tol
+        self.max_iter = max_iter
 
     def _initialize_blocks(self, X: InputTypeX, Y: InputTypeY) -> None:
         self._x_block = _FPLSBlock(
@@ -632,6 +551,67 @@ class FPLS(  # noqa: WPS230
             weights_basis=self.component_basis_Y,
         )
 
+    def _perform_nipals(self) -> None:
+        X = self._x_block.data_matrix
+        Y = self._y_block.data_matrix
+        X = X - np.mean(X, axis=0)
+        Y = Y - np.mean(Y, axis=0)
+
+        if len(Y.shape) == 1:
+            Y = Y[:, np.newaxis]
+
+        # Store the matrices as list of columns
+        W, C = [], []
+        T, U = [], []
+        P, Q = [], []
+
+        # Calculate the penalty matrices in advance
+        L_X_inv = self._x_block.get_cholesky_inv_penalty_matrix()
+        L_Y_inv = self._y_block.get_cholesky_inv_penalty_matrix()
+
+        for _ in range(self.n_components):
+            w, c = _calculate_weights(
+                X,
+                Y,
+                G_ww=self._x_block.G_weights,
+                G_xw=self._x_block.G_data_weights,
+                G_cc=self._y_block.G_weights,
+                G_yc=self._y_block.G_data_weights,
+                L_X_inv=L_X_inv,
+                L_Y_inv=L_Y_inv,
+                tol=self.tol,
+                max_iter=self.max_iter,
+            )
+
+            t = np.dot(X @ self._x_block.G_data_weights, w)
+            u = np.dot(Y @ self._y_block.G_data_weights, c)
+
+            p = np.dot(X.T, t) / (np.dot(t.T, t) + INV_EPS)
+
+            y_proyection = t if self._deflation_mode == "reg" else u
+
+            q = np.dot(Y.T, y_proyection) / (
+                np.dot(y_proyection, y_proyection) + INV_EPS
+            )
+
+            X = X - np.outer(t, p)
+            Y = Y - np.outer(y_proyection, q)
+
+            W.append(w)
+            C.append(c)
+            T.append(t)
+            U.append(u)
+            P.append(p)
+            Q.append(q)
+
+        # Convert each list of columns to a matrix
+        self.x_weights_ = np.array(W).T
+        self.y_weights_ = np.array(C).T
+        self.x_scores_ = np.array(T).T
+        self.y_scores_ = np.array(U).T
+        self.x_loadings_matrix_ = np.array(P).T
+        self.y_loadings_matrix_ = np.array(Q).T
+
     def fit(
         self,
         X: InputTypeX,
@@ -649,33 +629,18 @@ class FPLS(  # noqa: WPS230
         """
         self._initialize_blocks(X, y)
 
-        # Supress flake8 warning about too many values to unpack
-        W, C, T, U, P, Q = _pls_nipals(  # noqa: WPS236
-            X=self._x_block.data_matrix,
-            Y=self._y_block.data_matrix,
-            n_components=self.n_components,
-            G_ww=self._x_block.G_weights,
-            G_xw=self._x_block.G_data_weights,
-            G_cc=self._y_block.G_weights,
-            G_yc=self._y_block.G_data_weights,
-            L_X_inv=self._x_block.get_cholesky_inv_penalty_matrix(),
-            L_Y_inv=self._y_block.get_cholesky_inv_penalty_matrix(),
-            deflation=self._deflation_mode,
+        self._perform_nipals()
+
+        self.x_rotations_matrix_ = self.x_weights_ @ np.linalg.pinv(
+            self.x_loadings_matrix_.T
+            @ self._x_block.G_data_weights
+            @ self.x_weights_,
         )
 
-        self.x_weights_ = W
-        self.y_weights_ = C
-        self.x_scores_ = T
-        self.y_scores_ = U
-        self.x_loadings_matrix_ = P
-        self.y_loadings_matrix_ = Q
-
-        self.x_rotations_matrix_ = W @ np.linalg.pinv(
-            P.T @ self._x_block.G_data_weights @ W,
-        )
-
-        self.y_rotation_matrix_ = C @ np.linalg.pinv(
-            Q.T @ self._y_block.G_data_weights @ C,
+        self.y_rotation_matrix_ = self.y_weights_ @ np.linalg.pinv(
+            self.y_loadings_matrix_.T
+            @ self._y_block.G_data_weights
+            @ self.y_weights_,
         )
 
         self._x_block.set_nipals_results(

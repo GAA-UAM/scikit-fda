@@ -282,6 +282,12 @@ class TestFPLS(LatentVariablesModel):
         # Check that only as many components as rank are returned
         assert fpls.x_weights_.shape == (n_features, rank)
 
+        # Check that the waring is not raised when the number of components
+        # is not set
+        fpls = FPLS().fit(X, y)
+        # Check that only as many components as rank are returned
+        assert fpls.x_weights_.shape == (n_features, rank)
+
     def test_number_of_components(
         self,
     ) -> None:

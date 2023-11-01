@@ -30,7 +30,8 @@ class FPLSRegression(
     Regression using Functional Partial Least Squares.
 
     Parameters:
-        n_components: Number of components to keep. Defaults to 5.
+        n_components: Number of components to keep.
+            By default all available components are utilized.
         regularization_X: Regularization for the calculation of the X weights.
         weight_basis_X: Basis to use for the X block. Only
             applicable if X is a FDataBasis. Otherwise it must be None.
@@ -57,7 +58,7 @@ class FPLSRegression(
 
     def __init__(
         self,
-        n_components: int = 2,
+        n_components: int | None = None,
         regularization_X: L2Regularization[Any] | None = None,
         weight_basis_X: Basis | None = None,
         weight_basis_Y: Basis | None = None,

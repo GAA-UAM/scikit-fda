@@ -422,7 +422,7 @@ class _FPLSBlockGrid(_FPLSBlock[FDataGrid]):
             ],
             coordinate_names=(f"FPLS {self.label} {title} value",),
             dataset_name=f"FPLS {self.label} {title}s",
-            sample_points=self.data.grid_points[0],
+            grid_points=self.data.grid_points[0],
         )
 
     def transform(

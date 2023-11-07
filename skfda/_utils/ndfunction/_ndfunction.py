@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import warnings
 from abc import abstractmethod
+from math import prod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -30,12 +31,7 @@ import pandas.api.extensions
 from matplotlib.figure import Figure
 from typing_extensions import Self
 
-from ...typing._base import (
-    DomainRange,
-    GridPointsLike,
-    LabelTuple,
-    LabelTupleLike,
-)
+from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
 from ...typing._numpy import (
     ArrayLike,
     NDArrayBool,
@@ -60,6 +56,82 @@ EvalPointsType = Union[
 ]
 
 
+def _extrapolation_index(
+    eval_points: NDArrayFloat,
+    domain_range: DomainRange,
+) -> NDArrayBool:
+    """Check the points that need to be extrapolated.
+
+    Args:
+        eval_points: Array with shape `n_eval_points` x
+            `dim_domain` with the evaluation points, or shape ´n_samples´ x
+            `n_eval_points` x `dim_domain` with different evaluation
+            points for each sample.
+
+    Returns:
+        Array with boolean index. The positions with True
+        in the index are outside the domain range and extrapolation
+        should be applied.
+
+    """
+    index = np.zeros(eval_points.shape[:-1], dtype=np.bool_)
+
+    # Checks bounds in each domain dimension
+    for i, bounds in enumerate(domain_range):
+        np.logical_or(index, eval_points[..., i] < bounds[0], out=index)
+        np.logical_or(index, eval_points[..., i] > bounds[1], out=index)
+
+    return index
+
+
+def _join_evaluation(
+    index_matrix: NDArrayBool,
+    index_ext: NDArrayBool,
+    index_ev: NDArrayBool,
+    res_extrapolation: NDArrayFloat,
+    res_evaluation: NDArrayFloat,
+    n_samples: int,
+    dim_codomain: int,
+) -> NDArrayFloat:
+    """
+    Join the points evaluated.
+
+    This method is used internally by :func:`evaluate` to join the result
+    of the evaluation and the result of the extrapolation.
+
+    Args:
+        index_matrix: Boolean index with the points extrapolated.
+        index_ext: Boolean index with the columns that contains
+            points extrapolated.
+        index_ev: Boolean index with the columns that contains
+            points evaluated.
+        res_extrapolation: Result of the extrapolation.
+        res_evaluation: Result of the evaluation.
+
+    Returns:
+        Matrix with the points evaluated with shape
+        `n_samples` x `number of points evaluated` x `dim_codomain`.
+
+    """
+    res = np.empty((
+        n_samples,
+        index_matrix.shape[-1],
+        dim_codomain,
+    ))
+
+    # Case aligned evaluation
+    if index_matrix.ndim == 1:
+        res[:, index_ev, :] = res_evaluation
+        res[:, index_ext, :] = res_extrapolation
+
+    else:
+
+        res[:, index_ev] = res_evaluation
+        res[index_matrix] = res_extrapolation[index_matrix[:, index_ext]]
+
+    return res
+
+
 class NDFunction(
     Protocol,
 ):
@@ -71,125 +143,72 @@ class NDFunction(
     array.
     """
 
-    dataset_name: str | None
-
     def __init__(
         self,
         *,
         extrapolation: Optional[ExtrapolationLike] = None,
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
     ) -> None:
 
         self.extrapolation = extrapolation  # type: ignore[assignment]
-        self.dataset_name = dataset_name
-
-        self.argument_names = argument_names  # type: ignore[assignment]
-        self.coordinate_names = coordinate_names  # type: ignore[assignment]
-        self.sample_names = sample_names  # type: ignore[assignment]
-
-    @property
-    def argument_names(self) -> LabelTuple:
-        return self._argument_names
-
-    @argument_names.setter
-    def argument_names(
-        self,
-        names: Optional[LabelTupleLike],
-    ) -> None:
-        if names is None:
-            names = (None,) * self.dim_domain
-        else:
-            names = tuple(names)
-            if len(names) != self.dim_domain:
-                raise ValueError(
-                    "There must be a name for each of the "
-                    "dimensions of the domain.",
-                )
-
-        self._argument_names = names
-
-    @property
-    def coordinate_names(self) -> LabelTuple:
-        return self._coordinate_names
-
-    @coordinate_names.setter
-    def coordinate_names(
-        self,
-        names: Optional[LabelTupleLike],
-    ) -> None:
-        if names is None:
-            names = (None,) * self.dim_codomain
-        else:
-            names = tuple(names)
-            if len(names) != self.dim_codomain:
-                raise ValueError(
-                    "There must be a name for each of the "
-                    "dimensions of the codomain.",
-                )
-
-        self._coordinate_names = names
-
-    @property
-    def sample_names(self) -> LabelTuple:
-        return self._sample_names
-
-    @sample_names.setter
-    def sample_names(self, names: Optional[LabelTupleLike]) -> None:
-        if names is None:
-            names = (None,) * self.n_samples
-        else:
-            names = tuple(names)
-            if len(names) != self.n_samples:
-                raise ValueError(
-                    "There must be a name for each of the samples.",
-                )
-
-        self._sample_names = names
 
     @property
     @abstractmethod
-    def n_samples(self) -> int:
-        """Return the number of samples.
+    def shape(self) -> tuple[int, ...]:
+        """
+        Return the shape of the array of functions.
 
         Returns:
-            Number of samples of the FData object.
+            A tuple containing the shape of the array containing the
+            functions.
+
+        """
+        pass
+
+    @property
+    def size(self) -> int:
+        """
+        Return the number of functions in the array.
+
+        Returns:
+            Number of functions in the array.
+
+        """
+        return prod(self.shape)
+
+    @property
+    @abstractmethod
+    def input_shape(self) -> tuple[int, ...]:
+        """
+        Return the shape of the n-dimensional input.
+
+        Returns:
+            A tuple containing the shape of the arrays that the functions
+            will accept.
 
         """
         pass
 
     @property
     @abstractmethod
-    def dim_domain(self) -> int:
-        """Return number of dimensions of the :term:`domain`.
+    def output_shape(self) -> tuple[int, ...]:
+        """
+        Return the shape of the n-dimensional output.
 
         Returns:
-            Number of dimensions of the domain.
+            A tuple containing the shape of the arrays that the functions
+            will output.
 
         """
         pass
 
     @property
     @abstractmethod
-    def dim_codomain(self) -> int:
-        """Return number of dimensions of the :term:`codomain`.
-
-        Returns:
-            Number of dimensions of the codomain.
-
+    def coordinates(self) -> Self:
         """
-        pass
+        View of the coordinate functions as an array.
 
-    @property
-    @abstractmethod
-    def coordinates(self) -> _CoordinateSequence:
-        r"""Return a component of the FDataGrid.
-
-        If the functional object contains multivariate samples
-        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
-        an iterator of the vector :math:`f = (f_1, ..., f_d)`.
+        The coordinate functions are the functions that output each of the
+        scalar values conforming the output array.
 
         """
         pass
@@ -197,12 +216,16 @@ class NDFunction(
     @property
     def extrapolation(self) -> Optional[Evaluator]:
         """Return default type of extrapolation."""
-        return self._extrapolation
+        return (  # type: ignore [no-any-return]
+            self._extrapolation  # type: ignore [attr-defined]
+        )
 
     @extrapolation.setter
     def extrapolation(self, value: Optional[ExtrapolationLike]) -> None:
         """Set the type of extrapolation."""
-        self._extrapolation = _parse_extrapolation(value)
+        self._extrapolation = (  # type: ignore [misc, attr-defined]
+            _parse_extrapolation(value)
+        )
 
     @property
     @abstractmethod
@@ -213,75 +236,6 @@ class NDFunction(
             List of tuples with the ranges for each domain dimension.
         """
         pass
-
-    def _extrapolation_index(self, eval_points: NDArrayFloat) -> NDArrayBool:
-        """Check the points that need to be extrapolated.
-
-        Args:
-            eval_points: Array with shape `n_eval_points` x
-                `dim_domain` with the evaluation points, or shape ´n_samples´ x
-                `n_eval_points` x `dim_domain` with different evaluation
-                points for each sample.
-
-        Returns:
-            Array with boolean index. The positions with True
-            in the index are outside the domain range and extrapolation
-            should be applied.
-
-        """
-        index = np.zeros(eval_points.shape[:-1], dtype=np.bool_)
-
-        # Checks bounds in each domain dimension
-        for i, bounds in enumerate(self.domain_range):
-            np.logical_or(index, eval_points[..., i] < bounds[0], out=index)
-            np.logical_or(index, eval_points[..., i] > bounds[1], out=index)
-
-        return index
-
-    def _join_evaluation(
-        self,
-        index_matrix: NDArrayBool,
-        index_ext: NDArrayBool,
-        index_ev: NDArrayBool,
-        res_extrapolation: NDArrayFloat,
-        res_evaluation: NDArrayFloat,
-    ) -> NDArrayFloat:
-        """Join the points evaluated.
-
-        This method is used internally by :func:`evaluate` to join the result
-        of the evaluation and the result of the extrapolation.
-
-        Args:
-            index_matrix: Boolean index with the points extrapolated.
-            index_ext: Boolean index with the columns that contains
-                points extrapolated.
-            index_ev: Boolean index with the columns that contains
-                points evaluated.
-            res_extrapolation: Result of the extrapolation.
-            res_evaluation: Result of the evaluation.
-
-        Returns:
-            Matrix with the points evaluated with shape
-            `n_samples` x `number of points evaluated` x `dim_codomain`.
-
-        """
-        res = np.empty((
-            self.n_samples,
-            index_matrix.shape[-1],
-            self.dim_codomain,
-        ))
-
-        # Case aligned evaluation
-        if index_matrix.ndim == 1:
-            res[:, index_ev, :] = res_evaluation
-            res[:, index_ext, :] = res_extrapolation
-
-        else:
-
-            res[:, index_ev] = res_evaluation
-            res[index_matrix] = res_extrapolation[index_matrix[:, index_ext]]
-
-        return res
 
     @abstractmethod
     def _evaluate(
@@ -554,7 +508,7 @@ class NDFunction(
 
         if extrapolation is not None:
 
-            index_matrix = self._extrapolation_index(eval_points)
+            index_matrix = _extrapolation_index(eval_points, self.domain_range)
 
             if index_matrix.any():
 
@@ -586,12 +540,14 @@ class NDFunction(
                     aligned=aligned,
                 )
 
-                return self._join_evaluation(
+                return _join_evaluation(
                     index_matrix,
                     index_ext,
                     index_ev,
                     res_extrapolation,
                     res_evaluation,
+                    n_samples=self.n_samples,
+                    dim_codomain=self.dim_codomain,
                 )
 
         return self._evaluate(

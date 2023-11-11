@@ -180,7 +180,7 @@ def fetch_ucr(
     The UCR/UEA Time Series Classification repository, hosted at
     www.timeseriesclassification.com includes plenty of
     classification problems with univariate and multivariate time series
-    \ :footcite:p:`dau++_2019_ucr,bagnall++_2018_uea`.
+    :footcite:p:`dau++_2019_ucr,bagnall++_2018_uea`.
     They are widely used in the functional data classification literature.
 
     Args:
@@ -293,6 +293,7 @@ _phoneme_descr = """
         Discriminant Analysis. Ann. Statist. 23 (1995), no. 1, 73--102.
         doi:10.1214/aos/1176324456.
         https://projecteuclid.org/euclid.aos/1176324456
+
     """
 
 
@@ -887,14 +888,15 @@ _aemet_descr = """
     Series of daily summaries of 73 spanish weather stations selected for the
     period 1980-2009. The dataset contains the geographic information of each
     station and the average for the period 1980-2009 of daily temperature,
-    daily precipitation and daily wind speed. Meteorological State Agency of
-    Spain (AEMET), http://www.aemet.es/. Government of Spain.
-
-    Authors:
-        Manuel Febrero Bande, Manuel Oviedo de la Fuente <manuel.oviedo@usc.es>
+    daily precipitation and daily wind speed.
 
     Source:
+        Meteorological State Agency of Spain (AEMET). (2009).
+        Meteorological data of Spanish weather stations between years 1980
+        and 2009. [dataset]. http://www.aemet.es/
+
         The data were obtained from the FTP of AEMET in 2009.
+
 """
 
 

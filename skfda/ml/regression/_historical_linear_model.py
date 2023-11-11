@@ -42,7 +42,7 @@ def _pairwise_fem_inner_product(
     eval_fd = fd(grid)
 
     prod = eval_fem * eval_fd
-    integral = scipy.integrate.simps(prod, grid, axis=1)
+    integral = scipy.integrate.simpson(prod, grid, axis=1)
     return np.sum(integral, axis=-1)  # type: ignore[no-any-return]
 
 

@@ -229,4 +229,5 @@ class FiniteElement(FiniteElementBasis):
             "The FiniteElement class is deprecated. Use "
             "FiniteElementBasis instead.",
             DeprecationWarning,
+            stacklevel=2,
         )

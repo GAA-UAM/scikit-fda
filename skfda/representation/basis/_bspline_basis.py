@@ -129,11 +129,10 @@ class BSplineBasis(Basis):
                 )
             n_basis = len(knots) + order - 2
 
-        if (n_basis - order + 2) < 2:
+        if n_basis < order:
             raise ValueError(
-                f"The number of basis ({n_basis}) minus the "
-                f"order of the bspline ({order}) should be "
-                f"greater than 3.",
+                f"The number of basis ({n_basis}) should not be smaller "
+                f"than the order of the bspline ({order}).",
             )
 
         self._order = order
@@ -461,6 +460,7 @@ class BSpline(BSplineBasis):
             knots=knots,
         )
         warnings.warn(
-            "The BSplines class is deprecated. Use BSplineBasis instead.",
+            "The BSpline class is deprecated. Use BSplineBasis instead.",
             DeprecationWarning,
+            stacklevel=2,
         )

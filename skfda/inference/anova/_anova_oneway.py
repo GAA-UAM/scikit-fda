@@ -182,7 +182,13 @@ def v_asymptotic_stat(
         .. footbibliography::
 
     """
-    return float(_v_asymptotic_stat_with_reps(*fd, weights=weights, p=p))
+    return float(
+        _v_asymptotic_stat_with_reps(
+            *fd,
+            weights=weights,
+            p=p,
+        ).reshape(())
+    )
 
 
 def _anova_bootstrap(
@@ -220,6 +226,7 @@ def _anova_bootstrap(
         cov_est = concatenate(fd_grouped).cov(
             grid_points,
             grid_points,
+            correction=1,
         )
         k_est = [cov_est] * len(fd_grouped)
     else:
@@ -228,6 +235,7 @@ def _anova_bootstrap(
             fdg.cov(
                 grid_points,
                 grid_points,
+                correction=1,
             )
             for fdg in fd_grouped
         ]

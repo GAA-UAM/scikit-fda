@@ -10,6 +10,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "_kernel_regression": ["KernelRegression"],
         "_linear_regression": ["LinearRegression"],
         "_fpca_regression": ["FPCARegression"],
+        "_fpls_regression": ["FPLSRegression"],
         "_neighbors_regression": [
             "KNeighborsRegressor",
             "RadiusNeighborsRegressor",
@@ -19,6 +20,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
 
 if TYPE_CHECKING:
     from ._fpca_regression import FPCARegression
+    from ._fpls_regression import FPLSRegression as FPLSRegression
     from ._historical_linear_model import (
         HistoricalLinearRegression as HistoricalLinearRegression,
     )

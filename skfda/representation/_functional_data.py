@@ -7,13 +7,22 @@ objects of the package and contains some commons methods.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TypeVar
 
+import numpy as np
 import pandas
 from typing_extensions import override
 
+from skfda._utils.ndfunction._region import AxisAlignedBox
+
 from .._utils.ndfunction import NDFunction, concatenate as concatenate
-from ..typing._base import LabelTuple, LabelTupleLike
+from .._utils.ndfunction._array_api import Array, DType
+from .._utils.ndfunction._region import Region
+from ..typing._base import DomainRange, LabelTuple, LabelTupleLike
 from .extrapolation import ExtrapolationLike
+
+InputDType = TypeVar('InputDType', bound=DType)
+OutputDType = TypeVar('OutputDType', bound=DType)
 
 
 class FData(  # noqa: WPS214
@@ -162,3 +171,21 @@ class FData(  # noqa: WPS214
     @property
     def output_shape(self) -> tuple[int, ...]:
         return (self.dim_codomain,)
+
+    @property
+    @abstractmethod
+    def domain_range(self) -> DomainRange:
+        """Return the :term:`domain` range of the object
+
+        Returns:
+            List of tuples with the ranges for each domain dimension.
+        """
+        pass
+
+    @override
+    @property
+    def domain(self) -> Region[InputDType]:
+        lower = np.array([d[0] for d in self.domain_range])
+        upper = np.array([d[1] for d in self.domain_range])
+
+        return AxisAlignedBox(lower, upper)

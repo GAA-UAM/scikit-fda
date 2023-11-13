@@ -14,6 +14,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -49,6 +50,9 @@ if TYPE_CHECKING:
     from .basis import Basis, FDataBasis
 
 T = TypeVar("T", bound='FDataGrid')
+
+
+AcceptedExtrapolation = Union[ExtrapolationLike, None, Literal["default"]]
 
 
 class FDataGrid(FData):  # noqa: WPS214
@@ -619,7 +623,7 @@ class FDataGrid(FData):  # noqa: WPS214
         self: T,
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
-        /,
+        / ,
         correction: int = 0,
     ) -> NDArrayFloat:
         pass
@@ -627,7 +631,7 @@ class FDataGrid(FData):  # noqa: WPS214
     @overload
     def cov(  # noqa: WPS451
         self: T,
-        /,
+        / ,
         correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
@@ -636,7 +640,7 @@ class FDataGrid(FData):  # noqa: WPS214
         self: T,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
-        /,
+        / ,
         correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
@@ -1147,7 +1151,7 @@ class FDataGrid(FData):  # noqa: WPS214
         shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid_points: Optional[GridPointsLike] = None,
     ) -> FDataGrid:
         r"""

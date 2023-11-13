@@ -1,7 +1,7 @@
 """Evaluation Transformer Module."""
 from __future__ import annotations
 
-from typing import TypeVar, overload
+from typing import TypeVar, Union, overload
 
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Literal
@@ -18,6 +18,9 @@ SelfType = TypeVar(
     "SelfType",
     bound="EvaluationTransformer",  # type: ignore[type-arg]
 )
+
+
+AcceptedExtrapolation = Union[ExtrapolationLike, None, Literal["default"]]
 
 
 class EvaluationTransformer(
@@ -107,7 +110,7 @@ class EvaluationTransformer(
         self: EvaluationTransformer[FDataGrid],
         eval_points: None = None,
         *,
-        extrapolation: ExtrapolationLike | None = None,
+        extrapolation: AcceptedExtrapolation = "default",
     ) -> None:
         pass
 
@@ -116,7 +119,7 @@ class EvaluationTransformer(
         self,
         eval_points: ArrayLike,
         *,
-        extrapolation: ExtrapolationLike | None = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[False] = False,
     ) -> None:
         pass
@@ -126,7 +129,7 @@ class EvaluationTransformer(
         self,
         eval_points: GridPointsLike,
         *,
-        extrapolation: ExtrapolationLike | None = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[True],
     ) -> None:
         pass
@@ -135,7 +138,7 @@ class EvaluationTransformer(
         self,
         eval_points: ArrayLike | GridPointsLike | None = None,
         *,
-        extrapolation: ExtrapolationLike | None = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: bool = False,
     ) -> None:
         self.eval_points = eval_points

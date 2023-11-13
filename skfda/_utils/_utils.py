@@ -45,6 +45,8 @@ if TYPE_CHECKING:
     Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
     Target = TypeVar("Target", bound=NDArrayInt)
 
+    AcceptedExtrapolation = Union[ExtrapolationLike, None, Literal["default"]]
+
 
 _MapAcceptableSelf = TypeVar(
     "_MapAcceptableSelf",
@@ -268,7 +270,7 @@ class EvaluateMethod(Protocol):
     def __call__(
         self,
         __eval_points: NDArrayFloat,  # noqa: WPS112
-        extrapolation: Optional[ExtrapolationLike],
+        extrapolation: AcceptedExtrapolation,
         aligned: bool,
     ) -> NDArrayFloat:
         """Evaluate a function."""
@@ -283,7 +285,7 @@ def _evaluate_grid(
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: AcceptedExtrapolation = "default",
     aligned: Literal[True] = True,
 ) -> NDArrayFloat:
     pass
@@ -297,7 +299,7 @@ def _evaluate_grid(
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: AcceptedExtrapolation = "default",
     aligned: Literal[False],
 ) -> NDArrayFloat:
     pass
@@ -311,7 +313,7 @@ def _evaluate_grid(
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: AcceptedExtrapolation = "default",
     aligned: bool,
 ) -> NDArrayFloat:
     pass
@@ -324,7 +326,7 @@ def _evaluate_grid(  # noqa: WPS234
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: AcceptedExtrapolation = "default",
     aligned: bool = True,
 ) -> NDArrayFloat:
     """

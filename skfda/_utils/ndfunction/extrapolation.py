@@ -83,6 +83,7 @@ class PeriodicExtrapolation(Evaluator):
         return function(  # type: ignore[no-any-return]
             eval_points,
             aligned=aligned,
+            extrapolation=None,
         )
 
 
@@ -141,6 +142,7 @@ class BoundaryExtrapolation(Evaluator):
         return function(  # type: ignore[no-any-return]
             eval_points,
             aligned=aligned,
+            extrapolation=None,
         )
 
 

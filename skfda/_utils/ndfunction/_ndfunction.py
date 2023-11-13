@@ -28,6 +28,7 @@ from typing import (
 
 import numpy as np
 import pandas.api.extensions
+from array_api_compat import array_namespace
 from matplotlib.figure import Figure
 from typing_extensions import Self
 
@@ -40,6 +41,8 @@ from ...typing._numpy import (
     NDArrayObject,
 )
 from .._utils import _evaluate_grid, _to_grid_points
+from ._array_api import Array, BoolDType, DType
+from ._region import Region
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
@@ -48,6 +51,8 @@ if TYPE_CHECKING:
     from ...representation.grid import FDataGrid
 
 T = TypeVar('T', bound='NDFunction')
+InputDType = TypeVar('InputDType', bound=DType)
+OutputDType = TypeVar('OutputDType', bound=DType)
 
 EvalPointsType = Union[
     ArrayLike,
@@ -55,33 +60,7 @@ EvalPointsType = Union[
     Iterable[GridPointsLike],
 ]
 
-
-def _extrapolation_index(
-    eval_points: NDArrayFloat,
-    domain_range: DomainRange,
-) -> NDArrayBool:
-    """Check the points that need to be extrapolated.
-
-    Args:
-        eval_points: Array with shape `n_eval_points` x
-            `dim_domain` with the evaluation points, or shape ´n_samples´ x
-            `n_eval_points` x `dim_domain` with different evaluation
-            points for each sample.
-
-    Returns:
-        Array with boolean index. The positions with True
-        in the index are outside the domain range and extrapolation
-        should be applied.
-
-    """
-    index = np.zeros(eval_points.shape[:-1], dtype=np.bool_)
-
-    # Checks bounds in each domain dimension
-    for i, bounds in enumerate(domain_range):
-        np.logical_or(index, eval_points[..., i] < bounds[0], out=index)
-        np.logical_or(index, eval_points[..., i] > bounds[1], out=index)
-
-    return index
+AcceptedExtrapolation = Union[ExtrapolationLike, None, Literal["default"]]
 
 
 def _join_evaluation(
@@ -132,9 +111,7 @@ def _join_evaluation(
     return res
 
 
-class NDFunction(
-    Protocol,
-):
+class NDFunction(Protocol):
     """
     Protocol for an arbitrary-dimensional array of functions.
 
@@ -152,38 +129,41 @@ class NDFunction(
         self.extrapolation = extrapolation  # type: ignore[assignment]
 
     @property
+    def ndim(self) -> int:
+        """
+        Shape of the array of functions.
+
+        It is a tuple representing the shape of the array containing the
+        functions.
+
+        """
+        return len(self.shape)
+
+    @property
     @abstractmethod
     def shape(self) -> tuple[int, ...]:
         """
-        Return the shape of the array of functions.
+        Shape of the array of functions.
 
-        Returns:
-            A tuple containing the shape of the array containing the
-            functions.
+        It is a tuple representing the shape of the array containing the
+        functions.
 
         """
         pass
 
     @property
     def size(self) -> int:
-        """
-        Return the number of functions in the array.
-
-        Returns:
-            Number of functions in the array.
-
-        """
+        """Number of functions in the array."""
         return prod(self.shape)
 
     @property
     @abstractmethod
     def input_shape(self) -> tuple[int, ...]:
         """
-        Return the shape of the n-dimensional input.
+        Shape of the n-dimensional input.
 
-        Returns:
-            A tuple containing the shape of the arrays that the functions
-            will accept.
+        It is a tuple representing the shape of the arrays that the
+        functions will accept.
 
         """
         pass
@@ -192,11 +172,10 @@ class NDFunction(
     @abstractmethod
     def output_shape(self) -> tuple[int, ...]:
         """
-        Return the shape of the n-dimensional output.
+        Shape of the n-dimensional output.
 
-        Returns:
-            A tuple containing the shape of the arrays that the functions
-            will output.
+        It is a tuple representing the shape of the arrays that the
+        functions will output.
 
         """
         pass
@@ -214,27 +193,22 @@ class NDFunction(
         pass
 
     @property
-    def extrapolation(self) -> Optional[Evaluator]:
-        """Return default type of extrapolation."""
+    def extrapolation(self) -> Evaluator | None:
+        """Extrapolation used for evaluating values outside the bounds."""
         return (  # type: ignore [no-any-return]
             self._extrapolation  # type: ignore [attr-defined]
         )
 
     @extrapolation.setter
-    def extrapolation(self, value: Optional[ExtrapolationLike]) -> None:
-        """Set the type of extrapolation."""
+    def extrapolation(self, value: ExtrapolationLike | None) -> None:
         self._extrapolation = (  # type: ignore [misc, attr-defined]
             _parse_extrapolation(value)
         )
 
     @property
     @abstractmethod
-    def domain_range(self) -> DomainRange:
-        """Return the :term:`domain` range of the object
-
-        Returns:
-            List of tuples with the ranges for each domain dimension.
-        """
+    def domain(self) -> Region[InputDType]:
+        """Domain of the function."""
         pass
 
     @abstractmethod
@@ -273,7 +247,7 @@ class NDFunction(
         eval_points: ArrayLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[False] = False,
         aligned: Literal[True] = True,
     ) -> NDArrayFloat:
@@ -285,7 +259,7 @@ class NDFunction(
         eval_points: Iterable[ArrayLike],
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[False] = False,
         aligned: Literal[False],
     ) -> NDArrayFloat:
@@ -297,7 +271,7 @@ class NDFunction(
         eval_points: GridPointsLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[True],
         aligned: Literal[True] = True,
     ) -> NDArrayFloat:
@@ -309,7 +283,7 @@ class NDFunction(
         eval_points: Iterable[GridPointsLike],
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[True],
         aligned: Literal[False],
     ) -> NDArrayFloat:
@@ -320,7 +294,7 @@ class NDFunction(
         eval_points: EvalPointsType,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: bool = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -378,7 +352,7 @@ class NDFunction(
         eval_points: ArrayLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[False] = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -390,7 +364,7 @@ class NDFunction(
         eval_points: GridPointsLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[True],
         aligned: Literal[True] = True,
     ) -> NDArrayFloat:
@@ -402,7 +376,7 @@ class NDFunction(
         eval_points: Iterable[GridPointsLike],
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: Literal[True],
         aligned: Literal[False],
     ) -> NDArrayFloat:
@@ -414,7 +388,7 @@ class NDFunction(
         eval_points: EvalPointsType,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: bool = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -425,7 +399,7 @@ class NDFunction(
         eval_points: EvalPointsType,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid: bool = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -487,7 +461,7 @@ class NDFunction(
                 aligned=aligned,
             )
 
-        if extrapolation is None:
+        if extrapolation == "default":
             extrapolation = self.extrapolation
         else:
             # Gets the function to perform extrapolation or None
@@ -508,7 +482,7 @@ class NDFunction(
 
         if extrapolation is not None:
 
-            index_matrix = _extrapolation_index(eval_points, self.domain_range)
+            index_matrix = ~self.domain.contains(eval_points)
 
             if index_matrix.any():
 
@@ -600,7 +574,7 @@ class NDFunction(
         shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid_points: Optional[GridPointsLike] = None,
     ) -> FDataGrid:
         r"""
@@ -775,7 +749,7 @@ class NDFunction(
         self,
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
-        /,
+        / ,
         correction: int = 0,
     ) -> NDArrayFloat:
         pass
@@ -783,7 +757,7 @@ class NDFunction(
     @overload
     def cov(  # noqa: WPS451
         self,
-        /,
+        / ,
         correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
@@ -793,7 +767,7 @@ class NDFunction(
         self,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
-        /,
+        / ,
         correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],

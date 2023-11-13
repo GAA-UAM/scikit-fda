@@ -298,10 +298,10 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         fd = reg.fit_transform(self.fd)
         fd = reg.inverse_transform(fd)
 
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             fd.data_matrix,
             self.fd.data_matrix,
-            decimal=3,
+            rtol=1e-3,
         )
 
     def test_raises(self) -> None:

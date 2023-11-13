@@ -8,3 +8,4 @@ import numpy.typing as nptypes
 DType = np.generic
 DTypeT = TypeVar("DTypeT", bound=DType)
 Array = nptypes.NDArray[DTypeT]
+BoolDType = np.bool_

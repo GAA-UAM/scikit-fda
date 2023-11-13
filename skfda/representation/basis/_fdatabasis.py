@@ -7,6 +7,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Literal,
     Optional,
     Sequence,
     Type,
@@ -31,6 +32,9 @@ if TYPE_CHECKING:
     from . import Basis
 
 T = TypeVar('T', bound='FDataBasis')
+
+
+AcceptedExtrapolation = Union[ExtrapolationLike, None, Literal["default"]]
 
 
 class FDataBasis(FData):  # noqa: WPS214
@@ -271,7 +275,7 @@ class FDataBasis(FData):  # noqa: WPS214
         shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: AcceptedExtrapolation = "default",
         grid_points: Optional[GridPointsLike] = None,
     ) -> FDataGrid:
         r"""
@@ -477,7 +481,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self: T,
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
-        /,
+        / ,
         correction: int = 0,
     ) -> NDArrayFloat:
         pass
@@ -485,7 +489,7 @@ class FDataBasis(FData):  # noqa: WPS214
     @overload
     def cov(    # noqa: WPS451
         self: T,
-        /,
+        / ,
         correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
@@ -494,7 +498,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self: T,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
-        /,
+        / ,
         correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],

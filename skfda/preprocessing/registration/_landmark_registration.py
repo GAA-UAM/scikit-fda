@@ -5,7 +5,7 @@ This module contains methods to perform the landmark registration.
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, Literal, Optional, Sequence, Union
 
 import numpy as np
 
@@ -119,7 +119,7 @@ def landmark_shift_registration(
     location: Union[_FixedLocation, _LocationCallable, None] = None,
     *,
     restrict_domain: bool = False,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: Optional[ExtrapolationLike] | Literal["default"] = "default",
     grid_points: Optional[GridPointsLike] = None,
 ) -> FDataGrid:
     r"""

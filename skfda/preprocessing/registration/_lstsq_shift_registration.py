@@ -118,7 +118,7 @@ class LeastSquaresShiftRegistration(
         Shifts applied during the transformation
 
         >>> reg.deltas_.round(3)
-        array([-0.131,  0.188,  0.026,  0.033, -0.109,  0.115, ..., -0.062])
+        array([-0.128,  0.187,  0.027,  0.034, -0.106,  0.114,  ..., -0.06 ])
 
 
         Registration of a dataset in basis form using the
@@ -143,7 +143,7 @@ class LeastSquaresShiftRegistration(
         max_iter: int = 5,
         tol: float = 1e-2,
         template: Union[Literal["mean"], FData, TemplateFunction] = "mean",
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] | Literal["default"] = "default",
         step_size: float = 1,
         restrict_domain: bool = False,
         initial: Union[Literal["zeros"], ArrayLike] = "zeros",
@@ -216,7 +216,11 @@ class LeastSquaresShiftRegistration(
         while max_diff > self.tol and self.n_iter_ < self.max_iter:
 
             # Computes the new values shifted
-            x = fd.shift(delta, grid_points=self.grid_points)
+            x = fd.shift(
+                delta,
+                grid_points=self.grid_points,
+                extrapolation=self.extrapolation,
+            )
 
             if isinstance(template, str):
                 assert template == "mean"
@@ -384,7 +388,7 @@ class ShiftRegistration(LeastSquaresShiftRegistration[T]):
         max_iter: int = 5,
         tol: float = 1e-2,
         template: Union[Literal["mean"], FData, TemplateFunction] = "mean",
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] | Literal["default"] = "default",
         step_size: float = 1,
         restrict_domain: bool = False,
         initial: Union[Literal["zeros"], ArrayLike] = "zeros",

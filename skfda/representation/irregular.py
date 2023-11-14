@@ -1225,59 +1225,60 @@ class FDataIrregular(FData):  # noqa: WPS214
     def restrict(  # noqa: WPS210
         self: T,
         domain_range: DomainRangeLike,
+        *,
+        with_bounds: bool = False,
     ) -> T:
         """
         Restrict the functions to a new domain range.
 
         Args:
             domain_range: New domain range.
+            with_bounds: Whether or not to ensure domain boundaries
+                appear in `grid_points`.
 
         Returns:
             T: Restricted function.
 
         """
+        if with_bounds:  # To do
+            raise NotImplementedError('Not yet implemented for FDataIrregular')
+
         from ..misc.validation import validate_domain_range
 
-        domain_range = validate_domain_range(domain_range)
+        npdr = np.asarray(validate_domain_range(domain_range))  # (dim, 2)
 
         head = 0
-        indices = []
-        arguments = []
+        start_indices = []
+        points = []
         values = []
         sample_names = []
 
         # Eliminate points outside the new range.
         # Must also modify function indices to point to new array
 
-        slice_points = np.split(self.points, self.start_indices[1:])
-        slice_values = np.split(self.values, self.start_indices[1:])
+        for sample_points, sample_values, sample_name in zip(
+                    self.points_split,  # (num_points, dim)
+                    self.values_split,
+                    self.sample_names,
+            ):
 
-        for i, points_values in enumerate(zip(slice_points, slice_values)):
-            sample_points, sample_values = points_values
-            masks = set(range(sample_points.shape[0]))
-            for dim, dr in enumerate(domain_range):
-                dr_start, dr_end = dr
-                select_mask = np.where(
-                    (
-                        (dr_start <= sample_points[:, dim])
-                        & (sample_points[:, dim] <= dr_end)
-                    ),
-                )
-
-                masks = masks.intersection(set(select_mask[0]))
+            mask = np.all(
+                (npdr[:, 0] <= sample_points) & (sample_points <= npdr[:, 1]),
+                axis=1,
+            )
 
             # Do not keep functions with no values.
-            masks = list(masks)
-            if len(masks) > 0:
-                indices.append(head)
-                arguments.append(sample_points[masks, :])
-                values.append(sample_values[masks, :])
-                sample_names.append(self.sample_names[i])
-                head += len(masks)
+            num_valid_points = mask.sum()
+            if num_valid_points:
+                start_indices.append(head)
+                points.append(sample_points[mask])
+                values.append(sample_values[mask])
+                sample_names.append(sample_name)
+                head += num_valid_points
 
         return self.copy(
-            start_indices=np.array(indices),
-            points=np.concatenate(arguments),
+            start_indices=np.array(start_indices),
+            points=np.concatenate(points),
             values=np.concatenate(values),
             sample_names=sample_names,
             domain_range=domain_range,
@@ -1549,10 +1550,7 @@ class FDataIrregularDType(
         self.dim_domain = points.shape[1]
 
         if domain_range is None:
-            sample_range = _get_sample_range_from_data(
-                self.start_indices,
-                self.points,
-            )
+            sample_range = _get_sample_range_from_data(self.points_split)
             domain_range = _get_domain_range_from_sample_range(sample_range)
 
         self.domain_range = validate_domain_range(domain_range)

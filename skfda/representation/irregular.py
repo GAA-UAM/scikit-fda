@@ -44,8 +44,7 @@ T = TypeVar("T", bound='FDataIrregular')
 
 
 def _get_sample_range_from_data(
-    start_indices: NDArrayInt,
-    points: NDArrayFloat,
+    points_split: list[NDArrayFloat],
 ) -> DomainRange:
     """Compute the domain ranges of each sample.
 
@@ -62,7 +61,7 @@ def _get_sample_range_from_data(
         tuple(
             zip(np.min(f_points, axis=0), np.max(f_points, axis=0)),
         )
-        for f_points in np.split(points, start_indices[1:])
+        for f_points in points_split
     )
 
 
@@ -223,10 +222,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         self.points = sorted_arguments
         self.values = sorted_values
 
-        self._sample_range = _get_sample_range_from_data(
-            self.start_indices,
-            self.points,
-        )
+        self._sample_range = _get_sample_range_from_data(self.points_split)
 
         # Default value for sample_range is a list of tuples with
         # the first and last arguments of each curve for each dimension
@@ -383,8 +379,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
         """
-        slice_args = np.split(self.points, self.start_indices[1:])
-        slice_values = np.split(self.values, self.start_indices[1:])
+        slice_args = self.points_split
+        slice_values = self.values_split
 
         # Sort lexicographically, first to last dimension
         sorting_masks = [
@@ -457,6 +453,14 @@ class FDataIrregular(FData):  # noqa: WPS214
     @property
     def n_samples(self) -> int:
         return self.start_indices.shape[0]
+
+    @property
+    def points_split(self) -> NDArrayFloat:
+        return np.split(self.points, self.start_indices[1:])
+
+    @property
+    def values_split(self) -> NDArrayFloat:
+        return np.split(self.values, self.start_indices[1:])
 
     @property
     def sample_range(self) -> DomainRange:

@@ -206,16 +206,14 @@ class FDataIrregular(FData):  # noqa: WPS214
         """Construct a FDataIrregular object."""
         self.start_indices = np.asarray(start_indices)
         self.points = np.asarray(points)
-        if len(self.points.shape) == 1:
+        if self.points.ndim == 1:
             self.points = self.points.reshape(-1, 1)
         self.values = np.asarray(values)
-        if len(self.values.shape) == 1:
+        if self.values.ndim == 1:
             self.values = self.values.reshape(-1, 1)
 
-        if self.points.shape[0] != self.values.shape[0]:
-            raise ValueError(
-                "Dimension mismatch in points and values",
-            )
+        if len(self.points) != len(self.values):
+            raise ValueError("Dimension mismatch in points and values")
 
         if max(self.start_indices) >= len(self.points):
             raise ValueError("Index in start_indices out of bounds")

@@ -31,7 +31,7 @@ def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     """Transform 1d arrays in column vectors."""
     t = np.asfarray(t)
 
-    dim = len(t.shape)
+    dim = t.ndim
     assert dim <= 2
 
     if dim < 2:

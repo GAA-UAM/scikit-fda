@@ -7,6 +7,7 @@ data function, and the overall density of the observations may be low
 """
 from __future__ import annotations
 
+import itertools
 import numbers
 from typing import (
     Any, Optional, Sequence, Tuple, Type, TypeVar, Union,
@@ -931,67 +932,36 @@ class FDataIrregular(FData):  # noqa: WPS214
                 "Not implemented for as_coordinates = True",
             )
         # Verify that dimensions are compatible
-        assert len(others) > 0, "No objects to concatenate"
-        self.check_same_dimensions(others[0])
-        if len(others) > 1:
-            for x, y in zip(others, others[1:]):
-                x.check_same_dimensions(y)
+        assert others, "No objects to concatenate"
+        all_ = (self,) + others
+        start_indices_split = []
+        total_points = 0
+        points_split = []
+        values_split = []
+        total_sample_names_split = []
+        domain_range_split = []
+        for x, y in itertools.pairwise(all_ + (self,)):
+            x.check_same_dimensions(y)
+            start_indices_split.append(x.start_indices + total_points)
+            total_points += len(x.points)
+            points_split.append(x.points)
+            values_split.append(x.values)
+            total_sample_names_split.append(x.sample_names)
+            domain_range_split.append(x.domain_range)
 
-        # Allocate all required memory
-        total_functions = self.n_samples + sum(
-            [
-                o.n_samples
-                for o in others
-            ],
-        )
-        total_values = len(self.points) + sum(
-            [
-                len(o.points)
-                for o in others
-            ],
-        )
-        total_sample_names = []
-        start_indices = np.zeros((total_functions, ), dtype=np.uint32)
-        function_args = np.zeros(
-            (total_values, self.dim_domain),
-        )
-        values = np.zeros(
-            (total_values, self.dim_codomain),
-        )
-        index = 0
-        head = 0
-
-        # Add samples sequentially
-        for f_data in [self] + list(others):
-            start_indices[
-                index:index + f_data.n_samples
-            ] = f_data.start_indices
-            function_args[
-                head:head + len(f_data.points)
-            ] = f_data.points
-            values[
-                head:head + len(f_data.points)
-            ] = f_data.values
-            # Adjust pointers to the concatenated array
-            start_indices[index:index + f_data.n_samples] += head
-            index += f_data.n_samples
-            head += len(f_data.points)
-            total_sample_names = total_sample_names + list(f_data.sample_names)
-
-        # Check domain range
-        domain_range = [list(r) for r in self.domain_range]
-        for dim in range(self.dim_domain):
-            dim_max = np.max(function_args[:, dim])
-            dim_min = np.min(function_args[:, dim])
-
-            if dim_max > self.domain_range[dim][1]:
-                domain_range[dim][1] = dim_max
-            if dim_min < self.domain_range[dim][0]:
-                domain_range[dim][0] = dim_min
+        start_indices = np.concatenate(start_indices_split)
+        points = np.concatenate(points_split)
+        values = np.concatenate(values_split)
+        total_sample_names = list(itertools.chain(*total_sample_names_split))
+        domain_range_stacked = np.stack(domain_range_split, axis=-1)
+        domain_range = np.c_[
+            domain_range_stacked[:, 0].min(axis=-1),
+            domain_range_stacked[:, 1].max(axis=-1),
+        ]
 
         return self.copy(
             start_indices,
-            function_args,
+            points,
             values,
             domain_range=domain_range,
             sample_names=total_sample_names,

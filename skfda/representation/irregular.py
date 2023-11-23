@@ -1057,35 +1057,24 @@ class FDataIrregular(FData):  # noqa: WPS214
             ArrayLike: numpy array with the resulting matrix.
         """
         # Find the common grid points
-        grid_points = [
-            np.unique(self.points[:, dim])
-            for dim in range(self.dim_domain)
-        ]
+        grid_points = list(map(np.unique, self.points.T))
 
-        unified_matrix = np.empty(
-            (
-                self.n_samples,
-                *[len(gp) for gp in grid_points],
-                self.dim_codomain,
-            ),
-        )
-        unified_matrix.fill(np.nan)
-
-        # Fill with each function
-        next_indices = np.append(
-            self.start_indices,
-            len(self.points),
+        unified_matrix = np.full(
+            (self.n_samples, *map(len, grid_points), self.dim_codomain), np.nan
         )
 
-        for i, index in enumerate(self.start_indices):
-            for j in range(index, next_indices[i + 1]):
-                arg = self.points[j]
-                val = self.values[j]
-                pos = [
-                    np.where(gp == arg[dim])[0][0]
-                    for dim, gp in enumerate(grid_points)
-                ]
-                unified_matrix[(i,) + tuple(pos)] = val
+        points_pos = tuple(
+            np.searchsorted(*arg) for arg in zip(grid_points, self.points.T)
+        )
+
+        sample_idx = (
+            np.searchsorted(
+                self.start_indices, np.arange(len(self.points)), "right"
+            )
+            - 1
+        )
+
+        unified_matrix[(sample_idx,) + points_pos] = self.values
 
         return unified_matrix, grid_points
 

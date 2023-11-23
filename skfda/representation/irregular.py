@@ -462,7 +462,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     @property
     def n_samples(self) -> int:
-        return self.start_indices.shape[0]
+        return len(self.start_indices)
 
     @property
     def points_split(self) -> NDArrayFloat:
@@ -727,22 +727,10 @@ class FDataIrregular(FData):  # noqa: WPS214
 
                 other_vector = other[other_index]
 
-                # Must expand for the number of values in each curve
-                values_after = np.concatenate(
-                    (
-                        self.start_indices,
-                        np.array([len(self.points)]),
-                    ),
+                # Number of values in each curve
+                values_curve = np.diff(
+                    np.r_[self.start_indices, [len(self.points)]]
                 )
-
-                values_before = np.concatenate(
-                    (
-                        np.array([0]),
-                        self.start_indices,
-                    ),
-                )
-
-                values_curve = (values_after - values_before)[1:]
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve
@@ -759,22 +747,10 @@ class FDataIrregular(FData):  # noqa: WPS214
 
                 other_vector = other[other_index]
 
-                # Must expand for the number of values in each curve
-                values_after = np.concatenate(
-                    (
-                        self.start_indices,
-                        np.array([len(self.points)]),
-                    ),
+                # Number of values in each curve
+                values_curve = np.diff(
+                    np.r_[self.start_indices, [len(self.points)]]
                 )
-
-                values_before = np.concatenate(
-                    (
-                        np.array([0]),
-                        self.start_indices,
-                    ),
-                )
-
-                values_curve = (values_after - values_before)[1:]
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve

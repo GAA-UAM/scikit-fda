@@ -119,6 +119,13 @@ class FDataIrregular(FData):  # noqa: WPS214
         interpolation: Defines the type of interpolation
             applied in `evaluate`.
 
+    Raises:
+        ValueError:
+            - if `points` and `values` lengths don't match
+            - if `start_indices` does'nt start with `0`, or is decreasing
+                somewhere, or ends with a value greater than or equal to
+                `len(points)`.
+
     Examples:
         Representation of an irregular functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`,
@@ -215,7 +222,13 @@ class FDataIrregular(FData):  # noqa: WPS214
         if len(self.points) != len(self.values):
             raise ValueError("Dimension mismatch in points and values")
 
-        if max(self.start_indices) >= len(self.points):
+        if self.start_indices[0] != 0:
+            raise ValueError("Array start_indices must start with 0")
+
+        if np.any(np.diff(self.start_indices) < 0):
+            raise ValueError("Array start_indices must be non-decreasing")
+
+        if self.start_indices[-1] >= len(self.points):
             raise ValueError("Index in start_indices out of bounds")
 
         # Ensure arguments are in order within each function

@@ -442,15 +442,11 @@ class FDataIrregular(FData):  # noqa: WPS214
         # coalescing various arguments to the same rounded value
         rounded_values = self.values.round(decimals=decimals)
 
-        if out is not None and isinstance(out, FDataIrregular):
-            out.start_indices = self.start_indices
+        if isinstance(out, FDataIrregular):
             out.values = rounded_values
-
             return out
 
-        return self.copy(
-            values=rounded_values,
-        )
+        return self.copy(values=rounded_values)
 
     @property
     def dim_domain(self) -> int:

@@ -45,7 +45,8 @@ T = TypeVar("T", bound='FDataIrregular')
 
 
 def _get_sample_range_from_data(
-    points_split: list[NDArrayFloat],
+    start_indices: NDArrayInt,
+    points: NDArrayFloat,
 ) -> DomainRange:
     """Compute the domain ranges of each sample.
 
@@ -62,7 +63,7 @@ def _get_sample_range_from_data(
         tuple(
             zip(np.min(f_points, axis=0), np.max(f_points, axis=0)),
         )
-        for f_points in points_split
+        for f_points in np.split(points, start_indices[1:])
     )
 
 
@@ -236,7 +237,9 @@ class FDataIrregular(FData):  # noqa: WPS214
         self.points = sorted_arguments
         self.values = sorted_values
 
-        self._sample_range = _get_sample_range_from_data(self.points_split)
+        self._sample_range = _get_sample_range_from_data(
+            self.start_indices, self.points
+        )
 
         # Default value for sample_range is a list of tuples with
         # the first and last arguments of each curve for each dimension
@@ -393,8 +396,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
         """
-        slice_args = self.points_split
-        slice_values = self.values_split
+        slice_args = np.split(self.points, self.start_indices)[1:]
+        slice_values = np.split(self.values, self.start_indices)[1:]
 
         # Sort lexicographically, first to last dimension
         sorting_masks = [
@@ -463,14 +466,6 @@ class FDataIrregular(FData):  # noqa: WPS214
     @property
     def n_samples(self) -> int:
         return len(self.start_indices)
-
-    @property
-    def points_split(self) -> NDArrayFloat:
-        return np.split(self.points, self.start_indices[1:])
-
-    @property
-    def values_split(self) -> NDArrayFloat:
-        return np.split(self.values, self.start_indices[1:])
 
     @property
     def sample_range(self) -> DomainRange:
@@ -1048,13 +1043,14 @@ class FDataIrregular(FData):  # noqa: WPS214
             extrapolation=self.extrapolation,
         )
 
-    def _to_data_matrix(self) -> ArrayLike:
+    def _to_data_matrix(self) -> tuple[ArrayLike, list[ArrayLike]]:
         """Convert FDataIrregular values to numpy matrix.
 
         Undefined values in the grid will be represented with np.nan.
 
         Returns:
             ArrayLike: numpy array with the resulting matrix.
+            list: numpy arrays representing grid_points.
         """
         # Find the common grid points
         grid_points = list(map(np.unique, self.points.T))
@@ -1494,7 +1490,9 @@ class FDataIrregularDType(
         self.dim_domain = points.shape[1]
 
         if domain_range is None:
-            sample_range = _get_sample_range_from_data(self.points_split)
+            sample_range = _get_sample_range_from_data(
+                self.start_indices, self.points
+            )
             domain_range = _get_domain_range_from_sample_range(sample_range)
 
         self.domain_range = validate_domain_range(domain_range)

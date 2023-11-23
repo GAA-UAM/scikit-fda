@@ -1187,40 +1187,23 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         npdr = np.asarray(validate_domain_range(domain_range))  # (dim, 2)
 
-        head = 0
-        start_indices = []
-        points = []
-        values = []
-        sample_names = []
+        mask = np.all(
+            (npdr[:, 0] <= sample_points) & (sample_points <= npdr[:, 1]),
+            axis=1,
+        )
 
-        # Eliminate points outside the new range.
-        # Must also modify function indices to point to new array
+        num_samples = np.add.reduceat(mask, self.start_indices)[:-1] * (
+            np.diff(self.start_indices) > 0
+        )
 
-        for sample_points, sample_values, sample_name in zip(
-                    self.points_split,  # (num_points, dim)
-                    self.values_split,
-                    self.sample_names,
-            ):
-
-            mask = np.all(
-                (npdr[:, 0] <= sample_points) & (sample_points <= npdr[:, 1]),
-                axis=1,
-            )
-
-            # Do not keep functions with no values.
-            num_valid_points = mask.sum()
-            if num_valid_points:
-                start_indices.append(head)
-                points.append(sample_points[mask])
-                values.append(sample_values[mask])
-                sample_names.append(sample_name)
-                head += num_valid_points
+        start_indices = np.r_[[0], num_samples.cumsum()]
+        points = self.points[mask]
+        values = self.values[mask]
 
         return self.copy(
             start_indices=np.array(start_indices),
             points=np.concatenate(points),
             values=np.concatenate(values),
-            sample_names=sample_names,
             domain_range=domain_range,
         )
 

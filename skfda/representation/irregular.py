@@ -44,6 +44,48 @@ T = TypeVar("T", bound='FDataIrregular')
 ######################
 
 
+def _reduceat(### FINISH DOC + TYPE HINTS
+    array: ArrayLike,
+    indices: ArrayLike,
+    axis: int = 0,
+    dtype=None,
+    out=None,
+    *,
+    ufunc,
+    value_empty
+) -> NDArray:
+    """Wrapped `np.ufunc.reduceat` to manage edge cases.
+
+    The edge cases are the one described in the doc of
+    `np.ufunc.reduceat`. Different behaviours are the following:
+        - No exception is raised when `indices[i] < 0` or
+            `indices[i] >=len(array)`. Instead, the corresponding value
+            is `value_empty`.
+        - When not in the previous case, the result is `value_empty` if
+            `indices[i] >= indices[i+1]` and otherwise, the same as
+            `ufunc.reduce(array[indices[i]:indices[i+1]])`.
+    """
+    array, indices = map(np.asarray, [array, indices])
+    axis %= array.ndim
+    ax_idx = (slice(None),) * axis
+    n = array.shape[axis]
+
+    pad_width = np.full((array.ndim, 2), 0)
+    pad_width[axis, 1] = 1
+    extended_array = np.pad(array, pad_width, mode="empty")
+    extended_indices = np.append(indices, n)
+
+    bad = (indices < 0) | (indices > n)
+    empty = (np.diff(extended_indices) <= 0) | bad
+    extended_indices[:-1][bad] = n
+
+    out = ufunc.reduceat(
+        extended_array, extended_indices, axis=axis, dtype=dtype, out=out
+    )[ax_idx + (slice(-1),)]
+    out[ax_idx + (empty,)] = value_empty
+
+    return out
+
 def _get_sample_range_from_data(
     start_indices: NDArrayInt,
     points: NDArrayFloat,

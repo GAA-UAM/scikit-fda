@@ -7,6 +7,7 @@ import scipy.stats.mstats
 from mpl_toolkits.mplot3d import axes3d
 
 from skfda import FDataGrid, concatenate
+from skfda._utils.ndfunction.utils import grid_points_equal
 from skfda.exploratory import stats
 
 
@@ -21,8 +22,14 @@ class TestFDataGrid(unittest.TestCase):
             np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]]),
         )
         np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
-        np.testing.assert_array_equal(
-            fd.grid_points, np.array([[0, 0.25, 0.5, 0.75, 1]]),
+
+        expected_grid_points = np.empty(shape=1, dtype=np.object_)
+        expected_grid_points[...] = [np.array([0, 0.25, 0.5, 0.75, 1])]
+        #expected_grid_points = np.squeeze(expected_grid_points)
+
+        assert grid_points_equal(
+            fd.grid_points,
+            expected_grid_points,
         )
 
     def test_copy_equals(self) -> None:
@@ -39,9 +46,9 @@ class TestFDataGrid(unittest.TestCase):
             np.array([1.5, 2.5, 3.5, 4.5, 5.5]),
         )
         np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
-        np.testing.assert_array_equal(
+        assert grid_points_equal(
+            mean.grid_points,
             fd.grid_points,
-            np.array([[0, 0.25, 0.5, 0.75, 1]]),
         )
 
     def test_gmean(self) -> None:
@@ -55,9 +62,9 @@ class TestFDataGrid(unittest.TestCase):
             ),
         )
         np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
-        np.testing.assert_array_equal(
+        assert grid_points_equal(
+            mean.grid_points,
             fd.grid_points,
-            np.array([[0, 0.25, 0.5, 0.75, 1]]),
         )
 
     def test_slice(self) -> None:
@@ -277,7 +284,7 @@ class TestEvaluateFDataGrid(unittest.TestCase):
                 np.tile([3, 4, 5], (2, 2, 1)),
             ])
 
-        grid_points = [[0, 1], [0, 1]]
+        grid_points = [np.array([0, 1]), np.array([0, 1])]
 
         fd = FDataGrid(data_matrix, grid_points=grid_points)
         self.assertEqual(fd.n_samples, 2)
@@ -316,7 +323,10 @@ class TestEvaluateFDataGrid(unittest.TestCase):
 
     def test_evaluate_grid_aligned(self) -> None:
         """Test evaluation in aligned grid."""
-        res = self.fd([[0, 1], [1, 2]], grid=True)
+        grid = np.empty(shape=2, dtype=np.object_)
+        grid[...] = [np.array([0, 1]), np.array([1, 2])]
+
+        res = self.fd(grid, grid=True)
         expected = np.array([
             np.tile([0, 1, 2], (2, 2, 1)),
             np.tile([3, 4, 5], (2, 2, 1)),
@@ -326,8 +336,16 @@ class TestEvaluateFDataGrid(unittest.TestCase):
 
     def test_evaluate_grid_unaligned(self) -> None:
         """Test evaluation with a different grid per curve."""
+        grid = [
+            np.empty(shape=2, dtype=np.object_),
+            np.empty(shape=2, dtype=np.object_),
+        ]
+
+        grid[0][...] = [np.array([0, 1]), np.array([1, 2])]
+        grid[1][...] = [np.array([3, 4]), np.array([5, 6])]
+
         res = self.fd(
-            [[[0, 1], [1, 2]], [[3, 4], [5, 6]]],
+            grid,
             grid=True,
             aligned=False,
         )
@@ -341,7 +359,11 @@ class TestEvaluateFDataGrid(unittest.TestCase):
     def test_restrict(self) -> None:
         """Test FDataGrid.restrict with bounds."""
         # Test 1 sample function R^3 -> R^5.
-        grid_points = ([0, 1], [0, 1, 2], [0, 1, 2, 3])
+        grid_points = (
+            np.array([0, 1]),
+            np.array([0, 1, 2]),
+            np.array([0, 1, 2, 3]),
+        )
         data_matrix = np.ones((1, 2, 3, 4, 5))
         fd = FDataGrid(data_matrix, grid_points)
         restricted_domain = ((0, 1), (0.5, 1.5), (0.5, 2))

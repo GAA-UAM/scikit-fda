@@ -181,7 +181,7 @@ class Boxplot(FDataBoxplot):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> grid_points = np.array([0.0, 2.0, 4.0, 6.0, 8.0, 10.0])
         >>> fd = FDataGrid(data_matrix, grid_points, dataset_name="dataset",
         ...                argument_names=["x_label"],
         ...                coordinate_names=["y_label"])
@@ -212,7 +212,7 @@ class Boxplot(FDataBoxplot):
                         [-1. ],
                         [-1. ],
                         [-1. ]]]),
-                grid_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
+                grid_points=array([array([ 0.,  2.,  4.,  6.,  8., 10.])], dtype=object),
                 domain_range=((0.0, 10.0),),
                 dataset_name='dataset',
                 argument_names=('x_label',),
@@ -581,7 +581,7 @@ class SurfaceBoxplot(FDataBoxplot):
         ...                 [[4], [0.4], [5]]],
         ...                [[[2], [0.5], [2]],
         ...                 [[3], [0.6], [3]]]]
-        >>> grid_points = [[2, 4], [3, 6, 8]]
+        >>> grid_points = [np.array([2.0, 4.0]), np.array([3.0, 6.0, 8.0])]
         >>> fd = FDataGrid(data_matrix, grid_points, dataset_name="dataset",
         ...                argument_names=["x1_label", "x2_label"],
         ...                coordinate_names=["y_label"])
@@ -600,7 +600,7 @@ class SurfaceBoxplot(FDataBoxplot):
                         [[ 3. ],
                          [ 0.6],
                          [ 3. ]]]]),
-                grid_points=(array([ 2., 4.]), array([ 3., 6., 8.])),
+                grid_points=array([array([ 2., 4.]), array([ 3., 6., 8.])], dtype=object),
                 domain_range=((2.0, 4.0), (3.0, 8.0)),
                 dataset_name='dataset',
                 argument_names=('x1_label', 'x2_label'),

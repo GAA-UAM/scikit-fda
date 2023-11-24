@@ -5,6 +5,7 @@ import multimethod
 import numpy as np
 
 from ..._utils import _MapAcceptable, _pairwise_symmetric
+from ..._utils.ndfunction.utils import grid_points_equal
 from ...representation import FData, FDataGrid
 from ...typing._base import Vector
 from ...typing._metric import Metric, Norm, VectorType
@@ -73,7 +74,7 @@ def _cast_to_grid(
         fdata1 = fdata1.to_grid(grid_points)
         fdata2 = fdata2.to_grid(grid_points)
 
-    elif not np.array_equal(
+    elif not grid_points_equal(
         fdata1.grid_points,
         fdata2.grid_points,
     ):

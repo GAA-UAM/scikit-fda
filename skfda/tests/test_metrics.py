@@ -21,7 +21,7 @@ class TestLp(unittest.TestCase):
 
     def setUp(self) -> None:
         """Create a few functional data objects."""
-        grid_points = [1, 2, 3, 4, 5]
+        grid_points = np.array([1, 2, 3, 4, 5])
         self.fd = FDataGrid(
             [
                 [2, 3, 4, 5, 6],
@@ -110,7 +110,7 @@ class TestLp(unittest.TestCase):
 
     def test_lp_error_domain_ranges(self) -> None:
         """Test error on metric between objects with different domains."""
-        grid_points = [2, 3, 4, 5, 6]
+        grid_points = np.array([2, 3, 4, 5, 6])
         fd2 = FDataGrid(
             [
                 [2, 3, 4, 5, 6],
@@ -124,7 +124,7 @@ class TestLp(unittest.TestCase):
 
     def test_lp_error_grid_points(self) -> None:
         """Test error on metric for FDataGrids with different grid points."""
-        grid_points = [1, 2, 4, 4.3, 5]
+        grid_points = np.array([1, 2, 4, 4.3, 5])
         fd2 = FDataGrid(
             [
                 [2, 3, 4, 5, 6],

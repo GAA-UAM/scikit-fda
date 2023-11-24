@@ -7,7 +7,7 @@ objects of the package and contains some commons methods.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import numpy as np
 import pandas
@@ -16,7 +16,7 @@ from typing_extensions import override
 from skfda._utils.ndfunction._region import AxisAlignedBox
 
 from .._utils.ndfunction import NDFunction, concatenate as concatenate
-from .._utils.ndfunction._array_api import Array, DType
+from .._utils.ndfunction._array_api import Array, DType, numpy_namespace
 from .._utils.ndfunction._region import Region
 from ..typing._base import DomainRange, LabelTuple, LabelTupleLike
 from .extrapolation import ExtrapolationLike
@@ -64,6 +64,11 @@ class FData(  # noqa: WPS214
         self.argument_names = argument_names  # type: ignore[assignment]
         self.coordinate_names = coordinate_names  # type: ignore[assignment]
         self.sample_names = sample_names  # type: ignore[assignment]
+
+    @override
+    @property
+    def array_backend(self) -> Any:
+        return numpy_namespace
 
     @property
     def argument_names(self) -> LabelTuple:

@@ -9,7 +9,8 @@ from typing import Optional
 
 import numpy as np
 
-from ..._utils._utils import _cartesian_product, _to_grid_points
+from ..._utils.ndfunction.utils import cartesian_product
+from ..._utils.ndfunction.utils.validation import check_grid_points
 from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
 from ...misc.metrics import PairwiseMetric, l2_distance
 from ...typing._base import GridPointsLike
@@ -38,7 +39,7 @@ class KernelSmoother(_LinearSmoother):
         >>> from skfda import FDataGrid
         >>> from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
         >>> fd = FDataGrid(
-        ...     grid_points=[1, 2, 4, 5, 7],
+        ...     grid_points=np.array([1, 2, 4, 5, 7]),
         ...     data_matrix=[[1, 2, 3, 4, 5]],
         ... )
         >>> kernel_estimator = NadarayaWatsonHatMatrix(bandwidth=3.5)
@@ -77,7 +78,7 @@ class KernelSmoother(_LinearSmoother):
         >>> kernel_estimator = NadarayaWatsonHatMatrix(bandwidth=2)
         >>> smoother = KernelSmoother(
         ...     kernel_estimator=kernel_estimator,
-        ...     output_points=[1, 2, 3, 4, 5, 6, 7],
+        ...     output_points=np.array([1, 2, 3, 4, 5, 6, 7]),
         ... )
         >>> fd_smoothed = smoother.fit_transform(fd)
         >>> fd_smoothed.data_matrix.round(2)
@@ -130,8 +131,8 @@ class KernelSmoother(_LinearSmoother):
         output_points: GridPointsLike,
     ) -> NDArrayFloat:
 
-        input_points = _cartesian_product(_to_grid_points(input_points))
-        output_points = _cartesian_product(_to_grid_points(output_points))
+        input_points = cartesian_product(check_grid_points(input_points))
+        output_points = cartesian_product(check_grid_points(output_points))
 
         if self.kernel_estimator is None:
             self.kernel_estimator = NadarayaWatsonHatMatrix()

@@ -19,7 +19,8 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from typing_extensions import Protocol
 
-from ..._utils import _to_grid_points, constants
+from ..._utils import constants
+from ..._utils.ndfunction.utils.validation import check_grid_points
 from ...misc.validation import validate_domain_range
 from ...representation._functional_data import FData
 from ...representation.irregular import FDataIrregular
@@ -459,7 +460,7 @@ class ScatterPlot(BasePlot):
             self.grid_points = self.fdata.grid_points
             self.evaluated_points = self.fdata.data_matrix
         else:
-            self.grid_points = _to_grid_points(grid_points)
+            self.grid_points = check_grid_points(grid_points)
             self.evaluated_points = self.fdata(
                 self.grid_points, grid=True,
             )

@@ -255,7 +255,7 @@ class SmoothingParameterSearch(
                     [ 0.67],
                     [ 1.67],
                     [ 2.5 ]]]),
-            grid_points=(array([-2., -1.,  0.,  1.,  2.]),),
+            grid_points=array([array([-2., -1.,  0.,  1.,  2.])], dtype=object),
             domain_range=((-2.0, 2.0),),
             ...)
 

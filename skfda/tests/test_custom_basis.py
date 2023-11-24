@@ -12,7 +12,7 @@ def test_grid():
     grid_points = np.array([0, 1, 2])
     sample = FDataGrid(
         data_matrix=np.array([[1, 2, 3], [4, 5, 6]]),
-        grid_points=np.array([[0, 1, 2]]),
+        grid_points=np.array([0, 1, 2]),
     )
 
     data_basis = FDataBasis(
@@ -70,7 +70,7 @@ def test_not_linearly_independent_too_many():
         data_matrix=np.array(
             [[1, 2, 3], [2, 4, 6], [15, 4, -2], [1, 28, 0]],
         ),
-        grid_points=np.array([[0, 1, 2]]),
+        grid_points=np.array([0, 1, 2]),
     )
 
     with pytest.raises(ValueError):
@@ -101,7 +101,7 @@ def test_not_linearly_independent_range():
     """
     sample = FDataGrid(
         data_matrix=np.array([[1, 2, 3], [2, 4, 6]]),
-        grid_points=np.array([[0, 1, 2]]),
+        grid_points=np.array([0, 1, 2]),
     )
 
     with pytest.raises(ValueError):
@@ -126,7 +126,7 @@ def test_derivative_grid():
     """Test the derivative of a basis constructed from a FDataGrid."""
     base_functions = FDataGrid(
         data_matrix=np.array([[1, 2, 3], [1, 1, 5]]),
-        grid_points=np.array([[0, 1, 2]]),
+        grid_points=np.array([0, 1, 2]),
     )
     # The derivative of the first function is always 1
     # The derivative of the second function is 0 and then 4
@@ -253,7 +253,7 @@ def test_multivariate_codomain_linearly_dependent():
 
 def test_evaluate_derivative():
     """Test the evaluation of the derivative of a DataBasis."""
-    grid_points = np.array([[0, 1, 2]])
+    grid_points = np.array([0, 1, 2])
     base_functions = FDataGrid(
         data_matrix=np.array([[1, 2, 3], [1, 3, 5]]),
         grid_points=grid_points,
@@ -277,7 +277,7 @@ def test_evaluate_derivative():
 
 def test_coordinates():
     """Test the coordinates of a basis."""
-    grid_points = np.array([[0, 1]])
+    grid_points = np.array([0, 1])
     base_functions = FDataGrid(
         data_matrix=np.array([
             [[1, 2, 3], [1, 3, 5]],
@@ -297,19 +297,19 @@ def test_coordinates():
     # First coordinate at 0
     np.testing.assert_allclose(
         functions.coordinates[0](0),
-        np.array([[[1]], [[4]], [[9]]]),
+        np.array([[1], [4], [9]]),
     )
 
     # Second two coordinates at 1
     np.testing.assert_allclose(
         functions.coordinates[1:3](1),
-        np.array([[[3, 5]], [[8, 9]], [[16 + 3, 18 + 5]]]),
+        np.array([[3, 5], [8, 9], [16 + 3, 18 + 5]]),
     )
 
 
 def test_equality():
     """Test the equality of two basis."""
-    grid_points = np.array([[0, 1, 2]])
+    grid_points = np.array([0, 1, 2])
     base_functions = FDataGrid(
         data_matrix=np.array([[1, 2, 3], [1, 3, 5]]),
         grid_points=grid_points,

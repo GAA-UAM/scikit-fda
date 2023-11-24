@@ -90,8 +90,8 @@ def test_std_fdatagrid_1d_to_2d() -> None:
             [[2, 3, 4, 5, 6, 7], [-2, -3, -4, -5, -6, -7]],
         ],
         grid_points=[
-            [-2, -1],
-            [0, 1, 2, 3, 4, 5],
+            np.array([-2, -1]),
+            np.array([0, 1, 2, 3, 4, 5]),
         ],
     )
     expected_std_data_matrix = np.full((1, 2, 6, 1), 1)
@@ -115,8 +115,8 @@ def test_std_fdatagrid_2d_to_2d() -> None:
             ],
         ],
         grid_points=[
-            [0, 1],
-            [0, 1, 2],
+            np.array([0, 1]),
+            np.array([0, 1, 2]),
         ],
     )
     expected_std_data_matrix = np.full((1, 2, 3, 2), np.sqrt(1 / 4))

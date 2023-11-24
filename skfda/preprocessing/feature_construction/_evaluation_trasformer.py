@@ -50,6 +50,7 @@ class EvaluationTransformer(
         shape\_ (tuple): original shape of coefficients per sample.
 
     Examples:
+        >>> import numpy as np
         >>> from skfda.representation import FDataGrid, FDataBasis
         >>> from skfda.preprocessing.feature_construction import (
         ...     EvaluationTransformer,
@@ -60,7 +61,7 @@ class EvaluationTransformer(
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
 
         >>> data_matrix = [[1, 2], [2, 3]]
-        >>> grid_points = [2, 4]
+        >>> grid_points = np.array([2, 4])
         >>> fd = FDataGrid(data_matrix, grid_points)
 
         >>> transformer = EvaluationTransformer()
@@ -72,7 +73,7 @@ class EvaluationTransformer(
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
 
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
-        >>> grid_points = [2, 4]
+        >>> grid_points = np.array([2, 4])
         >>> fd = FDataGrid(data_matrix, grid_points)
         >>>
         >>> transformer = EvaluationTransformer()
@@ -84,7 +85,7 @@ class EvaluationTransformer(
         representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
 
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
-        >>> grid_points = [[2, 4], [3, 6]]
+        >>> grid_points = [np.array([2, 4]), np.array([3, 6])]
         >>> fd = FDataGrid(data_matrix, grid_points)
         >>>
         >>> transformer = EvaluationTransformer()

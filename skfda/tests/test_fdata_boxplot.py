@@ -19,7 +19,7 @@ class TestBoxplot(unittest.TestCase):
             [-1, -1, -0.5, 1, 1, 0.5],  # noqa: WPS204
             [-0.5, -0.5, -0.5, -1, -1, -1],
         ]
-        grid_points = [0, 2, 4, 6, 8, 10]
+        grid_points = np.array([0, 2, 4, 6, 8, 10])
         fd = FDataGrid(data_matrix, grid_points)
         fdataBoxplot = Boxplot(fd, depth_method=IntegratedDepth())
         np.testing.assert_array_equal(

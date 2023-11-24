@@ -13,6 +13,7 @@ import numpy as np
 import scipy.integrate
 
 from .._utils import _same_domain, nquad_vec
+from .._utils.ndfunction.utils import grid_points_equal
 from ..representation import FData, FDataBasis, FDataGrid
 from ..representation.basis import Basis
 from ..typing._base import DomainRange
@@ -346,7 +347,7 @@ def _inner_product_fdatagrid(
     _matrix: bool = False,
 ) -> NDArrayFloat:
 
-    if not np.array_equal(
+    if not grid_points_equal(
         arg1.grid_points,
         arg2.grid_points,
     ):

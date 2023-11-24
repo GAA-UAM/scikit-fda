@@ -11,7 +11,8 @@ from typing import Optional
 import numpy as np
 from typing_extensions import Final
 
-from ..._utils import _cartesian_product, _to_grid_points
+from ..._utils.ndfunction.utils import cartesian_product
+from ..._utils.ndfunction.utils.validation import check_grid_points
 from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization
 from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
@@ -265,13 +266,13 @@ class BasisSmoother(_LinearSmoother):
         output_points: GridPointsLike,
     ) -> NDArrayFloat:
         basis_values_output = self.basis(
-            _cartesian_product(
-                _to_grid_points(output_points),
+            cartesian_product(
+                check_grid_points(output_points),
             ),
         ).reshape((self.basis.n_basis, -1)).T
 
         return basis_values_output @ self._coef_matrix(
-            _cartesian_product(_to_grid_points(input_points)),
+            cartesian_product(check_grid_points(input_points)),
         )
 
     def fit(
@@ -291,7 +292,7 @@ class BasisSmoother(_LinearSmoother):
         """
         self.input_points_ = X._get_input_points()
         self.output_points_ = (
-            _to_grid_points(self.output_points)
+            check_grid_points(self.output_points)
             if self.output_points is not None
             else self.input_points_
         )

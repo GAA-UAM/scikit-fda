@@ -8,7 +8,9 @@ import scipy.integrate
 from scipy.stats import multivariate_normal
 from typing_extensions import Protocol
 
-from .._utils import _cartesian_product, _to_grid_points, normalize_warping
+from .._utils import normalize_warping
+from .._utils.ndfunction.utils import cartesian_product
+from .._utils.ndfunction.utils.validation import check_grid_points
 from ..misc.covariances import Brownian, CovarianceLike, _execute_covariance
 from ..misc.validation import validate_random_state
 from ..representation import FDataGrid
@@ -726,9 +728,9 @@ def make_gaussian(
     if cov is None:
         cov = Brownian()
 
-    grid_points = _to_grid_points(grid_points)
+    grid_points = check_grid_points(grid_points)
 
-    input_points = _cartesian_product(grid_points)
+    input_points = cartesian_product(grid_points)
 
     covariance = _execute_covariance(
         cov,
@@ -1018,7 +1020,8 @@ def make_multimodal_samples(  # noqa: WPS211
         grid_points = axis
         evaluation_grid = axis
     else:
-        grid_points = np.repeat(axis[:, np.newaxis], dim_domain, axis=1).T
+        grid_points = list(
+            np.repeat(axis[:, np.newaxis], dim_domain, axis=1).T)
 
         meshgrid = np.meshgrid(*grid_points)
 

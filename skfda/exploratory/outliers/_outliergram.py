@@ -43,7 +43,7 @@ class OutliergramOutlierDetector(
         ...                [6, 6, 6, 6, 6, 6],
         ...                [7, 7, 7, 7, 7, 7],
         ...                [8, 8, 8, 8, 8, 8]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> grid_points = np.array([0, 2, 4, 6, 8, 10])
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> out_detector = OutliergramOutlierDetector()
         >>> out_detector.fit_predict(fd)

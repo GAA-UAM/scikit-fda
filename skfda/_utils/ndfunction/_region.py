@@ -1,15 +1,15 @@
 from abc import abstractmethod
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from array_api_compat import array_namespace
 from typing_extensions import override
 
-from ._array_api import Array, BoolDType, DType
+from ._array_api import Array, DType, Shape
 
-T = TypeVar("T", bound=DType)
+A = TypeVar("A", bound=Array[Shape, DType])
 
 
-class Region(Protocol, Generic[T]):
+class Region(Protocol[A]):
     """
     Protocol for regions of points.
 
@@ -23,7 +23,7 @@ class Region(Protocol, Generic[T]):
 
     @property
     @abstractmethod
-    def bounding_box(self) -> tuple[Array[T], Array[T]]:
+    def bounding_box(self) -> tuple[A, A]:
         """
         A tuple of two arrays representing a boundary box for the data.
 
@@ -33,7 +33,7 @@ class Region(Protocol, Generic[T]):
         pass
 
     @abstractmethod
-    def contains(self, points: Array[T]) -> Array[BoolDType]:
+    def contains(self, points: A) -> A:
         """
         Check that the points in ```points``` are inside the region.
 
@@ -52,7 +52,7 @@ class Region(Protocol, Generic[T]):
         pass
 
 
-class AxisAlignedBox(Region[T]):
+class AxisAlignedBox(Region[A]):
     """
     A box region with edges parallel to the coordinate axes.
 
@@ -62,8 +62,8 @@ class AxisAlignedBox(Region[T]):
 
     def __init__(
         self,
-        lower: Array[T],
-        upper: Array[T],
+        lower: A,
+        upper: A,
     ) -> None:
         # If we want to allow broadcastable arrays we can do so in the future.
         # For now, they have to had the same dimensions as the points.
@@ -73,11 +73,14 @@ class AxisAlignedBox(Region[T]):
 
     @override
     @property
-    def bounding_box(self) -> tuple[Array[T], Array[T]]:
+    def bounding_box(self) -> tuple[A, A]:
         return self.lower, self.upper
 
     @override
-    def contains(self, points: Array[T]) -> Array[BoolDType]:
+    def contains(  # noqa:D102
+        self,
+        points: A,
+    ) -> A:
         xp = array_namespace(points, self.lower, self.upper)
 
         if xp.isdtype(points.dtype, "complex floating"):

@@ -51,7 +51,7 @@ class MahalanobisDistance(BaseEstimator):
         >>> import numpy as np
         >>> from skfda.representation.grid import FDataGrid
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
-        >>> grid_points = [0, 1]
+        >>> grid_points = np.array([0, 1])
         >>> fd = FDataGrid(data_matrix, grid_points)
         >>> mahalanobis = MahalanobisDistance(2)
         >>> mahalanobis.fit(fd)

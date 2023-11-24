@@ -10,17 +10,16 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
-from ._array_api import Array, DType
+from ._array_api import Array, DType, Shape
 
 if TYPE_CHECKING:
     from ._ndfunction import NDFunction
 
 
-InputDTypeT = TypeVar("InputDTypeT", bound=DType)
-OutputDTypeT = TypeVar("OutputDTypeT", bound=DType)
+A = TypeVar('A', bound=Array[Shape, DType])
 
 
-class Evaluator(Protocol):
+class Evaluator(Protocol[A]):
     """
     Structure of an evaluator.
 
@@ -34,12 +33,12 @@ class Evaluator(Protocol):
     @abstractmethod
     def __call__(
         self,
-        function: NDFunction,
+        function: NDFunction[A],
         /,
-        eval_points: Array[InputDTypeT],
+        eval_points: A,
         *,
         aligned: bool = True,
-    ) -> Array[OutputDTypeT]:
+    ) -> A:
         """
         Evaluate the samples at evaluation points.
 

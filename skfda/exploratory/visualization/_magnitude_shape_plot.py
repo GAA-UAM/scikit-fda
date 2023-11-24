@@ -105,11 +105,14 @@ class MagnitudeShapePlot(BasePlot):
 
     Example:
         >>> import skfda
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
-        ...                [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5],
-        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [ 0., 2., 4., 6., 8., 10.]
+        >>> import numpy as np
+        >>> data_matrix = np.asarray([
+        ...     [1, 1, 2, 3, 2.5, 2],
+        ...     [0.5, 0.5, 1, 2, 1.5, 1],
+        ...     [-1, -1, -0.5, 1, 1, 0.5],
+        ...     [-0.5, -0.5, -0.5, -1, -1, -1],
+        ... ])
+        >>> grid_points = np.asarray([ 0., 2., 4., 6., 8., 10.])
         >>> X = skfda.FDataGrid(data_matrix, grid_points)
         >>> MagnitudeShapePlot(X)
         MagnitudeShapePlot(...)

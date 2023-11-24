@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, TypeVar
 
-from ..._utils import _to_grid_points
+from ..._utils.ndfunction.utils.validation import check_grid_points
 from ...typing._base import GridPointsLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
@@ -35,7 +35,7 @@ class _GridBasis(Basis):
         grid_points: GridPointsLike,
     ) -> None:
         """Basis constructor."""
-        self.grid_points = _to_grid_points(grid_points)
+        self.grid_points = check_grid_points(grid_points)
         domain_range = tuple((s[0], s[-1]) for s in self.grid_points)
         super().__init__(
             domain_range=domain_range,

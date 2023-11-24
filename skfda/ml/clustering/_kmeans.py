@@ -566,7 +566,7 @@ class KMeans(BaseKMeans[Input, NDArrayInt]):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> grid_points = np.array([0, 2, 4, 6, 8, 10])
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> kmeans = skfda.ml.clustering.KMeans(random_state=0)
         >>> kmeans.fit(fd)
@@ -736,7 +736,7 @@ class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
         >>> data_matrix = [[[1, 0.3], [2, 0.4], [3, 0.5], [4, 0.6]],
         ...                [[2, 0.5], [3, 0.6], [4, 0.7], [5, 0.7]],
         ...                [[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]]]
-        >>> grid_points = [2, 4, 6, 8]
+        >>> grid_points = np.array([2, 4, 6, 8])
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> fuzzy_kmeans = skfda.ml.clustering.FuzzyCMeans(random_state=0)
         >>> fuzzy_kmeans.fit(fd)

@@ -11,8 +11,8 @@ from typing import Any, Mapping, Optional
 
 import numpy as np
 
-from ..._utils import _to_grid_points
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
+from ..._utils.ndfunction.utils.validation import check_grid_points
 from ...representation import FDataGrid
 from ...typing._base import GridPoints, GridPointsLike
 from ...typing._numpy import NDArrayFloat
@@ -86,7 +86,7 @@ class _LinearSmoother(
         """
         self.input_points_ = X.grid_points
         self.output_points_ = (
-            _to_grid_points(self.output_points)
+            check_grid_points(self.output_points).ravel()
             if self.output_points is not None
             else self.input_points_
         )

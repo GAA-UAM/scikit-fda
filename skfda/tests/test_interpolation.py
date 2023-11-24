@@ -70,7 +70,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
         )
 
         res = np.array([[[0.5], [2.5], [6.5]], [[72.5], [56.5], [42.5]]])
-        t = [0.5, 1.5, 2.5]
+        t = np.array([0.5, 1.5, 2.5])
 
         # Test evaluation in a list of times
         np.testing.assert_allclose(f(t, grid=True), res)
@@ -78,7 +78,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
         np.testing.assert_allclose(f([t], grid=True), res)
         # Single point with grid
         np.testing.assert_allclose(
-            f(3, grid=True),
+            f(np.array([3]), grid=True),
             np.array([[[9]], [[36]]]),
         )
 
@@ -167,7 +167,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
             interpolation=SplineInterpolation(3),
         )
 
-        t = [0.5, 1.5, 2.5]
+        t = np.array([0.5, 1.5, 2.5])
         res = np.array([
             [[0.25], [2.25], [6.25]],
             [[72.25], [56.25], [42.25]],
@@ -180,7 +180,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
 
         # Single point with grid
         np.testing.assert_allclose(
-            f(3, grid=True),
+            f(np.array([3]), grid=True),
             np.array([[[9]], [[36]]]),
         )
 
@@ -339,7 +339,7 @@ class TestEvaluationSplineArbitraryImage(unittest.TestCase):
             interpolation=SplineInterpolation(2),
         )
 
-        t = [1.5, 2.5, 3.5]
+        t = np.array([1.5, 2.5, 3.5])
         res = np.array([
             [
                 [2.25, 0.08721158],

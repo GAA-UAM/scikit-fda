@@ -558,16 +558,16 @@ class LinearRegression(
         domain_range = basis.domain_range
 
         def integrand(args):  # noqa: WPS430
-            eval_basis = basis(args)[:, 0, :]
-            eval_transposed_basis = transposed_basis(args)[:, 0, :]
+            eval_basis = basis(args)[:, :]
+            eval_transposed_basis = transposed_basis(args)[:, :]
 
             if isinstance(transposed_weight, FData):
-                eval_transposed_weight = transposed_weight(args)[:, 0, :]
+                eval_transposed_weight = transposed_weight(args)[:, :]
             else:
                 eval_transposed_weight = transposed_weight.T
 
             if isinstance(weight, FData):
-                eval_weight = weight(args)[:, 0, :]
+                eval_weight = weight(args)[:, :]
             else:
                 eval_weight = weight.T
 

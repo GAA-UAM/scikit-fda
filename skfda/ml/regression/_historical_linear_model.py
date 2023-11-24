@@ -7,8 +7,9 @@ import numpy as np
 import scipy.integrate
 from sklearn.utils.validation import check_is_fitted
 
-from ..._utils import _cartesian_product, _pairwise_symmetric
+from ..._utils import _pairwise_symmetric
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
+from ..._utils.ndfunction.utils import cartesian_product
 from ...representation import FData, FDataBasis, FDataGrid
 from ...representation.basis import (
     Basis,
@@ -120,7 +121,7 @@ def _get_valid_points(
 ) -> NDArrayFloat:
     """Return the valid points as integer tuples."""
     interval_points = np.arange(n_intervals + 1)
-    full_grid_points = _cartesian_product((interval_points, interval_points))
+    full_grid_points = cartesian_product((interval_points, interval_points))
 
     past_points = full_grid_points[
         full_grid_points[:, 0] <= full_grid_points[:, 1]
@@ -153,7 +154,7 @@ def _get_triangles(
 
     interval_without_end = np.arange(n_intervals)
 
-    pts_coords = _cartesian_product(
+    pts_coords = cartesian_product(
         (interval_without_end, interval_without_end),
     )
 

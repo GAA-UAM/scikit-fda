@@ -261,7 +261,7 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         In this case no alignment should take place.
 
         """
-        grid_points = list(range(10))
+        grid_points = np.arange(10.0)
         data_matrix = np.array([grid_points, grid_points])
         fd = FDataGrid(
             data_matrix=data_matrix,

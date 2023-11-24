@@ -22,6 +22,7 @@ import pandas.api.extensions
 
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
 from ..._utils.ndfunction.extrapolation import ExtrapolationLike
+from ..._utils.ndfunction.utils._points import input_points_batch_shape
 from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
 from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
@@ -245,30 +246,35 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: NDArrayFloat,
+        input_points: NDArrayFloat,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
 
+        batch_shape = input_points_batch_shape(
+            input_points,
+            ndfunction=self,
+            aligned=aligned,
+        )
+
         if aligned:
 
-            eval_points = np.asarray(eval_points)
-
             # Each row contains the values of one element of the basis
-            basis_values = self.basis(eval_points)
+            basis_values = self.basis(input_points)
 
             res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
-            return res.reshape(
-                (self.n_samples, len(eval_points), self.dim_codomain),
-            )
+            return res.reshape(self.shape + batch_shape + self.output_shape)
 
         res_list = [
             np.sum((c * self.basis(np.asarray(p)).T).T, axis=0)
-            for c, p in zip(self.coefficients, eval_points)
+            for c, p in zip(self.coefficients, input_points)
         ]
 
-        return np.asarray(res_list)
+        return np.reshape(
+            res_list,
+            self.shape + batch_shape + self.output_shape,
+        )
 
     def shift(
         self,
@@ -388,7 +394,7 @@ class FDataBasis(FData):  # noqa: WPS214
             domain,
         )
 
-        return integrated[:, 0, :]
+        return integrated[:, :]
 
     def sum(  # noqa: WPS125
         self: T,
@@ -481,7 +487,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self: T,
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
-        / ,
+        /,
         correction: int = 0,
     ) -> NDArrayFloat:
         pass
@@ -489,7 +495,7 @@ class FDataBasis(FData):  # noqa: WPS214
     @overload
     def cov(    # noqa: WPS451
         self: T,
-        / ,
+        /,
         correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
@@ -498,7 +504,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self: T,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
-        / ,
+        /,
         correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
@@ -568,7 +574,7 @@ class FDataBasis(FData):  # noqa: WPS214
             ...     coefficients=[[1, 1, 1], [1, 0, 1]],
             ...     basis=MonomialBasis(domain_range=(0,5), n_basis=3),
             ... )
-            >>> fd.to_grid([0, 1, 2])
+            >>> fd.to_grid(np.array([0, 1, 2]))
             FDataGrid(
                 array([[[ 1.],
                         [ 3.],
@@ -576,7 +582,7 @@ class FDataBasis(FData):  # noqa: WPS214
                        [[ 1.],
                         [ 2.],
                         [ 5.]]]),
-                grid_points=(array([ 0., 1., 2.]),),
+                grid_points=array([array([ 0, 1, 2])], dtype=object),
                 domain_range=((0.0, 5.0),),
                 ...)
 

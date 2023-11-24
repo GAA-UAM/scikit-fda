@@ -39,7 +39,7 @@ class TestFDataBasisEvaluation(unittest.TestCase):
         # Test different ways of call f with a point
         res = np.array(
             [-0.903918107989282, -0.267163981229459],
-        ).reshape((2, 1, 1))
+        ).reshape((2, 1))
 
         np.testing.assert_allclose(f([0.5]), res)
         np.testing.assert_allclose(f((0.5,)), res)
@@ -71,10 +71,6 @@ class TestFDataBasisEvaluation(unittest.TestCase):
 
         # Different ways to pass the axes
         np.testing.assert_allclose(
-            f(t, grid=True),
-            res_test,
-        )
-        np.testing.assert_allclose(
             f((t,), grid=True),
             res_test,
         )
@@ -82,8 +78,11 @@ class TestFDataBasisEvaluation(unittest.TestCase):
             f([t], grid=True),
             res_test,
         )
+        grid = np.empty(shape=1, dtype=np.object_)
+        grid[...] = [t]
+        grid = np.squeeze(grid)
         np.testing.assert_allclose(
-            f(np.atleast_2d(t), grid=True),
+            f(grid, grid=True),
             res_test,
         )
 
@@ -109,7 +108,7 @@ class TestFDataBasisEvaluation(unittest.TestCase):
         # Test same result than normal evaluation
         np.testing.assert_allclose(
             f([1]),
-            f([[1], [1]], aligned=False),
+            f([1, 1], aligned=False),
         )
         np.testing.assert_allclose(
             f(t),
@@ -321,7 +320,7 @@ class TestBasisEvaluationVectorValued(unittest.TestCase):
 
         self.assertEqual(fd.dim_codomain, 2)
 
-        res = np.array([[[1, 2]], [[3, 4]]])
+        res = np.array([[1, 2], [3, 4]])
 
         np.testing.assert_allclose(fd(0), res)
 
@@ -373,9 +372,9 @@ class TestBasisEvaluationTensor(unittest.TestCase):
         self.assertEqual(fd.dim_domain, 2)
         self.assertEqual(fd.dim_codomain, 1)
 
-        np.testing.assert_allclose(fd([0, 0]), [[[1]]])
+        np.testing.assert_allclose(fd([0, 0]), [[1]])
 
-        np.testing.assert_allclose(fd([0.5, 0.5]), [[[1.5]]])
+        np.testing.assert_allclose(fd([0.5, 0.5]), [[1.5]])
 
         np.testing.assert_allclose(
             fd([(0, 0), (0.5, 0.5)]),

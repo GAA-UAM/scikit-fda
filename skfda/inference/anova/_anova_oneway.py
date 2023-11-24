@@ -220,12 +220,19 @@ def _anova_bootstrap(
     grid_points = getattr(fd_grouped[0], "grid_points", None)
     if grid_points is None:
         start, stop = fd_grouped[0].domain_range[0]
-        grid_points = np.linspace(start, stop, constants.N_POINTS_FINE_MESH)
+        grid_points = np.empty(shape=1, dtype=np.object_)
+        grid_points[...] = [
+            np.linspace(
+                start,
+                stop,
+                constants.N_POINTS_FINE_MESH,
+            ),
+        ]
 
     if equal_var:
         cov_est = concatenate(fd_grouped).cov(
-            grid_points,
-            grid_points,
+            grid_points[0],
+            grid_points[0],
             correction=1,
         )
         k_est = [cov_est] * len(fd_grouped)

@@ -126,8 +126,8 @@ class TestKernelSmoother(unittest.TestCase):
         return KernelSmoother(  # noqa: WPS437
             kernel_estimator=kernel_estimator,
         )._hat_matrix(
-            input_points=[[1, 2, 3, 4, 5]],
-            output_points=[[1, 2, 3, 4, 5]],
+            input_points=[np.arange(1.0, 6.0)],
+            output_points=[np.arange(1.0, 6.0)],
         )
 
     def test_nw(self) -> None:

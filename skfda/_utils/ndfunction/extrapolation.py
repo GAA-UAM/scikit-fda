@@ -7,28 +7,34 @@ Defines methods to evaluate points outside the :term:`domain` range.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Mapping,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import numpy as np
 from typing_extensions import override
 
-from ._array_api import Array, DType
+from ._array_api import Array, DType, Shape
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
     from ._ndfunction import NDFunction
 
-
-InputDTypeT = TypeVar("InputDTypeT", bound=DType)
-OutputDTypeT = TypeVar("OutputDTypeT", bound=DType)
+A = TypeVar('A', bound=Array[Shape, DType])
 
 ExtrapolationLike = Union[
-    Evaluator,
+    Evaluator[A],
     Literal["bounds", "exception", "nan", "none", "periodic", "zeros"],
 ]
 
 
-class PeriodicExtrapolation(Evaluator):
+class PeriodicExtrapolation(Evaluator[A]):
     """
     Extend the :term:`domain` range periodically.
 
@@ -64,12 +70,12 @@ class PeriodicExtrapolation(Evaluator):
     @override
     def __call__(  # noqa:D102
         self,
-        function: NDFunction,
+        function: NDFunction[A],
         /,
-        eval_points: Array[InputDTypeT],
+        eval_points: A,
         *,
         aligned: bool = True,
-    ) -> Array[OutputDTypeT]:
+    ) -> A:
 
         domain_range = np.asarray(function.domain_range)
 
@@ -80,14 +86,14 @@ class PeriodicExtrapolation(Evaluator):
             + (eval_points - domain_range[:, 0]) % domain_len
         )
 
-        return function(  # type: ignore[no-any-return]
+        return function(
             eval_points,
             aligned=aligned,
             extrapolation=None,
         )
 
 
-class BoundaryExtrapolation(Evaluator):
+class BoundaryExtrapolation(Evaluator[A]):
     """
     Extend the :term:`domain` range using the boundary values.
 
@@ -123,12 +129,12 @@ class BoundaryExtrapolation(Evaluator):
     @override
     def __call__(  # noqa:D102
         self,
-        function: NDFunction,
+        function: NDFunction[A],
         /,
-        eval_points: Array[InputDTypeT],
+        eval_points: A,
         *,
         aligned: bool = True,
-    ) -> Array[OutputDTypeT]:
+    ) -> A:
 
         domain_range = function.domain_range
 
@@ -139,14 +145,14 @@ class BoundaryExtrapolation(Evaluator):
             eval_points[eval_points[..., i] < a, i] = a
             eval_points[eval_points[..., i] > b, i] = b
 
-        return function(  # type: ignore[no-any-return]
+        return function(
             eval_points,
             aligned=aligned,
             extrapolation=None,
         )
 
 
-class ExceptionExtrapolation(Evaluator):
+class ExceptionExtrapolation(Evaluator[A]):
     """
     Raise an exception.
 
@@ -179,19 +185,19 @@ class ExceptionExtrapolation(Evaluator):
     @override
     def __call__(  # noqa:D102
         self,
-        function: NDFunction,
+        function: NDFunction[A],
         /,
-        eval_points: Array[InputDTypeT],
+        eval_points: A,
         *,
         aligned: bool = True,
-    ) -> Array[OutputDTypeT]:
+    ) -> A:
 
         raise ValueError(
             "Attempt to evaluate points outside the domain range.",
         )
 
 
-class FillExtrapolation(Evaluator):
+class FillExtrapolation(Evaluator[A]):
     """
     Values outside the :term:`domain` range will be filled with a fixed value.
 
@@ -230,12 +236,12 @@ class FillExtrapolation(Evaluator):
     @override
     def __call__(  # noqa:D102
         self,
-        function: NDFunction,
+        function: NDFunction[A],
         /,
-        eval_points: Array[InputDTypeT],
+        eval_points: A,
         *,
         aligned: bool = True,
-    ) -> Array[OutputDTypeT]:
+    ) -> A:
 
         shape = (
             function.n_samples,
@@ -273,14 +279,14 @@ def _parse_extrapolation(
 
 @overload
 def _parse_extrapolation(
-    extrapolation: ExtrapolationLike,
-) -> Evaluator:
+    extrapolation: ExtrapolationLike[A],
+) -> Evaluator[A]:
     pass
 
 
 def _parse_extrapolation(
-    extrapolation: ExtrapolationLike | None,
-) -> Evaluator | None:
+    extrapolation: ExtrapolationLike[A] | None,
+) -> Evaluator[A] | None:
     """
     Parse a extrapolation.
 
@@ -303,7 +309,9 @@ def _parse_extrapolation(
 
 
 #: Dictionary with the extrapolation methods.
-extrapolation_methods = {
+extrapolation_methods: Mapping[
+    str, Evaluator[Any] | None,
+] = {
     "bounds": BoundaryExtrapolation(),
     "exception": ExceptionExtrapolation(),
     "nan": FillExtrapolation(np.nan),

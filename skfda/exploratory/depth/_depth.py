@@ -42,7 +42,7 @@ class IntegratedDepth(Depth[FDataGrid]):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> grid_points = np.array([0, 2, 4, 6, 8, 10])
         >>> X = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = skfda.exploratory.depth.IntegratedDepth()
         >>> depth(X).round(1)
@@ -120,7 +120,7 @@ class ModifiedBandDepth(IntegratedDepth):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> grid_points = np.array([0, 2, 4, 6, 8, 10])
         >>> X = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = skfda.exploratory.depth.ModifiedBandDepth()
         >>> values = depth(X)
@@ -155,7 +155,7 @@ class BandDepth(Depth[FDataGrid]):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> grid_points = np.array([0, 2, 4, 6, 8, 10])
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = skfda.exploratory.depth.BandDepth()
         >>> depth(fd)
@@ -227,7 +227,7 @@ class DistanceBasedDepth(Depth[FDataGrid], BaseEstimator):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> grid_points = np.array([0, 2, 4, 6, 8, 10])
         >>> X = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = DistanceBasedDepth(MahalanobisDistance(2))
         >>> depth(X).round(1)

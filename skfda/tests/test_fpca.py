@@ -42,13 +42,13 @@ class FPCATestCase(unittest.TestCase):
 
         # Check that if n_components is bigger than the number of samples then
         # an exception should be thrown
-        fd = FDataGrid([[0.5], [0.1]], grid_points=[0])
+        fd = FDataGrid([[0.5], [0.1]], grid_points=np.array([0.0]))
         with self.assertRaises(AttributeError):
             fpca.fit(fd)
 
         # Check that n_components must be smaller than the number of attributes
         # in the FDataGrid object
-        fd = FDataGrid([[0.9], [0.7], [0.5]], grid_points=[0])
+        fd = FDataGrid([[0.9], [0.7], [0.5]], grid_points=np.array([0.0]))
         with self.assertRaises(AttributeError):
             fpca.fit(fd)
 

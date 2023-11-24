@@ -16,7 +16,10 @@ import pandas.api.extensions
 import scipy
 from matplotlib.figure import Figure
 
-from .._utils import _cartesian_product, _check_array_key, _to_grid_points
+from .._utils import _check_array_key
+from .._utils.ndfunction.evaluator import Evaluator
+from .._utils.ndfunction.utils import cartesian_product
+from .._utils.ndfunction.utils.validation import check_grid_points
 from ..typing._base import (
     DomainRange,
     DomainRangeLike,
@@ -27,7 +30,6 @@ from ..typing._base import (
 from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from ._functional_data import FData
 from .basis import Basis, FDataBasis
-from .._utils.ndfunction.evaluator import Evaluator
 from .extrapolation import ExtrapolationLike
 from .grid import FDataGrid
 from .interpolation import SplineInterpolation
@@ -420,8 +422,8 @@ class FDataIrregular(FData):  # noqa: WPS214
             FDataIrregular: FDataIrregular containing the same data
             as the source but with an irregular structure.
         """
-        all_points_single_function = _cartesian_product(
-            _to_grid_points(f_data.grid_points),
+        all_points_single_function = cartesian_product(
+            check_grid_points(f_data.grid_points),
         )
         flat_points = np.tile(
             all_points_single_function, (f_data.n_samples, 1),

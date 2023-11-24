@@ -89,7 +89,7 @@ def _reduceat(### FINISH DOC + TYPE HINTS
 def _get_sample_range_from_data(
     start_indices: NDArrayInt,
     points: NDArrayFloat,
-) -> DomainRange:
+) -> DomainRangeLike:
     """Compute the domain ranges of each sample.
 
     Args:
@@ -101,13 +101,19 @@ def _get_sample_range_from_data(
             sample_range[f][d] = (min_point, max_point) is the domain range for
             the function f in dimension d.
     """
-    return tuple(
-        tuple(
-            zip(np.min(f_points, axis=0), np.max(f_points, axis=0)),
-        )
-        for f_points in np.split(points, start_indices[1:])
+    return np.stack(
+        [
+            _reduceat(
+                points,
+                start_indices,
+                ufunc=ufunc,
+                value_empty=np.nan,
+                dtype=float,
+            )
+            for ufunc in (np.fmin, np.fmax)
+        ],
+        axis=-1,
     )
-
 
 def _get_domain_range_from_sample_range(
     sample_range: DomainRange,

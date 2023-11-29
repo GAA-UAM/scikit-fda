@@ -38,7 +38,7 @@ from ..typing._base import (
 )
 from ..typing._numpy import (
     ArrayLike,
-    DTypeLIke,
+    DTypeLike,
     NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
@@ -494,32 +494,22 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def _sort_by_arguments(self) -> Tuple[ArrayLike, ArrayLike]:
         """Sort the arguments lexicographically functionwise.
-
+    
         Additionally, sort the values accordingly.
-
+    
         Returns:
             Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
         """
-        slice_args = np.split(self.points, self.start_indices)[1:]
-        slice_values = np.split(self.values, self.start_indices)[1:]
+        points_split = np.split(self.points, self.start_indices)[1:]
+        shifts = itertools.accumulate(map(len, [[]] + points_split[:-1]))
+        sorter = np.concatenate(
+            [
+                np.lexsort(np.rot90(points)) + shift
+                for points, shift in zip(points_split, shifts)
+            ]
+        )
 
-        # Sort lexicographically, first to last dimension
-        sorting_masks = [
-            np.lexsort(np.flip(f_args, axis=1).T)
-            for f_args in slice_args
-        ]
-
-        sorted_args = [
-            slice_args[i][mask]
-            for i, mask in enumerate(sorting_masks)
-        ]
-
-        sorted_values = [
-            slice_values[i][mask]
-            for i, mask in enumerate(sorting_masks)
-        ]
-
-        return np.concatenate(sorted_args), np.concatenate(sorted_values)
+        return self.points[sorter], self.values[sorter]
 
     def round(
         self,

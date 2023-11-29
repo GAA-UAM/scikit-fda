@@ -10,7 +10,14 @@ from __future__ import annotations
 import itertools
 import numbers
 from typing import (
-    Any, Optional, Sequence, Tuple, Type, TypeVar, Union,
+    Any,
+    Callable,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
 
 import numpy as np
@@ -29,7 +36,13 @@ from ..typing._base import (
     GridPointsLike,
     LabelTupleLike,
 )
-from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ..typing._numpy import (
+    ArrayLike,
+    DTypeLIke,
+    NDArrayBool,
+    NDArrayFloat,
+    NDArrayInt,
+)
 from ._functional_data import FData
 from .basis import Basis, FDataBasis
 from .evaluator import Evaluator
@@ -43,48 +56,91 @@ T = TypeVar("T", bound='FDataIrregular')
 # Auxiliary functions#
 ######################
 
-
-def _reduceat(### FINISH DOC + TYPE HINTS
+def _reduceat(#CHOOSE MODE 1 OR 2
     array: ArrayLike,
     indices: ArrayLike,
     axis: int = 0,
-    dtype=None,
-    out=None,
+    dtype: Union[DTypeLike, None] = None,
+    out: Union[NDArray, None] = None,
     *,
-    ufunc,
-    value_empty
+    ufunc: Callable,# TO PRECISE(?)
+    value_empty: Any,
 ) -> NDArray:
     """Wrapped `np.ufunc.reduceat` to manage edge cases.
 
     The edge cases are the one described in the doc of
     `np.ufunc.reduceat`. Different behaviours are the following:
-        - No exception is raised when `indices[i] < 0` or
-            `indices[i] >=len(array)`. Instead, the corresponding value
-            is `value_empty`.
-        - When not in the previous case, the result is `value_empty` if
-            `indices[i] >= indices[i+1]` and otherwise, the same as
-            `ufunc.reduce(array[indices[i]:indices[i+1]])`.
+    - No exception is raised when `indices[i] < 0` or
+        `indices[i] >= len(array)`. Instead, the corresponding value is
+        `value_empty`.
+    - When not in the previous case, the result is `value_empty` if
+        `indices[i] >= indices[i+1]` and otherwise, the same as
+        `ufunc.reduce(array[indices[i]:indices[i+1]])`.
+
+    Note that when necessary, `value_empty` is casted to `dtype` if not
+    `None`, or to the type of `array`'s elements. If not possible, an
+    exception will be raised.
     """
-    array, indices = map(np.asarray, [array, indices])
-    axis %= array.ndim
-    ax_idx = (slice(None),) * axis
-    n = array.shape[axis]
+    # MODE 1 OR 2 TO CHOOSE (more extensive benchmarks to do)
+    # Not obvious depending on the use case, can go from x0.01 to x100.
+    # Maybe both mode can be kept and activated when more appropriate?
+    MODE = 1
 
-    pad_width = np.full((array.ndim, 2), 0)
-    pad_width[axis, 1] = 1
-    extended_array = np.pad(array, pad_width, mode="empty")
-    extended_indices = np.append(indices, n)
+    # MODE 1: Fix start_indices + one `np.ufun.reducaet` call + post-fix 
+    if MODE == 1:
 
-    bad = (indices < 0) | (indices > n)
-    empty = (np.diff(extended_indices) <= 0) | bad
-    extended_indices[:-1][bad] = n
+        array, indices = map(np.asarray, [array, indices])
+        axis %= array.ndim
+        ax_idx = (slice(None),) * axis
+        n = array.shape[axis]
+    
+        pad_width = np.full((array.ndim, 2), 0)
+        pad_width[axis, 1] = 1
+        extended_array = np.pad(array, pad_width, mode="empty")
+        extended_indices = np.append(indices, n)
+    
+        bad = (indices < 0) | (indices >= n)
+        empty = (np.diff(extended_indices) <= 0) | bad
+        extended_indices[:-1][bad] = n
+    
+        out = ufunc.reduceat(
+            extended_array, extended_indices, axis=axis, dtype=dtype, out=out
+        )[ax_idx + (slice(-1),)]
+        if empty.any():
+            out[ax_idx + (empty,)] = value_empty
+    
+        return out
 
-    out = ufunc.reduceat(
-        extended_array, extended_indices, axis=axis, dtype=dtype, out=out
-    )[ax_idx + (slice(-1),)]
-    out[ax_idx + (empty,)] = value_empty
+    # MODE 2: Iterative calls of `np.ufunc.reduce`
+    if MODE == 2:
 
-    return out
+        array, indices = map(np.asarray, [array, indices])
+        ndim = array.ndim
+        axis = axis if axis >= 0 else ndim - axis
+        pre, (n, *post) = array.shape[:axis], array.shape[axis:]
+        shape = pre + (len(indices),) + tuple(post)
+    
+        if dtype is None:
+            dtype = array.dtype
+    
+        if out is None:
+            out = np.empty(shape, dtype=dtype)
+        else:
+            assert out.shape == shape
+            out = out.astype(dtype)
+    
+        ii = [slice(None)] * ndim
+        for i, (a, b) in enumerate(itertools.pairwise(np.append(indices, n))):
+            ii[axis] = i
+            ii_out = tuple(ii)
+            if a < 0 or a >= min(b, n):  # Nothing to reduce
+                out[ii_out] = value_empty
+            else:
+                ii[axis] = slice(a, b)
+                ii_array = tuple(ii)
+                out[ii_out] = ufunc.reduce(array[ii_array], axis=axis)
+    
+        return out
 
 def _get_sample_range_from_data(
     start_indices: NDArrayInt,

@@ -172,7 +172,7 @@ def _get_sample_range_from_data(
     )
 
 def _get_domain_range_from_sample_range(
-    sample_range: DomainRange,
+    sample_range: DomainRangeLike,
 ) -> DomainRange:
     """Compute the domain range of the whole dataset.
 
@@ -185,8 +185,8 @@ def _get_domain_range_from_sample_range(
             the dimension d.
     """
     sample_range_array = np.asarray(sample_range)
-    min_arguments = sample_range_array[..., 0].min(axis=0)
-    max_arguments = sample_range_array[..., 1].max(axis=0)
+    min_arguments = np.nanmin(sample_range_array[..., 0], axis=0)
+    max_arguments = np.nanmin(sample_range_array[..., 1], axis=0)
     return tuple(zip(min_arguments, max_arguments))
 
 
@@ -317,10 +317,10 @@ class FDataIrregular(FData):  # noqa: WPS214
     ):
         """Construct a FDataIrregular object."""
         self.start_indices = np.asarray(start_indices)
-        self.points = np.asarray(points)
+        self.points = np.asarray(points, dtype=float)
         if self.points.ndim == 1:
             self.points = self.points.reshape(-1, 1)
-        self.values = np.asarray(values)
+        self.values = np.asarray(values, dtype=float)
         if self.values.ndim == 1:
             self.values = self.values.reshape(-1, 1)
 
@@ -333,7 +333,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if np.any(np.diff(self.start_indices) < 0):
             raise ValueError("Array start_indices must be non-decreasing")
 
-        if self.start_indices[-1] >= len(self.points):
+        if self.start_indices[-1] > len(self.points):
             raise ValueError("Index in start_indices out of bounds")
 
         # Ensure arguments are in order within each function

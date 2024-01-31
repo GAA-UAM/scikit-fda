@@ -126,7 +126,7 @@ license_ can be found along with the code.
    :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
    :target: https://www.repostatus.org/#active
    
-.. |versions| image:: https://img.shields.io/pypi/pyversions/dcor
+.. |versions| image:: https://img.shields.io/pypi/pyversions/scikit-fda
    :alt: PyPI - Python Version
    :scale: 100%
 

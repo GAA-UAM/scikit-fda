@@ -56,91 +56,62 @@ T = TypeVar("T", bound='FDataIrregular')
 # Auxiliary functions#
 ######################
 
-def _reduceat(#CHOOSE MODE 1 OR 2
+def _reduceat(
+    ufunc,
     array: ArrayLike,
     indices: ArrayLike,
     axis: int = 0,
-    dtype: Union[DTypeLike, None] = None,
-    out: Union[NDArray, None] = None,
+    dtype=None,
+    out=None,
     *,
-    ufunc: Callable,# TO PRECISE(?)
-    value_empty: Any,
-) -> NDArray:
-    """Wrapped `np.ufunc.reduceat` to manage edge cases.
+    value_empty
+):
+    """
+    Wrapped `np.ufunc.reduceat` to manage some edge cases.
 
     The edge cases are the one described in the doc of
     `np.ufunc.reduceat`. Different behaviours are the following:
-    - No exception is raised when `indices[i] < 0` or
-        `indices[i] >= len(array)`. Instead, the corresponding value is
-        `value_empty`.
-    - When not in the previous case, the result is `value_empty` if
-        `indices[i] >= indices[i+1]` and otherwise, the same as
-        `ufunc.reduce(array[indices[i]:indices[i+1]])`.
+        - No exception is raised when `indices[i] < 0` or
+            `indices[i] >=len(array)`. Instead, the corresponding value
+            is `value_empty`.
+        - When not in the previous case, the result is `value_empty` if
+            `indices[i] == indices[i+1]` and otherwise, the same as
+            `ufunc.reduce(array[indices[i]:indices[i+1]])`. This means
+            that an exception is still be raised if `indices[i] >
+            indices[i+1]`.
 
-    Note that when necessary, `value_empty` is casted to `dtype` if not
-    `None`, or to the type of `array`'s elements. If not possible, an
-    exception will be raised.
+    Note: The `value_empty` must be convertible to the `dtype` (either
+          provided or inferred from the `ufunc` operations).
     """
-    # MODE 1 OR 2 TO CHOOSE (more extensive benchmarks to do)
-    # Not obvious depending on the use case, can go from x0.01 to x100.
-    # Maybe both mode can be kept and activated when more appropriate?
-    MODE = 1
+    array = np.asarray(array)
+    indices = np.asarray(indices)
 
-    # MODE 1: Fix start_indices + one `np.ufun.reducaet` call + post-fix 
-    if MODE == 1:
+    n = array.shape[axis]
+    good_axis_idx = (
+        (indices >= 0) & (indices < n) & (np.diff(indices, append=n) > 0)
+    )
 
-        array, indices = map(np.asarray, [array, indices])
-        axis %= array.ndim
-        ax_idx = (slice(None),) * axis
-        n = array.shape[axis]
-    
-        pad_width = np.full((array.ndim, 2), 0)
-        pad_width[axis, 1] = 1
-        extended_array = np.pad(array, pad_width, mode="empty")
-        extended_indices = np.append(indices, n)
-    
-        bad = (indices < 0) | (indices >= n)
-        empty = (np.diff(extended_indices) <= 0) | bad
-        extended_indices[:-1][bad] = n
-    
-        out = ufunc.reduceat(
-            extended_array, extended_indices, axis=axis, dtype=dtype, out=out
-        )[ax_idx + (slice(-1),)]
-        if empty.any():
-            out[ax_idx + (empty,)] = value_empty
-    
-        return out
+    good_idx = [slice(None)] * array.ndim
+    good_idx[axis] = good_axis_idx
+    good_idx = tuple(good_idx)
 
-    # MODE 2: Iterative calls of `np.ufunc.reduce`
-    if MODE == 2:
+    reduceat_out = ufunc.reduceat(
+        array, indices[good_axis_idx], axis=axis, dtype=dtype
+    )
 
-        array, indices = map(np.asarray, [array, indices])
-        ndim = array.ndim
-        axis = axis if axis >= 0 else ndim - axis
-        pre, (n, *post) = array.shape[:axis], array.shape[axis:]
-        shape = pre + (len(indices),) + tuple(post)
-    
-        if dtype is None:
-            dtype = array.dtype
-    
-        if out is None:
-            out = np.empty(shape, dtype=dtype)
-        else:
-            assert out.shape == shape
-            out = out.astype(dtype)
-    
-        ii = [slice(None)] * ndim
-        for i, (a, b) in enumerate(itertools.pairwise(np.append(indices, n))):
-            ii[axis] = i
-            ii_out = tuple(ii)
-            if a < 0 or a >= min(b, n):  # Nothing to reduce
-                out[ii_out] = value_empty
-            else:
-                ii[axis] = slice(a, b)
-                ii_array = tuple(ii)
-                out[ii_out] = ufunc.reduce(array[ii_array], axis=axis)
-    
-        return out
+    out_shape = list(array.shape)
+    out_shape[axis] = len(indices)
+    out_dtype = dtype or reduceat_out.dtype
+
+    if out is None:
+        out = np.full(out_shape, value_empty, dtype=out_dtype)
+    else:
+        out.astype(out_dtype, copy=False)
+        out.fill(value_empty)
+
+    out[good_idx] = reduceat_out
+
+    return out
 
 def _get_sample_range_from_data(
     start_indices: NDArrayInt,
@@ -160,9 +131,9 @@ def _get_sample_range_from_data(
     return np.stack(
         [
             _reduceat(
+                ufunc,
                 points,
                 start_indices,
-                ufunc=ufunc,
                 value_empty=np.nan,
                 dtype=float,
             )
@@ -810,16 +781,14 @@ class FDataIrregular(FData):  # noqa: WPS214
                 return other
             elif other.shape == (self.n_samples,):
                 other_index = (
-                    (slice(None),) + (np.newaxis,)
-                    * (self.values.ndim - 1)
+                    (slice(None),)
+                    + (np.newaxis,) * (self.values.ndim - 1)
                 )
 
                 other_vector = other[other_index]
 
                 # Number of values in each curve
-                values_curve = np.diff(
-                    np.r_[self.start_indices, [len(self.points)]]
-                )
+                values_curve = np.diff(self.start_indices, append=len(self.points))
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve
@@ -829,25 +798,23 @@ class FDataIrregular(FData):  # noqa: WPS214
                 self.dim_codomain,
             ):
                 other_index = (
-                    (slice(None),) + (np.newaxis,)
-                    * (self.values.ndim - 2)
+                    (slice(None),)
+                    + (np.newaxis,) * (self.values.ndim - 2)
                     + (slice(None),)
                 )
 
                 other_vector = other[other_index]
 
                 # Number of values in each curve
-                values_curve = np.diff(
-                    np.r_[self.start_indices, [len(self.points)]]
-                )
+                values_curve = np.diff(self.start_indices, append=len(self.points))
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve
                 return np.repeat(other_vector, values_curve, axis=0)
 
             raise ValueError(
-                f"Invalid dimensions in operator between FDataIrregular "
-                f"and Numpy array: {other.shape}",
+                f"Invalid dimensions in operator between FDataIrregular and "
+                f"Numpy array: {other.shape}",
             )
 
         elif isinstance(other, FDataIrregular):
@@ -1395,7 +1362,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         required_slices = []
         key = _check_array_key(self.start_indices, key)
         indices = range(self.n_samples)
-        required_indices = indices[key]
+        required_indices = np.array(indices)[key]
         for i in required_indices:
             next_index = None
             if i + 1 < self.n_samples:

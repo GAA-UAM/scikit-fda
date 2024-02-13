@@ -28,7 +28,7 @@ jobs:
     - name: Run tests
       run: |
         pip3 debug --verbose .
-        pip3 install mkl-devel
+        pip3 install git+https://github.com/jdtuck/fdasrsf_python.git@refs/pull/38/merge
         pip3 install ".[test]"
         pytest --cov=skfda/ --cov-report=xml
 

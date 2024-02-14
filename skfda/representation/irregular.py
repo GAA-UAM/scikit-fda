@@ -472,11 +472,10 @@ class FDataIrregular(FData):  # noqa: WPS214
             Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
         """
         points_split = np.split(self.points, self.start_indices)[1:]
-        shifts = itertools.accumulate(map(len, [[]] + points_split[:-1]))
         sorter = np.concatenate(
             [
                 np.lexsort(np.rot90(points)) + shift
-                for points, shift in zip(points_split, shifts)
+                for points, shift in zip(points_split, self.start_indices)
             ]
         )
 

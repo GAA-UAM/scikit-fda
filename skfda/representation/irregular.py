@@ -971,14 +971,14 @@ class FDataIrregular(FData):  # noqa: WPS214
             )
         # Verify that dimensions are compatible
         assert others, "No objects to concatenate"
-        all_ = (self,) + others
+        all_objects = (self,) + others
         start_indices_split = []
         total_points = 0
         points_split = []
         values_split = []
         total_sample_names_split = []
         domain_range_split = []
-        for x, y in itertools.pairwise(all_ + (self,)):
+        for x, y in itertools.pairwise(all_objects + (self,)):
             x.check_same_dimensions(y)
             start_indices_split.append(x.start_indices + total_points)
             total_points += len(x.points)
@@ -1243,7 +1243,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         from ..misc.validation import validate_domain_range
 
-        npdr = np.asarray(validate_domain_range(domain_range))  # (dim, 2)
+        npdr = np.asarray(validate_domain_range(domain_range))  # shape(dim, 2)
 
         mask = np.all(
             (npdr[:, 0] <= sample_points) & (sample_points <= npdr[:, 1]),

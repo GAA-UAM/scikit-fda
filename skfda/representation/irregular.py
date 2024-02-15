@@ -475,7 +475,11 @@ class FDataIrregular(FData):  # noqa: WPS214
             range(len(self.start_indices)),
             np.diff(self.start_indices, append=len(self.points)),
         )
-        sorter = np.lexsort(np.rot90(np.c_[ind, self.points]))
+        # In order to use lexsort the following manipulations are required:
+        # - Transpose the axis, so that the first axis contains the keys.
+        # - Flip that axis so that the primary key is last, and they are thus
+        #   in last-to-first order.
+        sorter = np.lexsort(np.c_[ind, self.points].T[::-1])
 
         return self.points[sorter], self.values[sorter]
 

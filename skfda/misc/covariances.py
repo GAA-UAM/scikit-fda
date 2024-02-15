@@ -9,6 +9,8 @@ import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
 from scipy.special import gamma, kv
 
+from ..misc import inner_product_matrix
+from ..misc.metrics import PairwiseMetric, LpNorm, l2_distance
 from ..representation import FData, FDataBasis, FDataGrid
 from ..representation.basis import TensorBasis
 from ..typing._numpy import ArrayLike, NDArrayFloat
@@ -24,6 +26,11 @@ CovarianceLike = Union[
     float,
     NDArrayFloat,
     Callable[[ArrayLike, ArrayLike], NDArrayFloat],
+]
+
+InputAcceptable = Union[
+    np.ndarray,
+    FData,
 ]
 
 
@@ -72,8 +79,36 @@ class Covariance(abc.ABC):
     _latex_formula: str
 
     @abc.abstractmethod
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+    def __call__(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
         pass
+
+    def _param_check_and_transform(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> Tuple[np.ndarray | FData, np.ndarray | FData]:
+        # Param check
+        if y is None:
+            y = x
+
+        if type(x) is not type(y):  # noqa: WPS516
+            raise ValueError(
+                'Cannot operate objects x and y from different classes',
+                f'({type(x)}, {type(y)}).',
+            )
+
+        if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
+            x, y = np.array(x), np.array(y)
+            if len(x.shape) < 2:
+                x = np.atleast_2d(x)
+            if len(y.shape) < 2:
+                y = np.atleast_2d(y)
+
+        return x, y
 
     def heatmap(self, limits: Tuple[float, float] = (-1, 1)) -> Figure:
         """Return a heatmap plot of the covariance function."""
@@ -245,7 +280,14 @@ class Brownian(Covariance):
         self.variance = variance
         self.origin = origin
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+    def __call__(
+        self,
+        x: InputAcceptable | FData,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
+        if isinstance(x, FData) or isinstance(y, FData):
+            raise ValueError('Not defined for FData objects.')
+
         x = _transform_to_2d(x) - self.origin
         y = _transform_to_2d(y) - self.origin
 
@@ -319,11 +361,15 @@ class Linear(Covariance):
         self.variance = variance
         self.intercept = intercept
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
+        x, y = self._param_check_and_transform(x, y)
 
-        return self.variance * (x @ y.T + self.intercept)
+        x_y = inner_product_matrix(x, y)
+        return self.variance * (x_y + self.intercept)
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         return (
@@ -399,14 +445,18 @@ class Polynomial(Covariance):
         self.intercept = intercept
         self.slope = slope
         self.degree = degree
+    
+    def __call__(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
+        x, y = self._param_check_and_transform(x, y)
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
-
+        x_y = inner_product_matrix(x, y)
         return (
             self.variance
-            * (self.slope * x @ y.T + self.intercept) ** self.degree
+            * (self.slope * x_y + self.intercept) ** self.degree
         )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
@@ -475,13 +525,15 @@ class Gaussian(Covariance):
         self.variance = variance
         self.length_scale = length_scale
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
+        x, y = self._param_check_and_transform(x, y)
 
-        x_y = _squared_norms(x, y)
-
-        return self.variance * np.exp(-x_y / (2 * self.length_scale ** 2))
+        distance_x_y = PairwiseMetric(l2_distance)(x, y)
+        return self.variance * np.exp(-distance_x_y ** 2 / (2 * self.length_scale ** 2))
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         return (
@@ -552,12 +604,15 @@ class Exponential(Covariance):
         self.variance = variance
         self.length_scale = length_scale
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
+        x, y = self._param_check_and_transform(x, y)
 
-        x_y = _squared_norms(x, y)
-        return self.variance * np.exp(-np.sqrt(x_y) / (self.length_scale))
+        distance_x_y = PairwiseMetric(l2_distance)(x, y)
+        return self.variance * np.exp(-distance_x_y / (self.length_scale))
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         return (
@@ -623,7 +678,14 @@ class WhiteNoise(Covariance):
     def __init__(self, *, variance: float = 1):
         self.variance = variance
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+    def __call__(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
+        if isinstance(x, FData) or isinstance(y, FData):
+            raise ValueError('Not defined for FData objects.')
+
         x = _transform_to_2d(x)
         return self.variance * np.eye(x.shape[0])
 
@@ -703,18 +765,20 @@ class Matern(Covariance):
         self.length_scale = length_scale
         self.nu = nu
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
+        x, y = self._param_check_and_transform(x, y)
 
-        x_y_squared = _squared_norms(x, y)
-        x_y = np.sqrt(x_y_squared)
+        distance_x_y = PairwiseMetric(l2_distance)(x, y)
 
         p = self.nu - 0.5
         if p.is_integer():
             # Formula for half-integers
             p = int(p)
-            body = np.sqrt(2 * p + 1) * x_y / self.length_scale
+            body = np.sqrt(2 * p + 1) * distance_x_y / self.length_scale
             exponential = np.exp(-body)
             power_list = np.full(shape=(p,) + body.shape, fill_value=2 * body)
             power_list = np.cumprod(power_list, axis=0)
@@ -734,15 +798,15 @@ class Matern(Covariance):
                 self.variance * exponential * np.sum(sum_terms, axis=-1)
             )
         elif self.nu == np.inf:
-            return (
+            return (  # type: ignore[no-any-return]
                 self.variance * np.exp(
-                    -x_y_squared / (2 * self.length_scale ** 2),
+                    -distance_x_y ** 2 / (2 * self.length_scale ** 2),
                 )
             )
         else:
             # General formula
             scaling = 2**(1 - self.nu) / gamma(self.nu)
-            body = np.sqrt(2 * self.nu) * x_y / self.length_scale
+            body = np.sqrt(2 * self.nu) * distance_x_y / self.length_scale
             power = body**self.nu
             bessel = kv(self.nu, body)
 
@@ -798,7 +862,14 @@ class Empirical(Covariance):
                 "for univariate functions",
             )
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+    def __call__(
+        self,
+        x: InputAcceptable,
+        y: InputAcceptable | None = None,
+    ) -> NDArrayFloat:
+        if isinstance(x, FData) or isinstance(y, FData):
+            raise ValueError('Not defined for FData objects.')
+        
         """Evaluate the covariance function.
 
         Args:

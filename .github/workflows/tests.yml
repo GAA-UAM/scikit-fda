@@ -28,7 +28,7 @@ jobs:
     - name: Run tests
       run: |
         pip3 debug --verbose .
-        pip3 install numba
+        pip3 install mkl-devel
         pip3 install ".[test]"
         pytest --cov=skfda/ --cov-report=xml
 

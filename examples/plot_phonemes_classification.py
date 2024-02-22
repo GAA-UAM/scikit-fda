@@ -24,9 +24,22 @@ from skfda.ml.classification import KNeighborsClassifier
 from skfda.preprocessing.registration import FisherRaoElasticRegistration
 from skfda.preprocessing.smoothing import KernelSmoother
 
-##############################################################################
-# We will first load the (binary) Phoneme dataset, restricted to the first
-# 150 variables, and plot the first 20 functions.
+# %%
+# This example uses the Phoneme dataset\ :footcite:`hastie++_1995_penalized`
+# containing the frequency curves of some common phonemes as pronounced by
+# different people.
+# We illustrate with this data the preprocessing and
+# classification techniques available in scikit-fda.
+#
+# This is one of the examples presented in the ICTAI conference\
+# :footcite:p:`ramos-carreno++_2022_scikitfda`.
+
+# %%
+# We will first load the (binary) Phoneme dataset and plot the first 20
+# functions.
+# We restrict the data to the first 150 variables, as done in
+# :footcite:t:`ferraty+vieu_2006_computational`, because most of the
+# useful information is in the lower frequencies.
 X, y = fetch_phoneme(return_X_y=True)
 
 X = X[(y == 0) | (y == 1)]
@@ -47,8 +60,11 @@ n_plot = 20
 X[:n_plot].plot(group=y)
 plt.show()
 
-##############################################################################
-# We now smooth and plot the data again, as well as the class means.
+# %%
+# As we just saw, the curves are very noisy.
+# We can leverage the continuity of the trajectories by smoothing, using
+# a Nadaraya-Watson estimator.
+# We then plot the data again, as well as the class means.
 smoother = KernelSmoother(
     NadarayaWatsonHatMatrix(
         bandwidth=0.1,
@@ -66,8 +82,23 @@ X_smooth_aa.mean().plot(fig=fig, color="blue", linewidth=3)
 X_smooth_ao.mean().plot(fig=fig, color="red", linewidth=3)
 plt.show()
 
-##############################################################################
-# We now register the data per class. As Fisher-Rao elastic registration is
+# %%
+# The smoothed curves are easier to interpret.
+# Now, it is possible to appreciate the characteristic landmarks of each class,
+# such as maxima or minima.
+# However, not all these landmarks appear at the same frequency for each
+# trajectory.
+# One way to solve it is by registering (aligning) the data.
+# We use Fisher-Rao elastic registration, a state-of-the-art registration
+# method to illustrate the effect of registration.
+# Although this registration method achieves very good results, it
+# attempts to align all the curves to a common template.
+# Thus, in order to clearly view the specific landmarks of each class we
+# have to register the data per class.
+# This also means that if the we cannot use this method for a classification
+# task if the landmarks of each class are very different, as it is not able
+# to do per-class registration with unlabeled data.
+# As Fisher-Rao elastic registration is
 # very slow, we only register the plotted curves as an approximation.
 reg = FisherRaoElasticRegistration(
     penalty=0.01,
@@ -83,7 +114,7 @@ X_reg_aa.mean().plot(fig=fig, color="blue", linewidth=3)
 X_reg_ao.mean().plot(fig=fig, color="red", linewidth=3)
 plt.show()
 
-##############################################################################
+# %%
 # We now split the smoothed data in train and test datasets.
 # Note that there is no data leakage because no parameters are fitted in
 # the smoothing step, but normally you would want to do all preprocessing in
@@ -97,7 +128,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y,
 )
 
-##############################################################################
+# %%
 # We use a k-nn classifier with a functional analog to the Mahalanobis
 # distance and a fixed number of neighbors.
 n_neighbors = int(np.sqrt(X_smooth.n_samples))
@@ -115,7 +146,7 @@ y_pred = classifier.predict(X_test)
 score = accuracy_score(y_test, y_pred)
 print(score)
 
-##############################################################################
+# %%
 # If we wanted to optimize hyperparameters, we can use scikit-learn tools.
 pipeline = Pipeline([
     ("smoother", smoother),
@@ -138,3 +169,9 @@ grid_search = GridSearchCV(
 # y_pred = grid_search.predict(X_test)
 # score = accuracy_score(y_test, y_pred)
 # print(score)
+
+# %%
+# References
+# ----------
+#
+# .. footbibliography::

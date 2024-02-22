@@ -30,31 +30,56 @@ from skfda.misc.metrics import l2_distance
 from skfda.ml.clustering import KMeans
 from skfda.preprocessing.dim_reduction import FPCA
 
-##############################################################################
-# We will first load the AEMET dataset and plot it.
+# %%
+# In this example we explore the curves of daily temperatures at
+# different weather stations from Spain, included in the AEMET dataset\
+# :footcite:p:`meteorologicalstateagencyofspainaemet_2009_meteorological`.
+#
+# We first show how the visualization tools of scikit-fda can be used to
+# detect and interpret magnitude and shape outliers.
+# We also explain how to employ a clustering method on these temperature
+# curves using scikit-fda.
+# Then, the location of each weather station is plotted into a map of Spain
+# with a different color according to its cluster.
+# This reveals a remarkable resemblance to a Spanish climate map.
+# A posterior analysis using functional principal component analysis (FPCA)
+# explains how the two first principal components are related with relevant
+# meteorological concepts, and can be used to reconstruct and interpret
+# the original clustering.
+#
+# This is one of the examples presented in the ICTAI conference\
+# :footcite:p:`ramos-carreno++_2022_scikitfda`.
+
+# %%
+# We first load the AEMET dataset and plot it.
 X, _ = fetch_aemet(return_X_y=True)
 X = X.coordinates[0]
 
 X.plot()
 plt.show()
 
-##############################################################################
+# %%
 # A boxplot can show magnitude outliers, in this case Navacerrada.
+# Here the temperatures are lower than in the other curves, as this
+# weather station is at a high altitude, near a ski resort.
 Boxplot(
     X,
     depth_method=ModifiedBandDepth(),
 ).plot()
 plt.show()
 
-##############################################################################
+# %%
 # A magnitude-shape plot can be used to detect shape outliers, such as the
 # Canary islands, with a less steeper temperature curve.
+# The Canary islands are at a lower latitude, closer to the equator.
+# Thus, they have a subtropical climate which presents less temperature
+# variation during the year.
 MagnitudeShapePlot(
     X,
 ).plot()
 plt.show()
 
-##############################################################################
+# %%
 # We now attempt to cluster the curves using functional k-means.
 n_clusters = 5
 n_init = 10
@@ -67,7 +92,7 @@ fda_kmeans = KMeans(
 )
 fda_clusters = fda_kmeans.fit_predict(X)
 
-##############################################################################
+# %%
 # We want to plot the cluster of each station in the map of Spain. We need to
 # define first auxiliary variables and functions for plotting.
 coords_spain = (-10, 5, 34.98, 44.8)
@@ -130,15 +155,36 @@ fda_color_map = {
 
 # Names of each climate (for this particular seed)
 climate_names = {
-    0: "Cold-mountain",
+    0: "Cold/mountain",
     1: "Mediterranean",
     2: "Atlantic",
     3: "Subtropical",
     4: "Continental",
 }
 
-##############################################################################
+# %%
 # We now plot the obtained clustering in the maps.
+#
+# It is possible to notice that each cluster seems to roughly correspond with
+# a particular climate:
+#
+# - Red points, only present in the Canary islands, correspond to a subtropical
+#   climate.
+# - Yellow points, in the Mediterranean coast, correspond to a Mediterranean
+#   climate.
+# - Green points, in the Atlantic coast of mainland Spain, correspond to an
+#   Atlantic or oceanic climate.
+# - Orange points, in the center of mainland Spain, correspond to a continental
+#   climate.
+# - Finally the purple points are located at the coldest regions of Spain, such
+#   as in high mountain ranges.
+#   Thus, it can be associated with a cold or mountain climate.
+#
+# Notice that a couple of points in the Canary islands are not red.
+# The purple one is easy to explain, as it is in mount Teide, the highest
+# mountain of Spain.
+# The yellow one is in the airport of Los Rodeos, which has its own
+# microclimate\ :footcite:p:`romeo+marzoljaen_2014_analisis`.
 
 # Mainland
 fig_spain = create_map(coords_spain, figsize=(8, 6))
@@ -161,7 +207,7 @@ plot_cluster_points(
 )
 plt.show()
 
-##############################################################################
+# %%
 # We now can compute the first two principal components for interpretability,
 # and project the data over these directions.
 fpca = FPCA(n_components=2)
@@ -173,12 +219,17 @@ fpca.components_ *= -1
 
 X_red = fpca.transform(X)
 
-##############################################################################
+# %%
 # We now plot the first two principal components as perturbations over the
 # mean.
 #
 # The ``factor`` parameters is a number that multiplies each component in
 # order to make their effect more noticeable.
+#
+# It is possible to observe that the first component measures a global
+# increase/decrease in temperature.
+# The second component instead has the effect of increasing/decreasing
+# the variability of the temperatures during the year.
 fig = plt.figure(figsize=(8, 4))
 FPCAPlot(
     fpca.mean_,
@@ -188,8 +239,15 @@ FPCAPlot(
 ).plot()
 plt.show()
 
-##############################################################################
-# We also plot the projections over the first two principal components.
+# %%
+# We also plot the projections over the first two principal components,
+# keeping the cluster colors.
+# Here we can easily observe the corresponding characteristics of each
+# climate in terms of global temperature and annual variability.
+# The two outliers of the Mediterranean climate correspond to the
+# aforementioned airport of Los Rodeos, and to Tarifa, which is
+# located at the strait of Gibraltar and thus receives also the cold
+# waters of the Atlantic, explaining its lower annual variability.
 fig, ax = plt.subplots(1, 1)
 for cluster in range(n_clusters):
     selection = fda_clusters == cluster
@@ -205,7 +263,7 @@ ax.set_ylabel('Second principal component')
 ax.legend()
 plt.show()
 
-##############################################################################
+# %%
 # We now attempt a multivariate clustering using only these projections.
 mv_kmeans = sklearn.cluster.KMeans(
     n_clusters=n_clusters,
@@ -214,9 +272,12 @@ mv_kmeans = sklearn.cluster.KMeans(
 )
 mv_clusters = mv_kmeans.fit_predict(X_red)
 
-##############################################################################
+# %%
 # We now plot the multivariate clustering in the maps. We define a different
 # color map to match cluster colors with the previously obtained ones.
+# As you can see, the clustering using only the two first principal components
+# matches almost perfectly with the original one, that used the complete
+# temperature curves.
 
 mv_color_map = {
     0: "yellow",
@@ -246,3 +307,9 @@ plot_cluster_points(
     ax=fig_canary.axes[0],
 )
 plt.show()
+
+# %%
+# References
+# ----------
+#
+# .. footbibliography::

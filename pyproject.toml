@@ -34,7 +34,7 @@ dependencies = [
 	"findiff",
 	"lazy_loader",
 	"matplotlib",
-	"multimethod>=1.5, !=1.11",
+	"multimethod>=1.5, !=1.11, != 1.11.1",
 	"numpy>=1.16",
 	"pandas>=1.0",
 	"rdata",

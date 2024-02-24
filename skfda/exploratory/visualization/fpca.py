@@ -105,8 +105,8 @@ class FPCAPlot(BasePlot):
             raise AttributeError("X must be a FData object")
         perturbations = self.mean.copy()
         perturbations = perturbations.concatenate(
-            perturbations[0] + self.multiple * self.components[index],
+            perturbations[0] + self.factor * self.components[index],
         )
         return perturbations.concatenate(
-            perturbations[0] - self.multiple * self.components[index],
+            perturbations[0] - self.factor * self.components[index],
         )

@@ -157,7 +157,7 @@ def _get_domain_range_from_sample_range(
     """
     sample_range_array = np.asarray(sample_range)
     min_arguments = np.nanmin(sample_range_array[..., 0], axis=0)
-    max_arguments = np.nanmin(sample_range_array[..., 1], axis=0)
+    max_arguments = np.nanmax(sample_range_array[..., 1], axis=0)
     return tuple(zip(min_arguments, max_arguments))
 
 

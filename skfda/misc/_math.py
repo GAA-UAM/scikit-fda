@@ -12,7 +12,7 @@ import multimethod
 import numpy as np
 import scipy.integrate
 
-from .._utils import nquad_vec
+from .._utils import _same_domain, nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid
 from ..representation.basis import Basis
 from ..typing._base import DomainRange
@@ -243,6 +243,7 @@ def inner_product(
     Args:
         arg1: First sample.
         arg2: Second sample.
+        kwargs: Additional parameters for the function.
 
     Returns:
         Vector with the inner products of each pair of samples.
@@ -388,9 +389,16 @@ def _inner_product_fdatabasis(
     arg2: Union[FDataBasis, Basis],
     *,
     _matrix: bool = False,
+    _domain_range: Optional[DomainRange] = None,
     inner_product_matrix: Optional[NDArrayFloat] = None,
     force_numerical: bool = False,
 ) -> NDArrayFloat:
+
+    if not _same_domain(arg1, arg2):
+        raise ValueError("Both Objects should have the same domain_range")
+
+    if _domain_range and not np.array_equal(arg1.domain_range, _domain_range):
+        raise ValueError("_domain_range should be the same as arg objects")
 
     if isinstance(arg1, Basis):
         arg1 = arg1.to_basis()
@@ -479,8 +487,15 @@ def _inner_product_integrate(
     def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         f_args = np.asarray(args)
 
-        f1 = arg1(f_args)[:, 0, :]
-        f2 = arg2(f_args)[:, 0, :]
+        try:
+            f1 = arg1(f_args)[:, 0, :]
+        except Exception:
+            f1 = arg1(f_args)
+
+        try:
+            f2 = arg2(f_args)[:, 0, :]
+        except Exception:
+            f2 = arg2(f_args)
 
         if _matrix:
             ret = np.einsum('n...,m...->nm...', f1, f2)

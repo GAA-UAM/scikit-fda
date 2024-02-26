@@ -120,8 +120,8 @@ class NormInducedMetric(Metric[VectorType]):
 
         >>> l2_distance = NormInducedMetric(l2_norm)
         >>> d = l2_distance(fd, fd2)
-        >>> float('%.3f'% d)
-        0.289
+        >>> float(d[0])
+        0.288...
 
     """
 

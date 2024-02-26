@@ -1,7 +1,0 @@
-matplotlib
-numpy
-scipy
-setuptools
-scikit-learn
-multimethod>=1.2
-findiff

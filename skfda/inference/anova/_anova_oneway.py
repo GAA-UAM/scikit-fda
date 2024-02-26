@@ -182,7 +182,13 @@ def v_asymptotic_stat(
         .. footbibliography::
 
     """
-    return float(_v_asymptotic_stat_with_reps(*fd, weights=weights, p=p))
+    return float(
+        _v_asymptotic_stat_with_reps(
+            *fd,
+            weights=weights,
+            p=p,
+        ).reshape(())
+    )
 
 
 def _anova_bootstrap(

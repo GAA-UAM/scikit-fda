@@ -83,7 +83,7 @@ def _rkhs_vs(
                 [indexes[j]],
             ])
 
-            new_means = np.atleast_2d(means[new_selection])
+            new_means = means[new_selection]
 
             lstsq_solution = linalg.lstsq(
                 variances[new_selection[:, np.newaxis], new_selection],

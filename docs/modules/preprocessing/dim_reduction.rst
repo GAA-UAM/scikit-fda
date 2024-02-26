@@ -36,9 +36,12 @@ Other dimensionality reduction methods construct new features from
 existing ones. For example, in functional principal component
 analysis, we project the data samples into a smaller sample of
 functions that preserve most of the original
-variance.
+variance. Similarly, in functional partial least squares, we project
+the data samples into a smaller sample of functions that preserve most
+of the covariance between the two data blocks.
 
 .. autosummary::
    :toctree: autosummary
 
    skfda.preprocessing.dim_reduction.FPCA
+   skfda.preprocessing.dim_reduction.FPLS

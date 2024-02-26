@@ -1,0 +1,91 @@
+name: Bug report
+description: Create a report to help us reproduce and fix a bug
+labels: [bug]
+
+body:
+- type: markdown
+  attributes:
+    value: >
+      #### Please check that the bug has not been previously notified before submitting, by searching through the [issues list](https://github.com/GAA-UAM/scikit-fda/issues).
+- type: textarea
+  attributes:
+    label: Bug description summary
+    description: >
+      Please describe the bug in a brief paragraph(s). Be clear and concise.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Code to reproduce the bug
+    description: |
+      Please add a minimal code example that can reproduce the error. This will be automatically converted to a Python block.
+    placeholder: |
+      from skfda.datasets import fetch_growth
+      
+      X, y = fetch_growth(return_X_y=True)
+
+      X^y
+    render: Python
+- type: textarea
+  attributes:
+    label: Expected result
+    description: >
+      Paste or describe the result that you expected here.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Actual result
+    description: >
+      Paste or describe the result that you obtained here. If the code raises an error, you can past it in the next field.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Traceback (if an exception is raised)
+    description: |
+      If an exception is raised, copy and paste the traceback here.
+    placeholder: |
+        TypeError                                 Traceback (most recent call last)
+        Cell In[5], line 1
+        ----> 1 X ^y
+        
+        File .../skfda/representation/grid.py:1393, in FDataGrid.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
+           1390 else:
+           1391     new_outputs = (None,) * ufunc.nout
+        -> 1393 results = getattr(ufunc, method)(*new_inputs, **kwargs)
+           1394 if results is NotImplemented:
+           1395     return NotImplemented
+        
+        TypeError: ufunc 'bitwise_xor' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+        
+        In [6]: X^y
+        ---------------------------------------------------------------------------
+        TypeError                                 Traceback (most recent call last)
+        Cell In[6], line 1
+        ----> 1 X^y
+        
+        File .../skfda/representation/grid.py:1393, in FDataGrid.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
+           1390 else:
+           1391     new_outputs = (None,) * ufunc.nout
+        -> 1393 results = getattr(ufunc, method)(*new_inputs, **kwargs)
+           1394 if results is NotImplemented:
+           1395     return NotImplemented
+        
+        TypeError: ufunc 'bitwise_xor' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+    render: Python
+- type: textarea
+  attributes:
+    label: Software versions
+    description: >
+      Include the version of the library used (obtained with `skfda.__version__`). If relevant, you can include here the OS version and versions of related software.
+    placeholder: |
+      scikit-fda version: 0.9
+      OS: Windows 10
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Additional context
+    description: >
+      Add any other context about the problem here.

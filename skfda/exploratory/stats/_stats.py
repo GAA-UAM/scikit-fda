@@ -1,6 +1,7 @@
 """Functional data descriptive statistics."""
 from __future__ import annotations
 
+import functools
 from builtins import isinstance
 from typing import Callable, TypeVar, Union
 
@@ -11,7 +12,7 @@ from scipy.stats import rankdata
 from skfda._utils.ndfunction import average_function_value
 
 from ...misc.metrics._lp_distances import l2_distance
-from ...representation import FData, FDataGrid
+from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
@@ -99,6 +100,64 @@ def cov(
 
     """
     return X.cov(correction=correction)
+
+
+@functools.singledispatch
+def std(X: F, correction: int = 1) -> F:
+    r"""
+    Compute the standard deviation of all the samples in a FData object.
+
+    .. math::
+        \text{std}_X(t) = \sqrt{\frac{1}{N-\text{correction}}
+        \sum_{n=1}^{N}{\left(X_n(t) - \overline{X}(t)\right)^2}}
+
+    Args:
+        X: Object containing all the samples whose standard deviation is
+            wanted.
+        correction: degrees of freedom adjustment. The divisor used in the
+            calculation is `N - correction`, where `N` represents the number of
+            elements. Default: `0`.
+
+    Returns:
+        Standard deviation of all the samples in the original object, as a
+        :term:`functional data object` with just one sample.
+
+    """
+    raise NotImplementedError("Not implemented for this type")
+
+
+@std.register
+def std_fdatagrid(X: FDataGrid, correction: int = 1) -> FDataGrid:
+    """Compute the standard deviation of a FDataGrid."""
+    return X.copy(
+        data_matrix=np.std(
+            X.data_matrix, axis=0, ddof=correction,
+        )[np.newaxis, ...],
+        sample_names=(None,),
+    )
+
+
+@std.register
+def std_fdatabasis(X: FDataBasis, correction: int = 1) -> FDataBasis:
+    """Compute the standard deviation of a FDataBasis."""
+    from ..._utils import function_to_fdatabasis
+
+    basis = X.basis
+    coeff_cov_matrix = np.cov(
+        X.coefficients, rowvar=False, ddof=correction,
+    ).reshape((basis.n_basis, basis.n_basis))
+
+    def std_function(t_points: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+        basis_evaluation = basis(t_points).reshape((basis.n_basis, -1))
+        std_values = np.sqrt(
+            np.sum(
+                basis_evaluation * (coeff_cov_matrix @ basis_evaluation),
+                axis=0,
+            ),
+        )
+        return np.reshape(std_values, (1, -1, X.dim_codomain))
+
+    return function_to_fdatabasis(f=std_function, new_basis=X.basis)
 
 
 def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:

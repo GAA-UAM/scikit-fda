@@ -1247,26 +1247,24 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         from ..misc.validation import validate_domain_range
 
-        npdr = np.asarray(validate_domain_range(domain_range))  # shape(dim, 2)
+        npdr = np.broadcast_to(
+            validate_domain_range(domain_range),
+            (self.dim_domain, 2),
+        )
 
         mask = np.all(
-            (npdr[:, 0] <= sample_points) & (sample_points <= npdr[:, 1]),
+            (npdr[:, 0] <= self.points) & (self.points <= npdr[:, 1]),
             axis=1,
         )
 
-        num_samples = np.add.reduceat(mask, self.start_indices)[:-1] * (
-            np.diff(self.start_indices) > 0
-        )
-
-        start_indices = np.r_[[0], num_samples.cumsum()]
-        points = self.points[mask]
-        values = self.values[mask]
+        num_points = _reduceat(np.add, mask, self.start_indices, value_empty=0)
+        start_indices = np.r_[[0], num_points[:-1].cumsum()]
 
         return self.copy(
-            start_indices=np.array(start_indices),
-            points=np.concatenate(points),
-            values=np.concatenate(values),
-            domain_range=domain_range,
+            start_indices=start_indices,
+            points=self.points[mask],
+            values=self.values[mask],
+            domain_range=npdr,
         )
 
     def shift(

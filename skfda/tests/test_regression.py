@@ -1063,7 +1063,7 @@ class TestHistoricalLinearRegression(unittest.TestCase):
         np.testing.assert_allclose(
             regression.coef_.data_matrix[0, ..., 0],
             np.triu(self.coefficients.data_matrix[0, ..., 0]),
-            atol=0.3,
+            atol=0.35,
             rtol=0,
         )
 

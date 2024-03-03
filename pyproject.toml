@@ -30,11 +30,11 @@ dynamic = ["version"]
 
 dependencies = [
 	"dcor",
-	"fdasrsf>=2.2.0",
+	"fdasrsf>=2.2.0, !=2.5.7",
 	"findiff",
 	"lazy_loader",
 	"matplotlib",
-	"multimethod>=1.5, !=1.11",
+	"multimethod>=1.5, !=1.11, != 1.11.1",
 	"numpy>=1.16",
 	"pandas>=1.0",
 	"rdata",

@@ -348,7 +348,10 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         if self._weights is None:
             # grid_points is a list with one array in the 1D case
             identity = np.eye(len(X.grid_points[0]))
-            self._weights = scipy.integrate.simpson(identity, X.grid_points[0])
+            self._weights = scipy.integrate.simpson(
+                identity,
+                x=X.grid_points[0],
+            )
         elif callable(self._weights):
             self._weights = self._weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D

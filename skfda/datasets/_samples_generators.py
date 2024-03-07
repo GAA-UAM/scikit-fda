@@ -481,7 +481,7 @@ def make_random_warping(
     np.square(v, out=v)
 
     # Creation of FDataGrid in the corresponding domain
-    data_matrix = scipy.integrate.cumtrapz(
+    data_matrix = scipy.integrate.cumulative_trapezoid(
         v,
         dx=1 / n_features,
         initial=0,

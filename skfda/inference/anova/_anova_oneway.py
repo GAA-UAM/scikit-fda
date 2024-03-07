@@ -69,7 +69,7 @@ def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
         Finally the value of the statistic is calculated:
 
         >>> v_sample_stat(fd, weights)
-        0.01649...
+        0.0164...
 
     References:
         .. footbibliography::
@@ -176,7 +176,7 @@ def v_asymptotic_stat(
         Finally the value of the statistic is calculated:
 
         >>> v_asymptotic_stat(fd, weights=weights)
-        0.0018159320335885969
+        0.00181...
 
     References:
         .. footbibliography::
@@ -343,21 +343,24 @@ def oneway_anova(
         `return_dist` is `True`).
 
     Examples:
+        >>> import skfda
         >>> from skfda.inference.anova import oneway_anova
-        >>> from skfda.datasets import fetch_gait
-        >>> from numpy.random import RandomState
-        >>> from numpy import printoptions
 
-        >>> fd = fetch_gait()["data"].coordinates[1]
-        >>> fd1, fd2, fd3 = fd[:13], fd[13:26], fd[26:]
-        >>> oneway_anova(fd1, fd2, fd3, random_state=RandomState(42))
-        (179.52499999999998, 0.56)
-        >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_reps=3,
-        ...     random_state=RandomState(42),
+        >>> X = skfda.datasets.make_gaussian_process(
+        ...     n_samples=100,
+        ...     random_state=0,
+        ... )
+        >>> X1, X2, X3 = X[:33], X[33:66], X[66:]
+        >>> statistic, pvalue = oneway_anova(X1, X2, X3, random_state=1)
+        >>> round(statistic, 2)
+        6.26
+        >>> pvalue
+        0.121
+        >>> _, _, dist = oneway_anova(X1, X2, X3, n_reps=3,
+        ...     random_state=1,
         ...     return_dist=True)
-        >>> with printoptions(precision=4):
-        ...     print(dist)
-        [ 174.8663  202.1025  185.598 ]
+        >>> dist.round(1)
+        array([ 7.9,  0.7,  4.4])
 
     References:
         .. footbibliography::

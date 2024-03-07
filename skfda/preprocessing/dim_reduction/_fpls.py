@@ -380,9 +380,9 @@ class _FPLSBlockGrid(_FPLSBlock[FDataGrid]):
         # By default, use Simpson's rule
         if integration_weights is None:
             identity = np.identity(self.data_matrix.shape[1])
-            integration_weights = scipy.integrate.simps(
+            integration_weights = scipy.integrate.simpson(
                 identity,
-                self.data.grid_points[0],
+                x=self.data.grid_points[0],
             )
         self.integration_weights = np.diag(integration_weights)
 

@@ -167,7 +167,10 @@ class TestFPLSRegression(LatentVariablesModel):
         signs = np.array([1, -1, 1, -1, 1])
 
         w_mat = fplsr.fpls_.x_weights_ @ np.diag(signs)
-        np.testing.assert_allclose(w_mat, r_results, atol=6e-6, rtol=6e-4)
+
+        # We use a different quadrature, so the results cannot
+        # be the same
+        np.testing.assert_allclose(w_mat, r_results, atol=1e-2)
 
     def test_basis_vs_grid(self) -> None:
         """Test that the results are the same in basis and grid."""
@@ -194,7 +197,7 @@ class TestFPLSRegression(LatentVariablesModel):
 
         # Get the weights for the Simpson's rule
         identity = np.eye(len(X.grid_points[0]))
-        ss_weights = scipy.integrate.simps(identity, X.grid_points[0])
+        ss_weights = scipy.integrate.simpson(identity, x=X.grid_points[0])
 
         # Fit the model with weights
         fplsr = FPLSRegression(

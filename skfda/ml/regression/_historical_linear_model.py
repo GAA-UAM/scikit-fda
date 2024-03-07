@@ -42,7 +42,7 @@ def _pairwise_fem_inner_product(
     eval_fd = fd(grid)
 
     prod = eval_fem * eval_fd
-    integral = scipy.integrate.simpson(prod, grid, axis=1)
+    integral = scipy.integrate.simpson(prod, x=grid, axis=1)
     return np.sum(integral, axis=-1)  # type: ignore[no-any-return]
 
 
@@ -277,7 +277,7 @@ class HistoricalLinearRegression(
         >>> intercept = random_state.choice(10, size=(1, 6))
         >>> intercept
         array([[2, 0, 0, 4, 5, 5]])
-        >>> y_data = scipy.integrate.cumtrapz(
+        >>> y_data = scipy.integrate.cumulative_trapezoid(
         ...              data_matrix,
         ...              initial=0,
         ...              axis=1,

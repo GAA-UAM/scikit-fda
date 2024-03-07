@@ -5,25 +5,15 @@ from typing import Any, Mapping, Tuple, overload
 
 import numpy as np
 import pandas as pd
+import rdata
 from pandas import DataFrame, Series
+from skdatasets.repositories import cran, ucr
 from sklearn.utils import Bunch
 from typing_extensions import Literal
-
-import rdata
 
 from ..representation import FDataGrid
 from ..representation.irregular import FDataIrregular
 from ..typing._numpy import NDArrayFloat, NDArrayInt
-
-
-def _get_skdatasets_repositories() -> Any:
-    import skdatasets
-
-    repositories = getattr(skdatasets, "repositories", None)
-    if repositories is None:
-        repositories = skdatasets
-
-    return repositories
 
 
 def fdata_constructor(
@@ -117,8 +107,6 @@ def fetch_cran(
         types.
 
     """
-    repositories = _get_skdatasets_repositories()
-
     if converter is None:
         converter = rdata.conversion.SimpleConverter({
             **rdata.conversion.DEFAULT_CLASS_MAP,
@@ -126,7 +114,7 @@ def fetch_cran(
             "functional": functional_constructor,
         })
 
-    return repositories.cran.fetch_dataset(
+    return cran.fetch_dataset(
         name,
         package_name,
         converter=converter,
@@ -200,9 +188,7 @@ def fetch_ucr(
         .. footbibliography::
 
     """
-    repositories = _get_skdatasets_repositories()
-
-    dataset = repositories.ucr.fetch(name, **kwargs)
+    dataset = ucr.fetch(name, **kwargs)
 
     dataset['data'] = _ucr_to_fdatagrid(
         name=dataset['name'],

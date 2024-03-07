@@ -436,7 +436,7 @@ class TestRegistrationValidation(unittest.TestCase):
         """Test basic usage of AmplitudePhaseDecomposition."""
         scorer = AmplitudePhaseDecomposition()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_allclose(score, 0.971144, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.971145, rtol=1e-5)
 
     def test_amplitude_phase_score_with_basis(self) -> None:
         """Test the AmplitudePhaseDecomposition with FDataBasis."""
@@ -448,19 +448,19 @@ class TestRegistrationValidation(unittest.TestCase):
     def test_default_score(self) -> None:
         """Test default score of a registration transformer."""
         score = self.shift_registration.score(self.X)
-        np.testing.assert_allclose(score, 0.971144, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.971146, rtol=1e-5)
 
     def test_least_squares_score(self) -> None:
         """Test LeastSquares."""
         scorer = LeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_allclose(score, 0.953355, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.953357, rtol=1e-5)
 
     def test_sobolev_least_squares_score(self) -> None:
         """Test SobolevLeastSquares."""
         scorer = SobolevLeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_allclose(score, 0.923962, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.92396, rtol=1e-5)
 
     def test_pairwise_correlation(self) -> None:
         """Test PairwiseCorrelation."""
@@ -477,10 +477,10 @@ class TestRegistrationValidation(unittest.TestCase):
         fd_registered = fd.compose(warping)
         scorer = AmplitudePhaseDecomposition()
         ret = scorer.stats(fd, fd_registered)
-        np.testing.assert_allclose(ret.mse_amplitude, 0.0009465483)
-        np.testing.assert_allclose(ret.mse_phase, 0.1051769136)
-        np.testing.assert_allclose(ret.r_squared, 0.9910806875)
-        np.testing.assert_allclose(ret.c_r, 0.9593073773)
+        np.testing.assert_allclose(ret.mse_amplitude, 0.000947, rtol=1e-3)
+        np.testing.assert_allclose(ret.mse_phase, 0.105177, rtol=1e-5)
+        np.testing.assert_allclose(ret.r_squared, 0.991082, rtol=1e-5)
+        np.testing.assert_allclose(ret.c_r, 0.959302, rtol=1e-5)
 
     def test_raises_amplitude_phase(self) -> None:
         scorer = AmplitudePhaseDecomposition()

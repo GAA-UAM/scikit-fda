@@ -155,7 +155,7 @@ def _fisher_rao_warping_mean(
         mu = a * mu + b * vmean
 
     # Recover mean in original gamma space
-    warping_mean_ret = scipy.integrate.cumtrapz(
+    warping_mean_ret = scipy.integrate.cumulative_trapezoid(
         np.square(mu, out=mu)[0],
         x=eval_points,
         initial=0,
@@ -268,7 +268,7 @@ def fisher_rao_karcher_mean(
 
     distances = scipy.integrate.simpson(
         np.square(centered, out=centered),
-        eval_points_normalized,
+        x=eval_points_normalized,
         axis=1,
     )
 
@@ -306,14 +306,14 @@ def fisher_rao_karcher_mean(
         mu_norm = np.sqrt(
             scipy.integrate.simpson(
                 np.square(mu, out=mu_aux),
-                eval_points_normalized,
+                x=eval_points_normalized,
             ),
         )
 
         mu_diff = np.sqrt(
             scipy.integrate.simpson(
                 np.square(mu - mu_1, out=mu_aux),
-                eval_points_normalized,
+                x=eval_points_normalized,
             ),
         )
 

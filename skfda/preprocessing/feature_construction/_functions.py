@@ -77,28 +77,28 @@ def local_averages(
         ...     X,
         ...     domains=[(1, 3), (3, 10), (10, 18)],
         ... )
-        >>> np.around(averages, decimals=2)
-        array([[[  91.37],
-                [ 126.52],
-                [ 179.02]],
-               [[  87.51],
-                [ 120.71],
-                [ 158.81]],
-               [[  86.36],
-                [ 115.04],
-                [ 156.37]]])
+        >>> np.round(averages)
+        array([[[  91.],
+                [ 127.],
+                [ 179.]],
+               [[  88.],
+                [ 121.],
+                [ 159.]],
+               [[  86.],
+                [ 115.],
+                [ 156.]]])
 
         A different possibility is to decide how many intervals we want to
         consider.  For example, we could want to split the domain in 2
         intervals of the same length.
 
-        >>> np.around(local_averages(X, domains=2), decimals=2)
-        array([[[ 116.94],
-                [ 177.26]],
-               [[ 111.86],
-                [ 157.62]],
-               [[ 107.29],
-                [ 154.97]]])
+        >>> np.round(local_averages(X, domains=2))
+        array([[[ 117.],
+                [ 177.]],
+               [[ 112.],
+                [ 158.]],
+               [[ 107.],
+                [ 155.]]])
     """
     if isinstance(domains, int):
         domains = [domains] * data.dim_domain

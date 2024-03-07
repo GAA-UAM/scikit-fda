@@ -71,19 +71,19 @@ class NearestNeighbors(
         Now we can query the k-nearest neighbors.
 
         >>> distances, index = neigh.kneighbors(X)
-        >>> index[0] # Index of k-neighbors of the first sample
-        array([0, 8, 1])
+        >>> index
+        array([[ 0, 8, 1], ...)
 
-        >>> distances[0].round(2) # Distances to k-neighbors
-        array([ 0.  ,  0.41,  0.58])
+        >>> distances.round(2)
+        array([[ 0.  ,  0.41,  0.58], ...])
 
         We can query the neighbors in a given radius too.
 
         >>> distances, index = neigh.radius_neighbors(X)
         >>> index[0]
-        array([ 0,  1,  8, 18])
+        array([ 0,  1,  8, 18]...)
 
-        >>> distances[0].round(2) # Distances to neighbors
+        >>> distances[0].round(2)
         array([ 0.  ,  0.58,  0.41,  0.68])
 
     See also:

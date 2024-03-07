@@ -24,11 +24,7 @@ import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
 
-from .._utils import (
-    _cartesian_product,
-    _check_array_key,
-    _to_grid_points,
-)
+from .._utils import _cartesian_product, _check_array_key, _to_grid_points
 from ..typing._base import (
     DomainRange,
     DomainRangeLike,
@@ -55,6 +51,7 @@ T = TypeVar("T", bound='FDataIrregular')
 ######################
 # Auxiliary functions#
 ######################
+
 
 def _reduceat(
     ufunc,
@@ -113,6 +110,7 @@ def _reduceat(
 
     return out
 
+
 def _get_sample_range_from_data(
     start_indices: NDArrayInt,
     points: NDArrayFloat,
@@ -141,6 +139,7 @@ def _get_sample_range_from_data(
         ],
         axis=-1,
     )
+
 
 def _get_domain_range_from_sample_range(
     sample_range: DomainRangeLike,
@@ -254,8 +253,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
 
         >>> indices = [0, 2]
-        >>> arguments = [[1], [2], [3], [4], [5]]
-        >>> values = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]]
+        >>> arguments = [[1.], [2.], [3.], [4.], [5.]]
+        >>> values = [[1., 1.], [2., 2.], [3., 3.], [4., 4.], [5., 5.]]
         >>> fd = FDataIrregular(indices, arguments, values)
         >>> fd.dim_domain, fd.dim_codomain
         (1, 2)
@@ -264,8 +263,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
 
         >>> indices = [0, 2]
-        >>> arguments = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]]
-        >>> values = [[1], [2], [3], [4], [5]]
+        >>> arguments = [[1., 1.], [2., 2.], [3., 3.], [4., 4.], [5., 5.]]
+        >>> values = [[1.], [2.], [3.], [4.], [5.]]
         >>> fd = FDataIrregular(indices, arguments, values)
         >>> fd.dim_domain, fd.dim_codomain
         (2, 1)
@@ -288,10 +287,10 @@ class FDataIrregular(FData):  # noqa: WPS214
     ):
         """Construct a FDataIrregular object."""
         self.start_indices = np.asarray(start_indices)
-        self.points = np.asarray(points, dtype=float)
+        self.points = np.asarray(points)
         if self.points.ndim == 1:
             self.points = self.points.reshape(-1, 1)
-        self.values = np.asarray(values, dtype=float)
+        self.values = np.asarray(values)
         if self.values.ndim == 1:
             self.values = self.values.reshape(-1, 1)
 
@@ -313,7 +312,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         self.values = sorted_values
 
         self._sample_range = _get_sample_range_from_data(
-            self.start_indices, self.points
+            self.start_indices,
+            self.points,
         )
 
         # Default value for sample_range is a list of tuples with
@@ -465,9 +465,9 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def _sort_by_arguments(self) -> Tuple[ArrayLike, ArrayLike]:
         """Sort the arguments lexicographically functionwise.
-    
+
         Additionally, sort the values accordingly.
-    
+
         Returns:
             Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
         """
@@ -789,7 +789,8 @@ class FDataIrregular(FData):  # noqa: WPS214
                 other_vector = other[other_index]
 
                 # Number of values in each curve
-                values_curve = np.diff(self.start_indices, append=len(self.points))
+                values_curve = np.diff(
+                    self.start_indices, append=len(self.points))
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve
@@ -807,7 +808,8 @@ class FDataIrregular(FData):  # noqa: WPS214
                 other_vector = other[other_index]
 
                 # Number of values in each curve
-                values_curve = np.diff(self.start_indices, append=len(self.points))
+                values_curve = np.diff(
+                    self.start_indices, append=len(self.points))
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve
@@ -938,13 +940,13 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         Examples:
             >>> indices = [0, 2]
-            >>> arguments = values = np.arange(5).reshape(-1, 1)
+            >>> arguments = values = np.arange(5.).reshape(-1, 1)
             >>> fd = FDataIrregular(indices, arguments, values)
             >>> arguments_2 = values_2 = np.arange(5, 10).reshape(-1, 1)
             >>> fd_2 = FDataIrregular(indices, arguments_2, values_2)
             >>> fd.concatenate(fd_2)
             FDataIrregular(
-                start_indices=array([0, 2, 5, 7], dtype=uint32),
+                start_indices=array([0, 2, 5, 7]),
                 points=array([[ 0.],
                     [ 1.],
                     [ 2.],

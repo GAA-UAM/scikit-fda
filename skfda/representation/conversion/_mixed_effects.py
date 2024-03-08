@@ -9,13 +9,13 @@ representation using the mixed effects model.
 """
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
-    Optional,
     List,
+    Optional,
+    Protocol,
 )
 
 import numpy as np
@@ -125,7 +125,7 @@ def _linalg_solve(
         return scipy.linalg.lstsq(a=a, b=b)[0]  # type: ignore
 
 
-def sum_mahalanobis(
+def _sum_mahalanobis(
     r_list: List[NDArrayFloat],
     cov_mat_list: List[NDArrayFloat],
     r_list2: Optional[List[NDArrayFloat]] = None,
@@ -148,203 +148,36 @@ def sum_mahalanobis(
     )  # type: ignore
 
 
-class _MixedEffectsCovParams(ABC):
-    """Covariance params of the mixed effects model for irregular data."""
-
-    @abstractmethod
-    def covariance(self) -> NDArrayFloat:
-        """Covariance of the mixed effects."""
-        pass
-
-    @abstractmethod
-    def covariance_div_sigmasq(self) -> NDArrayFloat:
-        """Covariance of the mixed effects."""
-        pass
-
-    @abstractmethod
-    def sigmasq(self) -> float:
-        """Variance of the residuals."""
-        pass
-
-
-class _MixedEffectsParams(_MixedEffectsCovParams):
+class _MixedEffectsParams(Protocol):
     """Params of the mixed effects model for irregular data."""
 
-    @abstractmethod
+    @property
     def mean(self) -> NDArrayFloat:
         """Fixed effects."""
-        pass
+        ...
 
-
-@dataclass
-class _MixedEffectsParamsResult(_MixedEffectsParams):
-    """Basic mixed effects params implementation."""
-    _mean: NDArrayFloat
-    _covariance: NDArrayFloat
-    _sigmasq: float
-
-    def covariance(self) -> NDArrayFloat:
-        return self._covariance
-
-    def mean(self) -> NDArrayFloat:
-        return self._mean
-
-    def sigmasq(self) -> float:
-        return self._sigmasq
-
-    def covariance_div_sigmasq(self) -> NDArrayFloat:
-        return self._covariance / self._sigmasq
-
-
-class _MinimizeMixedEffectsParams(_MixedEffectsParams):
-    """Default class to represent the mixed effects parameters.
-
-    Used to implement the optimization of loglikelihood as suggested in
-    Mary J. Lindstrom & Douglas M. Bates (1988).
-
-    Args:
-        _L: (_L @ _L.T) is the Cholesky decomposition of covariance/sigmasq.
-        _has_mean: Whether the mean is fixed or estimated with ML estimator.
-        _mean: Fixed effects (will be none iff _has_mean=False).
-        _model: Mixed effects model to use for the estimation of the mean in
-            case _has_mean=False (will be None otherwise).
-    """
-
-    _L: NDArrayFloat
-    _mean: Optional[NDArrayFloat]
-    _has_mean: bool
-    _model: Optional[_MixedEffectsModel]
-
-    def __init__(
-        self,
-        L: NDArrayFloat,
-        mean: Optional[NDArrayFloat],
-        has_mean: bool = True,
-        model: Optional[_MixedEffectsModel] = None,
-    ) -> None:
-        self._L = L
-        self._mean = mean
-        self._has_mean = has_mean
-        self._model = model
-        if has_mean:
-            assert mean is not None
-        else:
-            assert mean is None
-            assert model is not None
-
-    def mean(self) -> NDArrayFloat:
-        if self._has_mean:
-            assert self._mean is not None  # TODO: remove
-            return self._mean
-        assert self._model is not None, "model is required"
-        values_covariances = self._model._values_covariances(
-            self, div_sigmasq=True,
-        )
-        return _linalg_solve(
-            a=sum_mahalanobis(
-                self._model.basis_evaluations,
-                values_covariances,
-                self._model.basis_evaluations,
-            ),
-            b=sum_mahalanobis(
-                self._model.basis_evaluations,
-                values_covariances,
-                self._model.values,
-            ),
-            assume_a="pos",
-        )
-
-    def covariance_div_sigmasq(self) -> NDArrayFloat:
-        return self._L @ self._L.T
-
-    def covariance(self) -> NDArrayFloat:
-        return self.covariance_div_sigmasq() * self.sigmasq()
-
-    def sigmasq(self) -> float:
-        assert self._model is not None, "Model is required"
-        return sum_mahalanobis(
-            self._model._partial_residuals_list(self),
-            self._model._values_covariances(self, div_sigmasq=True),
-        ) / self._model._n_measurements  # type: ignore
-
-    @classmethod
-    def from_vec(
-        cls,
-        vec: NDArrayFloat,
-        dim_effects: int,
-        model: Optional[_MixedEffectsModel] = None,
-        has_mean: bool = True,
-    ) -> Self:
-        """Create Params from vectorized parameters."""
-        mean = vec[:dim_effects] if has_mean else None
-        L_vec_len = dim_effects * (dim_effects + 1) // 2
-        L = np.zeros((dim_effects, dim_effects))
-        L[np.tril_indices(dim_effects)] = vec[-L_vec_len:]
-        return cls(mean=mean, L=L, model=model, has_mean=has_mean)
-
-    def to_vec(self) -> NDArrayFloat:
-        """Vectorize parameters."""
-        return np.concatenate([
-            self._mean if self._has_mean else np.array([]),
-            self._L[np.tril_indices(self._L.shape[0])]
-        ])
-
-    @classmethod
-    def initial_params(
-        cls,
-        dim_effects: int,
-        has_mean: bool,
-        model: _MixedEffectsModel,
-    ) -> Self:
-        """Generic initial parameters ."""
-        return cls(
-            mean=np.zeros(dim_effects) if has_mean else None,
-            L=np.eye(dim_effects),
-            has_mean=has_mean,
-            model=model,
-        )
-
-
-class _EMMixedEffectsParams(_MixedEffectsCovParams):
-    """Mixed effects parameters for the EM algorithm."""
-    _sigmasq: float
-    _covariance: NDArrayFloat
-    # _model: _MixedEffectsModel
-
-    def __init__(
-        self,
-        sigmasq: float,
-        covariance: NDArrayFloat,
-        # model: _MixedEffectsModel,
-    ) -> None:
-        self._sigmasq = sigmasq
-        self._covariance = covariance
-        # self._model = model
-
+    @property
     def covariance(self) -> NDArrayFloat:
         """Covariance of the mixed effects."""
-        return self._covariance
+        ...
 
+    @property
     def covariance_div_sigmasq(self) -> NDArrayFloat:
         """Covariance of the mixed effects."""
-        return self._covariance / self._sigmasq
+        ...
 
+    @property
     def sigmasq(self) -> float:
         """Variance of the residuals."""
-        return self._sigmasq
+        ...
 
-    def mean(self) -> NDArrayFloat:
-        raise NotImplementedError()
 
-    def to_vec(self) -> NDArrayFloat:
-        return np.concatenate([
-            np.array([self._sigmasq]),
-            self._covariance[np.tril_indices(self._covariance.shape[0])],
-        ])
-
-    def len_vec(self) -> int:
-        dim_effects = self._covariance.shape[0]
-        return 1 + dim_effects * (dim_effects + 1) // 2
+@dataclass(frozen=True)
+class _MixedEffectsParamsResult:
+    """Result of the fitting of a mixed effects model for irregular data."""
+    mean: NDArrayFloat
+    covariance: NDArrayFloat
+    sigmasq: float
 
 
 class _MixedEffectsModel:
@@ -388,15 +221,14 @@ class _MixedEffectsModel:
         """Dimension of the mixed and of the fixed effects."""
         return self.basis_evaluations[0].shape[1]
 
-    def _partial_residuals_list(
+    def partial_residuals_list(
         self,
-        params: _MixedEffectsParams,
+        mean: NDArrayFloat,
     ) -> List[NDArrayFloat]:
         """Residuals of the mixed effects model.
 
         r[k] = value[k] - basis_evaluations[k] @ mean
         """
-        mean = params.mean()
         return [
             value - basis_evaluation @ mean
             for value, basis_evaluation in zip(
@@ -404,31 +236,38 @@ class _MixedEffectsModel:
             )
         ]
 
-    def _values_covariances(
+    def values_covariances(
         self,
         params: _MixedEffectsParams,
         div_sigmasq: bool,
     ) -> List[NDArrayFloat]:
         """Covariance of the values.
 
+        If div_sigmasq is False, then the results will be:
+
         values_covariances[k] = (
             sigmasq * I
             + basis_evaluations[k] @ covariance @ basis_evaluations[k].T
         )
 
-        If div_sigmasq is True, then the results will be divided by sigmasq.
-        div_sigmasq = True for the model from Lindstrom & Bates (1988).
+        If div_sigmasq is True, then the results will be (divided by sigmasq):
+
+        values_covariances[k] = (
+            I + basis_evaluations[k] @ cov_div_sigmasq @ basis_evaluations[k].T
+        )
+
+        div_sigmasq=True for the model from Lindstrom & Bates (1988).
         """
         if div_sigmasq:
-            cov_div_sigmasq = params.covariance_div_sigmasq()
+            cov_div_sigmasq = params.covariance_div_sigmasq
             return [
                 np.eye(basis_evaluation.shape[0])
                 + basis_evaluation @ cov_div_sigmasq @ basis_evaluation.T
                 for basis_evaluation in self.basis_evaluations
             ]
 
-        sigmasq = params.sigmasq()
-        params_covariance = params.covariance()
+        sigmasq = params.sigmasq
+        params_covariance = params.covariance
 
         return [
             sigmasq * np.eye(basis_evaluation.shape[0])
@@ -436,7 +275,7 @@ class _MixedEffectsModel:
             for basis_evaluation in self.basis_evaluations
         ]
 
-    def _mixed_effects_estimate(
+    def mixed_effects_estimate(
         self,
         params: _MixedEffectsParams,
     ) -> NDArrayFloat:
@@ -447,9 +286,9 @@ class _MixedEffectsModel:
             @ values_covariances[k]^{-1} @ partial_residuals[k]
         )
         """
-        covariance = params.covariance()
-        partial_residuals_list = self._partial_residuals_list(params)
-        values_cov_list = self._values_covariances(params, div_sigmasq=False)
+        covariance = params.covariance
+        partial_residuals_list = self.partial_residuals_list(params.mean)
+        values_cov_list = self.values_covariances(params, div_sigmasq=False)
 
         return np.array([
             covariance @ basis_eval.T @ _linalg_solve(
@@ -464,17 +303,11 @@ class _MixedEffectsModel:
 
     def profile_loglikelihood(
         self,
-        params: _MinimizeMixedEffectsParams | NDArrayFloat,
-        has_mean: bool = True,
+        params: _MixedEffectsParams,
     ) -> float:
         """Profile loglikelihood."""
-        if isinstance(params, np.ndarray):
-            params = _MinimizeMixedEffectsParams.from_vec(
-                params, self._dim_effects(), model=self, has_mean=has_mean,
-            )
-
-        r_list = self._partial_residuals_list(params)
-        V_list = self._values_covariances(params, div_sigmasq=True)
+        r_list = self.partial_residuals_list(params.mean)
+        V_list = self.values_covariances(params, div_sigmasq=True)
 
         # slogdet_V_list = [np.linalg.slogdet(V) for V in V_list]
         # if any(slogdet_V[0] <= 0 for slogdet_V in slogdet_V_list):
@@ -485,8 +318,8 @@ class _MixedEffectsModel:
         #     slogdet_V[1] for slogdet_V in slogdet_V_list
         # )
         sum_logdet_V: float = sum(np.linalg.slogdet(V)[1] for V in V_list)
-        sum_mahalanobis_ = sum_mahalanobis(r_list, V_list)
-        log_sum_mahalanobis: float = np.log(sum_mahalanobis_)  # type: ignore
+        sum_mahalanobis = _sum_mahalanobis(r_list, V_list)
+        log_sum_mahalanobis: float = np.log(sum_mahalanobis)  # type: ignore
 
         return (
             - sum_logdet_V / 2
@@ -498,20 +331,19 @@ class _MixedEffectsModel:
 class MixedEffectsConverter(_ToBasisConverter[FDataIrregular]):
     """Mixed effects to-basis-converter."""
 
-    basis: Basis
-
     # after fitting:
     fitted_model: Optional[_MixedEffectsModel]
-    fitted_params: Optional[_MixedEffectsParams]
-    result: Any
+    fitted_params: Optional[_MixedEffectsParamsResult]
+    result: Optional[Any]
 
     def __init__(
         self,
         basis: Basis,
     ) -> None:
-        self.basis = basis
         self.fitted_model = None
         self.fitted_params = None
+        self.result = None
+        super().__init__(basis)
 
     def transform(
         self,
@@ -521,8 +353,8 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular]):
             raise ValueError("The converter has not been fitted.")
 
         X_model = _MixedEffectsModel(X, self.basis)
-        mean = self.fitted_params.mean()
-        gamma_estimates = X_model._mixed_effects_estimate(self.fitted_params)
+        mean = self.fitted_params.mean
+        gamma_estimates = X_model.mixed_effects_estimate(self.fitted_params)
 
         coefficients = mean[np.newaxis, :] + gamma_estimates
 
@@ -536,8 +368,111 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
     """Mixed effects to-basis-converter using scipy.optimize.
 
     Minimizes the profile loglikelihood of the mixed effects model as proposed
-    by Lindstrom & Bates (1988).
+    by Mary J. Lindstrom & Douglas M. Bates (1988).
     """
+
+    @dataclass(frozen=True)
+    class _Params:
+        """Private class for the parameters of the minimization.
+        Args:
+            L: (_L @ _L.T) is the Cholesky decomposition of covariance/sigmasq.
+            has_mean: Whether the mean is fixed or estimated with ML estimator.
+            mean: Fixed effects (can be none).
+            model: Mixed effects model to use for the estimation of the mean in
+                case mean=None (will be None otherwise).
+        """
+
+        L: NDArrayFloat
+        _mean: Optional[NDArrayFloat]
+        _model: Optional[_MixedEffectsModel]
+
+        def __init__(
+            self,
+            L: NDArrayFloat,
+            mean: Optional[NDArrayFloat],
+            model: Optional[_MixedEffectsModel] = None,
+        ) -> None:
+            if mean is None:
+                assert model is not None
+
+            # must use object.__setattr__ due to frozen=True
+            object.__setattr__(self, "L", L)
+            object.__setattr__(self, "_mean", mean)
+            object.__setattr__(self, "_model", model)
+
+        @property
+        def mean(self) -> NDArrayFloat:
+            if self._mean is not None:
+                return self._mean
+            assert self._model is not None, "model is required"
+            values_covariances = self._model.values_covariances(
+                self, div_sigmasq=True,
+            )
+            return _linalg_solve(
+                a=_sum_mahalanobis(
+                    self._model.basis_evaluations,
+                    values_covariances,
+                    self._model.basis_evaluations,
+                ),
+                b=_sum_mahalanobis(
+                    self._model.basis_evaluations,
+                    values_covariances,
+                    self._model.values,
+                ),
+                assume_a="pos",
+            )
+
+        @property
+        def covariance_div_sigmasq(self) -> NDArrayFloat:
+            return self.L @ self.L.T
+
+        @property
+        def covariance(self) -> NDArrayFloat:
+            return self.covariance_div_sigmasq * self.sigmasq
+
+        @property
+        def sigmasq(self) -> float:
+            assert self._model is not None, "Model is required"
+            return _sum_mahalanobis(
+                self._model.partial_residuals_list(self.mean),
+                self._model.values_covariances(self, div_sigmasq=True),
+            ) / self._model._n_measurements  # type: ignore
+
+        @classmethod
+        def from_vec(
+            cls,
+            vec: NDArrayFloat,
+            dim_effects: int,
+            model: Optional[_MixedEffectsModel] = None,
+            has_mean: bool = True,
+        ) -> Self:
+            """Create Params from vectorized parameters."""
+            mean = vec[:dim_effects] if has_mean else None
+            L_vec_len = dim_effects * (dim_effects + 1) // 2
+            L = np.zeros((dim_effects, dim_effects))
+            L[np.tril_indices(dim_effects)] = vec[-L_vec_len:]
+            return cls(mean=mean, L=L, model=model)
+
+        def to_vec(self) -> NDArrayFloat:
+            """Vectorize parameters."""
+            return np.concatenate([
+                self._mean if self._mean is not None else np.array([]),
+                self.L[np.tril_indices(self.L.shape[0])]
+            ])
+
+        @classmethod
+        def initial_params(
+            cls,
+            dim_effects: int,
+            has_mean: bool,
+            model: _MixedEffectsModel,
+        ) -> Self:
+            """Generic initial parameters ."""
+            return cls(
+                mean=np.zeros(dim_effects) if has_mean else None,
+                L=np.eye(dim_effects),
+                model=model,
+            )
 
     def fit(
         self,
@@ -545,7 +480,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
         y: object = None,
         *,
         initial_params: Optional[
-            _MinimizeMixedEffectsParams | NDArrayFloat
+            MinimizeMixedEffectsConverter._Params | NDArrayFloat
         ] = None,
         minimization_method: Optional[str] = None,
         has_mean: bool = True,
@@ -563,15 +498,20 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             self after fit
         """
         dim_effects = self.basis.n_basis
-        if isinstance(initial_params, _MinimizeMixedEffectsParams):
+        if isinstance(
+            initial_params,
+            MinimizeMixedEffectsConverter._Params,
+        ):
             # assert has_beta == initial_params.has_beta
             initial_params_vec = initial_params.to_vec()
         elif initial_params is not None:
             initial_params_vec = initial_params
         else:
-            initial_params_vec = _MinimizeMixedEffectsParams.initial_params(
-                dim_effects=dim_effects, has_mean=has_mean, model=self,
-            ).to_vec()
+            initial_params_vec = (
+                MinimizeMixedEffectsConverter._Params.initial_params(
+                    dim_effects=dim_effects, has_mean=has_mean, model=self,
+                ).to_vec()
+            )
 
         if minimization_method is None:
             minimization_method = _SCIPY_MINIMIZATION_METHODS[0]
@@ -579,9 +519,11 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
         model = _MixedEffectsModel(X, self.basis)
         n_samples = X.n_samples
 
-        def objective_function(params: NDArrayFloat) -> float:
+        def objective_function(params_vec: NDArrayFloat) -> float:
             return - model.profile_loglikelihood(
-                params, has_mean=has_mean,
+                params=MinimizeMixedEffectsConverter._Params.from_vec(
+                    params_vec, dim_effects, model=self, has_mean=has_mean,
+                )
             ) / n_samples
 
         self.result = _minimize(
@@ -590,16 +532,64 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             minimization_methods=minimization_method,
         )
         self.fitted_model = model
-        params = _MinimizeMixedEffectsParams.from_vec(
+        params = MinimizeMixedEffectsConverter._Params.from_vec(
             self.result.x,
             dim_effects=dim_effects,
             model=model,
             has_mean=has_mean,
         )
         self.fitted_params = _MixedEffectsParamsResult(
-            _mean=params.mean(),
-            _covariance=params.covariance(),
-            _sigmasq=params.sigmasq(),
+            mean=params.mean,
+            covariance=params.covariance,
+            sigmasq=params.sigmasq,
         )
 
         return self
+
+
+class EMMixedEffectsConverter(MixedEffectsConverter):
+    """Mixed effects to-basis-converter using the EM algorithm."""
+    @dataclass(frozen=True)
+    class _Params:
+        """Mixed effects parameters for the EM algorithm."""
+        sigmasq: float
+        covariance: NDArrayFloat
+
+        def covariance_div_sigmasq(self) -> NDArrayFloat:
+            """Covariance of the mixed effects."""
+            return self.covariance / self.sigmasq
+
+        def to_vec(self) -> NDArrayFloat:
+            return np.concatenate([
+                np.array([self.sigmasq]),
+                self.covariance[np.tril_indices(self.covariance.shape[0])],
+            ])
+
+        def len_vec(self) -> int:
+            dim_effects = self.covariance.shape[0]
+            return 1 + dim_effects * (dim_effects + 1) // 2
+
+    def fit(
+        self,
+        X: FDataIrregular,
+        y: object = None,
+        *,
+        initial_params: Optional[
+            EMMixedEffectsConverter._Params | NDArrayFloat
+        ] = None,
+        minimization_method: Optional[str] = None,
+        has_mean: bool = True,
+    ) -> Self:
+        """Fit the model.
+
+        Args:
+            X: irregular data to fit.
+            y: ignored.
+            initial_params: initial params of the model.
+            minimization_methods: scipy.optimize.minimize method to be used for
+                the minimization of the loglikelihood of the model.
+
+        Returns:
+            self after fit
+        """
+        return self  # TODO

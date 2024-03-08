@@ -20,7 +20,7 @@ from skfda.representation.basis import (
     BSplineBasis,
     FourierBasis,
 )
-from skfda.preprocessing.conversion._mixed_effects import (
+from skfda.representation.conversion._mixed_effects import (
     MinimizeMixedEffectsConverter,
     _get_values_list,
     _get_basis_evaluations_list,
@@ -93,10 +93,11 @@ def test_loglikelihood() -> None:
         ]), -1437.3441872940807),
     ]
 
-    for params, mixedlm_loglikelihood in params_loglike_list:
-        model_loglikelihood = model.profile_loglikelihood(
-            params,
+    for params_vec, mixedlm_loglikelihood in params_loglike_list:
+        params = MinimizeMixedEffectsConverter._Params.from_vec(
+            params_vec, basis.n_basis, model,
         )
+        model_loglikelihood = model.profile_loglikelihood(params)
 
         assert np.allclose(mixedlm_loglikelihood, model_loglikelihood)
 
@@ -208,75 +209,75 @@ def _get_points(
     )
 
 
-def test_simple_conversion() -> None:
-    """Visual test."""
-    _max_val = 10
-    _domain_range = (0, 10)
-    n_points = 6
-    n_basis = 5
-    n_samples = 50
-    points = _get_points(_domain_range, n_points, n_samples, 9)
+# def test_simple_conversion() -> None:
+#     """Visual test."""
+#     _max_val = 10
+#     _domain_range = (0, 10)
+#     n_points = 6
+#     n_basis = 5
+#     n_samples = 50
+#     points = _get_points(_domain_range, n_points, n_samples, 9)
 
-    basis = FourierBasis(n_basis=n_basis, domain_range=_domain_range)
-    # BSplineBasis(
-    #     n_basis=n_basis, domain_range=_domain_range, order=n_basis - 1,
-    # )
+#     basis = FourierBasis(n_basis=n_basis, domain_range=_domain_range)
+#     # BSplineBasis(
+#     #     n_basis=n_basis, domain_range=_domain_range, order=n_basis - 1,
+#     # )
 
-    sigma = 0.3
-    Gamma_sqrt = np.zeros((n_basis, n_basis))
-    Gamma_sqrt[np.tril_indices(n_basis)] = np.random.rand(
-        n_basis * (n_basis + 1) // 2,
-    ) * _max_val
-    Gamma = Gamma_sqrt @ Gamma_sqrt.T
-    beta = np.random.rand(n_basis) * _max_val
-    fdatabasis_original = FDataBasis(
-        basis=basis,
-        coefficients=np.random.multivariate_normal(
-            mean=beta, cov=Gamma, size=n_samples,
-        ),
-    )
+#     sigma = 0.3
+#     Gamma_sqrt = np.zeros((n_basis, n_basis))
+#     Gamma_sqrt[np.tril_indices(n_basis)] = np.random.rand(
+#         n_basis * (n_basis + 1) // 2,
+#     ) * _max_val
+#     Gamma = Gamma_sqrt @ Gamma_sqrt.T
+#     beta = np.random.rand(n_basis) * _max_val
+#     fdatabasis_original = FDataBasis(
+#         basis=basis,
+#         coefficients=np.random.multivariate_normal(
+#             mean=beta, cov=Gamma, size=n_samples,
+#         ),
+#     )
 
-    def fun(i: int) -> Callable[[NDArrayFloat], NDArrayFloat]:
-        def fi(x: NDArrayFloat) -> NDArrayFloat:
-            return fdatabasis_original[i](x).reshape(x.shape)
-        return fi
+#     def fun(i: int) -> Callable[[NDArrayFloat], NDArrayFloat]:
+#         def fi(x: NDArrayFloat) -> NDArrayFloat:
+#             return fdatabasis_original[i](x).reshape(x.shape)
+#         return fi
 
-    funcs = [fun(i) for i in range(n_samples)]
+#     funcs = [fun(i) for i in range(n_samples)]
 
-    fdatairregular = _create_irregular_samples(
-        funcs=funcs,
-        n_points=n_points,
-        points=points,
-        noise_generate_std=sigma,
-    )
-    converter = MinimizeMixedEffectsConverter(basis)
-    fdatabasis_estimated = converter.fit_transform(fdatairregular)
-    fdatabasis_basic = fdatairregular.to_basis(basis)
-    if True:
-        _ = plt.figure(figsize=(15, 6))
+#     fdatairregular = _create_irregular_samples(
+#         funcs=funcs,
+#         n_points=n_points,
+#         points=points,
+#         noise_generate_std=sigma,
+#     )
+#     converter = MinimizeMixedEffectsConverter(basis)
+#     fdatabasis_estimated = converter.fit_transform(fdatairregular)
+#     fdatabasis_basic = fdatairregular.to_basis(basis)
+#     if True:
+#         _ = plt.figure(figsize=(15, 6))
 
-        axes = plt.subplot(2, 2, 1)
-        plt.title("Original data")
-        fdatairregular[:5].plot(axes=axes)
-        left, right = plt.ylim()
-        plt.ylim((min(0, left), max(1.4, right)))
+#         axes = plt.subplot(2, 2, 1)
+#         plt.title("Original data")
+#         fdatairregular[:5].plot(axes=axes)
+#         left, right = plt.ylim()
+#         plt.ylim((min(0, left), max(1.4, right)))
 
-        axes = plt.subplot(2, 2, 2)
-        plt.title("Estimated basis representation.\n")
-        fdatairregular.scatter(axes=axes)
-        fdatabasis_estimated[:5].plot(axes=axes)
-        left, right = plt.ylim()
-        plt.ylim((min(0, left), max(1.4, right)))
+#         axes = plt.subplot(2, 2, 2)
+#         plt.title("Estimated basis representation.\n")
+#         fdatairregular.scatter(axes=axes)
+#         fdatabasis_estimated[:5].plot(axes=axes)
+#         left, right = plt.ylim()
+#         plt.ylim((min(0, left), max(1.4, right)))
 
-        axes = plt.subplot(2, 2, 4)
-        plt.title("Original basis representation")
-        fdatairregular.scatter(axes=axes)
-        fdatabasis_original[:5].plot(axes=axes)
-        left, right = plt.ylim()
-        plt.ylim((min(0, left), max(1.4, right)))
+#         axes = plt.subplot(2, 2, 4)
+#         plt.title("Original basis representation")
+#         fdatairregular.scatter(axes=axes)
+#         fdatabasis_original[:5].plot(axes=axes)
+#         left, right = plt.ylim()
+#         plt.ylim((min(0, left), max(1.4, right)))
 
-        axes = plt.subplot(2, 2, 3)
-        plt.title(f"{basis}")
-        basis.plot(axes=axes)
+#         axes = plt.subplot(2, 2, 3)
+#         plt.title(f"{basis}")
+#         basis.plot(axes=axes)
 
-        plt.show()
+#         plt.show()

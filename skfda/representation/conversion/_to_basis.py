@@ -14,6 +14,7 @@ from typing import (
 
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation import FData, FDataBasis
+from ...representation.basis import Basis
 
 Input = TypeVar(
     "Input",
@@ -24,7 +25,6 @@ Input = TypeVar(
 
 class _ToBasisConverter(
     BaseEstimator,
-    Generic[Input],
     TransformerMixin[Input, FDataBasis, object],
 ):
     """To basis converter.
@@ -32,3 +32,8 @@ class _ToBasisConverter(
     Abstract base class for all FData to FDataBasis converters. The subclasses
     must override ``fit`` and ``transform`` to define the conversion.
     """
+    basis: Basis
+
+    def __init__(self, basis: Basis) -> None:
+        self.basis = basis
+        super().__init__()

@@ -14,6 +14,7 @@ from typing import (
     Any,
     Callable,
     List,
+    Literal,
     Optional,
     Protocol,
 )
@@ -178,6 +179,21 @@ class _MixedEffectsParamsResult:
     mean: NDArrayFloat
     covariance: NDArrayFloat
     sigmasq: float
+
+    @property
+    def covariance_div_sigmasq(self) -> NDArrayFloat:
+        return self.covariance / self.sigmasq
+
+
+def _initial_params(
+    dim_effects: int,  # TODO add X: FDataIrregular, basis: Basis ?
+) -> _MixedEffectsParams:
+    """Generic initial parameters."""
+    return _MixedEffectsParamsResult(
+        mean=np.zeros(dim_effects),
+        covariance=np.eye(dim_effects),
+        sigmasq=1,
+    )
 
 
 class _MixedEffectsModel:
@@ -460,20 +476,6 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
                 self.L[np.tril_indices(self.L.shape[0])]
             ])
 
-        @classmethod
-        def initial_params(
-            cls,
-            dim_effects: int,
-            has_mean: bool,
-            model: _MixedEffectsModel,
-        ) -> Self:
-            """Generic initial parameters ."""
-            return cls(
-                mean=np.zeros(dim_effects) if has_mean else None,
-                L=np.eye(dim_effects),
-                model=model,
-            )
-
     def fit(
         self,
         X: FDataIrregular,
@@ -498,26 +500,22 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             self after fit
         """
         dim_effects = self.basis.n_basis
-        if isinstance(
-            initial_params,
-            MinimizeMixedEffectsConverter._Params,
-        ):
-            # assert has_beta == initial_params.has_beta
+        model = _MixedEffectsModel(X, self.basis)
+        n_samples = X.n_samples
+        if isinstance(initial_params, MinimizeMixedEffectsConverter._Params):
             initial_params_vec = initial_params.to_vec()
         elif initial_params is not None:
             initial_params_vec = initial_params
         else:
-            initial_params_vec = (
-                MinimizeMixedEffectsConverter._Params.initial_params(
-                    dim_effects=dim_effects, has_mean=has_mean, model=self,
-                ).to_vec()
-            )
+            initial_params_generic = _initial_params(dim_effects)
+            initial_params_vec = MinimizeMixedEffectsConverter._Params(
+                L=np.linalg.cholesky(initial_params_generic.covariance),
+                mean=initial_params_generic.mean if has_mean else None,
+                model=model,
+            ).to_vec()
 
         if minimization_method is None:
             minimization_method = _SCIPY_MINIMIZATION_METHODS[0]
-
-        model = _MixedEffectsModel(X, self.basis)
-        n_samples = X.n_samples
 
         def objective_function(params_vec: NDArrayFloat) -> float:
             return - model.profile_loglikelihood(
@@ -564,6 +562,18 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
                 np.array([self.sigmasq]),
                 self.covariance[np.tril_indices(self.covariance.shape[0])],
             ])
+        
+        @classmethod
+        def from_vec(
+            cls,
+            vec: NDArrayFloat,
+            dim_effects: int,
+        ) -> EMMixedEffectsConverter._Params:
+            """Create Params from vectorized parameters."""
+            sigmasq = vec[0]
+            covariance = np.zeros((dim_effects, dim_effects))
+            covariance[np.tril_indices(dim_effects)] = vec[1:]
+            return cls(sigmasq=sigmasq, covariance=covariance)
 
         def len_vec(self) -> int:
             dim_effects = self.covariance.shape[0]
@@ -577,19 +587,133 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         initial_params: Optional[
             EMMixedEffectsConverter._Params | NDArrayFloat
         ] = None,
-        minimization_method: Optional[str] = None,
-        has_mean: bool = True,
+        niter: int = 700,
+        convergence_criterion: Optional[Literal["params"]] = None,
+        rtol: float = 1e-3,
     ) -> Self:
-        """Fit the model.
+        """Fit the model using the EM algorithm.
 
         Args:
             X: irregular data to fit.
             y: ignored.
             initial_params: initial params of the model.
-            minimization_methods: scipy.optimize.minimize method to be used for
-                the minimization of the loglikelihood of the model.
+            niter: maximum number of iterations.
+            convergence_criterion: convergence criterion to use when fitting.
+                - "params" to use relative differences between parameters.
+                # - "square-error" to use the square error of the estimates wrt
+                #     the original data.
+                # - "prop-offset" to use the criteria proposed by Bates &
+                #     Watts 1981 (A Relative Offset Convergence Criterion for
+                #     Nonlinear Least Squares).
+                # - "loglikelihood" to use the loglikelihood.
+            rtol: relative tolerance for convergence.
 
         Returns:
             self after fit
         """
-        return self  # TODO
+        model = self.model = _MixedEffectsModel(X, self.basis)
+
+        if initial_params is None:
+            initial_params_generic = _initial_params(self.basis.n_basis)
+            next_params = EMMixedEffectsConverter._Params(
+                sigmasq=initial_params_generic.sigmasq,
+                covariance=initial_params_generic.covariance,
+            )
+        elif isinstance(initial_params, np.ndarray):
+            next_params = EMMixedEffectsConverter._Params.from_vec(
+                initial_params, dim_effects=self.basis.n_basis,
+            )
+        else:
+            next_params = initial_params
+
+        if convergence_criterion is None:
+            convergence_criterion = "params"
+
+        assert convergence_criterion in _EM_MINIMIZATION_METHODS
+
+        use_error = convergence_criterion in [
+            "square-error",  "square-error-big", "prop-offset",
+        ]
+        use_big_model = convergence_criterion[-3:] == "big"
+
+        conv_estimate = prev_conv_estimate = None
+        converged = False
+
+        for iter_number in range(niter):
+            curr_params = next_params
+            Sigma_list = self.Sigma_list(model, curr_params)
+            beta = self.beta(model, Sigma_list)
+            r_list = self.r_list(model, beta)
+            random_effects = self._gamma_estimates(
+                model, curr_params, r_list, Sigma_list,
+            )
+            Sigma_inv_list = [
+                # _linalg_solve(Sigma, np.eye(Sigma.shape[0]), assume_a="pos")
+                np.linalg.pinv(Sigma, hermitian=True)
+                for Sigma in Sigma_list
+            ]
+            next_params = self.next_params(
+                model, curr_params, r_list, Sigma_inv_list, Sigma_list, random_effects,
+            )
+
+            if use_error:
+                me_params = self.meparams_from_emparams(curr_params, beta)
+                # error = values - estimates
+                error = model.error(me_params, use_big_model)
+                if convergence_criterion == "prop-offset":
+                    conv_estimate = em_prop_offset_conv_estimate(
+                        curr_params, error, model,
+                    )
+                elif convergence_criterion in [
+                    "square-error", "square-error-big",
+                ]:
+                    conv_estimate = em_square_error_conv_estimate(error)
+                else:
+                    raise ValueError("Invalid minimization method.")
+            elif convergence_criterion == "params":
+                conv_estimate = next_params.to_vec()
+            elif convergence_criterion == "loglikelihood":
+                me_params = self.meparams_from_emparams(curr_params, beta)
+                conv_estimate = model.profile_loglikelihood(
+                    me_params, has_beta=True,
+                )
+            else:
+                raise ValueError("Invalid minimization method.")
+            
+            if iter_number > 0:
+                if convergence_criterion != "prop-offset":
+                    converged = np.allclose(
+                        conv_estimate, prev_conv_estimate, rtol=rtol,
+                    )
+                else:
+                    converged = conv_estimate < rtol
+                if converged:
+                    break
+
+            prev_conv_estimate = conv_estimate
+
+        
+        if not converged:
+            message = f"EM algorithm did not converge ({niter=})."
+            # raise RuntimeError(f"EM algorithm did not converge ({niter=}).")
+        else:
+            message = (
+                "EM algorithm converged after "
+                f"{iter_number}/{niter} iterations."
+            )
+
+        curr_params = next_params
+        Sigma_list = self.Sigma_list(model, curr_params)
+        beta = self.beta(model, Sigma_list)
+        self.result = {"success": converged, "message": message}
+        self.params = MEParams(
+            beta=beta,
+            model=model,
+            L=np.linalg.cholesky(curr_params.Gamma/curr_params.sigmasq),
+        )
+        self.params_result = MEParamsResult(
+            beta=beta,
+            Gamma=curr_params.Gamma,
+            sigmasq=curr_params.sigmasq,
+        )
+        return self

@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from skfda import FDataBasis, FDataGrid
+from skfda import FDataBasis, FDataGrid, FDataIrregular
 from skfda.exploratory.stats import std
 from skfda.representation.basis import (
     Basis,
@@ -66,6 +66,22 @@ def t_basis2(request: Any, t_n_basis2: int = 5) -> Basis:
 
 # Tests
 
+def test_std_fdatairregular_1d_to_1d() -> None:
+    """Test std_fdatairregular with R to R functions."""
+    fd = FDataIrregular(
+        start_indices=[0, 3, 7],
+        points=[0, 1, 10, 0, 1, 2, 10, 0, 1, 4, 10],
+        values=[0, 0, 10, 1, 1, 6, 10, 2, 2, 9, 10],
+    )
+    expected_std = FDataIrregular(
+        start_indices=[0],
+        points=[0, 1, 10],
+        values=[np.sqrt(2 / 3), np.sqrt(2 / 3), 0],
+    )
+    actual_std = std(fd)
+    assert actual_std.equals(expected_std), actual_std
+
+
 def test_std_fdatagrid_1d_to_2d() -> None:
     """Test std_fdatagrid with R to R^2 functions."""
     fd = FDataGrid(
@@ -78,7 +94,7 @@ def test_std_fdatagrid_1d_to_2d() -> None:
             [0, 1, 2, 3, 4, 5],
         ],
     )
-    expected_std_data_matrix = np.full((1, 2, 6, 1), np.sqrt(2))
+    expected_std_data_matrix = np.full((1, 2, 6, 1), 1)
     np.testing.assert_allclose(
         std(fd).data_matrix,
         expected_std_data_matrix,
@@ -103,7 +119,7 @@ def test_std_fdatagrid_2d_to_2d() -> None:
             [0, 1, 2],
         ],
     )
-    expected_std_data_matrix = np.full((1, 2, 3, 2), np.sqrt(1 / 2))
+    expected_std_data_matrix = np.full((1, 2, 3, 2), np.sqrt(1 / 4))
     np.testing.assert_allclose(
         std(fd).data_matrix,
         expected_std_data_matrix,
@@ -129,7 +145,7 @@ def test_std_fdatabasis_vector_valued_basis(
     )
 
     np.testing.assert_allclose(
-        std(fd).coefficients,
+        std(fd, correction=1).coefficients,
         np.array([np.sqrt(1 / 2) * one_coefficients]),
         rtol=1e-7,
         atol=1e-7,
@@ -152,7 +168,7 @@ def test_std_fdatabasis_tensor_basis(
     )
 
     np.testing.assert_allclose(
-        std(fd).coefficients,
+        std(fd, correction=1).coefficients,
         np.array([np.sqrt(1 / 2) * one_coefficients]),
         rtol=1e-7,
         atol=1e-7,
@@ -181,7 +197,7 @@ def test_std_fdatabasis_2d_to_2d() -> None:
     expected_coefficients = np.array([[np.sqrt(1 / 2), 0, 0, 0] * 2])
 
     np.testing.assert_allclose(
-        std(fd).coefficients,
+        std(fd, correction=1).coefficients,
         expected_coefficients,
         rtol=1e-7,
         atol=1e-7,

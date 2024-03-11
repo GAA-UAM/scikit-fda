@@ -5,13 +5,10 @@ from typing import Any, Union
 import numpy as np
 
 try:  # noqa: WPS113
-    from numpy.typing import (
-        ArrayLike as ArrayLike,
-        DTypeLike as DTypeLike,
-    )
+    from numpy.typing import ArrayLike as ArrayLike, DTypeLike as DTypeLike
 except ImportError:
     ArrayLike = np.ndarray  # type:ignore[misc] # noqa: WPS440
-    DTypeLIke = np.dtype  # type:ignore[misc]
+    DTypeLike = np.dtype  # type:ignore[misc]
 
 try:  # noqa: WPS229
     from numpy.typing import NDArray

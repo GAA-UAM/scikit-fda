@@ -7,20 +7,24 @@ data function, and the overall density of the observations may be low
 """
 from __future__ import annotations
 
+import itertools
 import numbers
 from typing import (
-    Any, Optional, Sequence, Tuple, Type, TypeVar, Union,
+    Any,
+    Callable,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
 
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
 
-from .._utils import (
-    _cartesian_product,
-    _check_array_key,
-    _to_grid_points,
-)
+from .._utils import _cartesian_product, _check_array_key, _to_grid_points
 from ..typing._base import (
     DomainRange,
     DomainRangeLike,
@@ -28,7 +32,13 @@ from ..typing._base import (
     GridPointsLike,
     LabelTupleLike,
 )
-from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ..typing._numpy import (
+    ArrayLike,
+    DTypeLike,
+    NDArrayBool,
+    NDArrayFloat,
+    NDArrayInt,
+)
 from ._functional_data import FData
 from .basis import Basis, FDataBasis
 from .evaluator import Evaluator
@@ -43,10 +53,68 @@ T = TypeVar("T", bound='FDataIrregular')
 ######################
 
 
+def _reduceat(
+    ufunc,
+    array: ArrayLike,
+    indices: ArrayLike,
+    axis: int = 0,
+    dtype=None,
+    out=None,
+    *,
+    value_empty
+):
+    """
+    Wrapped `np.ufunc.reduceat` to manage some edge cases.
+
+    The edge cases are the one described in the doc of
+    `np.ufunc.reduceat`. Different behaviours are the following:
+        - No exception is raised when `indices[i] < 0` or
+            `indices[i] >=len(array)`. Instead, the corresponding value
+            is `value_empty`.
+        - When not in the previous case, the result is `value_empty` if
+            `indices[i] == indices[i+1]` and otherwise, the same as
+            `ufunc.reduce(array[indices[i]:indices[i+1]])`. This means
+            that an exception is still be raised if `indices[i] >
+            indices[i+1]`.
+
+    Note: The `value_empty` must be convertible to the `dtype` (either
+          provided or inferred from the `ufunc` operations).
+    """
+    array = np.asarray(array)
+    indices = np.asarray(indices)
+
+    n = array.shape[axis]
+    good_axis_idx = (
+        (indices >= 0) & (indices < n) & (np.diff(indices, append=n) > 0)
+    )
+
+    good_idx = [slice(None)] * array.ndim
+    good_idx[axis] = good_axis_idx
+    good_idx = tuple(good_idx)
+
+    reduceat_out = ufunc.reduceat(
+        array, indices[good_axis_idx], axis=axis, dtype=dtype
+    )
+
+    out_shape = list(array.shape)
+    out_shape[axis] = len(indices)
+    out_dtype = dtype or reduceat_out.dtype
+
+    if out is None:
+        out = np.full(out_shape, value_empty, dtype=out_dtype)
+    else:
+        out.astype(out_dtype, copy=False)
+        out.fill(value_empty)
+
+    out[good_idx] = reduceat_out
+
+    return out
+
+
 def _get_sample_range_from_data(
     start_indices: NDArrayInt,
     points: NDArrayFloat,
-) -> DomainRange:
+) -> DomainRangeLike:
     """Compute the domain ranges of each sample.
 
     Args:
@@ -58,16 +126,23 @@ def _get_sample_range_from_data(
             sample_range[f][d] = (min_point, max_point) is the domain range for
             the function f in dimension d.
     """
-    return tuple(
-        tuple(
-            zip(np.min(f_points, axis=0), np.max(f_points, axis=0)),
-        )
-        for f_points in np.split(points, start_indices[1:])
+    return np.stack(
+        [
+            _reduceat(
+                ufunc,
+                points,
+                start_indices,
+                value_empty=np.nan,
+                dtype=float,
+            )
+            for ufunc in (np.fmin, np.fmax)
+        ],
+        axis=-1,
     )
 
 
 def _get_domain_range_from_sample_range(
-    sample_range: DomainRange,
+    sample_range: DomainRangeLike,
 ) -> DomainRange:
     """Compute the domain range of the whole dataset.
 
@@ -80,8 +155,8 @@ def _get_domain_range_from_sample_range(
             the dimension d.
     """
     sample_range_array = np.asarray(sample_range)
-    min_arguments = sample_range_array[..., 0].min(axis=0)
-    max_arguments = sample_range_array[..., 1].max(axis=0)
+    min_arguments = np.nanmin(sample_range_array[..., 0], axis=0)
+    max_arguments = np.nanmax(sample_range_array[..., 1], axis=0)
     return tuple(zip(min_arguments, max_arguments))
 
 
@@ -118,6 +193,13 @@ class FDataIrregular(FData):  # noqa: WPS214
             types of extrapolation.
         interpolation: Defines the type of interpolation
             applied in `evaluate`.
+
+    Raises:
+        ValueError:
+            - if `points` and `values` lengths don't match
+            - if `start_indices` does'nt start with `0`, or is decreasing
+                somewhere, or ends with a value greater than or equal to
+                `len(points)`.
 
     Examples:
         Representation of an irregular functional data object with 2 samples
@@ -171,8 +253,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
 
         >>> indices = [0, 2]
-        >>> arguments = [[1], [2], [3], [4], [5]]
-        >>> values = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]]
+        >>> arguments = [[1.], [2.], [3.], [4.], [5.]]
+        >>> values = [[1., 1.], [2., 2.], [3., 3.], [4., 4.], [5., 5.]]
         >>> fd = FDataIrregular(indices, arguments, values)
         >>> fd.dim_domain, fd.dim_codomain
         (1, 2)
@@ -181,8 +263,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
 
         >>> indices = [0, 2]
-        >>> arguments = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]]
-        >>> values = [[1], [2], [3], [4], [5]]
+        >>> arguments = [[1., 1.], [2., 2.], [3., 3.], [4., 4.], [5., 5.]]
+        >>> values = [[1.], [2.], [3.], [4.], [5.]]
         >>> fd = FDataIrregular(indices, arguments, values)
         >>> fd.dim_domain, fd.dim_codomain
         (2, 1)
@@ -206,18 +288,22 @@ class FDataIrregular(FData):  # noqa: WPS214
         """Construct a FDataIrregular object."""
         self.start_indices = np.asarray(start_indices)
         self.points = np.asarray(points)
-        if len(self.points.shape) == 1:
+        if self.points.ndim == 1:
             self.points = self.points.reshape(-1, 1)
         self.values = np.asarray(values)
-        if len(self.values.shape) == 1:
+        if self.values.ndim == 1:
             self.values = self.values.reshape(-1, 1)
 
-        if self.points.shape[0] != self.values.shape[0]:
-            raise ValueError(
-                "Dimension mismatch in points and values",
-            )
+        if len(self.points) != len(self.values):
+            raise ValueError("Dimension mismatch in points and values")
 
-        if max(self.start_indices) >= len(self.points):
+        if self.start_indices[0] != 0:
+            raise ValueError("Array start_indices must start with 0")
+
+        if np.any(np.diff(self.start_indices) < 0):
+            raise ValueError("Array start_indices must be non-decreasing")
+
+        if self.start_indices[-1] > len(self.points):
             raise ValueError("Index in start_indices out of bounds")
 
         # Ensure arguments are in order within each function
@@ -385,26 +471,17 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             Tuple[ArrayLike, Arraylike]: sorted pair (arguments, values)
         """
-        slice_args = np.split(self.points, self.start_indices[1:])
-        slice_values = np.split(self.values, self.start_indices[1:])
+        ind = np.repeat(
+            range(len(self.start_indices)),
+            np.diff(self.start_indices, append=len(self.points)),
+        )
+        # In order to use lexsort the following manipulations are required:
+        # - Transpose the axis, so that the first axis contains the keys.
+        # - Flip that axis so that the primary key is last, and they are thus
+        #   in last-to-first order.
+        sorter = np.lexsort(np.c_[ind, self.points].T[::-1])
 
-        # Sort lexicographically, first to last dimension
-        sorting_masks = [
-            np.lexsort(np.flip(f_args, axis=1).T)
-            for f_args in slice_args
-        ]
-
-        sorted_args = [
-            slice_args[i][mask]
-            for i, mask in enumerate(sorting_masks)
-        ]
-
-        sorted_values = [
-            slice_values[i][mask]
-            for i, mask in enumerate(sorting_masks)
-        ]
-
-        return np.concatenate(sorted_args), np.concatenate(sorted_values)
+        return self.points[sorter], self.values[sorter]
 
     def round(
         self,
@@ -434,15 +511,11 @@ class FDataIrregular(FData):  # noqa: WPS214
         # coalescing various arguments to the same rounded value
         rounded_values = self.values.round(decimals=decimals)
 
-        if out is not None and isinstance(out, FDataIrregular):
-            out.start_indices = self.start_indices
+        if isinstance(out, FDataIrregular):
             out.values = rounded_values
-
             return out
 
-        return self.copy(
-            values=rounded_values,
-        )
+        return self.copy(values=rounded_values)
 
     @property
     def dim_domain(self) -> int:
@@ -458,7 +531,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     @property
     def n_samples(self) -> int:
-        return self.start_indices.shape[0]
+        return len(self.start_indices)
 
     @property
     def sample_range(self) -> DomainRange:
@@ -709,28 +782,15 @@ class FDataIrregular(FData):  # noqa: WPS214
                 return other
             elif other.shape == (self.n_samples,):
                 other_index = (
-                    (slice(None),) + (np.newaxis,)
-                    * (self.values.ndim - 1)
+                    (slice(None),)
+                    + (np.newaxis,) * (self.values.ndim - 1)
                 )
 
                 other_vector = other[other_index]
 
-                # Must expand for the number of values in each curve
-                values_after = np.concatenate(
-                    (
-                        self.start_indices,
-                        np.array([len(self.points)]),
-                    ),
-                )
-
-                values_before = np.concatenate(
-                    (
-                        np.array([0]),
-                        self.start_indices,
-                    ),
-                )
-
-                values_curve = (values_after - values_before)[1:]
+                # Number of values in each curve
+                values_curve = np.diff(
+                    self.start_indices, append=len(self.points))
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve
@@ -740,37 +800,24 @@ class FDataIrregular(FData):  # noqa: WPS214
                 self.dim_codomain,
             ):
                 other_index = (
-                    (slice(None),) + (np.newaxis,)
-                    * (self.values.ndim - 2)
+                    (slice(None),)
+                    + (np.newaxis,) * (self.values.ndim - 2)
                     + (slice(None),)
                 )
 
                 other_vector = other[other_index]
 
-                # Must expand for the number of values in each curve
-                values_after = np.concatenate(
-                    (
-                        self.start_indices,
-                        np.array([len(self.points)]),
-                    ),
-                )
-
-                values_before = np.concatenate(
-                    (
-                        np.array([0]),
-                        self.start_indices,
-                    ),
-                )
-
-                values_curve = (values_after - values_before)[1:]
+                # Number of values in each curve
+                values_curve = np.diff(
+                    self.start_indices, append=len(self.points))
 
                 # Repeat the other value for each curve as many times
                 # as values inside the curve
                 return np.repeat(other_vector, values_curve, axis=0)
 
             raise ValueError(
-                f"Invalid dimensions in operator between FDataIrregular "
-                f"and Numpy array: {other.shape}",
+                f"Invalid dimensions in operator between FDataIrregular and "
+                f"Numpy array: {other.shape}",
             )
 
         elif isinstance(other, FDataIrregular):
@@ -893,13 +940,13 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         Examples:
             >>> indices = [0, 2]
-            >>> arguments = values = np.arange(5).reshape(-1, 1)
+            >>> arguments = values = np.arange(5.).reshape(-1, 1)
             >>> fd = FDataIrregular(indices, arguments, values)
             >>> arguments_2 = values_2 = np.arange(5, 10).reshape(-1, 1)
             >>> fd_2 = FDataIrregular(indices, arguments_2, values_2)
             >>> fd.concatenate(fd_2)
             FDataIrregular(
-                start_indices=array([0, 2, 5, 7], dtype=uint32),
+                start_indices=array([0, 2, 5, 7]),
                 points=array([[ 0.],
                     [ 1.],
                     [ 2.],
@@ -929,67 +976,36 @@ class FDataIrregular(FData):  # noqa: WPS214
                 "Not implemented for as_coordinates = True",
             )
         # Verify that dimensions are compatible
-        assert len(others) > 0, "No objects to concatenate"
-        self.check_same_dimensions(others[0])
-        if len(others) > 1:
-            for x, y in zip(others, others[1:]):
-                x.check_same_dimensions(y)
+        assert others, "No objects to concatenate"
+        all_objects = (self,) + others
+        start_indices_split = []
+        total_points = 0
+        points_split = []
+        values_split = []
+        total_sample_names_split = []
+        domain_range_split = []
+        for x, y in itertools.pairwise(all_objects + (self,)):
+            x.check_same_dimensions(y)
+            start_indices_split.append(x.start_indices + total_points)
+            total_points += len(x.points)
+            points_split.append(x.points)
+            values_split.append(x.values)
+            total_sample_names_split.append(x.sample_names)
+            domain_range_split.append(x.domain_range)
 
-        # Allocate all required memory
-        total_functions = self.n_samples + sum(
-            [
-                o.n_samples
-                for o in others
-            ],
-        )
-        total_values = len(self.points) + sum(
-            [
-                len(o.points)
-                for o in others
-            ],
-        )
-        total_sample_names = []
-        start_indices = np.zeros((total_functions, ), dtype=np.uint32)
-        function_args = np.zeros(
-            (total_values, self.dim_domain),
-        )
-        values = np.zeros(
-            (total_values, self.dim_codomain),
-        )
-        index = 0
-        head = 0
-
-        # Add samples sequentially
-        for f_data in [self] + list(others):
-            start_indices[
-                index:index + f_data.n_samples
-            ] = f_data.start_indices
-            function_args[
-                head:head + len(f_data.points)
-            ] = f_data.points
-            values[
-                head:head + len(f_data.points)
-            ] = f_data.values
-            # Adjust pointers to the concatenated array
-            start_indices[index:index + f_data.n_samples] += head
-            index += f_data.n_samples
-            head += len(f_data.points)
-            total_sample_names = total_sample_names + list(f_data.sample_names)
-
-        # Check domain range
-        domain_range = [list(r) for r in self.domain_range]
-        for dim in range(self.dim_domain):
-            dim_max = np.max(function_args[:, dim])
-            dim_min = np.min(function_args[:, dim])
-
-            if dim_max > self.domain_range[dim][1]:
-                domain_range[dim][1] = dim_max
-            if dim_min < self.domain_range[dim][0]:
-                domain_range[dim][0] = dim_min
+        start_indices = np.concatenate(start_indices_split)
+        points = np.concatenate(points_split)
+        values = np.concatenate(values_split)
+        total_sample_names = list(itertools.chain(*total_sample_names_split))
+        domain_range_stacked = np.stack(domain_range_split, axis=-1)
+        domain_range = np.c_[
+            domain_range_stacked[:, 0].min(axis=-1),
+            domain_range_stacked[:, 1].max(axis=-1),
+        ]
 
         return self.copy(
             start_indices,
-            function_args,
+            points,
             values,
             domain_range=domain_range,
             sample_names=total_sample_names,
@@ -1091,44 +1107,34 @@ class FDataIrregular(FData):  # noqa: WPS214
             extrapolation=self.extrapolation,
         )
 
-    def _to_data_matrix(self) -> ArrayLike:
+    def _to_data_matrix(self) -> tuple[ArrayLike, list[ArrayLike]]:
         """Convert FDataIrregular values to numpy matrix.
 
         Undefined values in the grid will be represented with np.nan.
 
         Returns:
             ArrayLike: numpy array with the resulting matrix.
+            list: numpy arrays representing grid_points.
         """
         # Find the common grid points
-        grid_points = [
-            np.unique(self.points[:, dim])
-            for dim in range(self.dim_domain)
-        ]
+        grid_points = list(map(np.unique, self.points.T))
 
-        unified_matrix = np.empty(
-            (
-                self.n_samples,
-                *[len(gp) for gp in grid_points],
-                self.dim_codomain,
-            ),
-        )
-        unified_matrix.fill(np.nan)
-
-        # Fill with each function
-        next_indices = np.append(
-            self.start_indices,
-            len(self.points),
+        unified_matrix = np.full(
+            (self.n_samples, *map(len, grid_points), self.dim_codomain), np.nan
         )
 
-        for i, index in enumerate(self.start_indices):
-            for j in range(index, next_indices[i + 1]):
-                arg = self.points[j]
-                val = self.values[j]
-                pos = [
-                    np.where(gp == arg[dim])[0][0]
-                    for dim, gp in enumerate(grid_points)
-                ]
-                unified_matrix[(i,) + tuple(pos)] = val
+        points_pos = tuple(
+            np.searchsorted(*arg) for arg in zip(grid_points, self.points.T)
+        )
+
+        sample_idx = (
+            np.searchsorted(
+                self.start_indices, np.arange(len(self.points)), "right"
+            )
+            - 1
+        )
+
+        unified_matrix[(sample_idx,) + points_pos] = self.values
 
         return unified_matrix, grid_points
 
@@ -1223,62 +1229,44 @@ class FDataIrregular(FData):  # noqa: WPS214
     def restrict(  # noqa: WPS210
         self: T,
         domain_range: DomainRangeLike,
+        *,
+        with_bounds: bool = False,
     ) -> T:
         """
         Restrict the functions to a new domain range.
 
         Args:
             domain_range: New domain range.
+            with_bounds: Whether or not to ensure domain boundaries
+                appear in `grid_points`.
 
         Returns:
             T: Restricted function.
 
         """
+        if with_bounds:  # To do
+            raise NotImplementedError('Not yet implemented for FDataIrregular')
+
         from ..misc.validation import validate_domain_range
 
-        domain_range = validate_domain_range(domain_range)
+        npdr = np.broadcast_to(
+            validate_domain_range(domain_range),
+            (self.dim_domain, 2),
+        )
 
-        head = 0
-        indices = []
-        arguments = []
-        values = []
-        sample_names = []
+        mask = np.all(
+            (npdr[:, 0] <= self.points) & (self.points <= npdr[:, 1]),
+            axis=1,
+        )
 
-        # Eliminate points outside the new range.
-        # Must also modify function indices to point to new array
-
-        slice_points = np.split(self.points, self.start_indices[1:])
-        slice_values = np.split(self.values, self.start_indices[1:])
-
-        for i, points_values in enumerate(zip(slice_points, slice_values)):
-            sample_points, sample_values = points_values
-            masks = set(range(sample_points.shape[0]))
-            for dim, dr in enumerate(domain_range):
-                dr_start, dr_end = dr
-                select_mask = np.where(
-                    (
-                        (dr_start <= sample_points[:, dim])
-                        & (sample_points[:, dim] <= dr_end)
-                    ),
-                )
-
-                masks = masks.intersection(set(select_mask[0]))
-
-            # Do not keep functions with no values.
-            masks = list(masks)
-            if len(masks) > 0:
-                indices.append(head)
-                arguments.append(sample_points[masks, :])
-                values.append(sample_values[masks, :])
-                sample_names.append(self.sample_names[i])
-                head += len(masks)
+        num_points = _reduceat(np.add, mask, self.start_indices, value_empty=0)
+        start_indices = np.r_[[0], num_points[:-1].cumsum()]
 
         return self.copy(
-            start_indices=np.array(indices),
-            points=np.concatenate(arguments),
-            values=np.concatenate(values),
-            sample_names=sample_names,
-            domain_range=domain_range,
+            start_indices=start_indices,
+            points=self.points[mask],
+            values=self.values[mask],
+            domain_range=npdr,
         )
 
     def shift(
@@ -1375,7 +1363,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         required_slices = []
         key = _check_array_key(self.start_indices, key)
         indices = range(self.n_samples)
-        required_indices = indices[key]
+        required_indices = np.array(indices)[key]
         for i in required_indices:
             next_index = None
             if i + 1 < self.n_samples:
@@ -1548,8 +1536,7 @@ class FDataIrregularDType(
 
         if domain_range is None:
             sample_range = _get_sample_range_from_data(
-                self.start_indices,
-                self.points,
+                self.start_indices, self.points
             )
             domain_range = _get_domain_range_from_sample_range(sample_range)
 

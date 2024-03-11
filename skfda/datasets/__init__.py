@@ -20,6 +20,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "fetch_tecator",
             "fetch_ucr",
             "fetch_weather",
+            "fetch_bone_density",
         ],
         "_samples_generators": [
             "make_gaussian",

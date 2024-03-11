@@ -12,6 +12,7 @@ from sklearn.utils import Bunch
 from typing_extensions import Literal
 
 from ..representation import FDataGrid
+from ..representation.irregular import FDataIrregular
 from ..typing._numpy import NDArrayFloat, NDArrayInt
 
 
@@ -162,7 +163,7 @@ def fetch_ucr(
     return_X_y: bool = False,
     **kwargs: Any,
 ) -> Bunch | Tuple[FDataGrid, NDArrayInt]:
-    """
+    r"""
     Fetch a dataset from the UCR/UEA repository.
 
     The UCR/UEA Time Series Classification repository, hosted at
@@ -173,6 +174,7 @@ def fetch_ucr(
 
     Args:
         name: Dataset name.
+        return_X_y: Return tuple (data, target)
         kwargs: Additional parameters for the function
             :func:`skdatasets.repositories.ucr.fetch`.
 
@@ -247,7 +249,7 @@ _phoneme_descr = """
     Acoustic-Phonetic Continuous Speech Corpus, NTIS, US Dept of Commerce)
     which is a widely used resource for research in speech recognition. A
     dataset was formed by selecting five phonemes for
-    classification based on digitized speech from this database.   
+    classification based on digitized speech from this database.
     phonemes are transcribed as follows: "sh" as in "she", "dcl" as in
     "dark", "iy" as the vowel in "she", "aa" as the vowel in "dark", and
     "ao" as the first vowel in "water". From continuous speech of 50 male
@@ -1551,3 +1553,92 @@ if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
         cite=":footcite:p:`ruiz-meana++_2003_cariporide`",
         bibliography=".. footbibliography::",
     ) + _param_descr
+
+
+def _fetch_loon_data(name: str) -> Any:
+    return _fetch_cran_no_encoding_warning(
+        name,
+        "loon.data",
+        version="0.1.3",
+    )
+
+
+_bone_density_descr = """
+    The Bone Density dataset is a study of bone density
+    in boys and girls aged 8-17. It contains data from 423
+    individuals, measured irregularly in different times,
+    with an average of ~3 points per individual.
+
+    References:
+        https://cran.r-project.org/package=loon.data
+        Laura K. Bachrach, Trevor Hastie, May-Choo Wang,
+            Balasubramanian Narasimhan, and Robert Marcus (1999)
+            "Bone Mineral Acquisition in Healthy Asian, Hispanic, Black
+            and Caucasian Youth. A Longitudinal Study",
+            J Clin Endocrinol Metab, 84, 4702-12.
+        Trevor Hastie, Robert Tibshirani, and Jerome Friedman (2009)
+            "The Elements of Statistical Learning",
+            2nd Edition, Springer New York <doi:10.1007/978-0-387-84858-7>
+
+"""
+
+
+def fetch_bone_density(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
+    """
+    Load the Bone Density dataset. This is an irregular dataset.
+
+    The data is obtained from the R package 'loon.data', which compiles several
+    irregular datasets. Sources to be determined.
+    """
+    descr = _bone_density_descr
+    frame = None
+
+    raw_dataset = _fetch_loon_data("bone_ext")
+
+    data = raw_dataset["bone_ext"]
+
+    curve_name = "idnum"
+    argument_name = "age"
+    target_name = "sex"
+    coordinate_name = "spnbmd"
+
+    curves = FDataIrregular._from_dataframe(
+        data,
+        id_column=curve_name,
+        argument_columns=argument_name,
+        coordinate_columns=coordinate_name,
+        argument_names=[argument_name],
+        coordinate_names=[coordinate_name],
+        dataset_name="bone_ext",
+    )
+
+    target = pd.Series(
+        data.drop_duplicates(subset=["idnum"])[target_name],
+        name="group",
+    )
+
+    feature_name = curves.dataset_name.lower()
+    target_names = target.values.tolist()
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        target_as_frame = target.reset_index(drop=True).to_frame()
+        frame = pd.concat([curves, target_as_frame], axis=1)
+    else:
+        target = target.values.codes
+
+    if return_X_y:
+        return curves, target
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[argument_name],
+        target_names=target_names,
+        DESCR=descr,
+    )

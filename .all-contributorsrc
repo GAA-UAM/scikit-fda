@@ -549,7 +549,10 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/114467748?v=4",
       "profile": "https://github.com/eliegoudout",
       "contributions": [
-        "doc"
+        "doc",
+        "code",
+        "review",
+        "ideas"
       ]
     }
   ],

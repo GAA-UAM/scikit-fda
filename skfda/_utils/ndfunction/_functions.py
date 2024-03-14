@@ -10,21 +10,20 @@ from typing import (
     Protocol,
     TypeVar,
     Union,
-    cast,
     overload,
 )
 
 import numpy as np
-from array_api_compat import array_namespace
 
-from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt, NDArrayStr
-from ._array_api import Array, DType, NestedArray, Shape
+from ._array_api import Array, DType, Shape
 from .extrapolation import ExtrapolationLike
+from .typing import GridPointsLike
 
 if TYPE_CHECKING:
     from ...representation import FData
     from ...typing._base import DomainRangeLike
     from ...typing._numpy import NDArrayFloat
+    from ._ndfunction import NDFunction
 
 
 UfuncMethod = Literal[
@@ -46,10 +45,10 @@ AcceptedExtrapolation = Union[
 
 
 def _one_grid_to_points(
-    axes: GridPointsLike,
+    axes: GridPointsLike[A],
     *,
     dim_domain: int,
-) -> tuple[NDArrayFloat, Tuple[int, ...]]:
+) -> tuple[A, tuple[int, ...]]:
     """
     Convert a list of ndarrays, one per domain dimension, in the points.
 
@@ -96,60 +95,46 @@ class _UnaryUfunc(Protocol):
         pass
 
 
-class EvaluateMethod(Protocol):
-    """Evaluation method."""
-
-    def __call__(
-        self,
-        __eval_points: NDArrayFloat,  # noqa: WPS112
-        extrapolation: AcceptedExtrapolation,
-        aligned: bool,
-    ) -> NDArrayFloat:
-        """Evaluate a function."""
-        pass
-
-
 @overload
 def _evaluate_grid(
-    function,
-    axes: Array[InputDType] | NestedArray[InputDType],
+    function: NDFunction[A],
+    axes: GridPointsLike[A],
     *,
-    extrapolation: AcceptedExtrapolation = "default",
+    extrapolation: AcceptedExtrapolation[A] = "default",
     aligned: Literal[True] = True,
-) -> NDArrayFloat:
+) -> A:
     pass
 
 
 @overload
 def _evaluate_grid(
-    function,
-    axes: Iterable[GridPointsLike],
+    function: NDFunction[A],
+    axes: Iterable[GridPointsLike[A]],
     *,
-    evaluate_method: EvaluateMethod,
-    extrapolation: AcceptedExtrapolation = "default",
+    extrapolation: AcceptedExtrapolation[A] = "default",
     aligned: Literal[False],
-) -> NDArrayFloat:
+) -> A:
     pass
 
 
 @overload
 def _evaluate_grid(
-    function,
-    axes: Union[GridPointsLike, Iterable[GridPointsLike]],
+    function: NDFunction[A],
+    axes: Union[GridPointsLike[A], Iterable[GridPointsLike[A]]],
     *,
-    extrapolation: AcceptedExtrapolation = "default",
+    extrapolation: AcceptedExtrapolation[A] = "default",
     aligned: bool,
-) -> NDArrayFloat:
+) -> A:
     pass
 
 
 def _evaluate_grid(  # noqa: WPS234
-    function,
-    axes: Union[GridPointsLike, Iterable[GridPointsLike]],
+    function: NDFunction[A],
+    axes: Union[GridPointsLike[A], Iterable[GridPointsLike[A]]],
     *,
-    extrapolation: AcceptedExtrapolation = "default",
+    extrapolation: AcceptedExtrapolation[A] = "default",
     aligned: bool = True,
-) -> NDArrayFloat:
+) -> A:
     """
     Evaluate the functional object in the cartesian grid.
 
@@ -196,7 +181,6 @@ def _evaluate_grid(  # noqa: WPS234
             dimension.
 
     """
-
     # Compute intersection points and resulting shapes
     if aligned:
 

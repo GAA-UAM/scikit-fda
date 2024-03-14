@@ -25,6 +25,7 @@ from typing import (
     Union,
     cast,
     overload,
+    TypeAlias,
 )
 
 import numpy as np
@@ -56,17 +57,11 @@ if TYPE_CHECKING:
 T = TypeVar('T', bound='NDFunction')
 A = TypeVar('A', bound=Array[Shape, DType])
 
-EvalPointsType = Union[
-    A,
-    GridPointsLike[A],
-    Sequence[GridPointsLike[A]],
-]
+EvalPointsType: TypeAlias = A | GridPointsLike[A] | Sequence[GridPointsLike[A]]
 
-AcceptedExtrapolation = Union[
-    ExtrapolationLike[A],
-    None,
-    Literal["default"],
-]
+AcceptedExtrapolation: TypeAlias = (
+    ExtrapolationLike[A] | None | Literal["default"]
+)
 
 
 def _join_evaluation(
@@ -259,7 +254,8 @@ class NDFunction(Protocol[A]):
         *,
         aligned: bool = True,
     ) -> A:
-        """Define the evaluation of the FData.
+        """
+        Define the evaluation of the FData.
 
         Evaluates the samples of an FData object at several points.
 
@@ -298,6 +294,7 @@ class NDFunction(Protocol[A]):
     def __call__(
         self,
         eval_points: GridPointsLike[A],
+        /,
         *,
         extrapolation: AcceptedExtrapolation[A] = "default",
         grid: Literal[True],
@@ -309,6 +306,7 @@ class NDFunction(Protocol[A]):
     def __call__(
         self,
         eval_points: Sequence[GridPointsLike[A]],
+        /,
         *,
         extrapolation: AcceptedExtrapolation[A] = "default",
         grid: Literal[True],
@@ -320,6 +318,7 @@ class NDFunction(Protocol[A]):
     def __call__(
         self,
         eval_points: EvalPointsType[A],
+        /,
         *,
         extrapolation: AcceptedExtrapolation[A] = "default",
         grid: bool = False,
@@ -330,6 +329,7 @@ class NDFunction(Protocol[A]):
     def __call__(
         self,
         eval_points: EvalPointsType[A],
+        /,
         *,
         extrapolation: AcceptedExtrapolation[A] = "default",
         grid: bool = False,
@@ -346,7 +346,6 @@ class NDFunction(Protocol[A]):
                 evaluated. If a matrix of shape nsample x eval_points is given
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
-            derivative: Order of the derivative. Defaults to 0.
             extrapolation: Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -376,6 +375,8 @@ class NDFunction(Protocol[A]):
                 extrapolation=extrapolation,
                 aligned=aligned,
             )
+
+        eval_points = cast(A, eval_points)
 
         extrapolation = (
             self.extrapolation

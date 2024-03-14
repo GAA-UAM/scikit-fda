@@ -138,15 +138,15 @@ def check_array_namespace(
 
 @overload
 def check_array_namespace(
-    *args: ArrayLike,
+    *args: A | ArrayLike,
     namespace: Any,
     allow_array_like: Literal[True],
-) -> tuple[Array[Shape, DType], ...]:
+) -> tuple[A, ...]:
     pass
 
 
 def check_array_namespace(
-    *args: ArrayLike | A,
+    *args: A | ArrayLike,
     namespace: Any,
     allow_array_like: bool = False,
 ) -> tuple[A, ...]:

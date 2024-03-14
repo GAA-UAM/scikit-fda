@@ -119,7 +119,7 @@ def grid_points_equal(gp1: GridPoints[A], gp2: GridPoints[A], /) -> bool:
 
 def input_points_batch_shape(
     input_points: A,
-    ndfunction: NDFunction[A],
+    function: NDFunction[A],
     *,
     aligned: bool,
 ) -> tuple[int, ...]:
@@ -135,8 +135,8 @@ def input_points_batch_shape(
     NDFunction.
 
     """
-    shape = input_points.shape[:-len(ndfunction.input_shape)]
+    shape = input_points.shape[:-len(function.input_shape)]
     if not aligned:
-        shape = shape[len(ndfunction.shape):]
+        shape = shape[len(function.shape):]
 
     return shape

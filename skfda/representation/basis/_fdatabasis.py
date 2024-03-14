@@ -253,7 +253,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         batch_shape = input_points_batch_shape(
             input_points,
-            ndfunction=self,
+            function=self,
             aligned=aligned,
         )
 

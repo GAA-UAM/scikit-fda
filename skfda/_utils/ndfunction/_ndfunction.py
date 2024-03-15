@@ -64,54 +64,6 @@ AcceptedExtrapolation: TypeAlias = (
 )
 
 
-def _join_evaluation(
-    index_matrix: NDArrayBool,
-    index_ext: NDArrayBool,
-    index_ev: NDArrayBool,
-    res_extrapolation: NDArrayFloat,
-    res_evaluation: NDArrayFloat,
-    n_samples: int,
-    dim_codomain: int,
-) -> NDArrayFloat:
-    """
-    Join the points evaluated.
-
-    This method is used internally by :func:`evaluate` to join the result
-    of the evaluation and the result of the extrapolation.
-
-    Args:
-        index_matrix: Boolean index with the points extrapolated.
-        index_ext: Boolean index with the columns that contains
-            points extrapolated.
-        index_ev: Boolean index with the columns that contains
-            points evaluated.
-        res_extrapolation: Result of the extrapolation.
-        res_evaluation: Result of the evaluation.
-
-    Returns:
-        Matrix with the points evaluated with shape
-        `n_samples` x `number of points evaluated` x `dim_codomain`.
-
-    """
-    res = np.empty((
-        n_samples,
-        index_matrix.shape[-1],
-        dim_codomain,
-    ))
-
-    # Case aligned evaluation
-    if index_matrix.ndim == 1:
-        res[:, index_ev, :] = res_evaluation
-        res[:, index_ext, :] = res_extrapolation
-
-    else:
-
-        res[:, index_ev] = res_evaluation
-        res[index_matrix] = res_extrapolation[index_matrix[:, index_ext]]
-
-    return res
-
-
 # When higher-kinded types are supported in Python, this should be generic on:
 # - Array backend (e.g.: NumPy or CuPy arrays, or PyTorch tensors)
 # - Function shape (e.g.: for vector of N functions, matrix of N_1 x N_2
@@ -398,6 +350,11 @@ class NDFunction(Protocol[A]):
             input_shape=self.input_shape,
         )
 
+        res_evaluation = self._evaluate(
+            eval_points,
+            aligned=aligned,
+        )
+
         if extrapolation is not None:
 
             xp = array_namespace(eval_points)
@@ -406,51 +363,22 @@ class NDFunction(Protocol[A]):
 
             if not xp.all(contained_points_idx):
 
-                # Partition of eval points
-                if aligned:
-
-                    evaluation_idx = contained_points_idx
-                    extrapolation_idx = xp.logical_not(contained_points_idx)
-
-                    eval_points_extrapolation = eval_points[extrapolation_idx]
-                    eval_points_evaluation = eval_points[evaluation_idx]
-
-                else:
-                    extrapolation_idx = xp.any(
-                        xp.logical_not(contained_points_idx), axis=0)
-                    eval_points_extrapolation = eval_points[:,
-                                                            extrapolation_idx]
-
-                    evaluation_idx = xp.any(contained_points_idx, axis=0)
-                    eval_points_evaluation = eval_points[:, evaluation_idx]
-
-                # Direct evaluation
-                res_evaluation = self._evaluate(
-                    eval_points_evaluation,
-                    aligned=aligned,
-                )
-
                 res_extrapolation = extrapolation(
                     self,
-                    eval_points_extrapolation,
+                    eval_points,
                     aligned=aligned,
                 )
 
-                return _join_evaluation(
-                    ~contained_points_idx,
-                    extrapolation_idx,
-                    evaluation_idx,
-                    res_extrapolation,
+                return xp.where(
+                    contained_points_idx[
+                        (...,) + (xp.newaxis,) * self.output_ndim
+                    ],
                     res_evaluation,
-                    n_samples=self.n_samples,
-                    dim_codomain=self.dim_codomain,
+                    res_extrapolation,
                 )
 
         # Normal evaluation if there are no points to extrapolate.
-        return self._evaluate(
-            eval_points,
-            aligned=aligned,
-        )
+        return res_evaluation
 
     @abstractmethod
     def derivative(self, *, order: int = 1) -> Self:

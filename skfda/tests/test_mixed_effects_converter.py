@@ -3,14 +3,18 @@ import pytest
 import numpy as np
 import numpy.typing as npt
 from typing import (
+    Any,
     Callable,
     Iterable,
     Literal,
+    List,
     Tuple,
+    Type,
 )
 import matplotlib.pyplot as plt
 
 from skfda import FDataBasis
+from skfda.misc.scoring import r2_score
 from skfda.representation import (
     FDataBasis,
     FDataIrregular,
@@ -22,6 +26,8 @@ from skfda.representation.basis import (
 )
 from skfda.representation.conversion._mixed_effects import (
     MinimizeMixedEffectsConverter,
+    MixedEffectsConverter,
+    EMMixedEffectsConverter,
     _get_values_list,
     _get_basis_evaluations_list,
     _MixedEffectsModel,
@@ -35,6 +41,7 @@ _fdatairregular = FDataIrregular(
 
 
 def test_loglikelihood() -> None:
+    """Test loglikelihood function comparing it with Statsmodels' MixedLM."""
     n_measurements = 200
     n_measurements_per_function = 5
     fdatairregular = FDataIrregular(
@@ -103,6 +110,7 @@ def test_loglikelihood() -> None:
 
 
 def test_values_list() -> None:
+    """Test conversion from FDataIrregular to ME model: values."""
     fdatairregular = _fdatairregular
     x_list = _get_values_list(fdatairregular)
     expected_x_list = [
@@ -115,6 +123,7 @@ def test_values_list() -> None:
 
 
 def test_basis_evaluations_list() -> None:
+    """Test conversion from FDataIrregular to ME model: basis evaluations."""
     fdatairregular = _fdatairregular
     basis = FourierBasis(n_basis=3, domain_range=(0, 10))
     phi_list = _get_basis_evaluations_list(fdatairregular, basis)
@@ -174,31 +183,20 @@ def _get_points(
     domain_range: Tuple[float, float],
     n_points: int,
     n_samples: int,
-    type_gen_points: int | Literal["equally_spaced", "random_uniform"],
-    n_points_per_sample_range: tuple[int, int] = (1, 6),
+    type_gen_points: int,
 ) -> npt.NDArray[np.float_]:
-    if type_gen_points == "equally_spaced":
-        ret_value = np.tile(
-            np.linspace(*domain_range, n_points).reshape((-1, 1)),
-            (n_samples, 1),
-        )
-    elif type_gen_points == "random_uniform":
-        ret_value = np.random.uniform(
-            *domain_range, size=n_points * n_samples,
-        ).reshape((-1, 1))
-    elif isinstance(type_gen_points, int):
-        n = type_gen_points
-        tot_n_points = n_points * n_samples
-        domain_split = np.linspace(*domain_range, n + 1)
-        domains = list(zip(domain_split[:-1], domain_split[1:]))
-        points_list = [
-            np.random.uniform(
-                domain[0] - 0.6 * (domain[1] - domain[0]),
-                domain[1] + 0.6 * (domain[1] - domain[0]),
-                size=tot_n_points // n)
-            for domain in domains
-        ]
-        ret_value = np.concatenate(points_list).reshape((-1, 1))[:tot_n_points]
+    n = type_gen_points
+    tot_n_points = n_points * n_samples
+    domain_split = np.linspace(*domain_range, n + 1)
+    domains = list(zip(domain_split[:-1], domain_split[1:]))
+    points_list = [
+        np.random.uniform(
+            domain[0] - 0.6 * (domain[1] - domain[0]),
+            domain[1] + 0.6 * (domain[1] - domain[0]),
+            size=tot_n_points // n)
+        for domain in domains
+    ]
+    ret_value = np.concatenate(points_list).reshape((-1, 1))[:tot_n_points]
 
     return (
         ret_value
@@ -209,7 +207,7 @@ def _get_points(
     )
 
 
-# def test_simple_conversion() -> None:
+# def __test_simple_conversion() -> None:
 #     """Visual test."""
 #     _max_val = 10
 #     _domain_range = (0, 10)
@@ -281,3 +279,98 @@ def _get_points(
 #         basis.plot(axes=axes)
 
 #         plt.show()
+
+
+def _cmp_estimation_with_original(
+    n_points: int,
+    sigma: float,  # to generate the noise
+    domain_range: Tuple[float, float],
+    funcs: List[Callable[[NDArrayFloat], NDArrayFloat]],
+    type_gen_points: int,
+    estimator: MixedEffectsConverter,
+    fit_kwargs: dict[str, Any],
+    fdatabasis_original: FDataBasis,
+) -> None:
+    n_samples = len(funcs)
+    points = _get_points(domain_range, n_points, n_samples, type_gen_points)
+    fdatairregular = _create_irregular_samples(
+        funcs=funcs,
+        points=points,
+        noise_generate_std=sigma,
+        n_points=n_points,
+    )
+
+    fdatabasis_estimated = estimator.fit_transform(
+        fdatairregular, **fit_kwargs,
+    )
+
+    if (
+        isinstance(estimator.result, dict)
+        and "success" in estimator.result
+        and not estimator.result["success"]
+    ):
+        raise Exception(f"Optimization failed: {estimator.result}")
+
+    assert r2_score(fdatabasis_estimated, fdatabasis_original) > 0.9
+
+
+def _test_compare_with_original(
+    estimator_cls: Type[MixedEffectsConverter],
+    fit_kwargs: dict[str, Any] = {},
+) -> None:
+    np.random.seed(34285676)
+    domain_range = (0, 100)
+    _max_val = 5
+    n_points = 7
+    n_basis = 3
+    n_samples = 40
+
+    basis = BSplineBasis(
+        n_basis=n_basis, domain_range=domain_range, order=2,
+    )
+    sigma = 0.1
+    fe_cov_sqrt = np.zeros((n_basis, n_basis))
+    fe_cov_sqrt[np.tril_indices(n_basis)] = np.random.rand(
+        n_basis * (n_basis + 1) // 2,
+    ) * _max_val
+    fe_cov = fe_cov_sqrt @ fe_cov_sqrt.T
+    mean = np.array([-15, 20, 6])
+    fdatabasis_original = FDataBasis(
+        basis=basis,
+        coefficients=np.random.multivariate_normal(
+            mean=mean, cov=fe_cov, size=n_samples,
+        ),
+    )
+
+    def fun(i: int):
+        return lambda x: fdatabasis_original[i](x).reshape(x.shape)
+
+    funcs = [fun(i) for i in range(n_samples)]
+
+    _cmp_estimation_with_original(
+        n_points=n_points,
+        sigma=sigma,
+        funcs=funcs,
+        type_gen_points=5,
+        estimator=estimator_cls(basis=basis),
+        domain_range=domain_range,
+        fit_kwargs=fit_kwargs,
+        fdatabasis_original=fdatabasis_original,
+    )
+
+
+# def test_compare_with_statsmodels_minimize() -> None:
+#     _test_general_compare_with_original(
+#         MinimizeMixedEffectsConverter,
+#     )
+
+
+def test_compare_with_statsmodels_em() -> None:
+    _test_compare_with_original(
+        estimator_cls=EMMixedEffectsConverter,
+        fit_kwargs={
+            "niter": 500,
+            "convergence_criterion": "params",
+            "rtol": 1e-3,
+        }
+    )

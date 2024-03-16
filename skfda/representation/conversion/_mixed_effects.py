@@ -207,7 +207,7 @@ class _MixedEffectsModel:
 
     values: List[NDArrayFloat]
     basis_evaluations: List[NDArrayFloat]
-    _n_measurements: int
+    n_measurements: int
     _profile_loglikelihood_additive_constants: float
 
     def __init__(
@@ -219,11 +219,11 @@ class _MixedEffectsModel:
         self.basis_evaluations = _get_basis_evaluations_list(
             fdatairregular, basis,
         )
-        self._n_measurements = len(fdatairregular.points)
+        self.n_measurements = len(fdatairregular.points)
         self._profile_loglikelihood_additive_constants = (
-            + self._n_measurements / 2 * np.log(self._n_measurements)
-            - self._n_measurements / 2 * np.log(2 * np.pi)
-            - self._n_measurements / 2
+            + self.n_measurements / 2 * np.log(self.n_measurements)
+            - self.n_measurements / 2 * np.log(2 * np.pi)
+            - self.n_measurements / 2
         )
 
     def _dim_effects(self) -> int:
@@ -357,7 +357,7 @@ class _MixedEffectsModel:
 
         return (
             - sum_logdet_V / 2
-            - self._n_measurements / 2 * log_sum_mahalanobis
+            - self.n_measurements / 2 * log_sum_mahalanobis
             + self._profile_loglikelihood_additive_constants
         )
 
@@ -367,12 +367,12 @@ class _MixedEffectsModel:
         return len(self.values)
 
 
-class MixedEffectsConverter(_ToBasisConverter[FDataIrregular]):
+class _MixedEffectsConverter(_ToBasisConverter[FDataIrregular]):
     """Mixed effects to-basis-converter."""
 
     # after fitting:
     fitted_model: Optional[_MixedEffectsModel]
-    fitted_params: Optional[_MixedEffectsParamsResult]
+    fitted_params: Optional[_MixedEffectsParams]
     result: Optional[Dict[str, Any] | scipy.optimize.OptimizeResult]
 
     def __init__(
@@ -388,12 +388,13 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular]):
         self,
         X: FDataIrregular,
     ) -> FDataBasis:
+        """Transform to FDataBasis using the fitted converter."""
         if self.fitted_params is None:  # or self.model is None:
             raise ValueError("The converter has not been fitted.")
 
-        X_model = _MixedEffectsModel(X, self.basis)
+        model = _MixedEffectsModel(X, self.basis)
         mean = self.fitted_params.mean
-        gamma_estimates = X_model.random_effects_estimate(self.fitted_params)
+        gamma_estimates = model.random_effects_estimate(self.fitted_params)
 
         coefficients = mean[np.newaxis, :] + gamma_estimates
 
@@ -403,7 +404,7 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular]):
         )
 
 
-class MinimizeMixedEffectsConverter(MixedEffectsConverter):
+class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
     """Mixed effects to-basis-converter using scipy.optimize.
 
     Minimizes the profile loglikelihood of the mixed effects model as proposed
@@ -421,13 +422,13 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
                 case mean=None (will be None otherwise).
         """
 
-        L: NDArrayFloat
+        sqrt_cov_div_sigmasq: NDArrayFloat
         _mean: Optional[NDArrayFloat]
         _model: Optional[_MixedEffectsModel]
 
         def __init__(
             self,
-            L: NDArrayFloat,
+            sqrt_cov_div_sigmasq: NDArrayFloat,
             mean: Optional[NDArrayFloat],
             model: Optional[_MixedEffectsModel] = None,
         ) -> None:
@@ -435,7 +436,8 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
                 assert model is not None, "model is required if mean is None"
 
             # must use object.__setattr__ due to frozen=True
-            object.__setattr__(self, "L", L)
+            object.__setattr__(
+                self, "sqrt_cov_div_sigmasq", sqrt_cov_div_sigmasq)
             object.__setattr__(self, "_mean", mean)
             object.__setattr__(self, "_model", model)
 
@@ -463,21 +465,24 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
 
         @property
         def covariance_div_sigmasq(self) -> NDArrayFloat:
-            return self.L @ self.L.T
+            """Covariance of the random effects divided by sigmasq."""
+            return self.sqrt_cov_div_sigmasq @ self.sqrt_cov_div_sigmasq.T
 
         @property
         def covariance(self) -> NDArrayFloat:
+            """Covariance of the random effects."""
             return self.covariance_div_sigmasq * self.sigmasq
 
         @property
         def sigmasq(self) -> float:
+            """Variance of the residuals."""
             assert self._model is not None, "Model is required"
             return _sum_mahalanobis(
                 self._model.partial_residuals(self.mean),
                 self._model.values_covariances_div_sigmasq(
                     self.covariance_div_sigmasq,
                 ),
-            ) / self._model._n_measurements  # type: ignore
+            ) / self._model.n_measurements  # type: ignore
 
         @classmethod
         def from_vec(
@@ -489,16 +494,24 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
         ) -> Self:
             """Create Params from vectorized parameters."""
             mean = vec[:dim_effects] if has_mean else None
-            L_vec_len = dim_effects * (dim_effects + 1) // 2
-            L = np.zeros((dim_effects, dim_effects))
-            L[np.tril_indices(dim_effects)] = vec[-L_vec_len:]
-            return cls(mean=mean, L=L, model=model)
+            sqrt_cov_vec_len = dim_effects * (dim_effects + 1) // 2
+            sqrt_cov_div_sigmasq = np.zeros((dim_effects, dim_effects))
+            sqrt_cov_div_sigmasq[np.tril_indices(dim_effects)] = (
+                vec[-sqrt_cov_vec_len:]
+            )
+            return cls(
+                mean=mean,
+                sqrt_cov_div_sigmasq=sqrt_cov_div_sigmasq, 
+                model=model,
+            )
 
         def to_vec(self) -> NDArrayFloat:
             """Vectorize parameters."""
             return np.concatenate([
                 self._mean if self._mean is not None else np.array([]),
-                self.L[np.tril_indices(self.L.shape[0])]
+                self.sqrt_cov_div_sigmasq[
+                    np.tril_indices(self.sqrt_cov_div_sigmasq.shape[0])
+                ],
             ])
 
     def fit(
@@ -520,6 +533,8 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             initial_params: initial params of the model.
             minimization_methods: scipy.optimize.minimize method to be used for
                 the minimization of the loglikelihood of the model.
+            has_mean: Whether the mean is a fixed parameter to be optimized or
+                estimated with ML estimator from the covariance parameters.
 
         Returns:
             self after fit
@@ -534,7 +549,9 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
         else:
             initial_params_generic = _initial_params(dim_effects)
             initial_params_vec = MinimizeMixedEffectsConverter._Params(
-                L=np.linalg.cholesky(initial_params_generic.covariance),
+                sqrt_cov_div_sigmasq=np.linalg.cholesky(
+                    initial_params_generic.covariance,
+                ),
                 mean=initial_params_generic.mean if has_mean else None,
                 model=model,
             ).to_vec()
@@ -570,7 +587,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
         return self
 
 
-class EMMixedEffectsConverter(MixedEffectsConverter):
+class EMMixedEffectsConverter(_MixedEffectsConverter):
     """Mixed effects to-basis-converter using the EM algorithm."""
     @dataclass(frozen=True)
     class _Params:
@@ -584,6 +601,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             return self.covariance / self.sigmasq
 
         def to_vec(self) -> NDArrayFloat:
+            """Vectorize parameters."""
             return np.concatenate([
                 np.array([self.sigmasq]),
                 self.covariance[np.tril_indices(self.covariance.shape[0])],
@@ -602,6 +620,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             return cls(sigmasq=sigmasq, covariance=covariance)
 
         def len_vec(self) -> int:
+            """Length of the vectorized parameters."""
             dim_effects = self.covariance.shape[0]
             return 1 + dim_effects * (dim_effects + 1) // 2
 
@@ -625,13 +644,12 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             assume_a="pos",
         )
 
-    def next_params(
+    def _next_params(
         self,
         model: _MixedEffectsModel,
         curr_params: EMMixedEffectsConverter._Params,
         partial_residuals: List[NDArrayFloat],
-        values_cov_inv: List[NDArrayFloat],
-        vaules_cov: List[NDArrayFloat],
+        values_cov: List[NDArrayFloat],
         random_effects: NDArrayFloat,
     ) -> EMMixedEffectsConverter._Params:
         """Return the next parameters of the EM algorithm."""
@@ -641,6 +659,9 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
                 partial_residuals, model.basis_evaluations, random_effects,
             )
         ]
+        values_cov_inv = [
+            np.linalg.pinv(cov, hermitian=True) for cov in values_cov
+        ]
         sum_squared_residuals = sum(np.inner(r, r) for r in residuals)
         sum_traces = curr_params.sigmasq * sum(
             # np.trace(np.eye(cov_inv.shape[0]) - params.sigmasq * cov_inv)
@@ -648,7 +669,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             for cov_inv in values_cov_inv
         )
         next_sigmasq = (
-            (sum_squared_residuals + sum_traces) / model._n_measurements
+            (sum_squared_residuals + sum_traces) / model.n_measurements
         )
         next_covariance = sum(
             np.outer(random_effect, random_effect)
@@ -659,7 +680,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
                 )
             )
             for basis_eval, Sigma, random_effect in zip(
-                model.basis_evaluations, vaules_cov, random_effects,
+                model.basis_evaluations, values_cov, random_effects,
             )
         ) / model.n_samples
 
@@ -676,7 +697,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         initial_params: Optional[
             EMMixedEffectsConverter._Params | NDArrayFloat
         ] = None,
-        niter: int = 700,
+        maxiter: int = 700,
         convergence_criterion: Optional[
             Literal["params", "squared-error", "loglikelihood"]
         ] = None,
@@ -691,18 +712,18 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             niter: maximum number of iterations.
             convergence_criterion: convergence criterion to use when fitting.
                 - "params" to use relative differences between parameters.
-                - "squared-error" to use the square error of the estimates with
-                    respect to the original data.
-                - "loglikelihood" to use the loglikelihood.
+                - "squared-error" to userelative changes in the squared error
+                    of the estimated values with respect to the original data.
+                - "loglikelihood" to use relative changes in the loglikelihood.
                 # - "prop-offset" to use the criteria proposed by Bates &
                 #     Watts 1981 (A Relative Offset Convergence Criterion for
                 #     Nonlinear Least Squares).
             rtol: relative tolerance for convergence.
 
         Returns:
-            self after fit
+            The converter after fitting.
         """
-        model = self.model = _MixedEffectsModel(X, self.basis)
+        model = _MixedEffectsModel(X, self.basis)
 
         if initial_params is None:
             initial_params_generic = _initial_params(self.basis.n_basis)
@@ -734,7 +755,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         converged = False
         convergence_val: Optional[NDArrayFloat | float] = None
         prev_convergence_val: Optional[NDArrayFloat | float] = None
-        for iter_number in range(niter):
+        for iter_number in range(maxiter):
             curr_params = next_params
             values_cov = model.values_covariances(
                 curr_params.sigmasq, curr_params.covariance,
@@ -744,16 +765,11 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             random_effects = model._random_effects_estimate(
                 curr_params.covariance, values_cov, partial_residuals,
             )
-            values_cov_inv = [
-                np.linalg.pinv(cov, hermitian=True)
-                for cov in values_cov
-            ]
-            next_params = self.next_params(
+            next_params = self._next_params(
                 model=model,
                 curr_params=curr_params,
                 partial_residuals=partial_residuals,
-                values_cov_inv=values_cov_inv,
-                vaules_cov=values_cov,
+                values_cov=values_cov,
                 random_effects=random_effects,
             )
 
@@ -787,12 +803,11 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             prev_convergence_val = convergence_val
 
         if not converged:
-            message = f"EM algorithm did not converge ({niter=})."
-            # raise RuntimeError(f"EM algorithm did not converge ({niter=}).")
+            message = f"EM algorithm did not converge ({maxiter=})."
         else:
             message = (
                 "EM algorithm converged after "
-                f"{iter_number}/{niter} iterations."
+                f"{iter_number}/{maxiter} iterations."
             )
 
         self.result = {

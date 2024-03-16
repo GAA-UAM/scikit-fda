@@ -26,7 +26,7 @@ from skfda.representation.basis import (
 )
 from skfda.representation.conversion._mixed_effects import (
     MinimizeMixedEffectsConverter,
-    MixedEffectsConverter,
+    _MixedEffectsConverter,
     EMMixedEffectsConverter,
     _get_values_list,
     _get_basis_evaluations_list,
@@ -287,7 +287,7 @@ def _cmp_estimation_with_original(
     domain_range: Tuple[float, float],
     funcs: List[Callable[[NDArrayFloat], NDArrayFloat]],
     type_gen_points: int,
-    estimator: MixedEffectsConverter,
+    estimator: _MixedEffectsConverter,
     fit_kwargs: dict[str, Any],
     fdatabasis_original: FDataBasis,
 ) -> None:
@@ -315,8 +315,8 @@ def _cmp_estimation_with_original(
 
 
 def _test_compare_with_original(
-    estimator_cls: Type[MixedEffectsConverter],
-    fit_kwargs: dict[str, Any] = {},
+    estimator_cls: Type[_MixedEffectsConverter],
+    fit_kwargs: dict[str, Any] = dict(),
 ) -> None:
     np.random.seed(34285676)
     domain_range = (0, 100)
@@ -365,11 +365,12 @@ def _test_compare_with_original(
 #     )
 
 
-def test_compare_with_statsmodels_em() -> None:
+def test_compare_em_with_original() -> None:
+    """Compare the EM conversion with the original data."""
     _test_compare_with_original(
         estimator_cls=EMMixedEffectsConverter,
         fit_kwargs={
-            "niter": 500,
+            "maxiter": 500,
             "convergence_criterion": "params",
             "rtol": 1e-3,
         }

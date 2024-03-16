@@ -445,6 +445,7 @@ class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
 
         @property
         def mean(self) -> NDArrayFloat:
+            """Estimate the fixed effects (mean of the coefficients)."""
             if self._mean is not None:
                 return self._mean
             assert self._model is not None, "Model is required"

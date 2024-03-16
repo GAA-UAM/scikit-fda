@@ -415,7 +415,9 @@ class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
     class _Params:
         """Private class for the parameters of the minimization.
         Args:
-            L: (_L @ _L.T) is the Cholesky decomposition of covariance/sigmasq.
+            sqrt_cov_div_sigmasq: 
+                (sqrt_cov_div_sigmasq @ sqrt_cov_div_sigmasq.T) is the Cholesky
+                decomposition of covariance/sigmasq.
             has_mean: Whether the mean is fixed or estimated with ML estimator.
             mean: Fixed effects (can be none).
             model: Mixed effects model to use for the estimation of the mean in

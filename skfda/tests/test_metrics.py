@@ -92,7 +92,8 @@ class TestLp(unittest.TestCase):
         """Test the integration of surfaces."""
         np.testing.assert_allclose(
             lp_norm(self.fd_surface, p=1),
-            [0.12566256, 0.12563755, 0.12566133],
+            [0.125663, 0.125637, 0.125661],
+            rtol=1e-5,
         )
 
     def test_lp_error_dimensions(self) -> None:

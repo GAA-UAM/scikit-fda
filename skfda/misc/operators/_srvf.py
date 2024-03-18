@@ -232,7 +232,7 @@ class SRSF(
 
         data_matrix *= np.abs(data_matrix)
 
-        f_data_matrix = scipy.integrate.cumtrapz(
+        f_data_matrix = scipy.integrate.cumulative_trapezoid(
             data_matrix,
             x=output_points,
             axis=1,

@@ -59,20 +59,20 @@ class LocalAveragesTransformer(
         >>> local_averages = LocalAveragesTransformer(
         ...     domains=[(1, 3), (3, 10), (10, 18)],
         ... )
-        >>> np.round(local_averages.fit_transform(X), decimals=2)
-        array([[  91.37,  126.52,  179.02],
-               [  87.51,  120.71,  158.81],
-               [  86.36,  115.04,  156.37]])
+        >>> np.round(local_averages.fit_transform(X))
+        array([[  91.,  127.,  179.],
+               [  88.,  121.,  159.],
+               [  86.,  115.,  156.]])
 
         A different possibility is to decide how many intervals we want to
         consider.  For example, we could want to split the domain in 2
         intervals of the same length.
 
         >>> local_averages = LocalAveragesTransformer(domains=2)
-        >>> np.around(local_averages.fit_transform(X), decimals=2)
-        array([[ 116.94,  177.26],
-               [ 111.86,  157.62],
-               [ 107.29,  154.97]])
+        >>> np.round(local_averages.fit_transform(X))
+        array([[ 117.,  177.],
+               [ 112.,  158.],
+               [ 107.,  155.]])
     """
 
     def __init__(

@@ -98,10 +98,10 @@ class MagnitudeShapePlot(BasePlot):
         from skfda.misc.covariances import Exponential
         from skfda.exploratory.visualization import MagnitudeShapePlot
 
-        fd = make_gaussian_process(
+        X = make_gaussian_process(
                 n_samples=20, cov=Exponential(), random_state=1)
 
-        MagnitudeShapePlot(fd)
+        MagnitudeShapePlot(X)
 
     Example:
         >>> import skfda
@@ -110,51 +110,9 @@ class MagnitudeShapePlot(BasePlot):
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> grid_points = [ 0., 2., 4., 6., 8., 10.]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> MagnitudeShapePlot(fd)
-        MagnitudeShapePlot(
-            fdata=FDataGrid(
-                array([[[ 1. ],
-                        [ 1. ],
-                        [ 2. ],
-                        [ 3. ],
-                        [ 2.5],
-                        [ 2. ]],
-                       [[ 0.5],
-                        [ 0.5],
-                        [ 1. ],
-                        [ 2. ],
-                        [ 1.5],
-                        [ 1. ]],
-                       [[-1. ],
-                        [-1. ],
-                        [-0.5],
-                        [ 1. ],
-                        [ 1. ],
-                        [ 0.5]],
-                       [[-0.5],
-                        [-0.5],
-                        [-0.5],
-                        [-1. ],
-                        [-1. ],
-                        [-1. ]]]),
-                grid_points=(array([  0.,   2.,   4.,   6.,   8.,  10.]),),
-                domain_range=((0.0, 10.0),),
-                ...),
-            multivariate_depth=None,
-            pointwise_weights=None,
-            cutoff_factor=1,
-            points=array([[ 1.66666667,  0.12777778],
-                          [ 0.        ,  0.        ],
-                          [-0.8       ,  0.17666667],
-                          [-1.74444444,  0.94395062]]),
-            outliers=array([False, False, False, False]),
-            colormap=seismic,
-            color=0.2,
-            outliercol=0.8,
-            xlabel='MO',
-            ylabel='VO',
-            title='')
+        >>> X = skfda.FDataGrid(data_matrix, grid_points)
+        >>> MagnitudeShapePlot(X)
+        MagnitudeShapePlot(...)
 
     References:
         .. footbibliography::

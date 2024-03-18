@@ -687,8 +687,8 @@ class FDataBasis(FData):  # noqa: WPS214
         coefficients: NDArrayFloat,
         transpose: bool = False,
     ) -> str:
-        if len(coefficients.shape) == 1:
-            coefficients = coefficients.reshape((1, coefficients.shape[0]))
+        if coefficients.ndim == 1:
+            coefficients = coefficients[None]
 
         if transpose is True:
             coefficients = np.transpose(coefficients)

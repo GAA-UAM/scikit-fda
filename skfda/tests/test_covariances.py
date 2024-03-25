@@ -7,7 +7,7 @@ from sklearn.model_selection import ParameterGrid
 
 import skfda.misc.covariances as cov
 from skfda import FDataBasis, FDataGrid
-from skfda.datasets import fetch_phoneme
+from skfda.datasets import fetch_weather  # fetch_phoneme,
 from skfda.representation.basis import MonomialBasis
 
 
@@ -27,9 +27,9 @@ def _test_compare_sklearn(
 
 
 @pytest.fixture
-def fetch_phoneme_fixture() -> FDataGrid:
+def fetch_functional_data() -> FDataGrid:
     """Fixture for loading the phoneme dataset example."""
-    fd, _ = fetch_phoneme(return_X_y=True)
+    fd, _ = fetch_weather(return_X_y=True)
     return fd[:20]
 
 
@@ -138,8 +138,8 @@ def covariance_and_params(request: Any) -> Any:
 
 
 def test_covariances(
-    fetch_phoneme_fixture: Any,
-    covariances_fixture: Any,
+    fetch_phoneme_fixture: FDataGrid,
+    covariances_fixture: cov.Covariance,
 ) -> None:
     """Check that invalid parameters in fit raise exception."""
     fd = fetch_phoneme_fixture
@@ -157,7 +157,7 @@ def test_covariances(
 
 
 def test_raises(
-    fetch_phoneme_fixture: Any,
+    fetch_phoneme_fixture: FDataGrid,
     covariances_raise_fixture: Any,
 ) -> None:
     """Check that it raises a ValueError exception."""
@@ -172,7 +172,7 @@ def test_raises(
 
 
 def test_fdatabasis_example_linear(
-    fdatabasis_data: Any,
+    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
 ) -> None:
     """Check a precalculated example for Linear covariance kernel."""
     fd1, fd2 = fdatabasis_data
@@ -186,7 +186,7 @@ def test_fdatabasis_example_linear(
 
 
 def test_fdatabasis_example_polynomial(
-    fdatabasis_data: Any,
+    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
 ) -> None:
     """Check a precalculated example for Polynomial covariance kernel."""
     fd1, fd2 = fdatabasis_data
@@ -205,7 +205,7 @@ def test_fdatabasis_example_polynomial(
 
 
 def test_fdatabasis_example_gaussian(
-    fdatabasis_data: Any,
+    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
 ) -> None:
     """Check a precalculated example for Gaussian covariance kernel."""
     fd1, fd2 = fdatabasis_data
@@ -222,7 +222,7 @@ def test_fdatabasis_example_gaussian(
 
 
 def test_fdatabasis_example_exponential(
-    fdatabasis_data: Any,
+    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
 ) -> None:
     """Check a precalculated example for Exponential covariance kernel."""
     fd1, fd2 = fdatabasis_data
@@ -239,7 +239,7 @@ def test_fdatabasis_example_exponential(
 
 
 def test_fdatabasis_example_matern(
-    fdatabasis_data: Any,
+    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
 ) -> None:
     """Check a precalculated example for Matern covariance kernel."""
     fd1, fd2 = fdatabasis_data
@@ -256,7 +256,7 @@ def test_fdatabasis_example_matern(
 
 
 def test_multivariate_covariance_kernel(
-    multivariate_data: Any,
+    multivariate_data: np.array,
     covariance_and_params: Any,
 ) -> None:
     """Test general covariance kernel against scikit-learn's kernel."""

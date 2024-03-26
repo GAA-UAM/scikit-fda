@@ -9,8 +9,8 @@ import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
 from scipy.special import gamma, kv
 
-from ..misc import inner_product_matrix
-from ..misc.metrics import PairwiseMetric, LpNorm, l2_distance
+from ..misc._math import inner_product_matrix
+from ..misc.metrics import PairwiseMetric, l2_distance
 from ..representation import FData, FDataBasis, FDataGrid
 from ..representation.basis import TensorBasis
 from ..typing._numpy import ArrayLike, NDArrayFloat
@@ -38,7 +38,7 @@ def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     """Transform 1d arrays in column vectors."""
     t = np.asfarray(t)
 
-    dim = t.ndim
+    dim = len(t.shape)
     assert dim <= 2
 
     if dim < 2:

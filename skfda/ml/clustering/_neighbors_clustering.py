@@ -53,39 +53,38 @@ class NearestNeighbors(
             Doesn't affect :meth:`fit` method.
 
     Examples:
-        Firstly, we will create a toy dataset with 2 classes
+        Firstly, we will create a toy dataset
 
-        >>> from skfda.datasets import make_sinusoidal_process
-        >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
-        >>> fd2 = make_sinusoidal_process(phase_mean=1.8, error_std=0.,
-        ...                               phase_std=.25, random_state=0)
-        >>> fd = fd1.concatenate(fd2)
+        >>> from skfda.datasets import make_gaussian_process
+        >>> X = make_gaussian_process(
+        ...    n_samples=30,
+        ...    random_state=0,
+        ... )
 
         We will fit a Nearest Neighbors estimator
 
         >>> from skfda.ml.clustering import NearestNeighbors
-        >>> neigh = NearestNeighbors(radius=.3)
-        >>> neigh.fit(fd)
-        NearestNeighbors(...radius=0.3...)
+        >>> neigh = NearestNeighbors(n_neighbors=3, radius=0.7)
+        >>> neigh.fit(X)
+        NearestNeighbors(...)
 
         Now we can query the k-nearest neighbors.
 
-        >>> distances, index = neigh.kneighbors(fd[:2])
-        >>> index # Index of k-neighbors of samples 0 and 1
-        array([[ 0,  7,  6, 11,  2],...)
+        >>> distances, index = neigh.kneighbors(X)
+        >>> index
+        array([[ 0, 8, 1], ...)
 
-        >>> distances.round(2) # Distances to k-neighbors
-        array([[ 0.  ,  0.28,  0.29,  0.29,  0.3 ],
-               [ 0.  ,  0.27,  0.28,  0.29,  0.3 ]])
+        >>> distances.round(2)
+        array([[ 0.  ,  0.41,  0.58], ...])
 
         We can query the neighbors in a given radius too.
 
-        >>> distances, index = neigh.radius_neighbors(fd[:2])
+        >>> distances, index = neigh.radius_neighbors(X)
         >>> index[0]
-        array([ 0,  2,  6,  7, 11]...)
+        array([ 0,  1,  8, 18]...)
 
-        >>> distances[0].round(2) # Distances to neighbors of the sample 0
-        array([ 0.  ,  0.3 ,  0.29,  0.28,  0.29])
+        >>> distances[0].round(2)
+        array([ 0.  ,  0.58,  0.41,  0.68])
 
     See also:
         :class:`~skfda.ml.classification.KNeighborsClassifier`

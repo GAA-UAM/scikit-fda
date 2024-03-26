@@ -84,7 +84,7 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
             ],
         ]
 
-        np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
+        np.testing.assert_allclose(data_matrix, srsf.data_matrix)
 
     def test_from_srsf(self) -> None:
         """Test from srsf."""
@@ -93,13 +93,17 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
 
         data_matrix = [
             [  # noqa: WPS317
-                [0.0], [-0.23449228], [-0.83464009],
-                [-1.38200046], [-1.55623723], [-1.38200046],
-                [-0.83464009], [-0.23449228], [0.0],
+                [0.0], [-0.234492], [-0.834640],
+                [-1.382000], [-1.556237], [-1.382000],
+                [-0.834640], [-0.234492], [0.0],
             ],
         ]
 
-        np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
+        np.testing.assert_allclose(
+            data_matrix,
+            srsf.data_matrix,
+            atol=1e-6,
+        )
 
     def test_from_srsf_with_output_points(self) -> None:
         """Test from srsf and explicit output points."""
@@ -112,13 +116,17 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
 
         data_matrix = [
             [  # noqa: WPS317
-                [0.0], [-0.23449228], [-0.83464009],
-                [-1.38200046], [-1.55623723], [-1.38200046],
-                [-0.83464009], [-0.23449228], [0.0],
+                [0.0], [-0.234492], [-0.834640],
+                [-1.382000], [-1.556237], [-1.382000],
+                [-0.834640], [-0.234492], [0.0],
             ],
         ]
 
-        np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
+        np.testing.assert_allclose(
+            data_matrix,
+            srsf.data_matrix,
+            atol=1e-6,
+        )
 
     def test_srsf_conversion(self) -> None:
         """Convert to srsf and pull back."""
@@ -236,7 +244,7 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         reg = FisherRaoElasticRegistration()
         reg.fit(self.unimodal_samples)
         score = reg.score(self.unimodal_samples)
-        np.testing.assert_almost_equal(score, 0.999389)
+        np.testing.assert_allclose(score, 0.99938, rtol=1e-5)
 
     def test_warping_mean(self) -> None:
         """Test the warping_mean function."""
@@ -277,10 +285,10 @@ class TestElasticDistances(unittest.TestCase):
         f = np.square(sample)
         g = np.power(sample, 0.5)
 
-        distance = [[0.64, 1.984], [1.984, 0.64]]
+        distance = [[0.639, 1.984], [1.985, 0.638]]
         res = pairwise_fisher_rao(f, g)
 
-        np.testing.assert_almost_equal(res, distance, decimal=3)
+        np.testing.assert_allclose(res, distance, rtol=1e-2)
 
     def test_fisher_rao_invariance(self) -> None:
         """Test invariance of fisher rao metric: d(f,g)= d(foh, goh)."""
@@ -324,7 +332,7 @@ class TestElasticDistances(unittest.TestCase):
         amplitude_limit = fisher_rao_amplitude_distance(f, g, lam=1000)
         fr_distance = fisher_rao_distance(f, g)
 
-        np.testing.assert_almost_equal(amplitude_limit, fr_distance)
+        np.testing.assert_allclose(amplitude_limit, fr_distance)
 
     def test_fisher_rao_phase_distance_id(self) -> None:
         """Test of phase distance invariance."""

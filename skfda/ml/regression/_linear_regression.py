@@ -607,7 +607,7 @@ class LinearRegression(
             np.ndarray: numpy 2D array.
         """
         new_X = np.asarray(X)
-        if len(new_X.shape) == 1:
+        if new_X.ndim == 1:
             new_X = new_X[:, np.newaxis]
         return new_X
 

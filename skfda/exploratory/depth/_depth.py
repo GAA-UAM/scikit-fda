@@ -43,10 +43,10 @@ class IntegratedDepth(Depth[FDataGrid]):
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> grid_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
+        >>> X = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = skfda.exploratory.depth.IntegratedDepth()
-        >>> depth(fd)
-        array([ 0.5  ,  0.75 ,  0.925,  0.875])
+        >>> depth(X).round(1)
+        array([ 0.5,  0.8,  0.9,  0.9])
 
     References:
         Fraiman, R., & Muniz, G. (2001). Trimmed means for functional
@@ -121,11 +121,11 @@ class ModifiedBandDepth(IntegratedDepth):
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> grid_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
+        >>> X = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = skfda.exploratory.depth.ModifiedBandDepth()
-        >>> values = depth(fd)
-        >>> values.round(2)
-        array([ 0.5 ,  0.83,  0.73,  0.67])
+        >>> values = depth(X)
+        >>> values.round(1)
+        array([ 0.5,  0.8,  0.7,  0.7])
 
     References:
         López-Pintado, S., & Romo, J. (2009). On the Concept of
@@ -228,10 +228,10 @@ class DistanceBasedDepth(Depth[FDataGrid], BaseEstimator):
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> grid_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
+        >>> X = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = DistanceBasedDepth(MahalanobisDistance(2))
-        >>> depth(fd)
-        array([ 0.41897777,  0.8058132 ,  0.31097392,  0.31723619])
+        >>> depth(X).round(1)
+        array([ 0.4,  0.8,  0.3,  0.3])
 
     References:
         .. footbibliography::

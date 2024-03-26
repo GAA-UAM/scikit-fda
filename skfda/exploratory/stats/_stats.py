@@ -6,13 +6,12 @@ from builtins import isinstance
 from typing import Callable, TypeVar, Union
 
 import numpy as np
-from scipy import integrate
 from scipy.stats import rankdata
 
 from skfda._utils.ndfunction import average_function_value
 
 from ...misc.metrics._lp_distances import l2_distance
-from ...representation import FData, FDataBasis, FDataGrid
+from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
@@ -103,7 +102,7 @@ def cov(
 
 
 @functools.singledispatch
-def std(X: F, correction: int = 1) -> F:
+def std(X: F, correction: int = 0) -> F:
     r"""
     Compute the standard deviation of all the samples in a FData object.
 
@@ -127,7 +126,7 @@ def std(X: F, correction: int = 1) -> F:
 
 
 @std.register
-def std_fdatagrid(X: FDataGrid, correction: int = 1) -> FDataGrid:
+def std_fdatagrid(X: FDataGrid, correction: int = 0) -> FDataGrid:
     """Compute the standard deviation of a FDataGrid."""
     return X.copy(
         data_matrix=np.std(
@@ -138,7 +137,25 @@ def std_fdatagrid(X: FDataGrid, correction: int = 1) -> FDataGrid:
 
 
 @std.register
-def std_fdatabasis(X: FDataBasis, correction: int = 1) -> FDataBasis:
+def std_fdatairregular(
+    X: FDataIrregular, correction: int = 0,
+) -> FDataIrregular:
+    """Compute the standard deviation of a FDataIrregular."""
+    common_points, common_values = X._get_common_points_and_values()
+    std_values = np.std(
+        common_values, axis=0, ddof=correction,
+    )
+
+    return FDataIrregular(
+        start_indices=np.array([0]),
+        points=common_points,
+        values=std_values,
+        sample_names=(None,),
+    )
+
+
+@std.register
+def std_fdatabasis(X: FDataBasis, correction: int = 0) -> FDataBasis:
     """Compute the standard deviation of a FDataBasis."""
     from ..._utils import function_to_fdatabasis
 

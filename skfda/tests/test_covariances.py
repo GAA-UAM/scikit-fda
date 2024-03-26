@@ -7,7 +7,7 @@ from sklearn.model_selection import ParameterGrid
 
 import skfda.misc.covariances as cov
 from skfda import FDataBasis, FDataGrid
-from skfda.datasets import fetch_weather  # fetch_phoneme,
+from skfda.datasets import fetch_weather
 from skfda.representation.basis import MonomialBasis
 
 
@@ -138,11 +138,11 @@ def covariance_and_params(request: Any) -> Any:
 
 
 def test_covariances(
-    fetch_phoneme_fixture: FDataGrid,
+    fetch_functional_data: FDataGrid,
     covariances_fixture: cov.Covariance,
 ) -> None:
     """Check that invalid parameters in fit raise exception."""
-    fd = fetch_phoneme_fixture
+    fd = fetch_functional_data
     cov_kernel = covariances_fixture
 
     # Also test that it does not fail
@@ -157,11 +157,11 @@ def test_covariances(
 
 
 def test_raises(
-    fetch_phoneme_fixture: FDataGrid,
+    fetch_functional_data: FDataGrid,
     covariances_raise_fixture: Any,
 ) -> None:
     """Check that it raises a ValueError exception."""
-    fd = fetch_phoneme_fixture
+    fd = fetch_functional_data
     cov_kernel = covariances_raise_fixture
 
     np.testing.assert_raises(

@@ -47,7 +47,7 @@ def _reduceat(
     dtype=None,
     out=None,
     *,
-    value_empty
+    value_empty,
 ):
     """
     Wrapped `np.ufunc.reduceat` to manage some edge cases.

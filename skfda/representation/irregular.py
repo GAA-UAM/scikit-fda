@@ -629,7 +629,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         """
         if self.dim_domain != 1:
             raise NotImplementedError(
-                "Integration only implemented for 1D domains."
+                "Integration only implemented for 1D domains.",
             )
 
         if domain is not None:

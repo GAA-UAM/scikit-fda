@@ -610,9 +610,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         returned.
 
         Args:
-            domain (Optional[DomainRange]): tuple with
-                the domain ranges for each dimension
-                of the domain
+            domain: tuple with the domain ranges for each dimension of the
+                domain. If None, the domain range of the object will be used.
 
         Returns:
             NumPy array of size (``n_samples``, ``dim_codomain``)

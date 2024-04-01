@@ -471,7 +471,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
         )
 
 
-############### Test irregular data scoring ####################
+# ------------------ Test irregular data scoring ------------------
 
 
 @pytest.fixture(params=irregular_score_functions)

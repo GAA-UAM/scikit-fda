@@ -9,20 +9,12 @@ from __future__ import annotations
 
 import itertools
 import numbers
-from typing import (
-    Any,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import numpy as np
 import pandas.api.extensions
-from matplotlib.figure import Figure
 import scipy
+from matplotlib.figure import Figure
 
 from .._utils import _cartesian_product, _check_array_key, _to_grid_points
 from ..typing._base import (
@@ -32,12 +24,7 @@ from ..typing._base import (
     GridPointsLike,
     LabelTupleLike,
 )
-from ..typing._numpy import (
-    ArrayLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
-)
+from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from ._functional_data import FData
 from .basis import Basis, FDataBasis
 from .evaluator import Evaluator

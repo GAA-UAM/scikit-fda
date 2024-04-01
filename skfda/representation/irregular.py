@@ -728,7 +728,11 @@ class FDataIrregular(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def cov(self: T) -> T:
+    def cov(
+        self: T,
+        /,
+        correction: int = 0,
+    ) -> T:
         """Compute the covariance for a FDataIrregular object.
 
         Returns:

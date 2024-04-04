@@ -9,19 +9,11 @@ from __future__ import annotations
 
 import itertools
 import numbers
-from typing import (
-    Any,
-    Callable,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import numpy as np
 import pandas.api.extensions
+import scipy
 from matplotlib.figure import Figure
 
 from .._utils import _cartesian_product, _check_array_key, _to_grid_points
@@ -32,13 +24,7 @@ from ..typing._base import (
     GridPointsLike,
     LabelTupleLike,
 )
-from ..typing._numpy import (
-    ArrayLike,
-    DTypeLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
-)
+from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from ._functional_data import FData
 from .basis import Basis, FDataBasis
 from .evaluator import Evaluator
@@ -600,19 +586,50 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def integrate(
         self: T,
+        *,
         domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
         """Integrate the FDataIrregular object.
 
+        The integration can only be performed over 1 dimensional domains.
+
+        For a vector valued function the vector of integrals will be
+        returned.
+
         Args:
-            domain (Optional[DomainRange]): tuple with
-                the domain ranges for each dimension
-                of the domain
+            domain: tuple with the domain ranges for each dimension of the
+                domain. If None, the domain range of the object will be used.
 
         Returns:
-            FDataIrregular with the integral.
+            NumPy array of size (``n_samples``, ``dim_codomain``)
+            with the integrated data.
+
+        Examples:
+            >>> fdata = FDataIrregular(
+            ...     values=[[2, -1], [2, 3], [5, -2], [1, -1], [1, -1]],
+            ...     points=[[4], [5], [6], [0], [2]],
+            ...     start_indices=[0, 3],
+            ... )
+            >>> fdata.integrate()
+            array([[ 5.,  3.],
+                   [ 2., -2.]])
         """
-        raise NotImplementedError()
+        if self.dim_domain != 1:
+            raise NotImplementedError(
+                "Integration only implemented for 1D domains.",
+            )
+
+        if domain is not None:
+            data = self.restrict(domain)
+        else:
+            data = self
+
+        values_list = np.split(data.values, data.start_indices[1:])
+        points_list = np.split(data.points, data.start_indices[1:])
+        return np.array([
+            scipy.integrate.simpson(y, x, axis=0)
+            for y, x in zip(values_list, points_list)
+        ])
 
     def check_same_dimensions(self: T, other: T) -> None:
         """Ensure that other FDataIrregular object has compatible dimensions.

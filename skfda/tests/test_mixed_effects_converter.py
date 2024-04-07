@@ -6,8 +6,8 @@ from typing import (
     Any,
     Callable,
     Iterable,
-    Literal,
     List,
+    Optional,
     Tuple,
     Type,
 )
@@ -26,7 +26,7 @@ from skfda.representation.basis import (
 )
 from skfda.representation.conversion._mixed_effects import (
     MinimizeMixedEffectsConverter,
-    _MixedEffectsConverter,
+    MixedEffectsConverter,
     EMMixedEffectsConverter,
     _get_values_list,
     _get_basis_evaluations_list,
@@ -101,7 +101,7 @@ def test_loglikelihood() -> None:
     ]
 
     for params_vec, mixedlm_loglikelihood in params_loglike_list:
-        params = MinimizeMixedEffectsConverter._Params.from_vec(
+        params = MinimizeMixedEffectsConverter.Params.from_vec(
             params_vec, basis.n_basis, model,
         )
         model_loglikelihood = model.profile_loglikelihood(params)
@@ -287,7 +287,7 @@ def _cmp_estimation_with_original(
     domain_range: Tuple[float, float],
     funcs: List[Callable[[NDArrayFloat], NDArrayFloat]],
     type_gen_points: int,
-    estimator: _MixedEffectsConverter,
+    estimator: MixedEffectsConverter,
     fit_kwargs: dict[str, Any],
     fdatabasis_original: FDataBasis,
 ) -> None:
@@ -315,10 +315,13 @@ def _cmp_estimation_with_original(
 
 
 def _test_compare_with_original(
-    estimator_cls: Type[_MixedEffectsConverter],
-    fit_kwargs: dict[str, Any] = dict(),
+    estimator_cls: Type[MixedEffectsConverter],
+    fit_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     np.random.seed(34285676)
+    if fit_kwargs is None:
+        fit_kwargs = {}
+
     domain_range = (0, 100)
     _max_val = 5
     n_points = 7

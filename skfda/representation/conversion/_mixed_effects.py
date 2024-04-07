@@ -9,6 +9,7 @@ representation using the mixed effects model.
 """
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -149,22 +150,18 @@ class _MixedEffectsParams(Protocol):
     @property
     def covariance(self) -> NDArrayFloat:
         """Covariance of the mixed effects."""
-        ...
 
     @property
     def sigmasq(self) -> float:
         """Variance of the residuals."""
-        ...
 
     @property
     def covariance_div_sigmasq(self) -> NDArrayFloat:
         """Covariance of the mixed effects."""
-        ...
 
     @property
     def mean(self) -> NDArrayFloat:
         """Fixed effects."""
-        ...
 
 
 @dataclass(frozen=True)
@@ -176,6 +173,7 @@ class _MixedEffectsParamsResult:
 
     @property
     def covariance_div_sigmasq(self) -> NDArrayFloat:
+        """covariance/sigmasq of the mixed effects model."""
         return self.covariance / self.sigmasq
 
 
@@ -367,8 +365,11 @@ class _MixedEffectsModel:
         return len(self.values)
 
 
-class _MixedEffectsConverter(_ToBasisConverter[FDataIrregular]):
-    """Mixed effects to-basis-converter."""
+class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
+    """Abstract class for mixed effects to-basis-converters.
+
+    TODO: explain the model in detail.
+    """
 
     # after fitting:
     fitted_model: Optional[_MixedEffectsModel]
@@ -401,10 +402,15 @@ class _MixedEffectsConverter(_ToBasisConverter[FDataIrregular]):
         return FDataBasis(
             basis=self.basis,
             coefficients=coefficients,
+            dataset_name=X.dataset_name,
+            argument_names=X.argument_names,
+            coordinate_names=X.coordinate_names,
+            sample_names=X.sample_names,
+            extrapolation=X.extrapolation,
         )
 
 
-class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
+class MinimizeMixedEffectsConverter(MixedEffectsConverter):
     """Mixed effects to-basis-converter using scipy.optimize.
 
     Minimizes the profile loglikelihood of the mixed effects model as proposed
@@ -412,8 +418,9 @@ class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
     """
 
     @dataclass(frozen=True)
-    class _Params:
+    class Params:
         """Private class for the parameters of the minimization.
+
         Args:
             sqrt_cov_div_sigmasq:
                 (sqrt_cov_div_sigmasq @ sqrt_cov_div_sigmasq.T) is the Cholesky
@@ -523,7 +530,7 @@ class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
         y: object = None,
         *,
         initial_params: Optional[
-            MinimizeMixedEffectsConverter._Params | NDArrayFloat
+            MinimizeMixedEffectsConverter.Params | NDArrayFloat
         ] = None,
         minimization_method: Optional[str] = None,
         has_mean: bool = True,
@@ -545,13 +552,13 @@ class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
         dim_effects = self.basis.n_basis
         model = _MixedEffectsModel(X, self.basis)
         n_samples = X.n_samples
-        if isinstance(initial_params, MinimizeMixedEffectsConverter._Params):
+        if isinstance(initial_params, MinimizeMixedEffectsConverter.Params):
             initial_params_vec = initial_params.to_vec()
         elif initial_params is not None:
             initial_params_vec = initial_params
         else:
             initial_params_generic = _initial_params(dim_effects)
-            initial_params_vec = MinimizeMixedEffectsConverter._Params(
+            initial_params_vec = MinimizeMixedEffectsConverter.Params(
                 sqrt_cov_div_sigmasq=np.linalg.cholesky(
                     initial_params_generic.covariance,
                 ),
@@ -564,7 +571,7 @@ class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
 
         def objective_function(params_vec: NDArrayFloat) -> float:
             return - model.profile_loglikelihood(
-                params=MinimizeMixedEffectsConverter._Params.from_vec(
+                params=MinimizeMixedEffectsConverter.Params.from_vec(
                     params_vec, dim_effects, model=self, has_mean=has_mean,
                 )
             ) / n_samples
@@ -575,7 +582,7 @@ class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
             minimization_methods=minimization_method,
         )
         self.fitted_model = model
-        params = MinimizeMixedEffectsConverter._Params.from_vec(
+        params = MinimizeMixedEffectsConverter.Params.from_vec(
             self.result.x,
             dim_effects=dim_effects,
             model=model,
@@ -590,10 +597,10 @@ class MinimizeMixedEffectsConverter(_MixedEffectsConverter):
         return self
 
 
-class EMMixedEffectsConverter(_MixedEffectsConverter):
+class EMMixedEffectsConverter(MixedEffectsConverter):
     """Mixed effects to-basis-converter using the EM algorithm."""
     @dataclass(frozen=True)
-    class _Params:
+    class Params:
         """Mixed effects parameters for the EM algorithm."""
         sigmasq: float
         covariance: NDArrayFloat
@@ -615,7 +622,7 @@ class EMMixedEffectsConverter(_MixedEffectsConverter):
             cls,
             vec: NDArrayFloat,
             dim_effects: int,
-        ) -> EMMixedEffectsConverter._Params:
+        ) -> EMMixedEffectsConverter.Params:
             """Create Params from vectorized parameters."""
             sigmasq = vec[0]
             covariance = np.zeros((dim_effects, dim_effects))
@@ -650,11 +657,11 @@ class EMMixedEffectsConverter(_MixedEffectsConverter):
     def _next_params(
         self,
         model: _MixedEffectsModel,
-        curr_params: EMMixedEffectsConverter._Params,
+        curr_params: EMMixedEffectsConverter.Params,
         partial_residuals: List[NDArrayFloat],
         values_cov: List[NDArrayFloat],
         random_effects: NDArrayFloat,
-    ) -> EMMixedEffectsConverter._Params:
+    ) -> EMMixedEffectsConverter.Params:
         """Return the next parameters of the EM algorithm."""
         residuals = [
             r - basis_eval @ random_effect
@@ -687,7 +694,7 @@ class EMMixedEffectsConverter(_MixedEffectsConverter):
             )
         ) / model.n_samples
 
-        return EMMixedEffectsConverter._Params(
+        return EMMixedEffectsConverter.Params(
             sigmasq=next_sigmasq,
             covariance=next_covariance,
         )
@@ -698,7 +705,7 @@ class EMMixedEffectsConverter(_MixedEffectsConverter):
         y: object = None,
         *,
         initial_params: Optional[
-            EMMixedEffectsConverter._Params | NDArrayFloat
+            EMMixedEffectsConverter.Params | NDArrayFloat
         ] = None,
         maxiter: int = 700,
         convergence_criterion: Optional[
@@ -714,6 +721,7 @@ class EMMixedEffectsConverter(_MixedEffectsConverter):
             initial_params: initial params of the model.
             niter: maximum number of iterations.
             convergence_criterion: convergence criterion to use when fitting.
+
                 - "params" to use relative differences between parameters.
                 - "squared-error" to userelative changes in the squared error
                     of the estimated values with respect to the original data.
@@ -730,12 +738,12 @@ class EMMixedEffectsConverter(_MixedEffectsConverter):
 
         if initial_params is None:
             initial_params_generic = _initial_params(self.basis.n_basis)
-            next_params = EMMixedEffectsConverter._Params(
+            next_params = EMMixedEffectsConverter.Params(
                 sigmasq=initial_params_generic.sigmasq,
                 covariance=initial_params_generic.covariance,
             )
         elif isinstance(initial_params, np.ndarray):
-            next_params = EMMixedEffectsConverter._Params.from_vec(
+            next_params = EMMixedEffectsConverter.Params.from_vec(
                 initial_params, dim_effects=self.basis.n_basis,
             )
         else:

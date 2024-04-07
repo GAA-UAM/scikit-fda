@@ -11,7 +11,7 @@ import itertools
 import numbers
 from typing import (
     Any,
-    Callable,
+    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -24,6 +24,10 @@ import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
 
+from ..representation.conversion import (
+    EMMixedEffectsConverter,
+    MinimizeMixedEffectsConverter,
+)
 from .._utils import _cartesian_product, _check_array_key, _to_grid_points
 from ..typing._base import (
     DomainRange,
@@ -34,7 +38,6 @@ from ..typing._base import (
 )
 from ..typing._numpy import (
     ArrayLike,
-    DTypeLike,
     NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
@@ -47,6 +50,9 @@ from .grid import FDataGrid
 from .interpolation import SplineInterpolation
 
 T = TypeVar("T", bound='FDataIrregular')
+IrregularToBasisConversionType = Literal[
+    "separately", "mixed_effects", "mixed_effects_minimize",
+]
 
 ######################
 # Auxiliary functions#
@@ -1052,14 +1058,38 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         return ScatterPlotIrregular(self, *args, **kwargs).plot()
 
-    def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
+    def to_basis(
+        self,
+        basis: Basis,
+        *,
+        conversion_type: IrregularToBasisConversionType = "separately",
+        **kwargs: Any,
+    ) -> FDataBasis:
         """Return the basis representation of the object.
 
         Args:
             basis (Basis): basis object in which the functional data are
                 going to be represented.
-            kwargs: keyword arguments to be passed to
-                FDataBasis.from_data().
+            conversion_type: method to use for the conversion:
+
+                - "separately": (default) each curve is converted independently
+                    (meaning that only the information of each curve is used
+                    for its conversion) with
+                    :class:`~skfda.preprocessing.smoothing.BasisSmoother`.
+                - "mixed_effects": all curves are converted jointly (this means
+                    that the information of all curves is used to convert each
+                    one) using the EM algorithm to fit the mixed effects
+                    model:
+                    :class:`~skfda.representation.conversion.EMMixedEffectsConverter`.
+                - "mixed_effects_minimize": all curves are converted jointly
+                    using the scipy.optimize.minimize to fit the mixed effects
+                    model:
+                    :class:`~skfda.representation.conversion.MinimizeMixedEffectsConverter`.
+            kwargs: keyword arguments to be passed to FDataBasis.from_data()
+                in the case of conversion_type="separately. If conversion_type
+                has another value, the keyword arguments are passed to the fit
+                method of the
+                :class:`~skfda.representation.conversion.MixedEffectsConverter`.
 
         Raises:
             ValueError: Incorrect domain dimension
@@ -1069,8 +1099,6 @@ class FDataIrregular(FData):  # noqa: WPS214
             FDataBasis: Basis representation of the funtional data
             object.
         """
-        from ..preprocessing.smoothing import BasisSmoother
-
         if self.dim_domain != basis.dim_domain:
             raise ValueError(
                 f"The domain of the function has "
@@ -1090,6 +1118,15 @@ class FDataIrregular(FData):  # noqa: WPS214
         if not basis.is_domain_range_fixed():
             basis = basis.copy(domain_range=self.domain_range)
 
+        if conversion_type != "separately":
+            converter_class = (
+                EMMixedEffectsConverter if conversion_type == "mixed_effects"
+                else MinimizeMixedEffectsConverter
+            )
+            converter = converter_class(basis)
+            return converter.fit_transform(self, **kwargs)
+
+        from ..preprocessing.smoothing import BasisSmoother
         smoother = BasisSmoother(
             basis=basis,
             **kwargs,

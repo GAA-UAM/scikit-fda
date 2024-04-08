@@ -20,8 +20,9 @@ from typing import (
 import numpy as np
 from typing_extensions import override
 
-from ._array_api import Array, DType, Shape, RealDtype
+from ._array_api import Array, DType, RealDtype, Shape
 from .evaluator import Evaluator
+from .utils._points import input_points_batch_shape
 
 if TYPE_CHECKING:
     from ._ndfunction import NDFunction
@@ -92,7 +93,7 @@ class PeriodicExtrapolation(Evaluator[RealArray]):
         )
 
 
-class BoundaryExtrapolation(Evaluator[A]):
+class BoundaryExtrapolation(Evaluator[RealArray]):
     """
     Extend the :term:`domain` range using the boundary values.
 
@@ -128,20 +129,19 @@ class BoundaryExtrapolation(Evaluator[A]):
     @override
     def __call__(  # noqa:D102
         self,
-        function: NDFunction[A],
+        function: NDFunction[RealArray],
         /,
-        eval_points: A,
+        eval_points: RealArray,
         *,
         aligned: bool = True,
-    ) -> A:
+    ) -> RealArray:
 
         lower, upper = function.domain.bounding_box
 
-        for i in range(function.dim_domain):
-            a = lower[i]
-            b = upper[i]
-            eval_points[eval_points[..., i] < a, i] = a
-            eval_points[eval_points[..., i] > b, i] = b
+        xp = function.array_backend
+
+        eval_points = xp.where(eval_points < lower, lower, eval_points)
+        eval_points = xp.where(eval_points > upper, upper, eval_points)
 
         return function(
             eval_points,
@@ -184,7 +184,7 @@ class ExceptionExtrapolation(Evaluator[A]):
     def __call__(  # noqa:D102
         self,
         function: NDFunction[A],
-        / ,
+        /,
         eval_points: A,
         *,
         aligned: bool = True,
@@ -235,18 +235,25 @@ class FillExtrapolation(Evaluator[A]):
     def __call__(  # noqa:D102
         self,
         function: NDFunction[A],
-        / ,
+        /,
         eval_points: A,
         *,
         aligned: bool = True,
     ) -> A:
 
         shape = (
-            function.n_samples,
-            eval_points.shape[-2],
-            function.dim_codomain,
+            function.shape
+            + input_points_batch_shape(
+                eval_points,
+                function=function,
+                aligned=aligned,
+            )
+            + function.output_shape
         )
-        return np.full(shape, self.fill_value)
+        return function.array_backend.full(  # type: ignore[no-any-return]
+            shape,
+            self.fill_value,
+        )
 
     def __repr__(self) -> str:
         return (

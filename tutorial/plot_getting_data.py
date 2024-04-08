@@ -76,12 +76,13 @@ literature.
 
 import skfda
 import matplotlib.pyplot as plt
+import numpy as np
 
-grid_points = [0, 0.2, 0.5, 0.9, 1]  # Grid points of the curves
-data_matrix = [
+grid_points = np.array([0, 0.2, 0.5, 0.9, 1])  # Grid points of the curves
+data_matrix = np.array([
     [0, 0.2, 0.5, 0.9, 1],     # First observation
     [0, 0.04, 0.25, 0.81, 1],  # Second observation
-]
+])
 
 fd = skfda.FDataGrid(
     data_matrix=data_matrix,
@@ -102,11 +103,11 @@ plt.show()
 
 
 grid_points_surface = [
-    [0.2, 0.5, 0.7],      # Measurement points in first domain dimension
-    [0, 1.5],             # Measurement points in second domain dimension
+    np.array([0.2, 0.5, 0.7]),   # Measurement points in first domain dimension
+    np.array([0, 1.5]),          # Measurement points in second domain dimension
 ]
 
-data_matrix_surface = [
+data_matrix_surface = np.array([
     # First observation
     [
         # 0.2
@@ -133,7 +134,7 @@ data_matrix_surface = [
     ],
     # This example has only one observation. Next observations would be
     # added here.
-]
+])
 
 fd = skfda.FDataGrid(
     data_matrix=data_matrix_surface,
@@ -209,8 +210,8 @@ import pandas
 
 data = pandas.read_csv("data.csv")
 
-grid_points = data.columns.astype(float)
-data_matrix = data
+grid_points = data.columns.astype(float).to_numpy()
+data_matrix = data.to_numpy()
 
 # %%
 # We can now construct the :class:`~skfda.representation.grid.FDataGrid`

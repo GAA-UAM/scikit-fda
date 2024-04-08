@@ -20,13 +20,14 @@ from typing import (
 import numpy as np
 from typing_extensions import override
 
-from ._array_api import Array, DType, Shape
+from ._array_api import Array, DType, Shape, RealDtype
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
     from ._ndfunction import NDFunction
 
 A = TypeVar('A', bound=Array[Shape, DType])
+RealArray = TypeVar('RealArray', bound=Array[Shape, RealDtype])
 
 ExtrapolationLike = Union[
     Evaluator[A],
@@ -34,7 +35,7 @@ ExtrapolationLike = Union[
 ]
 
 
-class PeriodicExtrapolation(Evaluator[A]):
+class PeriodicExtrapolation(Evaluator[RealArray]):
     """
     Extend the :term:`domain` range periodically.
 
@@ -70,24 +71,22 @@ class PeriodicExtrapolation(Evaluator[A]):
     @override
     def __call__(  # noqa:D102
         self,
-        function: NDFunction[A],
+        function: NDFunction[RealArray],
         /,
-        eval_points: A,
+        eval_points: RealArray,
         *,
         aligned: bool = True,
-    ) -> A:
+    ) -> RealArray:
 
-        domain_range = np.asarray(function.domain_range)
+        lower, upper = function.domain.bounding_box
 
         # Extends the domain periodically in each dimension
-        domain_len = domain_range[:, 1] - domain_range[:, 0]
-        eval_points = (
-            domain_range[:, 0]
-            + (eval_points - domain_range[:, 0]) % domain_len
-        )
+        domain_len = upper - lower
+
+        displacement = (eval_points - lower) % domain_len
 
         return function(
-            eval_points,
+            lower + displacement,
             aligned=aligned,
             extrapolation=None,
         )
@@ -136,12 +135,11 @@ class BoundaryExtrapolation(Evaluator[A]):
         aligned: bool = True,
     ) -> A:
 
-        domain_range = function.domain_range
-
-        eval_points = np.asarray(eval_points)
+        lower, upper = function.domain.bounding_box
 
         for i in range(function.dim_domain):
-            a, b = domain_range[i]
+            a = lower[i]
+            b = upper[i]
             eval_points[eval_points[..., i] < a, i] = a
             eval_points[eval_points[..., i] > b, i] = b
 
@@ -186,7 +184,7 @@ class ExceptionExtrapolation(Evaluator[A]):
     def __call__(  # noqa:D102
         self,
         function: NDFunction[A],
-        /,
+        / ,
         eval_points: A,
         *,
         aligned: bool = True,
@@ -237,7 +235,7 @@ class FillExtrapolation(Evaluator[A]):
     def __call__(  # noqa:D102
         self,
         function: NDFunction[A],
-        /,
+        / ,
         eval_points: A,
         *,
         aligned: bool = True,

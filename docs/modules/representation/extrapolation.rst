@@ -18,14 +18,3 @@ The following classes are used to define common methods of extrapolation.
    skfda.representation.extrapolation.ExceptionExtrapolation
    skfda.representation.extrapolation.FillExtrapolation
    skfda.representation.extrapolation.PeriodicExtrapolation
-
-Custom Extrapolation
---------------------
-
-Custom extrapolators could be done subclassing :class:`Evaluator
-<skfda.Evaluator>`.
-
-.. autosummary::
-   :toctree: autosummary
-
-   skfda.representation.evaluator.Evaluator

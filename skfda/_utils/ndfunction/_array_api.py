@@ -10,6 +10,8 @@ import array_api_compat.numpy
 from typing_extensions import Self, TypeAlias, TypeGuard
 
 DType = np.generic
+NumericDType = np.number[Any]
+RealDtype = np.integer[Any] | np.floating[Any]
 D = TypeVar("D", bound=DType)
 Shape: TypeAlias = Any
 S = TypeVar("S", bound=Shape)

@@ -132,7 +132,7 @@ def _ucr_to_fdatagrid(name: str, data: NDArrayFloat) -> FDataGrid:
 
         data = np.transpose(data, axes=(0, 2, 1))
 
-    grid_points = range(data.shape[1])
+    grid_points = np.arange(data.shape[1])
 
     return FDataGrid(data, grid_points=grid_points, dataset_name=name)
 

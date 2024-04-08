@@ -70,8 +70,8 @@ def evaluator_lagrange(fdata, eval_points, *, aligned):
 
 
 X = FDataGrid(
-    [[0, 1, 2], [0, 1, 8], [0, 0, 0]],
-    grid_points=[0, 1, 2],
+    np.array([[0, 1, 2], [0, 1, 8], [0, 0, 0]]),
+    grid_points=np.array([0, 1, 2]),
     interpolation=evaluator_lagrange,
 )
 

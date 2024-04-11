@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import itertools
-from typing import Callable, Sequence, Union
+from typing import Callable, Sequence, Union, Any
 
 import numpy as np
 import scipy.integrate
 from scipy.stats import multivariate_normal
+from typing_extensions import Protocol
 
 from .._utils import _cartesian_product, _to_grid_points, normalize_warping
 from ..misc.covariances import Brownian, CovarianceLike, _execute_covariance
@@ -13,12 +14,205 @@ from ..misc.validation import validate_random_state
 from ..representation import FDataGrid
 from ..representation.interpolation import SplineInterpolation
 from ..typing._base import DomainRangeLike, GridPointsLike, RandomStateLike
-from ..typing._numpy import NDArrayFloat
+from ..typing._numpy import NDArrayFloat, ArrayLike
 
 MeanCallable = Callable[[np.ndarray], np.ndarray]
 CovarianceCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
 MeanLike = Union[float, NDArrayFloat, MeanCallable]
+
+
+class InitialValueGenerator(Protocol):
+    def __call__(
+        self,
+        size: int,
+        random_state: RandomStateLike
+    ) -> np.typing.NDArray[np.floating[Any]]:
+        ...
+
+
+def euler_maruyama(
+    initial_condition: ArrayLike | InitialValueGenerator,
+    n_grid_points: int = 100,
+    drift: Callable[[float, np.typing.NDArray[np.floating[Any]]],
+                    np.typing.NDArray[np.floating[Any]]] | None = None,
+    diffusion: Callable[[float, np.typing.NDArray[np.floating[Any]]],
+                        np.typing.NDArray[np.floating[Any]]] | None = None,
+    n_samples: int | None = None,
+    start: float = 0.0,
+    stop: float = 1.0,
+    dim_noise: int | None = None,
+    random_state: RandomStateLike = None,
+) -> FDataGrid:
+    r"""Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
+
+    .. math::
+
+        d X(t) = a(t, X(t)) d t + b(t,X(t)) d W(t).
+
+    Args:
+        initial_condition: Initial condition of the SDE. It can have one of
+            three formats:
+
+            - An starting initial value from which to
+            calculate *n_samples* trajectories.
+
+            - An array of initial values. For each starting
+            point a trajectory will be calculated.
+
+            - A function that generates random numbers or
+            vectors. It should have two parameters called
+            size and random_state and it should return an array.
+
+        n_grid_points: The total number of points of evaluation.
+        drift: drift coefficient (:math:`a(t,X_t)` in the equation).
+        diffusion: diffusion coefficient (:math:`b(t,X_t)` in the equation).
+        n_samples: Number of trajectories integrated.
+        start: Starting time of the trajectories.
+        stop: Ending time of the trajectories.
+        dim_noise: dimension of the noise factor. By default is the data
+            dimension.
+        random_state: Random state.
+
+
+    Returns:
+        :class:`FDataGrid` object comprising all the trajectories.
+
+    See also:
+        :func:`make_gaussian_process`: Simpler function for generating
+        Gaussian processes.
+
+    Examples:
+        Example of the use of euler_maruyama for an SDE with constant
+        drift and diffusion and an initial condition which follows a
+        standard normal distribution.
+
+        >>> from scipy.stats import norm
+        >>> def example_drift(t: float, x: np.ndarray) -> np.ndarray:
+        ...     return 2
+        >>> def example_diffusion(t: float, x: np.ndarray) -> np.ndarray:
+        ...     return 0.5
+        >>> initial_condition = norm().rvs
+        >>>
+        >>> trajectories = euler_maruyama(
+        ...     initial_condition=initial_condition,
+        ...     n_samples=10,
+        ...     drift=example_drift,
+        ...     diffusion=example_diffusion,
+        ... )
+        >>> trajectories.show()
+
+    """
+    random_state = validate_random_state(random_state)
+
+    if n_samples is None:
+        if (
+            not isinstance(initial_condition, np.ndarray)
+            and not isinstance(initial_condition, list)
+            and not isinstance(initial_condition, float)
+            and not isinstance(initial_condition, int)
+        ):
+            raise ValueError(
+                "Invalid initial conditions. If a function is given, the \
+                n_samples argument must be included."
+            )
+
+        initial_values = np.atleast_1d(initial_condition)
+        n_samples = len(initial_values)
+    else:
+        if callable(initial_condition):
+            initial_values = initial_condition(
+                size=n_samples,
+                random_state=random_state
+            )
+        else:
+            initial_condition = np.atleast_1d(initial_condition)
+            dim_codomain = len(initial_condition)
+            initial_values = initial_condition * \
+                np.ones((n_samples, dim_codomain))
+
+    if initial_values.ndim == 1:
+        initial_values = initial_values[:, np.newaxis]
+    elif initial_values.ndim > 2:
+        raise ValueError(
+            "Invalid initial conditions. Each of the starting points\
+            must be a flat array."
+        )
+    (n_samples, dim_codomain) = initial_values.shape
+
+    if dim_noise is None:
+        dim_noise = dim_codomain
+
+    def default_drift(
+        t: float,
+        x: np.typing.NDArray[np.floating[Any]]
+    ) -> np.typing.NDArray[np.floating[Any]]:
+        return np.array(0)
+
+    def default_diffusion(
+        t: float,
+        x: np.typing.NDArray[np.floating[Any]]
+    ) -> np.typing.NDArray[np.floating[Any]]:
+        return np.eye(dim_codomain, dim_noise)
+
+    if drift is None:
+        drift = default_drift
+
+    if diffusion is None:
+        diffusion = default_diffusion
+
+    test_diffusion_dim = np.atleast_1d(diffusion(start, initial_values))
+
+    if test_diffusion_dim.ndim == 1:
+        if (len(test_diffusion_dim) != dim_codomain
+                and len(test_diffusion_dim) != 1):
+            raise ValueError(
+                f"The diffusion function returns the wrong dimensions. \
+                The expected dimension is {dim_codomain} or 1."
+            )
+        formatting_matrix = np.eye(dim_codomain, dim_noise)
+
+    elif test_diffusion_dim.shape[-2:] != (dim_codomain, dim_noise):
+        raise ValueError(
+            f"The diffusion function returns the wrong dimensions. \
+            The expected dimensiones are {dim_codomain} x {dim_noise}."
+        )
+
+    else:
+        formatting_matrix = np.ones((dim_codomain, dim_noise))
+
+    def formatted_diffusion(
+        t: float,
+        x: np.typing.NDArray[np.floating[Any]]
+    ) -> np.typing.NDArray[np.floating[Any]]:
+        return diffusion(t, x) * formatting_matrix
+
+    data_matrix = np.zeros((n_samples, n_grid_points, dim_codomain))
+    times = np.linspace(start, stop, n_grid_points)
+    step_size = times[1] - times[0]
+    noise = random_state.standard_normal(
+        size=(n_samples, n_grid_points - 1, dim_noise)
+    )
+    data_matrix[:, 0] = initial_values
+
+    for n in range(n_grid_points - 1):
+        t_n = times[n]
+        x_n = data_matrix[:, n]
+
+        data_matrix[:, n + 1] = (
+            x_n
+            + step_size * drift(t_n, x_n)
+            + np.einsum(
+                '...dj, ...j -> ...d',
+                formatted_diffusion(t_n, x_n),
+                noise[:, n]
+            ) * np.sqrt(step_size)
+        )
+
+    return FDataGrid(
+        grid_points=times,
+        data_matrix=data_matrix,
+    )
 
 
 def make_gaussian(

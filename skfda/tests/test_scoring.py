@@ -480,50 +480,14 @@ def irregular_score_function(request) -> ScoreFunction:
     return request.param
 
 
-_y_true_grid, _y_pred_grid = _create_data_grid()
-_y_true_irregular = FDataIrregular.from_fdatagrid(_y_true_grid)
-_y_pred_irregular = FDataIrregular.from_fdatagrid(_y_pred_grid)
-
-
-@pytest.fixture
-def y_true_grid() -> FDataGrid:
-    """Fixture with FDataGrid true representation."""
-    return _y_true_grid
-
-
-@pytest.fixture
-def y_pred_grid() -> FDataGrid:
-    """Fixture with FDataGrid prediction representation."""
-    return _y_pred_grid
-
-
-@pytest.fixture
-def y_true_irregular() -> FDataIrregular:
-    """Fixture with FDataIrregular true representation.
-
-    Same data as y_true_grid.
-    """
-    return _y_true_irregular
-
-
-@pytest.fixture
-def y_pred_irregular() -> FDataIrregular:
-    """Fixture with FDataIrregular true representation.
-
-    Same data as y_pred_grid.
-    """
-    return _y_pred_irregular
-
-
 def test_score_functions_irregular(
-    y_true_grid: FDataGrid,
-    y_pred_grid: FDataGrid,
-    y_true_irregular: FDataIrregular,
-    y_pred_irregular: FDataIrregular,
     irregular_score_function: ScoreFunction,
 ) -> None:
     """Test score functions with irregular data."""
     weight = np.array([3, 7])
+    y_true_grid, y_pred_grid = _create_data_grid()
+    y_true_irregular = FDataIrregular.from_fdatagrid(y_true_grid)
+    y_pred_irregular = FDataIrregular.from_fdatagrid(y_pred_grid)
 
     score_grid = irregular_score_function(
         y_true_grid,

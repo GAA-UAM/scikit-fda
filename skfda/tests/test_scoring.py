@@ -515,29 +515,6 @@ def y_pred_irregular() -> FDataIrregular:
     return _y_pred_irregular
 
 
-def _cmp_score_functions(
-    y_true_grid: FDataGrid,
-    y_pred_grid: FDataGrid,
-    y_true_irregular: FDataIrregular,
-    y_pred_irregular: FDataIrregular,
-    irregular_score_function: ScoreFunction,
-    **kwargs: Any,
-) -> None:
-    score_grid = irregular_score_function(
-        y_true_grid,
-        y_pred_grid,
-        **kwargs,
-    )
-    score_irregular = irregular_score_function(
-        y_true_irregular,
-        y_pred_irregular,
-        **kwargs,
-    )
-    np.testing.assert_allclose(
-        score_grid, score_irregular,
-    )
-
-
 def test_score_functions_irregular(
     y_true_grid: FDataGrid,
     y_pred_grid: FDataGrid,
@@ -546,24 +523,18 @@ def test_score_functions_irregular(
     irregular_score_function: ScoreFunction,
 ) -> None:
     """Test score functions with irregular data."""
-    weight = np.array([3, 1])
+    weight = np.array([3, 7])
 
-    try:
-        _cmp_score_functions(
-            y_true_grid,
-            y_pred_grid,
-            y_true_irregular,
-            y_pred_irregular,
-            irregular_score_function,
-            sample_weight=weight,
-        )
-    except TypeError:
-        pass
-
-    _cmp_score_functions(
+    score_grid = irregular_score_function(
         y_true_grid,
         y_pred_grid,
+        sample_weight=weight,
+    )
+    score_irregular = irregular_score_function(
         y_true_irregular,
         y_pred_irregular,
-        irregular_score_function,
+        sample_weight=weight,
+    )
+    np.testing.assert_allclose(
+        score_grid, score_irregular,
     )

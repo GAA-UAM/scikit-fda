@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import Callable, Sequence, Union, Any
+from typing import Any, Callable, Sequence, Union
 
 import numpy as np
 import scipy.integrate
@@ -14,7 +14,7 @@ from ..misc.validation import validate_random_state
 from ..representation import FDataGrid
 from ..representation.interpolation import SplineInterpolation
 from ..typing._base import DomainRangeLike, GridPointsLike, RandomStateLike
-from ..typing._numpy import NDArrayFloat, ArrayLike
+from ..typing._numpy import ArrayLike, NDArrayFloat
 
 MeanCallable = Callable[[np.ndarray], np.ndarray]
 CovarianceCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
@@ -23,11 +23,14 @@ MeanLike = Union[float, NDArrayFloat, MeanCallable]
 
 
 class InitialValueGenerator(Protocol):
+    """Class to represent SDE initial value generators."""
+
     def __call__(
         self,
         size: int,
-        random_state: RandomStateLike
+        random_state: RandomStateLike,
     ) -> np.typing.NDArray[np.floating[Any]]:
+        """Interface of initial value generator."""
         ...
 
 
@@ -39,34 +42,28 @@ def euler_maruyama(
     diffusion: Callable[[float, np.typing.NDArray[np.floating[Any]]],
                         np.typing.NDArray[np.floating[Any]]] | None = None,
     n_samples: int | None = None,
-    start: float = 0.0,
+    start: float = 0,
     stop: float = 1.0,
     dim_noise: int | None = None,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
-    r"""Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
+    """Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
 
     .. math::
 
-        d X(t) = a(t, X(t)) d t + b(t,X(t)) d W(t).
+        d X(t) = f(t, X(t)) d t + g(t,X(t)) d W(t).
 
     Args:
         initial_condition: Initial condition of the SDE. It can have one of
-            three formats:
-
-            - An starting initial value from which to
-            calculate *n_samples* trajectories.
-
-            - An array of initial values. For each starting
-            point a trajectory will be calculated.
-
-            - A function that generates random numbers or
-            vectors. It should have two parameters called
-            size and random_state and it should return an array.
-
+            three formats: An starting initial value from which to
+            calculate *n_samples* trajectories. An array of initial values.
+            For each starting point a trajectory will be calculated. A
+            function that generates random numbers or vectors. It should
+            have two parameters called size and random_state and it should
+            return an array.
         n_grid_points: The total number of points of evaluation.
-        drift: drift coefficient (:math:`a(t,X_t)` in the equation).
-        diffusion: diffusion coefficient (:math:`b(t,X_t)` in the equation).
+        drift: drift coefficient (:math:`f(t,X_t)` in the equation).
+        diffusion: diffusion coefficient (:math:`g(t,X_t)` in the equation).
         n_samples: Number of trajectories integrated.
         start: Starting time of the trajectories.
         stop: Ending time of the trajectories.
@@ -100,21 +97,15 @@ def euler_maruyama(
         ...     drift=example_drift,
         ...     diffusion=example_diffusion,
         ... )
-        >>> trajectories.show()
 
     """
     random_state = validate_random_state(random_state)
 
     if n_samples is None:
-        if (
-            not isinstance(initial_condition, np.ndarray)
-            and not isinstance(initial_condition, list)
-            and not isinstance(initial_condition, float)
-            and not isinstance(initial_condition, int)
-        ):
+        if callable(initial_condition):
             raise ValueError(
-                "Invalid initial conditions. If a function is given, the \
-                n_samples argument must be included."
+                "Invalid initial conditions. If a function is given, the "
+                "n_samples argument must be included.",
             )
 
         initial_values = np.atleast_1d(initial_condition)
@@ -123,20 +114,22 @@ def euler_maruyama(
         if callable(initial_condition):
             initial_values = initial_condition(
                 size=n_samples,
-                random_state=random_state
+                random_state=random_state,
             )
         else:
             initial_condition = np.atleast_1d(initial_condition)
             dim_codomain = len(initial_condition)
-            initial_values = initial_condition * \
-                np.ones((n_samples, dim_codomain))
+            initial_values = (
+                initial_condition
+                * np.ones((n_samples, dim_codomain))
+            )
 
     if initial_values.ndim == 1:
         initial_values = initial_values[:, np.newaxis]
     elif initial_values.ndim > 2:
         raise ValueError(
-            "Invalid initial conditions. Each of the starting points\
-            must be a flat array."
+            "Invalid initial conditions. Each of the starting points "
+            "must be a flat array.",
         )
     (n_samples, dim_codomain) = initial_values.shape
 
@@ -145,13 +138,13 @@ def euler_maruyama(
 
     def default_drift(
         t: float,
-        x: np.typing.NDArray[np.floating[Any]]
+        x: np.typing.NDArray[np.floating[Any]],
     ) -> np.typing.NDArray[np.floating[Any]]:
         return np.array(0)
 
     def default_diffusion(
         t: float,
-        x: np.typing.NDArray[np.floating[Any]]
+        x: np.typing.NDArray[np.floating[Any]],
     ) -> np.typing.NDArray[np.floating[Any]]:
         return np.eye(dim_codomain, dim_noise)
 
@@ -164,26 +157,25 @@ def euler_maruyama(
     test_diffusion_dim = np.atleast_1d(diffusion(start, initial_values))
 
     if test_diffusion_dim.ndim == 1:
-        if (len(test_diffusion_dim) != dim_codomain
-                and len(test_diffusion_dim) != 1):
+        if len(test_diffusion_dim) not in {dim_codomain, 1}:
             raise ValueError(
-                f"The diffusion function returns the wrong dimensions. \
-                The expected dimension is {dim_codomain} or 1."
+                f"The diffusion function returns the wrong dimensions."
+                f"The expected dimension is {dim_codomain} or 1.",
             )
         formatting_matrix = np.eye(dim_codomain, dim_noise)
 
-    elif test_diffusion_dim.shape[-2:] != (dim_codomain, dim_noise):
-        raise ValueError(
-            f"The diffusion function returns the wrong dimensions. \
-            The expected dimensiones are {dim_codomain} x {dim_noise}."
-        )
+    elif test_diffusion_dim.shape[-2:] == (dim_codomain, dim_noise):
+        formatting_matrix = np.ones((dim_codomain, dim_noise))
 
     else:
-        formatting_matrix = np.ones((dim_codomain, dim_noise))
+        raise ValueError(
+            f"The diffusion function returns the wrong dimensions. "
+            f"The expected dimensiones are {dim_codomain} x {dim_noise}.",
+        )
 
     def formatted_diffusion(
         t: float,
-        x: np.typing.NDArray[np.floating[Any]]
+        x: np.typing.NDArray[np.floating[Any]],
     ) -> np.typing.NDArray[np.floating[Any]]:
         return diffusion(t, x) * formatting_matrix
 
@@ -191,7 +183,7 @@ def euler_maruyama(
     times = np.linspace(start, stop, n_grid_points)
     step_size = times[1] - times[0]
     noise = random_state.standard_normal(
-        size=(n_samples, n_grid_points - 1, dim_noise)
+        size=(n_samples, n_grid_points - 1, dim_noise),
     )
     data_matrix[:, 0] = initial_values
 
@@ -205,8 +197,8 @@ def euler_maruyama(
             + np.einsum(
                 '...dj, ...j -> ...d',
                 formatted_diffusion(t_n, x_n),
-                noise[:, n]
-            ) * np.sqrt(step_size)
+                noise[:, n],
+            ) * np.sqrt(step_size),
         )
 
     return FDataGrid(
@@ -675,7 +667,7 @@ def make_random_warping(
     np.square(v, out=v)
 
     # Creation of FDataGrid in the corresponding domain
-    data_matrix = scipy.integrate.cumulative_trapezoid(
+    data_matrix = scipy.integrate.cumtrapz(
         v,
         dx=1 / n_features,
         initial=0,

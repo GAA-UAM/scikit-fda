@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 import warnings
 from functools import singledispatch
-from typing import Callable, Optional, TypeVar, Union, overload
+from typing import Callable, TypeVar, overload
 
 import numpy as np
 import sklearn.metrics
@@ -269,9 +269,9 @@ def _explained_variance_score_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
 
     num = _var(y_true - y_pred, weights=sample_weight)
     den = _var(y_true, weights=sample_weight)
@@ -291,7 +291,7 @@ def _explained_variance_score_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
 
@@ -437,9 +437,9 @@ def _mean_absolute_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     error = mean(np.abs(y_true - y_pred), weights=sample_weight)
@@ -451,7 +451,7 @@ def _mean_absolute_error_fdatairregular(
     y_true: FDataIrregular,
     y_pred: FDataIrregular,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
     return _integral_average_fdatairregular(
@@ -465,7 +465,7 @@ def _mean_absolute_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
 
@@ -589,9 +589,9 @@ def _mean_absolute_percentage_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     epsilon = np.finfo(np.float64).eps
@@ -610,7 +610,7 @@ def _mean_absolute_percentage_error_fdatairregular(
     y_true: FDataIrregular,
     y_pred: FDataIrregular,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
     epsilon = np.finfo(np.float64).eps
@@ -627,7 +627,7 @@ def _mean_absolute_percentage_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
 
@@ -759,10 +759,10 @@ def _mean_squared_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
     squared: bool = True,
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     error: FDataGrid = mean(
@@ -778,7 +778,7 @@ def _mean_squared_error_fdatairregular(
     y_true: FDataIrregular,
     y_pred: FDataIrregular,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
     squared: bool = True,
 ) -> float:
@@ -794,7 +794,7 @@ def _mean_squared_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     squared: bool = True,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
@@ -930,10 +930,10 @@ def _mean_squared_log_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
     squared: bool = True,
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
 
     if np.any(y_true.data_matrix < 0) or np.any(y_pred.data_matrix < 0):
         raise ValueError(
@@ -955,7 +955,7 @@ def _mean_squared_log_error_fdatairregular(
     y_true: FDataIrregular,
     y_pred: FDataIrregular,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
     squared: bool = True,
 ) -> float:
@@ -979,7 +979,7 @@ def _mean_squared_log_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     squared: bool = True,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
@@ -1112,9 +1112,9 @@ def _r2_score_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     if y_pred.n_samples < 2:
@@ -1144,7 +1144,7 @@ def _r2_score_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
 

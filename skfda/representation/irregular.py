@@ -1466,7 +1466,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             start_indices=indices.astype(int),
             points=arguments,
             values=values,
-            sample_names=self.sample_names[key],
+            sample_names=list(np.array(self.sample_names)[key]),
         )
     #####################################################################
     # Numpy methods

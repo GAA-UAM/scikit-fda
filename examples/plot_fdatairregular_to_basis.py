@@ -5,7 +5,6 @@ Irregular data to basis representation
 Convert irregular data to a basis representation using the ``to_basis``
 method of the :class:`skfda.representation.irregular.FDataIrregular` class.
 """
-
 # Author: Pablo Cuesta Sierra
 # License: MIT
 

@@ -30,6 +30,9 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "make_random_warping",
             "make_sinusoidal_process",
         ],
+        "_sample_from_fdata": [
+            "irregular_sample",
+        ],
     },
 )
 
@@ -57,4 +60,7 @@ if TYPE_CHECKING:
         make_multimodal_samples as make_multimodal_samples,
         make_random_warping as make_random_warping,
         make_sinusoidal_process as make_sinusoidal_process,
+    )
+    from ._sample_from_fdata import (
+        irregular_sample
     )

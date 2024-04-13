@@ -24,10 +24,6 @@ import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
 
-from ..representation.conversion import (
-    EMMixedEffectsConverter,
-    MinimizeMixedEffectsConverter,
-)
 from .._utils import _cartesian_product, _check_array_key, _to_grid_points
 from ..typing._base import (
     DomainRange,
@@ -1119,6 +1115,10 @@ class FDataIrregular(FData):  # noqa: WPS214
             basis = basis.copy(domain_range=self.domain_range)
 
         if conversion_type != "separately":
+            from ..representation.conversion import (
+                EMMixedEffectsConverter,
+                MinimizeMixedEffectsConverter,
+            )
             converter_class = (
                 EMMixedEffectsConverter if conversion_type == "mixed_effects"
                 else MinimizeMixedEffectsConverter

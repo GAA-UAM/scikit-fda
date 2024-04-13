@@ -152,7 +152,12 @@ def _integral_average_fdatairregular(
 
     integrals = np.mean(score.integrate(), axis=1)
     lebesgue_measures = np.diff(score.sample_range, axis=-1).reshape(-1)
-    normalized_integrals = integrals / lebesgue_measures
+    normalized_integrals = np.divide(
+        integrals,
+        lebesgue_measures,
+        out=np.zeros_like(integrals),
+        where=lebesgue_measures != 0,
+    )
     return np.average(normalized_integrals, weights=weights)
 
 

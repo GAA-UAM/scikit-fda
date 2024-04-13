@@ -722,7 +722,8 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             niter: maximum number of iterations.
             convergence_criterion: convergence criterion to use when fitting.
 
-                - "params" to use relative differences between parameters.
+                - "params" to use relative differences between parameters
+                    (the default).
                 - "squared-error" to userelative changes in the squared error
                     of the estimated values with respect to the original data.
                 - "loglikelihood" to use relative changes in the loglikelihood.

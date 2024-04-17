@@ -1,11 +1,10 @@
 """Tests of Euler Maruyama."""
 
-from typing import Any
-
 import numpy as np
 from scipy.stats import multivariate_normal, norm
 
 from skfda.datasets import euler_maruyama
+from skfda.typing._numpy import NDArrayFloat
 
 
 def test_one_initial_point() -> None:
@@ -15,7 +14,6 @@ def test_one_initial_point() -> None:
         - initial_condition = 0, n_samples = 2
         - initial_condition = [0], n_samples = 2.
             # The result should be the same as the first one
-        - initial_condition = np.array([0, 0]), n_samples = 2.
 
     """
     n_samples = 2
@@ -70,25 +68,29 @@ def test_one_initial_point() -> None:
         expected_result,
     )
 
-    # Case 3 Starting point = array + n_samples
 
+def test_one_initial_point_multidimensional() -> None:
+    """Case 1.3 Starting point = array + n_samples.
+
+    initial_condition = np.array([1, 0]), n_samples = 2.
+    """
     n_samples = 2
     n_grid_points = 5
     random_state = np.random.RandomState(1)
-    initial_array = np.array([0, 0])
+    initial_array = np.array([1, 0])
 
     expected_result = np.array([
-        [[0, 0],
-         [0.81217268, -0.30587821],
-         [0.54808681, -0.84236252],
-         [0.98079062, -1.99313187],
-         [1.8531965, -2.37373532],
+        [[1, 0],
+         [1.81217268, -0.30587821],
+         [1.54808681, -0.84236252],
+         [1.98079062, -1.99313187],
+         [2.8531965, -2.37373532],
          ],
-        [[0, 0],
-         [0.15951955, -0.12468519],
-         [0.89057352, -1.15475554],
-         [0.72936491, -1.34678272],
-         [1.29624964, -1.89672835],
+        [[1, 0],
+         [1.15951955, -0.12468519],
+         [1.89057352, -1.15475554],
+         [1.72936491, -1.34678272],
+         [2.29624964, -1.89672835],
          ],
     ])
 
@@ -126,7 +128,7 @@ def test_initial_data_generator() -> None:
     def standard_normal_generator(
         size: int,
         random_state: np.random.RandomState,
-    ) -> np.typing.NDArray[np.floating[Any]]:
+    ) -> NDArrayFloat:
         return (
             random_state.standard_normal(size)
         )
@@ -166,7 +168,7 @@ def test_initial_data_generator() -> None:
     def standard_normal_generator_2d(
         size: int,
         random_state: np.random.RandomState,
-    ) -> np.typing.NDArray[np.floating[Any]]:
+    ) -> NDArrayFloat:
         return random_state.standard_normal((size, 2))
 
     expected_result = np.array([
@@ -385,15 +387,9 @@ def test_drift_cases() -> None:
 
     def base_drift(
         t: float,
-        x: np.typing.NDArray[np.floating[Any]],
+        x: NDArrayFloat,
     ) -> float:
         return 0
-
-    def base_diffusion(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> float:
-        return 1
 
     expected_result = np.array([
         [[0, 0],
@@ -415,7 +411,7 @@ def test_drift_cases() -> None:
         n_grid_points=n_grid_points,
         n_samples=n_samples,
         drift=base_drift,
-        diffusion=base_diffusion,
+        diffusion=1,
         random_state=random_state,
     )
 
@@ -431,8 +427,8 @@ def test_drift_cases() -> None:
 
     def vector_drift(
         t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> np.typing.NDArray[np.floating[Any]]:
+        x: NDArrayFloat,
+    ) -> NDArrayFloat:
         return np.array([0, 0])
 
     expected_result = np.array([
@@ -455,7 +451,7 @@ def test_drift_cases() -> None:
         n_grid_points=n_grid_points,
         n_samples=n_samples,
         drift=vector_drift,
-        diffusion=base_diffusion,
+        diffusion=1,
         random_state=random_state,
     )
 
@@ -472,17 +468,7 @@ def test_diffusion_cases() -> None:
     n_grid_points = 5
     random_state = np.random.RandomState(1)
 
-    def base_drift(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> float:
-        return 0
-
-    def vector_diffusion(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> np.typing.NDArray[np.floating[Any]]:
-        return np.array([1, 2])
+    vector_diffusion = np.array([1, 2])
 
     # The result should be the same as the previous test, but with
     # the second column doubled
@@ -506,7 +492,7 @@ def test_diffusion_cases() -> None:
         initial_condition,
         n_grid_points=n_grid_points,
         n_samples=n_samples,
-        drift=base_drift,
+        drift=0,
         diffusion=vector_diffusion,
         random_state=random_state,
     )
@@ -525,11 +511,7 @@ def test_diffusion_cases() -> None:
     n_grid_points = 5
     random_state = np.random.RandomState(1)
 
-    def matrix_diffusion(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> np.typing.NDArray[np.floating[Any]]:
-        return np.array([[1], [2]])
+    matrix_diffusion = np.array([[1], [2]])
 
     expected_result = np.array([
         [[0],
@@ -557,9 +539,10 @@ def test_diffusion_cases() -> None:
         initial_condition,
         n_grid_points=n_grid_points,
         n_samples=n_samples,
-        drift=base_drift,
+        drift=0,
         diffusion=matrix_diffusion,
         random_state=random_state,
+        is_diffusion_matrix=True,
         dim_noise=1,
     )
 
@@ -620,7 +603,7 @@ def test_initial_condition_negative_cases() -> None:
         )
 
     # Case 3: generator function without n_samples
-    initial_generator = random_state.standard_normal
+    initial_generator = norm().rvs
 
     with np.testing.assert_raises(ValueError):
         euler_maruyama(
@@ -644,11 +627,7 @@ def test_diffusion_negative_cases() -> None:
     n_samples = 2
     random_state = np.random.RandomState(1)
 
-    def bad_diffusion(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> np.typing.NDArray[np.floating[Any]]:
-        return np.array([[1, 2]])
+    bad_diffusion = np.array([[1, 2, 3]])
 
     with np.testing.assert_raises(ValueError):
         euler_maruyama(
@@ -658,11 +637,7 @@ def test_diffusion_negative_cases() -> None:
             random_state=random_state,
         )
 
-    def vector_diffusion(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> np.typing.NDArray[np.floating[Any]]:
-        return np.array([1, 2])
+    vector_diffusion = np.array([1, 2])
 
     initial_condition = np.array([0, 0, 0])
 

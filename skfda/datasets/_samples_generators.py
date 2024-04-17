@@ -20,56 +20,60 @@ MeanCallable = Callable[[np.ndarray], np.ndarray]
 CovarianceCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
 MeanLike = Union[float, NDArrayFloat, MeanCallable]
+SDETerm = Callable[[float, NDArrayFloat], NDArrayFloat]
 
 
 class InitialValueGenerator(Protocol):
-    """Class to represent SDE initial value generators."""
+    """Class to represent SDE initial value generators.
+
+    This is intented to be an interface compatible with the rvs method of
+    SciPy distributions.
+    """
 
     def __call__(
         self,
         size: int,
         random_state: RandomStateLike,
-    ) -> np.typing.NDArray[np.floating[Any]]:
+    ) -> NDArrayFloat:
         """Interface of initial value generator."""
-        ...
 
 
 def euler_maruyama(
     initial_condition: ArrayLike | InitialValueGenerator,
     n_grid_points: int = 100,
-    drift: Callable[[float, np.typing.NDArray[np.floating[Any]]],
-                    np.typing.NDArray[np.floating[Any]]] | None = None,
-    diffusion: Callable[[float, np.typing.NDArray[np.floating[Any]]],
-                        np.typing.NDArray[np.floating[Any]]] | None = None,
+    drift: SDETerm | ArrayLike = 0,
+    diffusion: SDETerm | ArrayLike = 1,
     n_samples: int | None = None,
     start: float = 0,
     stop: float = 1.0,
+    is_diffusion_matrix: bool = False,
     dim_noise: int | None = None,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
-    """Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
+    r"""Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
 
     .. math::
 
-        d X(t) = f(t, X(t)) d t + g(t,X(t)) d W(t).
+        d X(t) = f(t, X(t)) d t + g(t, X(t)) d W(t).
 
     Args:
-        initial_condition: Initial condition of the SDE. It can have one of
+        initial_condition: initial condition of the SDE. It can have one of
             three formats: An starting initial value from which to
             calculate *n_samples* trajectories. An array of initial values.
             For each starting point a trajectory will be calculated. A
             function that generates random numbers or vectors. It should
             have two parameters called size and random_state and it should
             return an array.
-        n_grid_points: The total number of points of evaluation.
+        n_grid_points: the total number of points of evaluation.
         drift: drift coefficient (:math:`f(t,X_t)` in the equation).
         diffusion: diffusion coefficient (:math:`g(t,X_t)` in the equation).
-        n_samples: Number of trajectories integrated.
-        start: Starting time of the trajectories.
-        stop: Ending time of the trajectories.
+        n_samples: number of trajectories integrated.
+        start: starting time of the trajectories.
+        stop: ending time of the trajectories.
+        is_diffusion_matrix: True if the diffusion coefficient is a matrix.
         dim_noise: dimension of the noise factor. By default is the data
             dimension.
-        random_state: Random state.
+        random_state: random state.
 
 
     Returns:
@@ -80,22 +84,26 @@ def euler_maruyama(
         Gaussian processes.
 
     Examples:
-        Example of the use of euler_maruyama for an SDE with constant
-        drift and diffusion and an initial condition which follows a
-        standard normal distribution.
+        Example of the use of euler_maruyama for an Ornstein-Uhlenbeck process
+        that has the equation:
+
+        ..  math:
+
+            dX(t) = -A(X(t) - \mu)dt + BdW(t)
 
         >>> from scipy.stats import norm
-        >>> def example_drift(t: float, x: np.ndarray) -> np.ndarray:
-        ...     return 2
-        >>> def example_diffusion(t: float, x: np.ndarray) -> np.ndarray:
-        ...     return 0.5
+        >>> A = 1
+        >>> mu = 3
+        >>> B = 0.5
+        >>> def ou_drift(t: float, x: np.ndarray) -> np.ndarray:
+        ...     return -A * (x - mu)
         >>> initial_condition = norm().rvs
         >>>
         >>> trajectories = euler_maruyama(
         ...     initial_condition=initial_condition,
         ...     n_samples=10,
-        ...     drift=example_drift,
-        ...     diffusion=example_diffusion,
+        ...     drift=ou_drift,
+        ...     diffusion=B,
         ... )
 
     """
@@ -133,55 +141,57 @@ def euler_maruyama(
         )
     (n_samples, dim_codomain) = initial_values.shape
 
+    if callable(drift):
+        formatted_drift = drift
+    else:
+        def constant_drift(
+            t: float,
+            x: NDArrayFloat,
+        ) -> NDArrayFloat:
+            return np.atleast_1d(drift)
+
+        formatted_drift = constant_drift
+
+    if callable(diffusion):
+        formatted_diffusion = diffusion
+    else:
+        def constant_diffusion(
+            t: float,
+            x: NDArrayFloat,
+        ) -> NDArrayFloat:
+            return np.atleast_1d(diffusion)
+
+        formatted_diffusion = constant_diffusion
+
+    def vector_diffusion_times_noise(
+        t_n: float,
+        x_n: NDArrayFloat,
+        noise: NDArrayFloat,
+    ) -> NDArrayFloat:
+        return formatted_diffusion(t_n, x_n) * noise
+
+    def matrix_diffusion_times_noise(
+        t_n: float,
+        x_n: NDArrayFloat,
+        noise: NDArrayFloat,
+    ) -> Any:
+        return np.einsum(
+            '...dj, ...j -> ...d',
+            formatted_diffusion(t_n, x_n),
+            noise,
+        )
+
     if dim_noise is None:
         dim_noise = dim_codomain
 
-    def default_drift(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> np.typing.NDArray[np.floating[Any]]:
-        return np.array(0)
-
-    def default_diffusion(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> np.typing.NDArray[np.floating[Any]]:
-        return np.eye(dim_codomain, dim_noise)
-
-    if drift is None:
-        drift = default_drift
-
-    if diffusion is None:
-        diffusion = default_diffusion
-
-    test_diffusion_dim = np.atleast_1d(diffusion(start, initial_values))
-
-    if test_diffusion_dim.ndim == 1:
-        if len(test_diffusion_dim) not in {dim_codomain, 1}:
-            raise ValueError(
-                f"The diffusion function returns the wrong dimensions."
-                f"The expected dimension is {dim_codomain} or 1.",
-            )
-        formatting_matrix = np.eye(dim_codomain, dim_noise)
-
-    elif test_diffusion_dim.shape[-2:] == (dim_codomain, dim_noise):
-        formatting_matrix = np.ones((dim_codomain, dim_noise))
-
+    if is_diffusion_matrix:
+        diffusion_times_noise = matrix_diffusion_times_noise
     else:
-        raise ValueError(
-            f"The diffusion function returns the wrong dimensions. "
-            f"The expected dimensiones are {dim_codomain} x {dim_noise}.",
-        )
-
-    def formatted_diffusion(
-        t: float,
-        x: np.typing.NDArray[np.floating[Any]],
-    ) -> np.typing.NDArray[np.floating[Any]]:
-        return diffusion(t, x) * formatting_matrix
+        diffusion_times_noise = vector_diffusion_times_noise
 
     data_matrix = np.zeros((n_samples, n_grid_points, dim_codomain))
     times = np.linspace(start, stop, n_grid_points)
-    step_size = times[1] - times[0]
+    delta_t = times[1:] - times[:-1]
     noise = random_state.standard_normal(
         size=(n_samples, n_grid_points - 1, dim_noise),
     )
@@ -193,12 +203,9 @@ def euler_maruyama(
 
         data_matrix[:, n + 1] = (
             x_n
-            + step_size * drift(t_n, x_n)
-            + np.einsum(
-                '...dj, ...j -> ...d',
-                formatted_diffusion(t_n, x_n),
-                noise[:, n],
-            ) * np.sqrt(step_size),
+            + delta_t[n] * formatted_drift(t_n, x_n)
+            + diffusion_times_noise(t_n, x_n, noise[:, n])
+            * np.sqrt(delta_t[n])
         )
 
     return FDataGrid(
@@ -667,7 +674,7 @@ def make_random_warping(
     np.square(v, out=v)
 
     # Creation of FDataGrid in the corresponding domain
-    data_matrix = scipy.integrate.cumtrapz(
+    data_matrix = scipy.integrate.cumulative_trapezoid(
         v,
         dx=1 / n_features,
         initial=0,

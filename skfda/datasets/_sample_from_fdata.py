@@ -2,18 +2,18 @@ from __future__ import annotations
 
 from typing import Callable, Iterable
 from functools import singledispatch
-
 import numpy as np
+
+
+from ..misc.validation import validate_random_state
 from ..representation import FData, FDataGrid, FDataBasis, FDataIrregular
-from ..representation.interpolation import SplineInterpolation
-from ..typing._base import DomainRangeLike, GridPointsLike, RandomStateLike
+from ..typing._base import RandomState, RandomStateLike
 from ..typing._numpy import NDArrayFloat
 
 
 def _irregular_sample_from_callable(
     funcs: Iterable[Callable[[NDArrayFloat], NDArrayFloat]],
     points_matrix: NDArrayFloat,
-    noise_stddev: float,
 ) -> FDataIrregular:
     """Sample from a list of functions at irregular points.
 
@@ -21,7 +21,6 @@ def _irregular_sample_from_callable(
         funcs: List of functions to sample.
         points_matrix: of shape (n_funcs, n_points_per_function). Points where
             to measure each function sample.
-        noise_stddev: Standard deviation of the noise.
     """
     assert points_matrix.ndim == 2
     n_points_per_curve = points_matrix.shape[1]
@@ -32,14 +31,14 @@ def _irregular_sample_from_callable(
         values=np.concatenate([
             func(func_points).reshape(-1)
             for func, func_points in zip(funcs, points_matrix)
-        ]) + np.random.normal(scale=noise_stddev, size=total_n_points),
+        ]),
     )
 
 
 def irregular_sample(
     fdata: FDataGrid | FDataBasis,
     n_points_per_curve: int,
-    noise_stddev: float = 0.0,
+    random_state: RandomStateLike = None,
 ) -> FDataIrregular:
     """Irregularly sample from a FDataGrid or FDataBasis object.
 
@@ -49,20 +48,22 @@ def irregular_sample(
     Args:
         fdata: Functional data object to sample from.
         n_points_per_curve: Number of points to sample per curve.
-        noise_stddev: Standard deviation of the noise.
     """
     if fdata.dim_domain != 1 or fdata.dim_codomain != 1:
         raise NotImplementedError(
             "Only implemented for 1D domains and codomains.",
         )
 
+    random_state = validate_random_state(random_state)
+
     points_matrix = _irregular_sample_points_matrix(
-        fdata, n_points_per_curve,
+        fdata,
+        n_points_per_curve=n_points_per_curve,
+        random_state=random_state,
     )
     return _irregular_sample_from_callable(
         funcs=fdata,
         points_matrix=points_matrix,
-        noise_stddev=noise_stddev,
     )
 
 
@@ -70,6 +71,7 @@ def irregular_sample(
 def _irregular_sample_points_matrix(
     fdata: FDataGrid | FDataBasis,
     n_points_per_curve: int,
+    random_state: RandomState,
 ) -> NDArrayFloat:
     raise NotImplementedError(
         "Only implemented for FDataGrid and FDataBasis.",
@@ -80,8 +82,9 @@ def _irregular_sample_points_matrix(
 def _irregular_sample_points_matrix_fdatagrid(
     fdata: FDataGrid,
     n_points_per_curve: int,
+    random_state: RandomState,
 ) -> NDArrayFloat:
-    return np.random.choice(
+    return random_state.choice(
         fdata.grid_points[0],  # This only works for 1D domains
         size=(fdata.n_samples, n_points_per_curve),
         replace=True,
@@ -92,8 +95,9 @@ def _irregular_sample_points_matrix_fdatagrid(
 def _irregular_sample_points_matrix_fdatabasis(
     fdata: FDataBasis,
     n_points_per_curve: int,
+    random_state: RandomState,
 ) -> NDArrayFloat:
-    return np.random.uniform(
+    return random_state.uniform(
         *fdata.domain_range[0],  # This only works for 1D domains
         size=(fdata.n_samples, n_points_per_curve),
     )

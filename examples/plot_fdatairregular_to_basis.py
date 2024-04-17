@@ -17,8 +17,6 @@ from skfda.datasets import fetch_weather, irregular_sample
 from skfda.representation.basis import FourierBasis
 from skfda.misc.scoring import r2_score
 
-np.random.seed(439472)  # set the seed for reproducibility
-
 # %%
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in
 # CRAN. It contains a FDataGrid with daily temperatures and precipitations,
@@ -29,8 +27,9 @@ np.random.seed(439472)  # set the seed for reproducibility
 # representation, we will take an irregular sample of the temperatures dataset
 # containing only 8 points per curve.
 fd_temperatures = fetch_weather().data.coordinates[0]
+random_state = np.random.RandomState(seed=4934755)
 irregular_temperatures = irregular_sample(
-    fdata=fd_temperatures, n_points_per_curve=8,
+    fdata=fd_temperatures, n_points_per_curve=8, random_state=random_state,
 )
 
 # %%

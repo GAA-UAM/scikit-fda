@@ -12,19 +12,22 @@ effects model.
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from skfda import FDataBasis
-from skfda.datasets import irregular_sample
-from skfda.representation.basis import BSplineBasis
+from skfda.datasets import fetch_weather, irregular_sample
+from skfda.representation.basis import BSplineBasis, FourierBasis
 from skfda.representation.conversion import EMMixedEffectsConverter
 from skfda.misc.scoring import r2_score, mean_squared_error
 
 
 # %%
-# For this example, we are going to simulate the irregular sampling of a
-# dataset following the mixed effects model, to later attempt to reconstruct
-# the original data.
+# Converting irregular data to basis representation
+# #################################################
+# For the first part of this example, we are going to simulate the irregular
+# sampling of a dataset following the mixed effects model, to later attempt to
+# reconstruct the original data.
 #
 # First, we generate the original basis representation of the data following
 # the mixed effects model for irregular data as presented by
@@ -33,7 +36,7 @@ from skfda.misc.scoring import r2_score, mean_squared_error
 # distribution.
 n_curves = 50
 n_basis = 4
-domain_range = (0, 10)
+domain_range = (0, 12)
 basis = BSplineBasis(n_basis=n_basis, domain_range=domain_range, order=4)
 
 basis.plot()
@@ -94,6 +97,11 @@ converter = converter.fit(train_irregular)
 train_converted = converter.transform(train_irregular)
 test_converted = converter.transform(test_irregular)
 
+# For comparison, we also convert to basis representation using the separate
+# basis representation for each curve.
+train_separate_basis = train_irregular.to_basis(basis)
+test_separate_basis = test_irregular.to_basis(basis)
+
 # %%
 # To visualize the conversion results, we plot the first 8 original and
 # converted curves of the test set. On the background, we plot the train set.
@@ -105,13 +113,17 @@ for k in range(8):
     train_irregular.scatter(axes=axes, color=(0, 0, 0, 0.05), marker=".")
 
     test_converted[k].plot(
-        axes=axes, color=f"C{k}", label="Converted",
+        axes=axes, color=f"C{k}", linestyle="--", label="Converted",
     )
     test_original[k].plot(
-        axes=axes, color=f"C{k}", linestyle="--", label="Original",
+        axes=axes, color=f"C{k}", linewidth=0.65, label="Original",
     )
     test_irregular[k].scatter(
         axes=axes, color=f"C{k}", label="Irregular"
+    )
+    test_separate_basis[k].plot(
+        axes=axes, color=f"C{k}", linestyle=":",
+        label="Separate basis representation",
     )
     plt.legend()
 plt.show()
@@ -124,10 +136,100 @@ train_r2_score = r2_score(train_original, train_converted)
 test_r2_score = r2_score(test_original, test_converted)
 train_mse = mean_squared_error(train_original, train_converted)
 test_mse = mean_squared_error(test_original, test_converted)
-print(f"R2 score (train): {train_r2_score:.2f}")
-print(f"R2 score (test): {test_r2_score:.2f}")
-print(f"Mean Squared Error (train): {train_mse:.2f}")
-print(f"Mean Squared Error (test): {test_mse:.2f}")
+train_r2_score_separate = r2_score(train_original, train_separate_basis)
+test_r2_score_separate = r2_score(test_original, test_separate_basis)
+train_mse_separate = mean_squared_error(train_original, train_separate_basis)
+test_mse_separate = mean_squared_error(test_original, test_separate_basis)
+print(f"R2 score (mixed effects - train): {train_r2_score:.2f}")
+print(f"R2 score (mixed effects - test): {test_r2_score:.2f}")
+print(f"R2 score (separate basis - train): {train_r2_score_separate:.2f}")
+print(f"R2 score (separate basis - test): {test_r2_score_separate:.2f}")
+print(f"Mean Squared Error (mixed effects - train): {train_mse:.2f}")
+print(f"Mean Squared Error (mixed effects - test): {test_mse:.2f}")
+print(f"Mean Squared Error (separate basis - train): {train_mse_separate:.2f}")
+print(f"Mean Squared Error (separate basis - test): {test_mse_separate:.2f}")
+
+# %%
+# Check robustness of the method by removing measurement points
+# #############################################################
+# For the second part of the example, we are going to check the robustness of
+# the method by removing some measurement points from the test and train sets
+# and comparing the results. The temperatures from the Canadian weather
+# dataset are used to generate the irregular data.
+fd_temperatures = fetch_weather().data.coordinates[0]
+fd_irregular = irregular_sample(
+    fdata=fd_temperatures, n_points_per_curve=40, random_state=random_state,
+)
+basis = FourierBasis(n_basis=5, domain_range=fd_temperatures.domain_range)
+
+# %%
+# Split the data into train and test sets
+train_original, test_original, train_irregular, test_irregular = (
+    train_test_split(
+        fd_temperatures,
+        fd_irregular,
+        test_size=0.2,
+        random_state=random_state,
+    )
+)
+
+# %%
+# Create the different datasets by removing some measurement points
+train_irregular_list = []
+test_irregular_list = []
+n_points_list = [40, 10, 5, 4, 3]
+for n_points in n_points_list:
+    train_irregular_list.append(
+        irregular_sample(
+            train_original,
+            n_points_per_curve=n_points,
+            random_state=random_state,
+        )
+    )
+    test_irregular_list.append(
+        irregular_sample(
+            test_original,
+            n_points_per_curve=n_points,
+            random_state=random_state,
+        )
+    )
+
+# %%
+# We convert the irregular data to basis representation and compute the scores:
+scores = {
+    "n_points_per_curve": n_points_list,
+    "Train R2 score": [],
+    "Test R2 score": [],
+    "Train MSE": [],
+    "Test MSE": [],
+}
+converter = EMMixedEffectsConverter(basis)
+for train_irregular, test_irregular in zip(
+    train_irregular_list,
+    test_irregular_list,
+):
+    converter = converter.fit(train_irregular)
+    train_converted = converter.transform(train_irregular)
+    test_converted = converter.transform(test_irregular)
+
+    scores["Train R2 score"].append(r2_score(
+        train_original, train_converted.to_grid(train_original.grid_points),
+    ))
+    scores["Test R2 score"].append(r2_score(
+        test_original, test_converted.to_grid(test_original.grid_points),
+    ))
+    scores["Train MSE"].append(mean_squared_error(
+        train_original, train_converted.to_grid(train_original.grid_points),
+    ))
+    scores["Test MSE"].append(mean_squared_error(
+        test_original, test_converted.to_grid(test_original.grid_points),
+    ))
+
+# %%
+# Finally, we can see the results in a table:
+df = pd.DataFrame(scores)
+df = df.set_index("n_points_per_curve")
+print(df)
 
 # %%
 # References

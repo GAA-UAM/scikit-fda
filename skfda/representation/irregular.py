@@ -1120,6 +1120,41 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             FDataBasis: Basis representation of the funtional data
             object.
+
+        .. plot::
+            :format: python
+            :include-source: True
+
+            >>> from skfda.datasets import fetch_weather, irregular_sample
+            >>> from skfda.representation.basis import FourierBasis
+            >>> import matplotlib.pyplot as plt
+            >>> fd_temperatures = fetch_weather().data.coordinates[0]
+            >>> temp_irregular = irregular_sample(
+            ...     fdata=fd_temperatures,
+            ...     n_points_per_curve=8,
+            ...     random_state=4934755,
+            ... )
+            >>> basis = FourierBasis(
+            ...     n_basis=5, domain_range=fd_temperatures.domain_range,
+            ... )
+            >>> temp_basis_repr = temp_irregular.to_basis(  #doctest: +SKIP
+            ...     basis, conversion_type="mixed_effects",
+            ... )
+            >>> fig = plt.figure(figsize=(10, 10))
+            >>> for k in range(4): #doctest: +SKIP
+            ...     axes = plt.subplot(2, 2, k + 1)
+            ...     fd_temperatures.plot(axes=axes, alpha=0.05, color="black")
+            ...     fd_temperatures[k].plot(
+            ...         axes=axes, color=f"C{k}",
+            ...         label="Original data", linestyle="--",
+            ...     )
+            ...     temp_basis_repr[k].plot(
+            ...         axes=axes, color=f"C{k}",
+            ...         label="Basis representation",
+            ...     )
+            ...     temp_irregular[k].scatter(axes=axes, color=f"C{k}")
+            ...     plt.legend()
+            >>> plt.show()  #doctest: +SKIP
         """
         if self.dim_domain != basis.dim_domain:
             raise ValueError(

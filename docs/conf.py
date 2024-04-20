@@ -80,6 +80,7 @@ needs_sphinx = "3.0"
 # Sphinx extensions
 extensions = [
     "jupyter_sphinx",
+    "matplotlib.sphinxext.plot_directive",
     "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.autodoc.typehints",

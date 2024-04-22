@@ -69,9 +69,18 @@ for n_points in n_points_list:
         ),
     )
 
-# remove the original dataset from the lists
-train_irregular_list = train_irregular_list[1:]
-test_irregular_list = test_irregular_list[1:]
+train_irregular_datasets = {
+    n_points: train_irregular
+    for n_points, train_irregular in zip(
+        n_points_list, train_irregular_list[1:],
+    )
+}
+test_irregular_datasets = {
+    n_points: test_irregular
+    for n_points, test_irregular in zip(
+        n_points_list, test_irregular_list[1:],
+    )
+}
 
 # %%
 # We convert the irregular data to basis representation and compute the scores.
@@ -98,8 +107,8 @@ scores = {
 converter = EMMixedEffectsConverter(basis)
 for n_points, train_irregular, test_irregular in zip(
     n_points_list,
-    train_irregular_list,
-    test_irregular_list,
+    train_irregular_datasets.values(),
+    test_irregular_datasets.values(),
 ):
     converter = converter.fit(train_irregular)
     train_sparse_converted = converter.transform(train_irregular)
@@ -134,41 +143,31 @@ for score_name in scores.keys():
     print("-" * 62)
     print((
         pd.DataFrame(scores[score_name])
-        .set_index("n_points_per_curve").sort_index()
+        .set_index("n_points_per_curve").sort_index().to_string()
     ), end="\n\n\n")
 
 # %%
 # The following plots show the original curves along with the converted
 # test curves for the conversions with 5, 4 and 3 points per curve.
-for (
-    n_points_per_curve,
-    test_irregular,
-    test_converted,
-    test_original_converted,
-) in zip(
-    n_points_list,
-    test_irregular_list,
-    converted_data["Test-sparse"].values(),
-    converted_data["Test-original"].values(),
-):
-    if n_points_per_curve not in [5, 4, 3]:
-        continue
-    fig = plt.figure(figsize=(10, 23))
+
+
+def plot_converted_test_curves(n_points_per_curve):
+    plt.figure(figsize=(10, 23))
     for k in range(7):
         axes = plt.subplot(7, 1, k + 1)
 
-        test_irregular[k].scatter(
+        test_irregular_datasets[n_points_per_curve][k].scatter(
             axes=axes, color=f"C{k}",
         )
         test_original[k].plot(
             axes=axes, color=f"C{k}", linewidth=0.65,
             label="Original test curve",
         )
-        test_converted[k].plot(
+        converted_data["Test-sparse"][n_points_per_curve][k].plot(
             axes=axes, color=f"C{k}", linestyle="--",
             label=f"Test curve transformed from {n_points_per_curve} points",
         )
-        test_original_converted[k].plot(
+        converted_data["Test-original"][n_points_per_curve][k].plot(
             axes=axes, color=f"C{k}", alpha=0.5,
             label="Test curve transformed from original 365 points",
         )
@@ -177,6 +176,16 @@ for (
         plt.suptitle(f"Fitted model with {n_points_per_curve=}")
 
     plt.show()
+
+
+# %%
+plot_converted_test_curves(n_points_per_curve=5)
+
+# %%
+plot_converted_test_curves(n_points_per_curve=4)
+
+# %%
+plot_converted_test_curves(n_points_per_curve=3)
 
 # %%
 # References

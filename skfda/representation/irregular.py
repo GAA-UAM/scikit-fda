@@ -43,7 +43,7 @@ from .interpolation import SplineInterpolation
 
 T = TypeVar("T", bound='FDataIrregular')
 IrregularToBasisConversionType = Literal[
-    "separately", "mixed_effects", "mixed_effects_minimize",
+    "function-wise", "mixed-effects", "mixed-effects-minimize",
 ]
 
 ######################
@@ -1084,7 +1084,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         self,
         basis: Basis,
         *,
-        conversion_type: IrregularToBasisConversionType = "separately",
+        conversion_type: IrregularToBasisConversionType = "function-wise",
         **kwargs: Any,
     ) -> FDataBasis:
         """Return the basis representation of the object.
@@ -1094,16 +1094,16 @@ class FDataIrregular(FData):  # noqa: WPS214
                 going to be represented.
             conversion_type: method to use for the conversion:
 
-                - "separately": (default) each curve is converted independently
+                - "function-wise": (default) each curve is converted independently
                     (meaning that only the information of each curve is used
                     for its conversion) with
                     :class:`~skfda.preprocessing.smoothing.BasisSmoother`.
-                - "mixed_effects": all curves are converted jointly (this means
+                - "mixed-effects": all curves are converted jointly (this means
                     that the information of all curves is used to convert each
                     one) using the EM algorithm to fit the mixed effects
                     model:
                     :class:`~skfda.representation.conversion.EMMixedEffectsConverter`.
-                - "mixed_effects_minimize": all curves are converted jointly
+                - "mixed-effects-minimize": all curves are converted jointly
                     using the scipy.optimize.minimize to fit the mixed effects
                     model:
                     :class:`~skfda.representation.conversion.MinimizeMixedEffectsConverter`.
@@ -1138,7 +1138,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             ...     n_basis=5, domain_range=fd_temperatures.domain_range,
             ... )
             >>> temp_basis_repr = temp_irregular.to_basis(  #doctest: +SKIP
-            ...     basis, conversion_type="mixed_effects",
+            ...     basis, conversion_type="mixed-effects",
             ... )
             >>> fig = plt.figure(figsize=(10, 10))
             >>> for k in range(4): #doctest: +SKIP
@@ -1175,13 +1175,13 @@ class FDataIrregular(FData):  # noqa: WPS214
         if not basis.is_domain_range_fixed():
             basis = basis.copy(domain_range=self.domain_range)
 
-        if conversion_type != "separately":
+        if conversion_type != "function-wise":
             from ..representation.conversion import (
                 EMMixedEffectsConverter,
                 MinimizeMixedEffectsConverter,
             )
             converter_class = (
-                EMMixedEffectsConverter if conversion_type == "mixed_effects"
+                EMMixedEffectsConverter if conversion_type == "mixed-effects"
                 else MinimizeMixedEffectsConverter
             )
             converter = converter_class(basis)

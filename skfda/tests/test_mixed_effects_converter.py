@@ -304,13 +304,7 @@ def _cmp_estimation_with_original(
         fdatairregular, **fit_kwargs,
     )
 
-    if (
-        isinstance(estimator.result, dict)
-        and "success" in estimator.result
-        and not estimator.result["success"]
-    ):
-        raise Exception(f"Optimization failed: {estimator.result}")
-
+    assert estimator.result.success, "Optimization failed"
     assert r2_score(fdatabasis_estimated, fdatabasis_original) > 0.9
 
 
@@ -366,6 +360,16 @@ def _test_compare_with_original(
 #     _test_general_compare_with_original(
 #         MinimizeMixedEffectsConverter,
 #     )
+
+
+def test_compare_minimize_with_original() -> None:
+    """Compare the EM conversion with the original data."""
+    _test_compare_with_original(
+        estimator_cls=MinimizeMixedEffectsConverter,
+        fit_kwargs={
+            "minimization_method": "Powell",
+        }
+    )
 
 
 def test_compare_em_with_original() -> None:

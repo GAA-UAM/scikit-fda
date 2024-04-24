@@ -11,7 +11,6 @@ from typing import (
     Tuple,
     Type,
 )
-import matplotlib.pyplot as plt
 
 from skfda import FDataBasis
 from skfda.misc.scoring import r2_score
@@ -207,80 +206,6 @@ def _get_points(
     )
 
 
-# def __test_simple_conversion() -> None:
-#     """Visual test."""
-#     _max_val = 10
-#     _domain_range = (0, 10)
-#     n_points = 6
-#     n_basis = 5
-#     n_samples = 50
-#     points = _get_points(_domain_range, n_points, n_samples, 9)
-
-#     basis = FourierBasis(n_basis=n_basis, domain_range=_domain_range)
-#     # BSplineBasis(
-#     #     n_basis=n_basis, domain_range=_domain_range, order=n_basis - 1,
-#     # )
-
-#     sigma = 0.3
-#     Gamma_sqrt = np.zeros((n_basis, n_basis))
-#     Gamma_sqrt[np.tril_indices(n_basis)] = np.random.rand(
-#         n_basis * (n_basis + 1) // 2,
-#     ) * _max_val
-#     Gamma = Gamma_sqrt @ Gamma_sqrt.T
-#     beta = np.random.rand(n_basis) * _max_val
-#     fdatabasis_original = FDataBasis(
-#         basis=basis,
-#         coefficients=np.random.multivariate_normal(
-#             mean=beta, cov=Gamma, size=n_samples,
-#         ),
-#     )
-
-#     def fun(i: int) -> Callable[[NDArrayFloat], NDArrayFloat]:
-#         def fi(x: NDArrayFloat) -> NDArrayFloat:
-#             return fdatabasis_original[i](x).reshape(x.shape)
-#         return fi
-
-#     funcs = [fun(i) for i in range(n_samples)]
-
-#     fdatairregular = _create_irregular_samples(
-#         funcs=funcs,
-#         n_points=n_points,
-#         points=points,
-#         noise_generate_std=sigma,
-#     )
-#     converter = MinimizeMixedEffectsConverter(basis)
-#     fdatabasis_estimated = converter.fit_transform(fdatairregular)
-#     fdatabasis_basic = fdatairregular.to_basis(basis)
-#     if True:
-#         _ = plt.figure(figsize=(15, 6))
-
-#         axes = plt.subplot(2, 2, 1)
-#         plt.title("Original data")
-#         fdatairregular[:5].plot(axes=axes)
-#         left, right = plt.ylim()
-#         plt.ylim((min(0, left), max(1.4, right)))
-
-#         axes = plt.subplot(2, 2, 2)
-#         plt.title("Estimated basis representation.\n")
-#         fdatairregular.scatter(axes=axes)
-#         fdatabasis_estimated[:5].plot(axes=axes)
-#         left, right = plt.ylim()
-#         plt.ylim((min(0, left), max(1.4, right)))
-
-#         axes = plt.subplot(2, 2, 4)
-#         plt.title("Original basis representation")
-#         fdatairregular.scatter(axes=axes)
-#         fdatabasis_original[:5].plot(axes=axes)
-#         left, right = plt.ylim()
-#         plt.ylim((min(0, left), max(1.4, right)))
-
-#         axes = plt.subplot(2, 2, 3)
-#         plt.title(f"{basis}")
-#         basis.plot(axes=axes)
-
-#         plt.show()
-
-
 def _cmp_estimation_with_original(
     n_points: int,
     sigma: float,  # to generate the noise
@@ -354,12 +279,6 @@ def _test_compare_with_original(
         fit_kwargs=fit_kwargs,
         fdatabasis_original=fdatabasis_original,
     )
-
-
-# def test_compare_with_statsmodels_minimize() -> None:
-#     _test_general_compare_with_original(
-#         MinimizeMixedEffectsConverter,
-#     )
 
 
 def test_compare_minimize_with_original() -> None:

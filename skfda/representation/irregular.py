@@ -1108,7 +1108,7 @@ class FDataIrregular(FData):  # noqa: WPS214
                     model:
                     :class:`~skfda.representation.conversion.MinimizeMixedEffectsConverter`.
             kwargs: keyword arguments to be passed to FDataBasis.from_data()
-                in the case of conversion_type="separately. If conversion_type
+                in the case of conversion_type="separately". If conversion_type
                 has another value, the keyword arguments are passed to the fit
                 method of the
                 :class:`~skfda.representation.conversion.MixedEffectsConverter`.
@@ -1173,7 +1173,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if not basis.is_domain_range_fixed():
             basis = basis.copy(domain_range=self.domain_range)
 
-        if conversion_type != "function-wise":
+        if conversion_type in ("mixed-effects", "mixed-effects-minimize"):
             from ..representation.conversion import (
                 EMMixedEffectsConverter,
                 MinimizeMixedEffectsConverter,
@@ -1184,6 +1184,9 @@ class FDataIrregular(FData):  # noqa: WPS214
             )
             converter = converter_class(basis)
             return converter.fit_transform(self, **kwargs)
+
+        if conversion_type != "function-wise":
+            raise ValueError(f"Invalid conversion type: {conversion_type}")
 
         from ..preprocessing.smoothing import BasisSmoother
         smoother = BasisSmoother(

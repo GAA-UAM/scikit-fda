@@ -366,7 +366,6 @@ class _MixedEffectsModel:
 class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
     """Abstract class for mixed effects to-basis-converters.
 
-    TODO: explain the model in detail.
     Args:
         basis: Basis to convert to.
 
@@ -374,7 +373,7 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
         result: Bunch containing the result of the fitting of the model.
             Contains the parameters:
 
-            - fitted_model: Fitted mixed effects model.
+            - model: Fitted mixed effects model.
             - fitted_params: Fitted parameters of the mixed effects model.
             - minimize_result: Result of the scipy.optimize.minimize call,
                 if this function was used.
@@ -424,7 +423,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
     """Mixed effects to-basis-converter using scipy.optimize.
 
     Minimizes the profile loglikelihood of the mixed effects model as proposed
-    by Mary J. Lindstrom & Douglas M. Bates (1988).
+    by :footcite:t:`Lindstrom_1988`.
     """
 
     @dataclass(frozen=True)
@@ -551,7 +550,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             X: irregular data to fit.
             y: ignored.
             initial_params: initial params of the model.
-            minimization_methods: scipy.optimize.minimize method to be used for
+            minimization_method: scipy.optimize.minimize method to be used for
                 the minimization of the loglikelihood of the model.
             has_mean: Whether the mean is a fixed parameter to be optimized or
                 estimated with ML estimator from the covariance parameters.
@@ -560,7 +559,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             self after fit
         """
         dim_effects = self.basis.n_basis
-        fitted_model = _MixedEffectsModel(X, self.basis)
+        model = _MixedEffectsModel(X, self.basis)
         n_samples = X.n_samples
         if isinstance(initial_params, MinimizeMixedEffectsConverter.Params):
             initial_params_vec = initial_params.to_vec()
@@ -573,14 +572,14 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
                     initial_params_generic.covariance,
                 ),
                 mean=initial_params_generic.mean if has_mean else None,
-                model=fitted_model,
+                model=model,
             ).to_vec()
 
         if minimization_method is None:
             minimization_method = _SCIPY_MINIMIZATION_METHODS[0]
 
         def objective_function(params_vec: NDArrayFloat) -> float:
-            return - fitted_model.profile_loglikelihood(
+            return - model.profile_loglikelihood(
                 params=MinimizeMixedEffectsConverter.Params.from_vec(
                     params_vec, dim_effects, model=self, has_mean=has_mean,
                 )
@@ -594,7 +593,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
         params = MinimizeMixedEffectsConverter.Params.from_vec(
             minimize_result.x,
             dim_effects=dim_effects,
-            model=fitted_model,
+            model=model,
             has_mean=has_mean,
         )
         fitted_params = _MixedEffectsParamsResult(
@@ -603,7 +602,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             sigmasq=params.sigmasq,
         )
         self.result = Bunch(
-            fitted_model=fitted_model,
+            model=model,
             fitted_params=fitted_params,
             minimize_result=minimize_result,
             success=minimize_result.success,
@@ -615,7 +614,12 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
 
 
 class EMMixedEffectsConverter(MixedEffectsConverter):
-    """Mixed effects to-basis-converter using the EM algorithm."""
+    """Mixed effects to-basis-converter using the EM algorithm.
+
+    Minimizes the profile loglikelihood of the mixed effects model with the EM
+    algorithm as proposed by
+    :footcite:t:`laird+lange+stram_1987_emmixedeffects`.
+    """
     @dataclass(frozen=True)
     class Params:
         """Mixed effects parameters for the EM algorithm."""
@@ -736,12 +740,12 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             X: irregular data to fit.
             y: ignored.
             initial_params: initial params of the model.
-            niter: maximum number of iterations.
+            maxiter: maximum number of iterations.
             convergence_criterion: convergence criterion to use when fitting.
 
                 - "params" to use relative differences between parameters
                     (the default).
-                - "squared-error" to userelative changes in the squared error
+                - "squared-error" to use relative changes in the squared error
                     of the estimated values with respect to the original data.
                 - "loglikelihood" to use relative changes in the loglikelihood.
             rtol: relative tolerance for convergence.
@@ -749,7 +753,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         Returns:
             The converter after fitting.
         """
-        fitted_model = _MixedEffectsModel(X, self.basis)
+        model = _MixedEffectsModel(X, self.basis)
 
         if initial_params is None:
             initial_params_generic = _initial_params(self.basis.n_basis)
@@ -776,23 +780,23 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         use_error = convergence_criterion in ("squared-error",)
 
         if use_error:
-            big_values = np.concatenate(fitted_model.values)
+            big_values = np.concatenate(model.values)
 
         converged = False
         convergence_val: NDArrayFloat | float | None = None
         prev_convergence_val: NDArrayFloat | float | None = None
         for iter_number in range(maxiter):
             curr_params = next_params
-            values_cov = fitted_model.values_covariances(
+            values_cov = model.values_covariances(
                 curr_params.sigmasq, curr_params.covariance,
             )
-            mean = self._mean(fitted_model, values_cov)
-            partial_residuals = fitted_model.partial_residuals(mean)
-            random_effects = fitted_model._random_effects_estimate(
+            mean = self._mean(model, values_cov)
+            partial_residuals = model.partial_residuals(mean)
+            random_effects = model._random_effects_estimate(
                 curr_params.covariance, values_cov, partial_residuals,
             )
             next_params = self._next_params(
-                model=fitted_model,
+                model=model,
                 curr_params=curr_params,
                 partial_residuals=partial_residuals,
                 values_cov=values_cov,
@@ -805,13 +809,13 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
                 estimates = np.concatenate([  # estimated values
                     basis_eval @ (mean + random_effect)
                     for basis_eval, random_effect in zip(
-                        fitted_model.basis_evaluations, random_effects,
+                        model.basis_evaluations, random_effects,
                     )
                 ])
                 error = big_values - estimates
                 convergence_val = np.inner(error, error)  # sum of squares
             elif convergence_criterion == "loglikelihood":
-                convergence_val = fitted_model.profile_loglikelihood(
+                convergence_val = model.profile_loglikelihood(
                     _MixedEffectsParamsResult(
                         mean=mean,
                         covariance=next_params.covariance,
@@ -837,10 +841,10 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             )
 
         final_params = next_params
-        values_cov = fitted_model.values_covariances(
+        values_cov = model.values_covariances(
             curr_params.sigmasq, curr_params.covariance,
         )
-        final_mean = self._mean(fitted_model, values_cov)
+        final_mean = self._mean(model, values_cov)
         fitted_params = _MixedEffectsParamsResult(
             mean=final_mean,
             covariance=final_params.covariance,
@@ -848,7 +852,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         )
 
         self.result = Bunch(
-            fitted_model=fitted_model,
+            model=model,
             fitted_params=fitted_params,
             success=converged,
             message=message,

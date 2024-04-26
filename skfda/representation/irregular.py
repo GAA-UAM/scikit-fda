@@ -599,7 +599,7 @@ class FDataIrregular(FData):  # noqa: WPS214
     def integrate(
         self: T,
         *,
-        domain: Optional[DomainRange] = None,
+        domain: DomainRange | None = None,
     ) -> NDArrayFloat:
         """Integrate the FDataIrregular object.
 

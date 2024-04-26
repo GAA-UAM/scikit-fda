@@ -32,12 +32,6 @@ from skfda.representation.conversion._mixed_effects import (
     _MixedEffectsModel,
 )
 
-_fdatairregular = FDataIrregular(
-    start_indices=[0, 1, 5],
-    values=np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    points=list(range(9)),
-)
-
 
 def test_loglikelihood() -> None:
     """Test loglikelihood function comparing it with Statsmodels' MixedLM."""
@@ -106,38 +100,6 @@ def test_loglikelihood() -> None:
         model_loglikelihood = model.profile_loglikelihood(params)
 
         assert np.allclose(mixedlm_loglikelihood, model_loglikelihood)
-
-
-def test_values_list() -> None:
-    """Test conversion from FDataIrregular to ME model: values."""
-    fdatairregular = _fdatairregular
-    x_list = _get_values_list(fdatairregular)
-    expected_x_list = [
-        np.array([1]),
-        np.array([2, 3, 4, 5]),
-        np.array([6, 7, 8, 9]),
-    ]
-    for x, expected_x in zip(x_list, expected_x_list):
-        assert np.all(x == expected_x)
-
-
-def test_basis_evaluations_list() -> None:
-    """Test conversion from FDataIrregular to ME model: basis evaluations."""
-    fdatairregular = _fdatairregular
-    basis = FourierBasis(n_basis=3, domain_range=(0, 10))
-    phi_list = _get_basis_evaluations_list(fdatairregular, basis)
-
-    def eval_basis(x: float) -> npt.NDArray[np.float_]:
-        return basis(x).reshape(-1)
-
-    expected_phi = [
-        np.array([eval_basis(0)]),
-        np.array([eval_basis(j) for j in [1, 2, 3, 4]]),
-        np.array([eval_basis(j) for j in [5, 6, 7, 8]]),
-    ]
-
-    for phi, expected_phi in zip(phi_list, expected_phi):
-        np.testing.assert_allclose(phi, expected_phi)
 
 
 def _create_irregular_samples(

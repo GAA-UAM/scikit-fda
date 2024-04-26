@@ -56,6 +56,23 @@ _EM_MINIMIZATION_METHODS = [
 def _get_values_list(
     fdatairregular: FDataIrregular,
 ) -> List[NDArrayFloat]:
+    """Get the values vectors for the mixed-effects model.
+
+    Args:
+        fdatairregular: Irregular data.
+
+    Returns:
+        List of values vectors (one vector per functional datum).
+
+    Examples:
+        >>> fdata = FDataIrregular(
+        ...     start_indices=[0, 1, 5],
+        ...     values=np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
+        ...     points=list(range(9)),
+        ... )
+        >>> _get_values_list(fdata)
+        [array([1]), array([2, 3, 4, 5]), array([6, 7, 8, 9])]
+    """
     assert fdatairregular.dim_domain == 1
     assert fdatairregular.dim_codomain == 1
     return np.split(
@@ -68,6 +85,19 @@ def _get_basis_evaluations_list(
     fdatairregular: FDataIrregular,
     basis: Basis,
 ) -> List[NDArrayFloat]:
+    """Get the matrix of basis evaluations for the mixed-effects model.
+
+    Args:
+        fdatairregular: Irregular data.
+        basis: Basis to evaluate.
+
+    Returns:
+        A list of matrices (one matrix per functional datum), each matrix is
+        of shape (n_points, n_basis), where n_points is the number of points
+        of the functional datum and n_basis is the number of basis functions.
+        The i-th row of the matrix is the evaluation of the basis functions at
+        the i-th point of the functional datum.
+    """
     assert fdatairregular.dim_domain == 1
     assert fdatairregular.dim_codomain == 1
     return np.split(

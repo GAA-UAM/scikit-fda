@@ -4,9 +4,8 @@ Mixed-effects model for irregular data when removing measurement points
 
 This example converts irregular data to a basis representation using a mixed
 effects model and checks the robustness of the method by fitting
-the model with decreasing number of measurement points per curve. 
+the model with decreasing number of measurement points per curve.
 """
-# %%
 # Author: Pablo Cuesta Sierra
 # License: MIT
 
@@ -41,8 +40,7 @@ plt.show()
 
 # %%
 # We split the data into train and test sets:
-seed = 13627798
-random_state = np.random.RandomState(seed=seed)
+random_state = np.random.RandomState(seed=13627798)
 train_original, test_original = train_test_split(
     fd_temperatures,
     test_size=0.3,
@@ -145,14 +143,10 @@ for score_name in scores.keys():
     print("-" * 62)
     print((
         pd.DataFrame(scores[score_name])
-        .sort_values("n_points_per_curve")
-        # .style.format(precision=4)
-        .round(4).astype(str)
-        .to_latex()
-    ))
-print(f"{seed=}")
+        .set_index("n_points_per_curve").sort_index().to_string()
+    ), end="\n\n\n")
 
-    # %%
+# %%
 # The following plots show the original curves along with the converted
 # test curves for the conversions with 5, 4 and 3 points per curve.
 

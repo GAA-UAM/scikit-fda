@@ -33,23 +33,23 @@ from skfda.misc.scoring import r2_score, mean_squared_error
 # :footcite:t:`james_2018_sparsenessfda`. This just means that
 # the coefficients of the basis representation are generated from a Gaussian
 # distribution.
-n_curves = 50
+n_curves = 70
 n_basis = 4
-domain_range = (0, 12)
+domain_range = (0, 10)
 basis = BSplineBasis(n_basis=n_basis, domain_range=domain_range, order=3)
 
 plt.figure(figsize=(10, 5))
 basis.plot()
 plt.title("Basis functions")
 
-coeff_mean = np.array([-10, 20, -24, 4])
+coeff_mean = np.array([-15, 20, -4, 6])
 coeff_cov_sqrt = np.array([
-    [3.2, 0.0, 0.0, 0.0],
-    [0.4, 6.0, 0.0, 0.0],
-    [0.3, 1.5, 2.0, 0.0],
-    [1.2, 0.3, 2.5, 1.8],
+    [4.0, 0.0, 0.0, 0.0],
+    [1.2, 2.6, 0.0, 0.0],
+    [4.7, 2.9, 2.0, 0.0],
+    [4.9, 0.3, 0.1, 3.6],
 ])
-random_state = np.random.RandomState(seed=4934755)
+random_state = np.random.RandomState(seed=34285676)
 coefficients = (
     coeff_mean + random_state.normal(size=(n_curves, n_basis)) @ coeff_cov_sqrt
 )
@@ -68,10 +68,10 @@ plt.show()
 # Moreover, we add some noise to the data.
 fd_irregular_without_noise = irregular_sample(
     fdatabasis_original,
-    n_points_per_curve=random_state.randint(3, 5, n_curves),
+    n_points_per_curve=random_state.randint(4, 8, n_curves),
     random_state=random_state,
 )
-noise_std = 0.1
+noise_std = 1
 fd_irregular = FDataIrregular(
     points=fd_irregular_without_noise.points,
     start_indices=fd_irregular_without_noise.start_indices,
@@ -118,30 +118,28 @@ test_curvewise_to_basis = test_irregular.to_basis(basis)
 # %%
 # To visualize the conversion results, we plot the first 8 original and
 # converted curves of the test set. On the background, we plot the train set.
-fig = plt.figure(figsize=(10, 25))
-for k in range(8):
-    axes = plt.subplot(8, 1, k + 1)
-
-    # train_original.plot(axes=axes, color=(0, 0, 0, 0.05))
-    # train_irregular.scatter(axes=axes, color=(0, 0, 0, 0.05), marker=".")
+fig = plt.figure(figsize=(11, 16))
+plt.suptitle("Comparison of the original and converted data (test set)")
+for k in range(10):
+    axes = plt.subplot(5, 2, k + 1)
 
     test_irregular[k].scatter(
         axes=axes, color=f"C{k}", label="Irregular"
     )
     test_curvewise_to_basis[k].plot(
-        axes=axes, color=f"C{k}", linestyle=":",
-        label="Curve-wise conversion",
+        axes=axes, color=f"C{k}", linestyle=":", label="Curve-wise",
     )
     test_converted[k].plot(
-        axes=axes, color=f"C{k}", linestyle="--",
-        label="Mixed-effects conversion",
+        axes=axes, color=f"C{k}", linestyle="--", label="Mixed-effects",
     )
     test_original[k].plot(
-        axes=axes, color=f"C{k}", alpha=0.5,
-        label="Original basis representation",
+        axes=axes, color=f"C{k}", alpha=0.5, label="Original",
     )
-    axes.legend(bbox_to_anchor=(1., 1.))
+    # axes.legend(bbox_to_anchor=(1., 0.3))
+    axes.legend()
     plt.tight_layout(rect=[0, 0, 1, 0.98])
+    # Same scale for all plots:
+    plt.ylim((-17, 15))
 plt.show()
 
 # %%
@@ -166,7 +164,7 @@ for score_name, score_df in scores.items():
     print("-" * 35)
     print(f"{score_name} scores:")
     print("-" * 35)
-    print(score_df, end=f"\n\n\n")
+    print(score_df, end="\n\n\n")
 
 # %%
 # References

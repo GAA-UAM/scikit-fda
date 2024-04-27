@@ -71,7 +71,7 @@ fd_irregular_without_noise = irregular_sample(
     n_points_per_curve=random_state.randint(4, 8, n_curves),
     random_state=random_state,
 )
-noise_std = 1
+noise_std = .5
 fd_irregular = FDataIrregular(
     points=fd_irregular_without_noise.points,
     start_indices=fd_irregular_without_noise.start_indices,
@@ -123,16 +123,16 @@ plt.suptitle("Comparison of the original and converted data (test set)")
 for k in range(10):
     axes = plt.subplot(5, 2, k + 1)
 
-    test_irregular[k].scatter(
+    test_irregular[k+1].scatter(
         axes=axes, color=f"C{k}", label="Irregular"
     )
-    test_curvewise_to_basis[k].plot(
+    test_curvewise_to_basis[k+1].plot(
         axes=axes, color=f"C{k}", linestyle=":", label="Curve-wise",
     )
-    test_converted[k].plot(
+    test_converted[k+1].plot(
         axes=axes, color=f"C{k}", linestyle="--", label="Mixed-effects",
     )
-    test_original[k].plot(
+    test_original[k+1].plot(
         axes=axes, color=f"C{k}", alpha=0.5, label="Original",
     )
     # axes.legend(bbox_to_anchor=(1., 0.3))

@@ -10,16 +10,12 @@ from skfda.typing._numpy import NDArrayFloat
 def test_one_initial_point() -> None:
     """Case 1 -> One initial point + n_samples > 0.
 
-    Tests:
-        - initial_condition = 0, n_samples = 2
-        - initial_condition = [0], n_samples = 2.
-            # The result should be the same as the first one
+    1.1: initial_condition = 0, n_samples = 2
 
     """
     n_samples = 2
     n_grid_points = 5
-    random_state = np.random.RandomState(1)
-    # Case 1 Starting point = float + n_samples
+    random_state = np.random.RandomState(1)  # noqa: WPS204 -- reproducibility
     initial_float = 0
 
     expected_result = np.array([[
@@ -49,12 +45,32 @@ def test_one_initial_point() -> None:
         expected_result,
     )
 
-    # Case 2 Starting point = float in an array format + n_samples
-    # The result must be the same as in Case 1
+
+def test_one_initial_point_monodimensional() -> None:
+    """Case 1.2 Starting point = float in an array format + n_samples.
+
+    initial_condition = [0], n_samples = 2.
+        The result should be the same as 1.1
+    """
     n_samples = 2
     n_grid_points = 5
     random_state = np.random.RandomState(1)
     initial_float_in_list = [0]
+
+    expected_result = np.array([[
+        [0],
+        [0.81217268],
+        [0.50629448],
+        [0.2422086],
+        [-0.29427571],
+    ],
+        [[0],
+         [0.43270381],
+         [-0.71806553],
+         [0.15434035],
+         [-0.2262631],
+         ],
+    ])
 
     fd = euler_maruyama(
         initial_float_in_list,
@@ -125,7 +141,7 @@ def test_initial_data_generator() -> None:
     # Case 1 Starting generator of floats + n_samples
     random_state = np.random.RandomState(1)
 
-    def standard_normal_generator(
+    def standard_normal_generator(  # noqa: WPS430
         size: int,
         random_state: np.random.RandomState,
     ) -> NDArrayFloat:
@@ -165,7 +181,7 @@ def test_initial_data_generator() -> None:
     n_grid_points = 5
     random_state = np.random.RandomState(1)
 
-    def standard_normal_generator_2d(
+    def standard_normal_generator_2d(  # noqa: WPS430
         size: int,
         random_state: np.random.RandomState,
     ) -> NDArrayFloat:
@@ -380,12 +396,12 @@ def test_vector_initial_points() -> None:
 
 def test_drift_cases() -> None:
     """Test for different drift inputs."""
-    initial_condition = np.array([0, 0])
+    initial_condition = np.array([0, 0])  # noqa: WPS204
     n_samples = 2
     n_grid_points = 5
     random_state = np.random.RandomState(1)
 
-    def base_drift(
+    def base_drift(  # noqa: WPS430
         t: float,
         x: NDArrayFloat,
     ) -> float:
@@ -411,7 +427,6 @@ def test_drift_cases() -> None:
         n_grid_points=n_grid_points,
         n_samples=n_samples,
         drift=base_drift,
-        diffusion=1,
         random_state=random_state,
     )
 
@@ -425,7 +440,7 @@ def test_drift_cases() -> None:
     n_grid_points = 5
     random_state = np.random.RandomState(1)
 
-    def vector_drift(
+    def vector_drift(  # noqa: WPS430
         t: float,
         x: NDArrayFloat,
     ) -> NDArrayFloat:
@@ -451,7 +466,6 @@ def test_drift_cases() -> None:
         n_grid_points=n_grid_points,
         n_samples=n_samples,
         drift=vector_drift,
-        diffusion=1,
         random_state=random_state,
     )
 
@@ -494,6 +508,7 @@ def test_diffusion_cases() -> None:
         n_samples=n_samples,
         drift=0,
         diffusion=vector_diffusion,
+        diffusion_matricial_term=False,
         random_state=random_state,
     )
 
@@ -527,11 +542,9 @@ def test_diffusion_cases() -> None:
          [-0.2262631],
          ],
     ])
-    expected_result = np.concatenate(
-        (
-            expected_result,
-            2 * expected_result,
-        ),
+
+    expected_result = np.concatenate(  # noqa: WPS317
+        (expected_result, 2 * expected_result),
         axis=2,
     )
 
@@ -542,7 +555,6 @@ def test_diffusion_cases() -> None:
         drift=0,
         diffusion=matrix_diffusion,
         random_state=random_state,
-        is_diffusion_matrix=True,
         dim_noise=1,
     )
 

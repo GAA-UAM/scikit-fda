@@ -38,42 +38,71 @@ class InitialValueGenerator(Protocol):
         """Interface of initial value generator."""
 
 
-def euler_maruyama(
+def euler_maruyama(  # noqa: WPS210
     initial_condition: ArrayLike | InitialValueGenerator,
     n_grid_points: int = 100,
-    drift: SDETerm | ArrayLike = 0,
-    diffusion: SDETerm | ArrayLike = 1,
+    drift: SDETerm | ArrayLike | None = None,
+    diffusion: SDETerm | ArrayLike | None = None,
     n_samples: int | None = None,
-    start: float = 0,
+    start: float = 0.0,  # noqa: WPS358 -- Distinguish float from integer
     stop: float = 1.0,
-    is_diffusion_matrix: bool = False,
+    diffusion_matricial_term: bool = True,
     dim_noise: int | None = None,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
     r"""Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
 
+    An SDE can be expressed with the following formula
+
     .. math::
 
-        d X(t) = f(t, X(t)) d t + g(t, X(t)) d W(t).
+        d\mathbf{X}(t) = \mathbf{F}(t, \mathbf{X}(t))dt + \mathbf{G}(t,
+        \mathbf{X}(t))d\mathbf{W}(t).
+
+    In this equation, :math:`\mathbf{X} = (X^{(1)}, X^{(2)}, ... , X^{(n)})
+    \in \mathbb{R}^q` is a vector that represents the state of the stochastic
+    process. The function :math:`\mathbf{F}(t, \mathbf{X}) = (F^{(1)}(t,
+    \mathbf{X}), ..., F^{(q)}(t, \mathbf{X}))` is called drift and refers
+    to the deterministic component of the equation. The function
+    :math:`\mathbf{G} (t, \mathbf{X}) = (G^{i, j}(t, \mathbf{X}))_{i=1, j=1}
+    ^{q, m}` is denoted as the diffusion term and refers to the stochastic
+    component of the evolution. :math:`\mathbf{W}(t)` refers to a Wiener
+    process (Standard Brownian motion) of dimension :math:`m`. Finally,
+    :math:`q` refers to the dimension of the variable :math:`\mathbf{X}`
+    (dimension of the codomain) and :math:`m` to the dimension of the noise.
+
+    Euler-Maruyama's method computes the approximated solution using the
+    Markov chain
+
+    .. math::
+
+        X_{n + 1}^{(i)} = X_n^{(i)} + F^{(i)}(t_n, \mathbf{X}_n)\Delta t_n +
+        \sum_{j=1}^m G^{i,j}(t_n, \mathbf{X}_n)\sqrt{\Delta t_n}\Delta Z_n^j,
+
+    where :math:`X_n^{(i)}` is the approximated value of :math:`X^{(i)}(t_n)`
+    and the :math:`\mathbf{Z}_m` are independent, identically distributed
+    :math:`m`-dimensional standard normal random variables.
 
     Args:
-        initial_condition: initial condition of the SDE. It can have one of
+        initial_condition: Initial condition of the SDE. It can have one of
             three formats: An starting initial value from which to
             calculate *n_samples* trajectories. An array of initial values.
             For each starting point a trajectory will be calculated. A
             function that generates random numbers or vectors. It should
             have two parameters called size and random_state and it should
             return an array.
-        n_grid_points: the total number of points of evaluation.
-        drift: drift coefficient (:math:`f(t,X_t)` in the equation).
-        diffusion: diffusion coefficient (:math:`g(t,X_t)` in the equation).
-        n_samples: number of trajectories integrated.
-        start: starting time of the trajectories.
-        stop: ending time of the trajectories.
-        is_diffusion_matrix: True if the diffusion coefficient is a matrix.
-        dim_noise: dimension of the noise factor. By default is the data
+        n_grid_points: The total number of points of evaluation.
+        drift: Drift coefficient (:math:`F(t,\mathbf{X})` in the equation).
+        diffusion: Diffusion coefficient (:math:`G(t,\mathbf{X})` in the
+            equation).
+        n_samples: Number of trajectories integrated.
+        start: Starting time of the trajectories.
+        stop: Ending time of the trajectories.
+        diffusion_matricial_term: True if the diffusion coefficient is a
+            matrix.
+        dim_noise: Dimension of the noise factor. By default is the data
             dimension.
-        random_state: random state.
+        random_state: Random state.
 
 
     Returns:
@@ -141,50 +170,62 @@ def euler_maruyama(
         )
     (n_samples, dim_codomain) = initial_values.shape
 
+    if dim_codomain == 1:
+        diffusion_matricial_term = False
+
+    if drift is None:
+        drift = 0.0  # noqa: WPS358 -- Distinguish float from integer
+
     if callable(drift):
-        formatted_drift = drift
+        drift_function = drift
     else:
-        def constant_drift(
+        def constant_drift(  # noqa: WPS430 -- We need internal functions
             t: float,
             x: NDArrayFloat,
         ) -> NDArrayFloat:
             return np.atleast_1d(drift)
 
-        formatted_drift = constant_drift
+        drift_function = constant_drift
+
+    if diffusion is None:
+        if diffusion_matricial_term:
+            diffusion = np.eye(dim_codomain)
+        else:
+            diffusion = 1.0
 
     if callable(diffusion):
-        formatted_diffusion = diffusion
+        diffusion_function = diffusion
     else:
-        def constant_diffusion(
+        def constant_diffusion(  # noqa: WPS430 -- We need internal functions
             t: float,
             x: NDArrayFloat,
         ) -> NDArrayFloat:
             return np.atleast_1d(diffusion)
 
-        formatted_diffusion = constant_diffusion
+        diffusion_function = constant_diffusion
 
-    def vector_diffusion_times_noise(
+    def vector_diffusion_times_noise(  # noqa: WPS430 We need internal functons
         t_n: float,
         x_n: NDArrayFloat,
         noise: NDArrayFloat,
     ) -> NDArrayFloat:
-        return formatted_diffusion(t_n, x_n) * noise
+        return diffusion_function(t_n, x_n) * noise
 
-    def matrix_diffusion_times_noise(
+    def matrix_diffusion_times_noise(  # noqa: WPS430 We need internal functons
         t_n: float,
         x_n: NDArrayFloat,
         noise: NDArrayFloat,
     ) -> Any:
         return np.einsum(
             '...dj, ...j -> ...d',
-            formatted_diffusion(t_n, x_n),
+            diffusion_function(t_n, x_n),
             noise,
         )
 
     if dim_noise is None:
         dim_noise = dim_codomain
 
-    if is_diffusion_matrix:
+    if diffusion_matricial_term:
         diffusion_times_noise = matrix_diffusion_times_noise
     else:
         diffusion_times_noise = vector_diffusion_times_noise
@@ -203,7 +244,7 @@ def euler_maruyama(
 
         data_matrix[:, n + 1] = (
             x_n
-            + delta_t[n] * formatted_drift(t_n, x_n)
+            + delta_t[n] * drift_function(t_n, x_n)
             + diffusion_times_noise(t_n, x_n, noise[:, n])
             * np.sqrt(delta_t[n])
         )
@@ -341,7 +382,7 @@ def make_gaussian_process(
     )
 
 
-def make_sinusoidal_process(
+def make_sinusoidal_process(  # noqa: WPS211
     n_samples: int = 15,
     n_features: int = 100,
     *,
@@ -466,7 +507,7 @@ def make_multimodal_landmarks(
     return modes_location + variation
 
 
-def make_multimodal_samples(
+def make_multimodal_samples(  # noqa: WPS211
     n_samples: int = 15,
     *,
     n_modes: int = 1,
@@ -564,7 +605,7 @@ def make_multimodal_samples(
     # Covariance matrix of the samples
     cov = mode_std * np.eye(dim_domain)
 
-    for i, j, k in itertools.product(
+    for i, j, k in itertools.product(  # noqa: WPS440
         range(n_samples),
         range(dim_codomain),
         range(n_modes),

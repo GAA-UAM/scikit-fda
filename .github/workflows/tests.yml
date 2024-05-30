@@ -28,7 +28,6 @@ jobs:
     - name: Run tests
       run: |
         pip3 debug --verbose .
-        pip3 install mkl-devel==2023.2.0
         pip3 install ".[test]"
         pytest --cov=skfda/ --cov-report=xml
 

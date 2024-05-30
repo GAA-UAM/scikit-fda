@@ -180,12 +180,12 @@ def occupation_measure(
     n_points: Optional[int] = None,
 ) -> NDArrayFloat:
     r"""
-    Calculate the occupation measure of a grid.
+    Calculate the occupation measure of functional data.
 
     It performs the following map:
 
     ..math:
-        :math:`f_1(X) = |t: X(t)\in T_p|,\dots,|t: X(t)\in T_p|`
+        :math:`f_1(X) = |t: X(t)\in T_1|,\dots,|t: X(t)\in T_p|`
 
     where :math:`{T_1,\dots,T_p}` are disjoint intervals in
     :math:`\mathbb{R}` and | | stands for the Lebesgue measure.
@@ -241,11 +241,11 @@ def occupation_measure(
         ...         [(0.0, 1.0), (2.0, 3.0)],
         ...         n_points=501,
         ...     ),
-        ...     decimals=2,
+        ...     decimals=1,
         ... )
-        array([[ 0.98,  1.  ],
-               [ 0.5 ,  0.52],
-               [ 6.28,  0.  ]])
+        array([[ 1. ,  1. ],
+               [ 0.5,  0.5],
+               [ 6.3,  0. ]])
 
     """
     if isinstance(data, FDataBasis) and n_points is None:

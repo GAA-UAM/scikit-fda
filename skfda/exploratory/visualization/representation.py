@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Sized, Tuple, TypeVar
 
-import matplotlib.cm
+import matplotlib
 import matplotlib.patches
 import numpy as np
 from matplotlib.artist import Artist
@@ -278,10 +278,14 @@ class GraphPlot(BasePlot):
         else:
             patches = None
             if self.colormap is None:
-                colormap = matplotlib.cm.get_cmap("autumn")
+                colormap = matplotlib.colormaps["autumn"]
                 colormap = colormap.reversed()
             else:
-                colormap = matplotlib.cm.get_cmap(self.colormap)
+                colormap = (
+                    matplotlib.colormaps[self.colormap]
+                    if isinstance(self.colormap, str)
+                    else self.colormap
+                )
 
             sample_colors = colormap(self.gradient_list)
 

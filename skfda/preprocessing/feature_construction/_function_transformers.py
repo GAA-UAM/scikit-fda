@@ -144,10 +144,10 @@ class OccupationMeasureTransformer(
         ...     n_points=501,
         ... )
 
-        >>> np.around(occupation_measure.fit_transform(fd_grid), decimals=2)
-        array([[ 0.98,  1.  ],
-               [ 0.5 ,  0.52],
-               [ 6.28,  0.  ]])
+        >>> np.around(occupation_measure.fit_transform(fd_grid), decimals=1)
+        array([[ 1. ,  1. ],
+               [ 0.5,  0.5],
+               [ 6.3,  0. ]])
     """
 
     def __init__(

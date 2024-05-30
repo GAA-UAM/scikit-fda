@@ -11,13 +11,13 @@ dataset.
 
 # sphinx_gallery_thumbnail_number = 2
 
-from skfda import datasets
-from skfda.exploratory.depth import ModifiedBandDepth, IntegratedDepth
-from skfda.exploratory.visualization import Boxplot
-
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
+from skfda import datasets
+from skfda.exploratory.depth import IntegratedDepth, ModifiedBandDepth
+from skfda.exploratory.visualization import Boxplot
 
 ##############################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in
@@ -34,7 +34,7 @@ fd_temperatures = fd.coordinates[0]
 # which the weather stations belong to.
 
 # Each climate is assigned a color. Defaults to grey.
-colormap = plt.cm.get_cmap('seismic')
+colormap = matplotlib.colormaps['seismic']
 label_names = y.values.categories
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))

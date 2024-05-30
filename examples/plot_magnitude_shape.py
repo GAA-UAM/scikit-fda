@@ -10,6 +10,7 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 
 # sphinx_gallery_thumbnail_number = 2
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -34,7 +35,7 @@ target = y.values
 # which the weather stations belong.
 
 # Each climate is assigned a color. Defaults to grey.
-colormap = plt.cm.get_cmap('seismic')
+colormap = matplotlib.colormaps['seismic']
 label_names = target.categories
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))

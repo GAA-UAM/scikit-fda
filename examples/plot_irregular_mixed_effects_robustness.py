@@ -1,11 +1,13 @@
 """
-Mixed-effects model for irregular data when removing measurement points
+Mixed effects model for irregular data: robustness of the conversion by
+decimation
 =======================================================================
 
 This example converts irregular data to a basis representation using a mixed
 effects model and checks the robustness of the method by fitting
 the model with decreasing number of measurement points per curve.
 """
+# %%
 # Author: Pablo Cuesta Sierra
 # License: MIT
 
@@ -18,24 +20,38 @@ from sklearn.model_selection import train_test_split
 
 from skfda import FDataIrregular
 from skfda.datasets import fetch_weather, irregular_sample
+from skfda.misc.scoring import mean_squared_error, r2_score
 from skfda.representation.basis import FourierBasis
 from skfda.representation.conversion import EMMixedEffectsConverter
-from skfda.misc.scoring import r2_score, mean_squared_error
-
 
 # %%
 # For this example, we are going to check the robustness of
 # the mixed effects method for converting irregular data to basis
 # representation by removing some measurement points from the test and train
-# sets and comparing the results. The temperatures from the Canadian weather
-# dataset are used to generate the irregular data.
+# sets and comparing the resulting conversions.
+#
+# The temperatures from the Canadian weather dataset are used to generate
+# the irregular data.
+# We use a Fourier basis due to the periodic nature of the data.
 fd_temperatures = fetch_weather().data.coordinates[0]
 basis = FourierBasis(n_basis=5, domain_range=fd_temperatures.domain_range)
 
-fd_temperatures.plot()
-plt.show()
-basis.plot()
+# %%
+# We plot the original data and the basis functions.
+fig = plt.figure(figsize=(10, 4))
+
+axes = plt.subplot(1, 2, 1)
+fd_temperatures.plot(axes=axes)
+ylim = axes.get_ylim()
+xlabel = axes.get_xlabel()
+plt.title(fd_temperatures.dataset_name)
+
+axes = plt.subplot(1, 2, 2)
+basis.plot(axes=axes)
+axes.set_xlabel(xlabel)
 plt.title("Basis functions")
+
+plt.suptitle("")
 plt.show()
 
 # %%
@@ -52,7 +68,7 @@ train_original, test_original = train_test_split(
 # curve, by removing measurement points from the previous dataset iteratively.
 train_irregular_list = [train_original]
 test_irregular_list = [test_original]
-n_points_list = [40, 10, 7, 5, 4, 3]
+n_points_list = [365, 40, 10, 7, 5, 4, 3]
 for n_points in n_points_list:
     train_irregular_list.append(
         irregular_sample(
@@ -138,7 +154,6 @@ for n_points, train_irregular, test_irregular in zip(
 # Finally, we have the scores for the train and test sets with decreasing
 # number of measurement points per curve.
 for score_name in scores.keys():
-    print("-" * 62)
     print(f"{score_name} scores:")
     print("-" * 62)
     print((
@@ -146,46 +161,112 @@ for score_name in scores.keys():
         .set_index("n_points_per_curve").sort_index().to_string()
     ), end="\n\n\n")
 
+
 # %%
-# The following plots show the original curves along with the converted
-# test curves for the conversions with 5, 4 and 3 points per curve.
+# Plot the scores:
+for score_name in scores.keys():
+    df = (
+        pd.DataFrame(scores[score_name])
+        .sort_values("n_points_per_curve")
+        .set_index("n_points_per_curve")
+    )
+    fig = plt.figure()
+    k = len(df)
+    plt.plot(
+        df.index[:k],
+        df["Train-sparse"][:k],
+        # fig=fig,
+        label=r"Fit $\mathcal{D}_{train}^{\ j}$; transform $\mathcal{D}_{train}^{\ j}$",
+        marker=".",
+    )
+    plt.plot(
+        df.index[:k],
+        df["Test-sparse"][:k],
+        # fig=fig,
+        label=r"Fit $\mathcal{D}_{train}^{\ j}$; transform $\mathcal{D}_{test}^{\ j}$",
+        marker=".",
+    )
+    plt.plot(
+        df.index[:k],
+        df["Test-original"][:k],
+        # fig=fig,
+        label=r"Fit $\mathcal{D}_{train}^{\ j}$; transform $\mathcal{D}_{test}^{\ 0}$",
+        marker=".",
+    )
+    if score_name == "MSE":
+        plt.yscale("log")
+        plt.ylabel(f"${score_name}$ score (logscale)")
+        eps_name = "05-plot-mse.eps"
+    else:
+        plt.ylabel(f"${score_name}$ score")
+        eps_name = "05-plot-r2.eps"
+    plt.xscale("log")
+    plt.xlabel(r"Measurements per function (logscale)")
+    plt.legend()
+    # fig.savefig(
+    #     f"plots/{eps_name}",
+    #     format="eps",
+    #     bbox_inches="tight",
+    # )
+    plt.plot()
 
 
-def plot_converted_test_curves(n_points_per_curve):
-    plt.figure(figsize=(10, 23))
-    for k in range(7):
-        axes = plt.subplot(7, 1, k + 1)
+# %%
+# Show the original curves along with the converted
+# test curves for the conversions with 7, 5, 4 and 3 points per curve.
+def plot_curve(k):
+    plt.figure(figsize=(8, 8))
+    i = 0
+    for n_points_per_curve in n_points_list[3:]:
+        axes = plt.subplot(2, 2, i + 1)
+        i += 1
 
         test_irregular_datasets[n_points_per_curve][k].scatter(
-            axes=axes, color=f"C{k}",
+            axes=axes, color="C0",
+        )
+        fd_temperatures.mean().plot(
+            axes=axes, color=[0.4] * 3, label="Original dataset mean",
+        )
+        fd_temperatures.plot(
+            axes=axes, color=[0.7] * 3, linewidth=0.2,
         )
         test_original[k].plot(
-            axes=axes, color=f"C{k}", linewidth=0.65,
-            label="Original test curve",
+            axes=axes, color="C0", linewidth=0.65, label="Original test curve",
         )
         converted_data["Test-sparse"][n_points_per_curve][k].plot(
-            axes=axes, color=f"C{k}", linestyle="--",
-            label=f"Test curve transformed from {n_points_per_curve} points",
+            axes=axes,
+            color="C0",
+            linestyle="--",
+            label=f"Test curve transformed",
         )
-        converted_data["Test-original"][n_points_per_curve][k].plot(
-            axes=axes, color=f"C{k}", alpha=0.5,
-            label="Test curve transformed from original 365 points",
-        )
-        axes.legend(bbox_to_anchor=(1., 1.))
         plt.tight_layout(rect=[0, 0, 1, 0.98])
-        plt.suptitle(f"Fitted model with {n_points_per_curve=}")
+        plt.title(f"Transform of test curves with {n_points_per_curve} points")
+        plt.ylim(ylim)
+
+    plt.suptitle(
+        "Evolution of the conversion of a curve with decreasing measurements "
+        f"({test_original.sample_names[k]} station)"
+    )
+
+    # # Add legend:
+    handles, labels = plt.gca().get_legend_handles_labels()
+    plt.legend(
+        handles=handles,
+        loc="lower center",
+        ncols=3,
+        bbox_to_anchor=(-.1, -0.3),
+    )
+    plt.tight_layout(pad=10)
 
     plt.show()
 
 
-# %%
-plot_converted_test_curves(n_points_per_curve=5)
+# Plot two of the curves:
+plot_curve(7)
 
 # %%
-plot_converted_test_curves(n_points_per_curve=4)
+plot_curve(8)
 
-# %%
-plot_converted_test_curves(n_points_per_curve=3)
 
 # %%
 # References

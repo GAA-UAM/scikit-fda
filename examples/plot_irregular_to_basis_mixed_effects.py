@@ -5,7 +5,6 @@ Mixed effects model for irregular data
 This example converts irregular data to a basis representation using a mixed
 effects model.
 """
-# %%
 # Author: Pablo Cuesta Sierra
 # License: MIT
 

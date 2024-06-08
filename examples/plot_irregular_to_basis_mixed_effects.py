@@ -17,10 +17,9 @@ from sklearn.model_selection import train_test_split
 
 from skfda import FDataBasis, FDataIrregular
 from skfda.datasets import fetch_weather, irregular_sample
+from skfda.misc.scoring import mean_squared_error, r2_score
 from skfda.representation.basis import BSplineBasis, FourierBasis
 from skfda.representation.conversion import EMMixedEffectsConverter
-from skfda.misc.scoring import r2_score, mean_squared_error
-
 
 # %%
 # Sythetic data

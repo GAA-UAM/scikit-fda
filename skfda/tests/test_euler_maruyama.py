@@ -555,7 +555,6 @@ def test_diffusion_cases() -> None:
         drift=0,
         diffusion=matrix_diffusion,
         random_state=random_state,
-        dim_noise=1,
     )
 
     np.testing.assert_almost_equal(
@@ -638,16 +637,6 @@ def test_diffusion_negative_cases() -> None:
     initial_condition = np.array([0, 0])
     n_samples = 2
     random_state = np.random.RandomState(1)
-
-    bad_diffusion = np.array([[1, 2, 3]])
-
-    with np.testing.assert_raises(ValueError):
-        euler_maruyama(
-            initial_condition,
-            n_samples=n_samples,
-            diffusion=bad_diffusion,
-            random_state=random_state,
-        )
 
     vector_diffusion = np.array([1, 2])
 

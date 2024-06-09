@@ -47,7 +47,6 @@ def euler_maruyama(  # noqa: WPS210
     start: float = 0.0,  # noqa: WPS358 -- Distinguish float from integer
     stop: float = 1.0,
     diffusion_matricial_term: bool = True,
-    dim_noise: int | None = None,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
     r"""Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
@@ -222,11 +221,11 @@ def euler_maruyama(  # noqa: WPS210
             noise,
         )
 
-    if dim_noise is None:
-        dim_noise = dim_codomain
+    dim_noise = dim_codomain
 
     if diffusion_matricial_term:
         diffusion_times_noise = matrix_diffusion_times_noise
+        dim_noise = diffusion_function(start, initial_values).shape[-1]
     else:
         diffusion_times_noise = vector_diffusion_times_noise
 

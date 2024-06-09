@@ -99,8 +99,6 @@ def euler_maruyama(  # noqa: WPS210
         stop: Ending time of the trajectories.
         diffusion_matricial_term: True if the diffusion coefficient is a
             matrix.
-        dim_noise: Dimension of the noise factor. By default is the data
-            dimension.
         random_state: Random state.
 
 

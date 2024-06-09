@@ -6,7 +6,6 @@ This example converts irregular data to a basis representation using a mixed
 effects model and checks the robustness of the method by fitting
 the model with decreasing number of measurement points per curve.
 """
-# %%
 # Author: Pablo Cuesta Sierra
 # License: MIT
 
@@ -252,11 +251,11 @@ def plot_conversion_evolution(index: int):
 
 # %%
 # Toronto station's temperature curve conversion evolution.
-plot_conversion_evolution(7)
+plot_conversion_evolution(index=7)
 
 # %%
 # Iqaluit station's temperature curve conversion evolution.
-plot_conversion_evolution(8)
+plot_conversion_evolution(index=8)
 
 # %%
 # As can be seen in the figures, the fewer the measurements, the closer

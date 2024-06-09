@@ -1,6 +1,5 @@
 """
-Mixed effects model for irregular data: robustness of the conversion by
-decimation
+Mixed effects model for irregular data: robustness of the conversion by decimation
 =======================================================================
 
 This example converts irregular data to a basis representation using a mixed
@@ -158,70 +157,61 @@ for score_name in scores.keys():
     print("-" * 62)
     print((
         pd.DataFrame(scores[score_name])
-        .set_index("n_points_per_curve").sort_index().to_string()
+        .round(3).set_index("n_points_per_curve").sort_index()
     ), end="\n\n\n")
 
 
 # %%
-# Plot the scores:
-for score_name in scores.keys():
+# Plot the scores.
+plt.figure(figsize=(12, 5))
+for i, (score_name, values) in enumerate(scores.items()):
     df = (
-        pd.DataFrame(scores[score_name])
-        .sort_values("n_points_per_curve")
-        .set_index("n_points_per_curve")
+        pd.DataFrame(values)
+        .sort_values("n_points_per_curve").set_index("n_points_per_curve")
     )
-    fig = plt.figure()
-    k = len(df)
+    plt.subplot(1, 2, i + 1)
+    label_start = r"Fit $\mathcal{D}_{train}^{\ j}$; "
     plt.plot(
-        df.index[:k],
-        df["Train-sparse"][:k],
-        # fig=fig,
-        label=r"Fit $\mathcal{D}_{train}^{\ j}$; transform $\mathcal{D}_{train}^{\ j}$",
+        df.index,
+        df["Train-sparse"],
+        label=label_start + r"ransform $\mathcal{D}_{train}^{\ j}$",
         marker=".",
     )
     plt.plot(
-        df.index[:k],
-        df["Test-sparse"][:k],
-        # fig=fig,
-        label=r"Fit $\mathcal{D}_{train}^{\ j}$; transform $\mathcal{D}_{test}^{\ j}$",
+        df.index,
+        df["Test-sparse"],
+        label=label_start + r"transform $\mathcal{D}_{test}^{\ j}$",
         marker=".",
     )
     plt.plot(
-        df.index[:k],
-        df["Test-original"][:k],
-        # fig=fig,
-        label=r"Fit $\mathcal{D}_{train}^{\ j}$; transform $\mathcal{D}_{test}^{\ 0}$",
+        df.index,
+        df["Test-original"],
+        label=label_start + r"transform $\mathcal{D}_{test}^{\ 0}$",
         marker=".",
     )
     if score_name == "MSE":
         plt.yscale("log")
         plt.ylabel(f"${score_name}$ score (logscale)")
-        eps_name = "05-plot-mse.eps"
     else:
         plt.ylabel(f"${score_name}$ score")
-        eps_name = "05-plot-r2.eps"
+
     plt.xscale("log")
     plt.xlabel(r"Measurements per function (logscale)")
     plt.legend()
-    # fig.savefig(
-    #     f"plots/{eps_name}",
-    #     format="eps",
-    #     bbox_inches="tight",
-    # )
     plt.plot()
 
 
 # %%
 # Show the original curves along with the converted
 # test curves for the conversions with 7, 5, 4 and 3 points per curve.
-def plot_curve(k):
-    plt.figure(figsize=(8, 8))
+def plot_conversion_evolution(index: int):
+    plt.figure(figsize=(8, 8.5))
     i = 0
     for n_points_per_curve in n_points_list[3:]:
         axes = plt.subplot(2, 2, i + 1)
         i += 1
 
-        test_irregular_datasets[n_points_per_curve][k].scatter(
+        test_irregular_datasets[n_points_per_curve][index].scatter(
             axes=axes, color="C0",
         )
         fd_temperatures.mean().plot(
@@ -230,42 +220,51 @@ def plot_curve(k):
         fd_temperatures.plot(
             axes=axes, color=[0.7] * 3, linewidth=0.2,
         )
-        test_original[k].plot(
+        test_original[index].plot(
             axes=axes, color="C0", linewidth=0.65, label="Original test curve",
         )
-        converted_data["Test-sparse"][n_points_per_curve][k].plot(
+        converted_data["Test-sparse"][n_points_per_curve][index].plot(
             axes=axes,
             color="C0",
             linestyle="--",
             label=f"Test curve transformed",
         )
-        plt.tight_layout(rect=[0, 0, 1, 0.98])
         plt.title(f"Transform of test curves with {n_points_per_curve} points")
         plt.ylim(ylim)
 
     plt.suptitle(
         "Evolution of the conversion of a curve with decreasing measurements "
-        f"({test_original.sample_names[k]} station)"
+        f"({test_original.sample_names[index]} station)"
     )
 
-    # # Add legend:
+    # Add common legend at the bottom:
     handles, labels = plt.gca().get_legend_handles_labels()
+    plt.tight_layout(h_pad=0, rect=[0, 0.1, 1, 1])
     plt.legend(
         handles=handles,
         loc="lower center",
         ncols=3,
         bbox_to_anchor=(-.1, -0.3),
     )
-    plt.tight_layout(pad=10)
 
     plt.show()
 
 
-# Plot two of the curves:
-plot_curve(7)
+# %%
+# Toronto station's temperature curve conversion evolution.
+plot_conversion_evolution(7)
 
 # %%
-plot_curve(8)
+# Iqaluit station's temperature curve conversion evolution.
+plot_conversion_evolution(8)
+
+# %%
+# As can be seen in the figures, the fewer the measurements, the closer
+# the converted curve is to the mean of the original dataset.
+# This leads us to believe that when the amount of measurements is too low,
+# the mixed-effects model is able to capture the general trend of the data,
+# but it is not able to properly capture the individual variation of each
+# curve.
 
 
 # %%

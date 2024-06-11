@@ -55,6 +55,7 @@ fdatabasis_original = FDataBasis(basis, coefficients)
 # Plot the basis functions used to generate the data
 basis.plot()
 plt.title("Basis functions")
+plt.show()
 
 # %%
 # Plot some of the generated curves

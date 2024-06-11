@@ -49,7 +49,7 @@ _SCIPY_MINIMIZATION_METHODS = [
 _EM_MINIMIZATION_METHODS = [
     "params",
     "squared-error",
-    "loglikelihood"
+    "loglikelihood",
 ]
 
 
@@ -62,7 +62,9 @@ def _get_values_list(
         fdatairregular: Irregular data.
 
     Returns:
-        List of values vectors (one vector per functional datum).
+        List of values vectors (one vector per functional datum). If the
+        codomain is multidimensional, the vectors are flattened so that each
+        measurement's values are contiguous.
 
     Examples:
         >>> fdata = FDataIrregular(
@@ -72,12 +74,17 @@ def _get_values_list(
         ... )
         >>> _get_values_list(fdata)
         [array([1]), array([2, 3, 4, 5]), array([6, 7, 8, 9])]
+        >>> fdata_multidim = FDataIrregular(
+        ...     start_indices=[0, 1, 3],
+        ...     values=np.array([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]),
+        ...     points=list(zip(range(5), range(5))),
+        ... )
+        >>> _get_values_list(fdata_multidim)
+        [array([1, 2]), array([3, 4, 5, 6]), array([ 7,  8,  9, 10])]
     """
-    assert fdatairregular.dim_domain == 1
-    assert fdatairregular.dim_codomain == 1
     return np.split(
         fdatairregular.values.reshape(-1),
-        fdatairregular.start_indices[1:],
+        fdatairregular.start_indices[1:] * fdatairregular.dim_codomain,
     )
 
 
@@ -97,12 +104,46 @@ def _get_basis_evaluations_list(
         of the functional datum and n_basis is the number of basis functions.
         The i-th row of the matrix is the evaluation of the basis functions at
         the i-th point of the functional datum.
+
+    Examples:
+        >>> from skfda.representation.basis import (
+        ...     MonomialBasis, VectorValuedBasis,
+        ... )
+        >>> basis = MonomialBasis(n_basis=2)
+        >>> fdata = FDataIrregular(
+        ...     start_indices=[0, 1, 5],
+        ...     values=list(range(7)),
+        ...     points=list(range(7)),
+        ... )
+        >>> _get_basis_evaluations_list(fdata, basis)
+         [array([[1, 0]]), array([[1, 1],
+                [1, 2],
+                [1, 3],
+                [1, 4]]), array([[1, 5],
+                [1, 6]])]
+        >>> monomial_2 = MonomialBasis(n_basis=2, domain_range=(0, 10))
+        >>> monomial_3 = MonomialBasis(n_basis=3, domain_range=(0, 10))
+        >>> vector_basis = VectorValuedBasis([monomial_2, monomial_3])
+        >>> fdata = FDataIrregular(
+        ...     start_indices=[0, 1, 4],
+        ...     values=list(zip(range(6), range(6))),
+        ...     points=list(range(6)),
+        ... )
+        >>> _get_basis_evaluations_list(fdata, vector_basis)
+          [array([[ 1.,  0.,  0.,  0.,  0.],
+                  [ 0.,  0.,  1.,  0.,  0.]]), array([[ 1.,  1.,  0.,  0.,  0.],
+                  [ 0.,  0.,  1.,  1.,  1.],
+                  [ 1.,  2.,  0.,  0.,  0.],
+                  [ 0.,  0.,  1.,  2.,  4.],
+                  [ 1.,  3.,  0.,  0.,  0.],
+                  [ 0.,  0.,  1.,  3.,  9.]]), array([[  1.,  4.,  0.,  0.,  0.],
+                  [  0.,  0.,  1.,  4.,  16.],
+                  [  1.,  5.,  0.,  0.,   0.],
+                  [  0.,  0.,  1.,  5.,  25.]])]
     """
-    assert fdatairregular.dim_domain == 1
-    assert fdatairregular.dim_codomain == 1
     return np.split(
-        basis(fdatairregular.points)[:, :, 0].T,
-        fdatairregular.start_indices[1:],
+        basis(fdatairregular.points).reshape(basis.n_basis, -1).T,
+        fdatairregular.start_indices[1:] * fdatairregular.dim_codomain,
     )
 
 

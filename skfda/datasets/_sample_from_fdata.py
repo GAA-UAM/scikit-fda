@@ -27,7 +27,7 @@ def irregular_sample(
         an FDataGrid or an FDataIrregular and a sample has less points than
         specified in n_points_per_curve, the sample will have the same number
         of points as before.
-
+        random_state: Random state to control the random number generation.
     """
     if fdata.dim_domain != 1 or fdata.dim_codomain != 1:
         raise NotImplementedError(

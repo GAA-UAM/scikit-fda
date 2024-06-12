@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import List, Tuple
 from functools import singledispatch
+from typing import List, Tuple
+
 import numpy as np
 
-
+from .._utils import _cartesian_product, _to_grid_points
 from ..misc.validation import validate_random_state
 from ..representation import FDataBasis, FDataGrid, FDataIrregular
 from ..typing._base import RandomState, RandomStateLike
@@ -18,8 +19,12 @@ def irregular_sample(
 ) -> FDataIrregular:
     """Irregularly sample from a FDataGrid or FDataBasis object.
 
-    Only implemented for 1D domains and codomains. The points are selected at
-    random (uniformly) from the domain of the input object.
+    The points are selected at random (uniformly) from the domain of the input
+    object.
+    If the input is an FDataGrid or an FDataIrregular, the points are selected
+    uniformly from the finite grid points of the object. If the input is an
+    FDataBasis, the points are selected from the rectangular domain of the
+    with a uniform (continuous) distribution.
 
     Args:
         fdata: Functional data object to sample from.
@@ -29,37 +34,33 @@ def irregular_sample(
         of points as before.
         random_state: Random state to control the random number generation.
     """
-    if fdata.dim_domain != 1 or fdata.dim_codomain != 1:
-        raise NotImplementedError(
-            "Only implemented for 1D domains and codomains.",
-        )
-
     random_state = validate_random_state(random_state)
     if isinstance(n_points_per_curve, int):
         n_points_per_curve = np.full(fdata.n_samples, n_points_per_curve)
 
-    points_list, n_points_per_curve = (
+    points_list, start_indices = (
         _irregular_sample_points_list(
             fdata,
             n_points_per_curve=n_points_per_curve,
             random_state=random_state,
         )
     )
-    values = np.concatenate([
-        func(func_points).reshape(-1)
-        for func, func_points in zip(fdata, points_list)
-    ])
+
     return FDataIrregular(
         points=np.concatenate(points_list),
-        start_indices=np.cumsum(
-            np.concatenate([
-                np.zeros(1, dtype=int),
-                n_points_per_curve[:-1],
-            ]),
-        ),
+        start_indices=start_indices,
         values=np.concatenate([
-            func(func_points).reshape(-1)
+            func(func_points)[0, :, :]
             for func, func_points in zip(fdata, points_list)
+        ]),
+    )
+
+
+def _start_indices(n_points_per_curve: NDArrayInt) -> NDArrayInt:
+    return np.cumsum(
+        np.concatenate([
+            np.zeros(1, dtype=int),
+            n_points_per_curve[:-1],
         ]),
     )
 
@@ -70,8 +71,16 @@ def _irregular_sample_points_list(
     n_points_per_curve: NDArrayInt,
     random_state: RandomState,
 ) -> Tuple[List[NDArrayFloat], NDArrayInt]:
+    """Return a list of points and the start indices for each curve.
+
+    The points are selected at random (uniformly) from the domain of the input.
+
+    Returns:
+        points_list: List of points for each curve.
+        start_indices: Start indices for each curve.
+    """
     raise NotImplementedError(
-        "Only implemented for FDataGrid and FDataBasis.",
+        "Only implemented for FDataBasis, FDataGrid and FDataIrregular.",
     )
 
 
@@ -80,20 +89,21 @@ def _irregular_sample_points_matrix_fdatagrid(
     fdata: FDataGrid,
     n_points_per_curve: NDArrayInt,
     random_state: RandomState,
-) -> List[NDArrayFloat]:
-    # This only works for 1D domains
+) -> Tuple[List[NDArrayFloat], NDArrayInt]:
+    all_points_single_function = _cartesian_product(
+        _to_grid_points(fdata.grid_points),
+    )
+    flat_points = np.tile(
+        all_points_single_function, (fdata.n_samples, 1),
+    )
     n_points_per_curve = np.minimum(
         n_points_per_curve,
-        len(fdata.grid_points[0]),
+        len(flat_points),
     )
     return [
-        random_state.choice(
-            fdata.grid_points[0].reshape(-1),
-            size=n_points,
-            replace=False,
-        )
+        random_state.permutation(flat_points)[:n_points]
         for n_points in n_points_per_curve
-    ], n_points_per_curve
+    ], _start_indices(n_points_per_curve)
 
 
 @_irregular_sample_points_list.register
@@ -101,8 +111,7 @@ def _irregular_sample_points_matrix_fdatairregular(
     fdata: FDataIrregular,
     n_points_per_curve: NDArrayInt,
     random_state: RandomState,
-) -> List[NDArrayFloat]:
-    # This only works for 1D domains
+) -> Tuple[List[NDArrayFloat], NDArrayInt]:
     original_n_points_per_curve = np.diff(
         np.concatenate([fdata.start_indices, [len(fdata.points)]]),
     )
@@ -111,16 +120,14 @@ def _irregular_sample_points_matrix_fdatairregular(
         original_n_points_per_curve,
     )
     return [
-        random_state.choice(
-            curve_points.reshape(-1),
-            size=min(n_points, len(curve_points)),
-            replace=False,
-        )
+        random_state.permutation(curve_points)[
+            :min(n_points, len(curve_points)),
+        ]
         for n_points, curve_points in zip(
             n_points_per_curve,
             np.split(fdata.points, fdata.start_indices[1:]),
         )
-    ], n_points_per_curve
+    ], _start_indices(n_points_per_curve)
 
 
 @_irregular_sample_points_list.register
@@ -128,12 +135,17 @@ def _irregular_sample_points_matrix_fdatabasis(
     fdata: FDataBasis,
     n_points_per_curve: NDArrayInt,
     random_state: RandomState,
-) -> List[NDArrayFloat]:
-    # This only works for 1D domains
-    return [
+) -> Tuple[List[NDArrayFloat], NDArrayInt]:
+    len_points = np.sum(n_points_per_curve)
+    separate_coordinate_points = [
         random_state.uniform(
-            *fdata.domain_range[0],
-            size=(n_points),
+            *domain_range_coordinate,
+            size=(len_points),
         )
-        for n_points in n_points_per_curve
-    ], n_points_per_curve
+        for domain_range_coordinate in fdata.domain_range
+    ]
+    start_indices = _start_indices(n_points_per_curve)
+    points = np.stack(
+        separate_coordinate_points, axis=1,
+    )
+    return np.split(points, start_indices[1:]), start_indices

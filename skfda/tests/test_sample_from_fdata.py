@@ -18,22 +18,13 @@ random_state = np.random.RandomState(23486974)
 def _assert_equivalent(fdata: FData, fdatairregular: FDataIrregular) -> None:
     points = np.split(fdatairregular.points, fdatairregular.start_indices[1:])
     assert len(points) == len(fdatairregular) == len(fdata)
-    # for fun_points, original, irregular in zip(points, fdata, fdatairregular):
-    for i, (fun_points, original, irregular) in enumerate(zip(points, fdata, fdatairregular)):
-        try:
-            np.testing.assert_allclose(
-                irregular.values, original(fun_points)[0],
-                # irregular(fun_points), original(fun_points),
-            )
-        except AssertionError:
-            print(f"{i=}")
-            print(f"{fun_points=}")
-            print(f"{original=}")
-            print(f"{irregular=}")
-            print()
-            print(f"{original(fun_points)=}")
-            print(f"{irregular.values=}")
-            raise AssertionError()
+    for fun_points, original, irregular in zip(points, fdata, fdatairregular):
+        np.testing.assert_allclose(
+            irregular.values, original(fun_points)[0],
+            # irregular(fun_points), original(fun_points),
+        )
+        # The commented line above should be used but evaluation of
+        # FDataIrregular is not working for multidimensional domain
 
 
 @pytest.fixture
@@ -67,11 +58,7 @@ def fdatabasis_multidimensional() -> FDataBasis:
 def fdatabasis_2dimensional_domain() -> FDataBasis:
     basis_fourier = FourierBasis(n_basis=5, domain_range=(-3, 3))
     basis_monomial = MonomialBasis(n_basis=4, domain_range=(0, 1))
-
     basis = TensorBasis([basis_fourier, basis_monomial])
-    # import matplotlib.pyplot as plt
-    # basis.plot()
-    # plt.show()
     return FDataBasis(
         basis=basis,
         coefficients=random_state.randn(15, basis.n_basis),
@@ -88,6 +75,7 @@ def fdatagrid_1dimensional() -> FDataGrid:
 
 @pytest.fixture
 def fdatagrid_multidimensional() -> FDataGrid:
+    """3-dimensional domain and 5-dimensional codomain"""
     return FDataGrid(
         data_matrix=random_state.randn(14, 10, 5, 7, 5),
         grid_points=[
@@ -116,9 +104,9 @@ def fdatairregular_multidimensional() -> FDataIrregular:
         [0], np.cumsum(random_state.randint(2, 5, 17)),
     ])
     return FDataIrregular(
-        points=random_state.randn(100, 1),  # TODO: change to multidimensional
+        points=random_state.randn(100, 1),  # TODO: Change to multidimensional
         # domain when evaluation of FDataIrregular is working for
-        # multidimensional domain
+        # multidimensional domains.
         values=random_state.randn(100, 5),
         start_indices=start_indices,
     )

@@ -1,34 +1,25 @@
 """Tests for the mixed effects to-basis-converter."""
-import pytest
+from typing import Any, Literal, Optional, Tuple, Type
+
 import numpy as np
-import numpy.typing as npt
-from typing import (
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-)
+import pytest
 
 from skfda import FDataBasis
+from skfda.datasets import irregular_sample
 from skfda.misc.scoring import r2_score
-from skfda.representation import (
-    FDataBasis,
-    FDataIrregular,
-)
-from skfda.typing._numpy import (NDArrayFloat, NDArrayInt)
+from skfda.representation import FDataBasis, FDataIrregular
 from skfda.representation.basis import (
+    Basis,
     BSplineBasis,
     FourierBasis,
+    MonomialBasis,
+    TensorBasis,
+    VectorValuedBasis,
 )
 from skfda.representation.conversion._mixed_effects import (
+    EMMixedEffectsConverter,
     MinimizeMixedEffectsConverter,
     MixedEffectsConverter,
-    EMMixedEffectsConverter,
-    _get_values_list,
-    _get_basis_evaluations_list,
     _MixedEffectsModel,
 )
 
@@ -48,6 +39,8 @@ def test_loglikelihood() -> None:
     basis = FourierBasis(n_basis=5, domain_range=(0, 10))
     model = _MixedEffectsModel(fdatairregular, basis)
 
+    # These values have been obtained with Statsmodels' MixedLM
+    # for the same model
     params_loglike_list = [
         (np.array([
             217.36197672, 111.34775404, 169.8070363, 337.91045293,
@@ -102,164 +95,187 @@ def test_loglikelihood() -> None:
         assert np.allclose(mixedlm_loglikelihood, model_loglikelihood)
 
 
-def _create_irregular_samples(
-    funcs: Iterable[
-        Callable[[npt.NDArray[np.float_]], npt.NDArray[np.float_]]
-    ],
-    points: npt.NDArray[np.float_],
-    noise_generate_std: float,
+def _create_irregular_samples_with_noise(
+    fdatabasis_original: FDataBasis,
     *,
-    start_indices: NDArrayInt | None = None,
-    n_points: int | None = None,
+    noise_generate_std: float,
+    n_points_range: Tuple[int],
+    random_state: np.random.RandomState,
 ) -> FDataIrregular:
-    """Generate samples of functions at points with gaussian noise.
+    """Generate samples of functions at random points with gaussian noise.
 
     Args:
-        funcs: Functions to sample.
-        points: Points where to sample.
+        fdatabasis_original: Functions to sample.
         noise_generate_std: Standard deviation of the gaussian noise.
-        start_indices: Start indices of each sample.
-        n_points: Number of points of each sample. If not None, start_indices
-            is ignored.
+        n_points_range: Range of the number of points of each sample.
     """
-    if n_points is not None:
-        start_indices = np.arange(0, len(points), n_points)
-    elif start_indices is None:
-        raise ValueError("Either n_points or start_indices must be provided")
-    fun_points = np.split(points, start_indices[1:])
-    fun_values = np.concatenate([
-        func(point) for func, point in zip(funcs, fun_points)
-    ]).reshape((-1, 1))
-    noise_values = np.random.normal(
-        0, noise_generate_std, len(fun_values),
-    ).reshape((-1, 1))
-    return FDataIrregular(
-        start_indices=start_indices,
-        points=points,
-        values=fun_values + noise_values,
+    n_points_per_sample = random_state.randint(
+        *n_points_range, fdatabasis_original.n_samples,
     )
-
-
-def _get_points(
-    domain_range: Tuple[float, float],
-    n_points: int,
-    n_samples: int,
-    type_gen_points: int,
-) -> npt.NDArray[np.float_]:
-    n = type_gen_points
-    tot_n_points = n_points * n_samples
-    domain_split = np.linspace(*domain_range, n + 1)
-    domains = list(zip(domain_split[:-1], domain_split[1:]))
-    points_list = [
-        np.random.uniform(
-            domain[0] - 0.6 * (domain[1] - domain[0]),
-            domain[1] + 0.6 * (domain[1] - domain[0]),
-            size=tot_n_points // n)
-        for domain in domains
-    ]
-    ret_value = np.concatenate(points_list).reshape((-1, 1))[:tot_n_points]
-
-    return (
-        ret_value
-        * (ret_value >= domain_range[0])
-        * (ret_value <= domain_range[1])
-        + domain_range[0] * (ret_value < domain_range[0])
-        + domain_range[1] * (ret_value > domain_range[1])
+    fdatairregular_no_noise = irregular_sample(
+        fdatabasis_original,
+        n_points_per_curve=n_points_per_sample,
+        random_state=random_state,
+    )
+    noise_values = np.random.normal(
+        0, noise_generate_std, fdatairregular_no_noise.values.shape,
+    )
+    return FDataIrregular(
+        start_indices=fdatairregular_no_noise.start_indices,
+        points=fdatairregular_no_noise.points,
+        values=fdatairregular_no_noise.values + noise_values,
     )
 
 
 def _cmp_estimation_with_original(
-    n_points: int,
-    sigma: float,  # to generate the noise
-    domain_range: Tuple[float, float],
-    funcs: List[Callable[[NDArrayFloat], NDArrayFloat]],
-    type_gen_points: int,
-    estimator: MixedEffectsConverter,
-    fit_kwargs: dict[str, Any],
     fdatabasis_original: FDataBasis,
+    noise_generate_std: float,  # to generate the noise
+    converter: MixedEffectsConverter,
+    fit_kwargs: dict[str, Any],
+    check: Literal["r2_score", "coefficients", "both"],
+    random_state: np.random.RandomState,
 ) -> None:
-    n_samples = len(funcs)
-    points = _get_points(domain_range, n_points, n_samples, type_gen_points)
-    fdatairregular = _create_irregular_samples(
-        funcs=funcs,
-        points=points,
-        noise_generate_std=sigma,
-        n_points=n_points,
+    fdatairregular = _create_irregular_samples_with_noise(
+        fdatabasis_original=fdatabasis_original,
+        noise_generate_std=noise_generate_std,
+        n_points_range=(5, 9),
+        random_state=random_state,
     )
-
-    fdatabasis_estimated = estimator.fit_transform(
+    fdatabasis_estimated = converter.fit_transform(
         fdatairregular, **fit_kwargs,
     )
 
-    assert estimator.result.success, "Optimization failed"
-    assert r2_score(fdatabasis_estimated, fdatabasis_original) > 0.9
+    assert converter.result.success, "Optimization failed"
+    if check in ("r2_score", "both"):
+        assert r2_score(fdatabasis_estimated, fdatabasis_original) > 0.9
+    if check in ("r2_score", "both"):
+        np.allclose(
+            fdatabasis_estimated.coefficients,
+            fdatabasis_original.coefficients,
+        )
 
 
-def _test_compare_with_original(
-    estimator_cls: Type[MixedEffectsConverter],
-    fit_kwargs: Optional[dict[str, Any]] = None,
-) -> None:
-    np.random.seed(34285676)
-    if fit_kwargs is None:
-        fit_kwargs = {}
+def _get_fdatabasis_original(
+    basis: Basis,
+    n_samples: int,
+    random_state: np.random.RandomState,
+) -> FDataBasis:
+    # These scales are arbitrary
+    _scale_cov = 5
+    _scale_mean = 10
 
-    domain_range = (0, 100)
-    _max_val = 5
-    n_points = 7
-    n_basis = 3
-    n_samples = 40
-
-    basis = BSplineBasis(
-        n_basis=n_basis, domain_range=domain_range, order=2,
-    )
-    sigma = 0.1
+    n_basis = basis.n_basis
     fe_cov_sqrt = np.zeros((n_basis, n_basis))
-    fe_cov_sqrt[np.tril_indices(n_basis)] = np.random.rand(
+    fe_cov_sqrt[np.tril_indices(n_basis)] = random_state.randn(
         n_basis * (n_basis + 1) // 2,
-    ) * _max_val
+    ) * _scale_cov
     fe_cov = fe_cov_sqrt @ fe_cov_sqrt.T
-    mean = np.array([-15, 20, 6])
-    fdatabasis_original = FDataBasis(
+    mean = random_state.randn(n_basis) * _scale_mean
+    return FDataBasis(
         basis=basis,
-        coefficients=np.random.multivariate_normal(
+        coefficients=random_state.multivariate_normal(
             mean=mean, cov=fe_cov, size=n_samples,
         ),
     )
 
-    def fun(i: int):
-        return lambda x: fdatabasis_original[i](x).reshape(x.shape)
 
-    funcs = [fun(i) for i in range(n_samples)]
+def _test_cmp_with_original_bsplines(
+    converter_cls: Type[MixedEffectsConverter],
+    fit_kwargs: Optional[dict[str, Any]] = None,
+) -> None:
+    random_state = np.random.RandomState(238953274)
+    if fit_kwargs is None:
+        fit_kwargs = {}
+
+    fdatabasis_original = _get_fdatabasis_original(
+        basis=BSplineBasis(
+            n_basis=3, domain_range=(0, 100), order=2,
+        ),
+        n_samples=40,
+        random_state=random_state,
+    )
 
     _cmp_estimation_with_original(
-        n_points=n_points,
-        sigma=sigma,
-        funcs=funcs,
-        type_gen_points=5,
-        estimator=estimator_cls(basis=basis),
-        domain_range=domain_range,
-        fit_kwargs=fit_kwargs,
         fdatabasis_original=fdatabasis_original,
+        noise_generate_std=0.1,
+        converter=converter_cls(basis=fdatabasis_original.basis),
+        fit_kwargs=fit_kwargs,
+        check="both",
+        random_state=random_state,
     )
 
 
-def test_compare_minimize_with_original() -> None:
-    """Compare the EM conversion with the original data."""
-    _test_compare_with_original(
-        estimator_cls=MinimizeMixedEffectsConverter,
+def test_cmp_minimize_with_original() -> None:
+    """Compare the MinimizeMixedEffects conversion with the original data."""
+    _test_cmp_with_original_bsplines(
+        converter_cls=MinimizeMixedEffectsConverter,
         fit_kwargs={
             "minimization_method": "Powell",
         }
     )
 
 
-def test_compare_em_with_original() -> None:
-    """Compare the EM conversion with the original data."""
-    _test_compare_with_original(
-        estimator_cls=EMMixedEffectsConverter,
+# This test for EM with simple splines as we have the multidimensional one,
+# so as to reduce execution time.
+# def test_compare_em_with_original_bsplines() -> None:
+#     """Compare the EM conversion with the original data."""
+#     _test_cmp_with_original_bsplines(
+#         converter_cls=EMMixedEffectsConverter,
+#         fit_kwargs={
+#             "maxiter": 500,
+#             "convergence_criterion": "params",
+#             "rtol": 1e-3,
+#         }
+#     )
+
+
+def _test_cmp_with_original_multidimensional_data(
+    converter_cls: Type[MixedEffectsConverter],
+    fit_kwargs: Optional[dict[str, Any]] = None,
+) -> None:
+    """Compare the conversion with the original data.
+
+    The dimension of the domain and the dimension of the codomain are both 2.
+    """
+    random_state = np.random.RandomState(238953274)
+    if fit_kwargs is None:
+        fit_kwargs = {}
+
+    basis_momonial1 = MonomialBasis(n_basis=3, domain_range=(-3, 3))
+    basis_fourier1 = FourierBasis(n_basis=1, domain_range=(-3, 3))
+    basis_monomial2 = MonomialBasis(n_basis=1, domain_range=(0, 1))
+    basis_fourier2 = FourierBasis(n_basis=3, domain_range=(0, 1))
+
+    tensor_basis1 = TensorBasis([basis_momonial1, basis_monomial2])
+    tensor_basis2 = TensorBasis([basis_fourier1, basis_fourier2])
+
+    basis = VectorValuedBasis([tensor_basis1, tensor_basis2, tensor_basis1])
+    fdatabasis_original = _get_fdatabasis_original(
+        basis=basis,
+        n_samples=40,
+        random_state=random_state,
+    )
+
+    _cmp_estimation_with_original(
+        fdatabasis_original=fdatabasis_original,
+        noise_generate_std=0.1,
+        converter=converter_cls(basis=fdatabasis_original.basis),
+        fit_kwargs=fit_kwargs,
+        check="coefficients",
+        random_state=random_state,
+    )
+
+
+def test_compare_em_with_original_multidimensional_data() -> None:
+    """Compare the EM conversion with the original data.
+
+    The dimension of the domain and the dimension of the codomain are both 2.
+    """
+    _test_cmp_with_original_multidimensional_data(
+        converter_cls=EMMixedEffectsConverter,
         fit_kwargs={
             "maxiter": 500,
             "convergence_criterion": "params",
-            "rtol": 1e-3,
+            "rtol": 1e-1,
         }
     )

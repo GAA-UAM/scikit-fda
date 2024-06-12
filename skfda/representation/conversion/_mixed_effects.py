@@ -179,7 +179,7 @@ def _linalg_solve(
     try:
         return scipy.linalg.solve(a=a, b=b, assume_a=assume_a)  # type: ignore
     except scipy.linalg.LinAlgError:
-        # TODO: is the best way to handle this ?
+        # TODO: is the best way to handle this?
         # print("Warning: scipy.linalg.solve failed, using scipy.linalg.lstsq")
         return scipy.linalg.lstsq(a=a, b=b)[0]  # type: ignore
 
@@ -220,7 +220,7 @@ class _MixedEffectsParams(Protocol):
 
     @property
     def covariance_div_sigmasq(self) -> NDArrayFloat:
-        """Covariance of the mixed effects."""
+        """Covariance of the mixed effects divided by sigmasq."""
 
     @property
     def mean(self) -> NDArrayFloat:
@@ -921,6 +921,6 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             fitted_params=fitted_params,
             success=converged,
             message=message,
-            nit=iter_number,
+            nit=iter_number + 1,
         )
         return self

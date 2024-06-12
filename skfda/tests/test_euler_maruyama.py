@@ -634,7 +634,6 @@ def test_initial_condition_negative_cases() -> None:
 
 def test_diffusion_negative_cases() -> None:
     """Test for checking diffusion related error cases."""
-    initial_condition = np.array([0, 0])
     n_samples = 2
     random_state = np.random.RandomState(1)
 

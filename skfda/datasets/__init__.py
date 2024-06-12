@@ -30,6 +30,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "make_multimodal_samples",
             "make_random_warping",
             "make_sinusoidal_process",
+            "milstein",
         ],
     },
 )
@@ -59,4 +60,5 @@ if TYPE_CHECKING:
         make_multimodal_samples as make_multimodal_samples,
         make_random_warping as make_random_warping,
         make_sinusoidal_process as make_sinusoidal_process,
+        milstein as milstein,
     )

@@ -353,8 +353,8 @@ def milstein(  # noqa: WPS211, WPS210
 
     where :math:`X_n^{(i)}` is the approximated value of :math:`X^{(i)}(t_n)`
     and the :math:`\mathbf{Z}_m` are independent, identically distributed
-    :math:`m`-dimensional standard normal random variables. $L^j$ stands for
-    the operator
+    :math:`m`-dimensional standard normal random variables. :math:`L^j` stands
+    for the operator
 
     .. math::
 
@@ -368,8 +368,17 @@ def milstein(  # noqa: WPS211, WPS210
         I_{(j_1, j_2)} [t_n, t_{n+1}] = \int_{t_n}^{t_{n+1}} \int_{t}^{t_{n+1}}
         dW_s^{j_1} dW_t^{j_2}.
 
-    In otder to compute :math:`I_{(j_1, j_2)} [t_n, t_{n+1}]`, we use
-    Milstein L=0 method, described by Banerjee.
+    In order to compute :math:`I_{(j_1, j_2)} [t_n, t_{n+1}]`, we use
+    Milstein L=0 method, described by Banerjee. This method approximates the
+    value of the double Itô integral by simulating solutions of another SDE.
+    The number of discretization points used to simulate the SDE which
+    approximates the double Itô integral is given by the parameter
+    *n_L0_discretization_points*.
+
+    For unidimensional processes the value of the double Itô integral is closed
+    so it is not necessary to include the *n_L0_discretization_points*
+    parameter. However, if the process is multidimensional it is mandatory
+    include it.
 
     Args:
         initial_condition: Initial condition of the SDE. It can have one of
@@ -387,7 +396,8 @@ def milstein(  # noqa: WPS211, WPS210
             (:math:`G_\mathbf{X}(t, \mathbf{X})`). The return of this function
             should
         n_L0_discretization_points: number of discretization points to
-            approximate the double Itô integral :math:`I_{(j_1,j_2)}`.
+            approximate the double Itô integral :math:`I_{(j_1,j_2)}`. Only
+            use when the process is multidimensional.
         n_grid_points: The total number of points of evaluation.
         n_samples: Number of trajectories integrated.
         start: Starting time of the trajectories.
@@ -418,7 +428,7 @@ def milstein(  # noqa: WPS211, WPS210
         >>> def gbm_diffusion(t: float, x: np.ndarray) -> np.ndarray:
         ...     return sigma * x
         >>> def gbm_diff_derivative(t: float, x: np.ndarray) -> np.ndarray:
-        ...     return sigma * np.ones_lixe(x)[: :, np.newaxis]
+        ...     return sigma * np.ones_like(x)[: :, np.newaxis]
         >>> X_0 = 1
         >>> n_L0_discretization_points = 5,
         >>>

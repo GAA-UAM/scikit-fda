@@ -11,12 +11,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass
-from typing import (
-    Callable,
-    List,
-    Literal,
-    Protocol,
-)
+from typing import Callable, List, Literal, Protocol
 
 import numpy as np
 import scipy
@@ -27,7 +22,6 @@ from ...representation import FDataBasis, FDataIrregular
 from ...representation.basis import Basis
 from ...typing._numpy import NDArrayFloat
 from ._to_basis import _ToBasisConverter
-
 
 _SCIPY_MINIMIZATION_METHODS = [
     "BFGS",  # no hessian

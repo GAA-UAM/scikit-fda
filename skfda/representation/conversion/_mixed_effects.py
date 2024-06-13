@@ -4,7 +4,16 @@
 This module contains the class for converting irregular data to basis
 representation using the mixed effects model.
 
-#TODO: Add references ? (laird & ware)
+The use of the mixed effects model for conversion of irregularly sampled
+functional data to a basis representation is detailed in
+:footcite:t:`james_2018_sparsenessfda`. In the following, we provide a brief
+overview of the model.
+
+Let :math:`(x_i(t))_{i=1}^N` be a functional dataset where each :math:`x_i`
+is a function from :math:`[a, b]` to :math:`\mathbb{R}` and we have the
+measurements of :math:`x_i(t)` at :math:`M_i` points of the domain
+:math:`\{t_{i1}, t_{i2}, \dots, t_{iM_i}\}`. Let :math:`\{\phi_b\}_{b=1}^B`
+be the basis that we want to express the data in.
 
 """
 from __future__ import annotations
@@ -93,11 +102,20 @@ def _get_basis_evaluations_list(
         basis: Basis to evaluate.
 
     Returns:
-        A list of matrices (one matrix per functional datum), each matrix is
+        A list of matrices (one matrix per functional datum).
+
+        In the case of 1-dimensional codomain, each matrix is
         of shape (n_points, n_basis), where n_points is the number of points
         of the functional datum and n_basis is the number of basis functions.
         The i-th row of the matrix is the evaluation of the basis functions at
         the i-th point of the functional datum.
+
+        In the case of p-dimensional codomain, each matrix is
+        of shape (n_points * dim_codomain, n_basis) (where n_points is the
+        number of points of the functional datum).
+        The (i*dim_codomain + j)-th row of the matrix is the j-th coordinate of
+        the evaluation of the basis functions at the i-th point of the
+        functional datum.
 
     Examples:
         >>> from skfda.representation.basis import (
@@ -144,38 +162,35 @@ def _get_basis_evaluations_list(
 def _minimize(
     fun: Callable[[NDArrayFloat], float],
     x0: NDArrayFloat,
-    minimization_methods: str | List[str] | None = None,
+    minimization_method: str | None = None,
 ) -> scipy.optimize.OptimizeResult:
-    """Minimize a scalar function of one or more variables."""
-    if isinstance(minimization_methods, str):
-        minimization_methods = [minimization_methods]
+    """Minimize a scalar function of one or more variables.
 
-    if minimization_methods is None:
-        minimization_methods = _SCIPY_MINIMIZATION_METHODS
-    else:
-        for method in minimization_methods:
-            if method not in _SCIPY_MINIMIZATION_METHODS:
-                raise ValueError(f"Invalid minimize method: \"{method}\".")
-
-    for method in minimization_methods:
-        result = scipy.optimize.minimize(
-            fun=fun,
-            x0=x0,
-            method=method,
-            options={
-                # "disp": True,
-                # "maxiter": 1000,
-            },
+    Uses scipy.optimize.minimize.
+    """
+    if minimization_method is None:
+        minimization_method = _SCIPY_MINIMIZATION_METHODS[0]
+    elif minimization_method not in _SCIPY_MINIMIZATION_METHODS:
+        raise ValueError(
+            f"Invalid minimize method: \"{minimization_method}\".",
         )
-        if result.success is True:
-            break
+
+    result = scipy.optimize.minimize(
+        fun=fun,
+        x0=x0,
+        method=minimization_method,
+        options={
+            # "disp": True,
+            # "maxiter": 1000,
+        },
+    )
     return result  # even if it failed
 
 
 def _linalg_solve(
     a: NDArrayFloat, b: NDArrayFloat, *, assume_a: str = 'gen'
 ) -> NDArrayFloat:
-    """Solve a linear system of equations: a @ x = b"""
+    """Solve a linear system of equations: a @ x = b (returns x)."""
     try:
         return scipy.linalg.solve(a=a, b=b, assume_a=assume_a)  # type: ignore
     except scipy.linalg.LinAlgError:
@@ -447,8 +462,7 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
             - nit: Number of iterations of the fitting.
     """
 
-    # after fitting:
-    result: Bunch | None
+    result: Bunch | None  # not None after fitting
 
     def __init__(
         self,
@@ -653,7 +667,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
         minimize_result = _minimize(
             fun=objective_function,
             x0=initial_params_vec,
-            minimization_methods=minimization_method,
+            minimization_method=minimization_method,
         )
         params = MinimizeMixedEffectsConverter.Params.from_vec(
             minimize_result.x,

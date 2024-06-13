@@ -29,9 +29,9 @@ def irregular_sample(
     Args:
         fdata: Functional data object to sample from.
         n_points_per_curve: Number of points to sample per curve. If fdata is
-        an FDataGrid or an FDataIrregular and a sample has less points than
-        specified in n_points_per_curve, the sample will have the same number
-        of points as before.
+            an FDataGrid or an FDataIrregular and a sample has less points than
+            specified in n_points_per_curve, the sample will have the same
+            number of points as before.
         random_state: Random state to control the random number generation.
     """
     random_state = validate_random_state(random_state)
@@ -100,10 +100,13 @@ def _irregular_sample_points_matrix_fdatagrid(
         n_points_per_curve,
         len(flat_points),
     )
-    return [
-        random_state.permutation(flat_points)[:n_points]
-        for n_points in n_points_per_curve
-    ], _start_indices(n_points_per_curve)
+    return (
+        [
+            random_state.permutation(flat_points)[:n_points]
+            for n_points in n_points_per_curve
+        ],
+        _start_indices(n_points_per_curve),
+    )
 
 
 @_irregular_sample_points_list.register
@@ -119,15 +122,18 @@ def _irregular_sample_points_matrix_fdatairregular(
         n_points_per_curve,
         original_n_points_per_curve,
     )
-    return [
-        random_state.permutation(curve_points)[
-            :min(n_points, len(curve_points)),
-        ]
-        for n_points, curve_points in zip(
-            n_points_per_curve,
-            np.split(fdata.points, fdata.start_indices[1:]),
-        )
-    ], _start_indices(n_points_per_curve)
+    return (
+        [
+            random_state.permutation(curve_points)[
+                :min(n_points, len(curve_points)),
+            ]
+            for n_points, curve_points in zip(
+                n_points_per_curve,
+                np.split(fdata.points, fdata.start_indices[1:]),
+            )
+        ],
+        _start_indices(n_points_per_curve),
+    )
 
 
 @_irregular_sample_points_list.register
@@ -138,14 +144,9 @@ def _irregular_sample_points_matrix_fdatabasis(
 ) -> Tuple[List[NDArrayFloat], NDArrayInt]:
     len_points = np.sum(n_points_per_curve)
     separate_coordinate_points = [
-        random_state.uniform(
-            *domain_range_coordinate,
-            size=(len_points),
-        )
+        random_state.uniform(*domain_range_coordinate, size=(len_points))
         for domain_range_coordinate in fdata.domain_range
     ]
     start_indices = _start_indices(n_points_per_curve)
-    points = np.stack(
-        separate_coordinate_points, axis=1,
-    )
-    return np.split(points, start_indices[1:]), start_indices
+    points = np.stack(separate_coordinate_points, axis=1)
+    return (np.split(points, start_indices[1:]), start_indices)

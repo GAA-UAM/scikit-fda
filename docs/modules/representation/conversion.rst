@@ -8,8 +8,17 @@ and :class:`FDataBasis` has been implemented via converters.
 :class:`FDataIrregular` to :class:`FDataBasis`
 ----------------------------------------------
 
-The following classes are used for converting irregular functional data to
-basis representation using the mixed effects model.
+The following module contains a detailed description of one of the types
+of converters.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.representation.conversion._mixed_effects
+
+
+The following classes are used for converting irregular functional
+data to basis representation using the mixed effects model.
 
 .. autosummary::
    :toctree: autosummary

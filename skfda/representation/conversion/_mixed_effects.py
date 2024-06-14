@@ -94,8 +94,8 @@ profile loglikelihood of the model with generic numerical optimization
 (:class:`MinimizeMixedEffectsConverter`, :footcite:t:`Lindstrom_1988`).
 
 The examples
-:ref:`sphx_glr_auto_examples_plot_irregular_mixed_effects_robustness.py` and
-:ref:`sphx_glr_auto_examples_plot_irregular_to_basis_mixed_effects.py`
+:ref:`sphx_glr_auto_examples_plot_irregular_to_basis_mixed_effects.py` and
+:ref:`sphx_glr_auto_examples_plot_irregular_mixed_effects_robustness.py`
 illustrate the basic usage of these converters.
 
 

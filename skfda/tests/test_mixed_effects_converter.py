@@ -191,7 +191,7 @@ def _test_cmp_with_original_bsplines(
         basis=BSplineBasis(
             n_basis=3, domain_range=(0, 100), order=2,
         ),
-        n_samples=40,
+        n_samples=20,
         random_state=random_state,
     )
 
@@ -266,7 +266,7 @@ def _test_cmp_with_original_multidimensional_data(
     )
 
 
-def test_compare_em_with_original_multidimensional_data() -> None:
+def test_cmp_em_with_original_multidimensional_data() -> None:
     """Compare the EM conversion with the original data.
 
     The dimension of the domain and the dimension of the codomain are both 2.

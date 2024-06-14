@@ -59,7 +59,6 @@ plt.show()
 
 # %%
 # Plot some of the generated curves
-plt.figure(figsize=(10, 5))
 fdatabasis_original[:10].plot()
 plt.title("Original curves")
 plt.show()

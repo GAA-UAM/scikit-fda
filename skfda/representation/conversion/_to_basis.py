@@ -7,11 +7,9 @@ converters.
 """
 from __future__ import annotations
 
-from typing import (
-    TypeVar,
-)
+from typing import TypeVar
 
-from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
+from ..._utils._sklearn_adapter import TransformerMixin
 from ...representation import FData, FDataBasis
 from ...representation.basis import Basis
 
@@ -23,7 +21,6 @@ Input = TypeVar(
 
 
 class _ToBasisConverter(
-    BaseEstimator,
     TransformerMixin[Input, FDataBasis, object],
 ):
     """To basis converter.

@@ -1,19 +1,108 @@
 # -*- coding: utf-8 -*-
-"""Mixed effects converters.
+r"""
+Mixed effects converters
+========================
 
-This module contains the class for converting irregular data to basis
+This module contains the classes for converting irregular data to basis
 representation using the mixed effects model.
 
 The use of the mixed effects model for conversion of irregularly sampled
 functional data to a basis representation is detailed in
 :footcite:t:`james_2018_sparsenessfda`. In the following, we provide a brief
-overview of the model.
+overview of the model for 1-dimensional functional data.
 
-Let :math:`(x_i(t))_{i=1}^N` be a functional dataset where each :math:`x_i`
+The mixed effects model for functional data
+-------------------------------------------
+
+Let :math:`\{x_i(t)\}_{i=1}^N` be a functional dataset where each :math:`x_i`
 is a function from :math:`[a, b]` to :math:`\mathbb{R}` and we have the
 measurements of :math:`x_i(t)` at :math:`M_i` points of the domain
-:math:`\{t_{i1}, t_{i2}, \dots, t_{iM_i}\}`. Let :math:`\{\phi_b\}_{b=1}^B`
-be the basis that we want to express the data in.
+:math:`\mathbf{t}_i = (t_{i1}, t_{i2}, \dots, t_{iM_i})`.
+That is, we have the irregularly sampled data:
+:math:`\{x_i(\mathbf{t}_i))\}_{i=1}^N`, where
+:math:`x_i(\mathbf{t}_i) = (x_i(t_{i1}), x_i(t_{i2}), \dots, x_i(t_{iM_i}))`.
+Let :math:`\{\phi_b\}_{b=1}^B` be the basis that we want to express the
+data in. We denote by :math:`\pmb{\phi}(t)` the vector of evaluations
+:math:`(\phi_1(t), \phi_2(t), \dots, \phi_B(t))`.
+
+The mixed effects model assumes the data comes from the model (for each
+:math:`1\leq i \leq N` and :math:`a\leq t \leq b`):
+
+.. math::
+    x_i(t) = \pmb{\phi}(t)^T (\pmb{\beta} + \pmb{\gamma}_i) + \epsilon_i(t),
+
+where :math:`\pmb{\beta}\in\mathbb{R}^B` is an unknown constant vector
+called the fixed effects (we will call it the **mean**);
+:math:`\{\pmb{\gamma}_i\}_{i=1}^N\subseteq\mathbb{R}^B` are unknown
+random vectors called the **random effects** and they are assumed to be
+independent and identically with a normal distribution of mean 0 and
+covariance matrix :math:`\pmb{\Gamma}` (which we call **covariance** for
+short); and :math:`\epsilon_i(t)` is a random noise term that is assumed to
+have a normal distribution with mean 0 and variance :math:`\sigma^2` (which we
+call **sigmasq**). We assume that
+:math:`\{\epsilon_i(t)\}_{i,t}\cup\{\pmb{\gamma}_i\}_i` are independent.
+
+In order to work with this model and the data available, we denote (for each 
+:math:`1 \leq i \leq N`):
+
+.. math::
+
+    \pmb{x}_i = \left(\begin{array}{c}
+    x_i(t_{i1}) \\
+    x_i(t_{i2}) \\
+    \vdots \\
+    x_i(t_{iM_i})
+    \end{array}\right),
+    \qquad
+    \pmb{\Phi}_i = \left(\begin{array}{c}
+    \pmb{\phi}(t_{i1})^T \\
+    \pmb{\phi}(t_{i2})^T \\
+    \vdots \\
+    \pmb{\phi}(t_{iM_i})^T
+    \end{array}\right),
+    \qquad
+    \pmb{\epsilon}_i = \left(\begin{array}{c}
+    \epsilon_i(t_{i1}) \\
+    \epsilon_i(t_{i2}) \\
+    \vdots \\
+    \epsilon_i(t_{iM_i})
+    \end{array}\right),
+
+and we have that our model can be written as (for each
+:math:`1 \leq i \leq N`):
+
+.. math::
+
+    \pmb{x}_i = \pmb{\Phi}_i (\pmb{\beta} + \pmb{\gamma}_i) + \pmb{\epsilon}_i.
+
+We call :math:`\pmb{x}_i` the *i-th* **values** *vector*, and
+:math:`\pmb{\Phi}_i` the *i-th* **basis evaluations** *matrix*.
+
+
+Fitting the model
+-----------------
+
+The model is fitted by maximizing its likelihood to get the MLE (Maximum
+Likelihood Estimates) of :math:`\pmb{\beta}`, :math:`\pmb{\Gamma}` and
+:math:`\sigma`, and then computing the random effects
+(:math:`\{\pmb{\gamma}_i\}_i`) with their least squares linear estimators.
+
+The MLE are computed using either the EM algorithm
+(:class:`EMMixedEffectsConverter`,
+:footcite:t:`laird+lange+stram_1987_emmixedeffects`), or by minimizing the
+profile loglikelihood of the model with generic numerical optimization
+(:class:`MinimizeMixedEffectsConverter`, :footcite:t:`Lindstrom_1988`).
+
+The examples
+:ref:`sphx_glr_auto_examples_plot_irregular_mixed_effects_robustness.py` and
+:ref:`sphx_glr_auto_examples_plot_irregular_to_basis_mixed_effects.py`
+illustrate the basic usage of these converters.
+
+
+References
+----------
+
+.. footbibliography::
 
 """
 from __future__ import annotations
@@ -41,12 +130,15 @@ _SCIPY_MINIMIZATION_METHODS = [
     "COBYLA",  # no jacobian
     "SLSQP",
     "CG",  # no hessian
-    "trust-ncg",
-    "trust-exact",
-    "trust-krylov",
     "TNC",
-    "dogleg",
-    "Newton-CG",  # requires jacobian
+
+    # The following methods require jacobian and we do not provide it
+
+    # "trust-ncg",
+    # "trust-exact",
+    # "trust-krylov",
+    # "dogleg",
+    # "Newton-CG",
 ]
 
 _EM_MINIMIZATION_METHODS = [
@@ -166,13 +258,20 @@ def _minimize(
 ) -> scipy.optimize.OptimizeResult:
     """Minimize a scalar function of one or more variables.
 
-    Uses scipy.optimize.minimize.
+    Uses ``scipy.optimize.minimize``.
+
+    Args:
+        fun: Function to minimize.
+        x0: Starting point for the minimization.
+        minimization_method: ``scipy.optimize.minimize`` method to use for
+            minimization.
     """
     if minimization_method is None:
         minimization_method = _SCIPY_MINIMIZATION_METHODS[0]
     elif minimization_method not in _SCIPY_MINIMIZATION_METHODS:
         raise ValueError(
-            f"Invalid minimize method: \"{minimization_method}\".",
+            f"Invalid minimize method: \"{minimization_method}\". "
+            f"Supported methods are {_SCIPY_MINIMIZATION_METHODS}."
         )
 
     result = scipy.optimize.minimize(
@@ -231,11 +330,11 @@ class _MixedEffectsParams(Protocol):
 
     @property
     def sigmasq(self) -> float:
-        """Variance of the residuals."""
+        """Variance of the noise term."""
 
     @property
     def covariance_div_sigmasq(self) -> NDArrayFloat:
-        """Covariance of the mixed effects divided by sigmasq."""
+        """Covariance of the random effects divided by sigmasq."""
 
     @property
     def mean(self) -> NDArrayFloat:
@@ -251,7 +350,7 @@ class _MixedEffectsParamsResult:
 
     @property
     def covariance_div_sigmasq(self) -> NDArrayFloat:
-        """covariance/sigmasq of the mixed effects model."""
+        """Covariance of the random effects divided by sigmasq."""
         return self.covariance / self.sigmasq
 
 
@@ -353,7 +452,7 @@ class _MixedEffectsModel:
         )
 
         Args:
-            sigmasq: Variance of the residuals.
+            sigmasq: Variance of the noise term.
             random_effects_covariance: Covariance of the random effects.
         """
 
@@ -369,7 +468,7 @@ class _MixedEffectsModel:
         values_covariances: List[NDArrayFloat],
         partial_residuals: List[NDArrayFloat],
     ) -> NDArrayFloat:
-        """Estimates of the random effects (generalized least squares)
+        """Estimates of the random effects (generalized least squares).
 
         random_effects_estimate[k] = (
             random_effects_covariance @ basis_evaluations[k].T
@@ -455,7 +554,7 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
 
             - model: Fitted mixed effects model.
             - fitted_params: Fitted parameters of the mixed effects model.
-            - minimize_result: Result of the scipy.optimize.minimize call,
+            - minimize_result: Result of the ``scipy.optimize.minimize`` call,
                 if this function was used.
             - success: Whether the fitting was successful.
             - message: Message of the fitting.
@@ -475,7 +574,7 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
         self,
         X: FDataIrregular,
     ) -> FDataBasis:
-        """Transform to FDataBasis using the fitted converter."""
+        """Transform X to FDataBasis using the fitted converter."""
         if self.result is None:
             raise ValueError("The converter has not been fitted.")
 
@@ -499,7 +598,7 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
 
 
 class MinimizeMixedEffectsConverter(MixedEffectsConverter):
-    """Mixed effects to-basis-converter using scipy.optimize.
+    """Mixed effects to-basis-converter using ``scipy.optimize.minimize``.
 
     Minimizes the profile loglikelihood of the mixed effects model as proposed
     by :footcite:t:`Lindstrom_1988`.
@@ -573,7 +672,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
 
         @property
         def sigmasq(self) -> float:
-            """Variance of the residuals."""
+            """Variance of the noise term."""
             assert self._model is not None, "Model is required"
             return _sum_mahalanobis(
                 self._model.partial_residuals(self.mean),
@@ -629,8 +728,8 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             X: irregular data to fit.
             y: ignored.
             initial_params: initial params of the model.
-            minimization_method: scipy.optimize.minimize method to be used for
-                the minimization of the loglikelihood of the model.
+            minimization_method: ``scipy.optimize.minimize`` method to be used
+                for the minimization of the loglikelihood of the model.
             has_mean: Whether the mean is a fixed parameter to be optimized or
                 estimated with ML estimator from the covariance parameters.
 
@@ -686,7 +785,11 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             minimize_result=minimize_result,
             success=minimize_result.success,
             message=minimize_result.message,
-            nit=minimize_result.nit,
+            **(
+                {"nit": minimize_result.nit}
+                if "nit" in minimize_result.keys()
+                else {}
+            ),
         )
 
         return self
@@ -739,7 +842,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         model: _MixedEffectsModel,
         values_covariances_list: List[NDArrayFloat],
     ) -> NDArrayFloat:
-        """Return the beta estimate."""
+        """Return the mean estimate."""
         return _linalg_solve(
             a=_sum_mahalanobis(
                 model.basis_evaluations,
@@ -822,11 +925,14 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             maxiter: maximum number of iterations.
             convergence_criterion: convergence criterion to use when fitting.
 
-                - "params" to use relative differences between parameters
+                - "params":
+                    to use relative differences between parameters
                     (the default).
-                - "squared-error" to use relative changes in the squared error
+                - "squared-error":
+                    to use relative changes in the squared error
                     of the estimated values with respect to the original data.
-                - "loglikelihood" to use relative changes in the loglikelihood.
+                - "loglikelihood":
+                    to use relative changes in the loglikelihood.
             rtol: relative tolerance for convergence.
 
         Returns:

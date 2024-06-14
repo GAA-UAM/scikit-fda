@@ -274,7 +274,7 @@ def test_cmp_em_with_original_multidimensional_data() -> None:
     _test_cmp_with_original_multidimensional_data(
         converter_cls=EMMixedEffectsConverter,
         fit_kwargs={
-            "maxiter": 500,
+            "maxiter": 300,
             "convergence_criterion": "params",
             "rtol": 1e-1,
         }

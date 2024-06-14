@@ -231,10 +231,3 @@ plot_conversion_evolution(index=8)
 # the mixed-effects model is able to capture the general trend of the data,
 # but it is not able to properly capture the individual variation of each
 # curve.
-
-
-# %%
-# References
-# ----------
-#
-# .. footbibliography::

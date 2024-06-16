@@ -191,13 +191,13 @@ for score_name, score_df in scores.items():
 #
 # As we want to illustrate the conversion of irregular data to basis,
 # representation, we will take an irregular sample of the temperatures dataset
-# containing only 8 points per curve.
+# containing only 7 points per curve.
 weather = fetch_weather()
 fd_temperatures = weather.data.coordinates[0]
 
-random_state = np.random.RandomState(seed=439472)  # for reproducibility
+random_state = np.random.RandomState(seed=73947291)
 irregular_temperatures = irregular_sample(
-    fdata=fd_temperatures, n_points_per_curve=8, random_state=random_state,
+    fdata=fd_temperatures, n_points_per_curve=7, random_state=random_state,
 )
 # %%
 # The dataset contains information about the region of each station,
@@ -244,7 +244,7 @@ curvewise_temperatures_converted = irregular_temperatures.to_basis(
 # To visualize the conversion, we now plot 4 of the converted
 # curves (one from each region) along with the original temperatures
 # and the irregular points that we sampled.
-idxes = [arctic[2], atlantic[4], continental[11], pacific[1]]
+idxes = [arctic[0], atlantic[11], continental[3], pacific[3]]
 fig = plt.figure(figsize=(10, 10))
 for k in range(4):
     axes = plt.subplot(2, 2, k + 1)

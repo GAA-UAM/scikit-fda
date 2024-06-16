@@ -23,6 +23,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "fetch_bone_density",
         ],
         "_samples_generators": [
+            "euler_maruyama",
             "make_gaussian",
             "make_gaussian_process",
             "make_multimodal_landmarks",
@@ -54,6 +55,7 @@ if TYPE_CHECKING:
         fetch_weather as fetch_weather,
     )
     from ._samples_generators import (
+        euler_maruyama as euler_maruyama,
         make_gaussian as make_gaussian,
         make_gaussian_process as make_gaussian_process,
         make_multimodal_landmarks as make_multimodal_landmarks,

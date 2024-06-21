@@ -36,8 +36,8 @@ LinearDifferentialOperatorInput = Union[
         Union[
             float,
             Callable[
-                [np.typing.NDArray[np.float_]],
-                np.typing.NDArray[np.float_],
+                [np.typing.NDArray[np.float64]],
+                np.typing.NDArray[np.float64],
             ],
         ],
     ],
@@ -53,7 +53,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         basis: Basis,
         linear_diff_op: LinearDifferentialOperatorInput,
         atol: float = 0,
-        result: Optional[np.typing.NDArray[np.float_]] = None,
+        result: Optional[np.typing.NDArray[np.float64]] = None,
     ) -> None:
 
         operator = LinearDifferentialOperator(linear_diff_op)

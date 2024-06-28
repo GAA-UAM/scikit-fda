@@ -110,3 +110,7 @@ preferred-citation:
     name: "Foundation for Open Access Statistics"
   url: "https://www.jstatsoft.org/article/view/v109i02"
   volume: 109
+  issue: 2
+  start: 1
+  end: 37
+  

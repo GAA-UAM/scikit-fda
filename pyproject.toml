@@ -37,12 +37,12 @@ dependencies = [
 	"lazy_loader",
 	"matplotlib",
 	"multimethod>=1.5, !=1.11, != 1.11.1",
-	"numpy>=1.16,<2",
+	"numpy>=1.16, <2",
 	"pandas>=1.0",
 	"rdata",
 	"scikit-datasets[cran]>=0.2.2",
 	"scikit-learn>=0.20",
-	"scipy>=1.6.0",
+	"scipy>=1.6.0, <1.14",
 	"typing-extensions",
 ]
 

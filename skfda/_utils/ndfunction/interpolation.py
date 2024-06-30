@@ -8,7 +8,8 @@ the :term:`domain` range.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Callable, Sequence, TypeVar
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 import numpy as np
 from scipy.interpolate import (
@@ -18,50 +19,48 @@ from scipy.interpolate import (
 )
 from typing_extensions import override
 
-from ._array_api import Array, DType
+from ._array_api import Array, DType, Shape
 from .evaluator import Evaluator
 
-InputDTypeT = TypeVar("InputDTypeT", bound=DType)
-OutputDTypeT = TypeVar("OutputDTypeT", bound=DType)
-
-
 if TYPE_CHECKING:
-    from ._ndfunction import NDFunction
     from ...representation.grid import FDataGrid
+    from ._ndfunction import NDFunction
+
+A = TypeVar("A", bound=Array[Shape, DType])
 
 
-class _BaseInterpolation(Evaluator):
+class _BaseInterpolation(Evaluator[A]):
     """ABC for interpolations."""
 
     @abc.abstractmethod
     def _evaluate_aligned(
         self,
         fdata: FDataGrid,
-        eval_points: Array[InputDTypeT],
-    ) -> Array[OutputDTypeT]:
+        eval_points: A,
+    ) -> A:
         """Evaluate at aligned points."""
-        pass
 
     def _evaluate_unaligned(
         self,
         fdata: FDataGrid,
-        eval_points: Array[InputDTypeT],
-    ) -> Array[OutputDTypeT]:
+        eval_points: A,
+    ) -> A:
         """Evaluate at unaligned points."""
-        return np.vstack([
+        xp = fdata.array_backend
+        return xp.concat([  # type: ignore[no-any-return]
             self._evaluate_aligned(f, e)
-            for f, e in zip(fdata, eval_points)
+            for f, e in zip(fdata, eval_points, strict=False)
         ])
 
     @override
-    def __call__(  # noqa:D102
+    def __call__(
         self,
-        function: NDFunction,
+        function: NDFunction[A],
         /,
-        eval_points: Array[InputDTypeT],
+        eval_points: A,
         *,
         aligned: bool = True,
-    ) -> Array[OutputDTypeT]:
+    ) -> A:
         from ...representation.grid import FDataGrid
 
         assert isinstance(function, FDataGrid)
@@ -73,7 +72,7 @@ class _BaseInterpolation(Evaluator):
         )
 
 
-class _RegularGridInterpolatorWrapper():
+class _RegularGridInterpolatorWrapper(Generic[A]):
 
     def __init__(
         self,
@@ -84,17 +83,16 @@ class _RegularGridInterpolatorWrapper():
         self.interpolation_order = interpolation_order
 
         if self.interpolation_order == 0:
-            method = 'nearest'
+            method = "nearest"
         elif self.interpolation_order == 1:
-            method = 'linear'
-        elif self.interpolation_order == 3:
-            method = 'cubic'
-        elif self.interpolation_order == 5:
-            method = 'quintic'
+            method = "linear"
+        elif self.interpolation_order == 3:  # noqa: PLR2004
+            method = "cubic"
+        elif self.interpolation_order == 5:  # noqa: PLR2004
+            method = "quintic"
         else:
-            raise ValueError(
-                f"Invalid interpolation order: {self.interpolation_order}.",
-            )
+            msg = f"Invalid interpolation order: {self.interpolation_order}."
+            raise ValueError(msg)
         self.interpolator = RegularGridInterpolator(
             self.fdatagrid.grid_points,
             np.moveaxis(self.fdatagrid.data_matrix, 0, -2),
@@ -105,16 +103,17 @@ class _RegularGridInterpolatorWrapper():
 
     def __call__(
         self,
-        eval_points: Array[InputDTypeT],
-    ) -> Array[OutputDTypeT]:
-        return np.moveaxis(
+        eval_points: A,
+    ) -> A:
+        xp = self.fdatagrid.array_backend
+        return xp.moveaxis(  # type: ignore[no-any-return]
             self.interpolator(eval_points),
             0,
             1,
         )
 
 
-class SplineInterpolation(_BaseInterpolation):
+class SplineInterpolation(_BaseInterpolation[A]):
     """
     Spline interpolation.
 
@@ -154,24 +153,24 @@ class SplineInterpolation(_BaseInterpolation):
     def _get_interpolator_1d(
         self,
         fdatagrid: FDataGrid,
-    ) -> Callable[[Array[InputDTypeT]], Array[OutputDTypeT]]:
+    ) -> Callable[[A], A]:
         if (
             isinstance(self.interpolation_order, Sequence)
-            or not 1 <= self.interpolation_order <= 5
+            or not 1 <= self.interpolation_order <= 5  # noqa: PLR2004
         ):
-            raise ValueError(
+            msg = (
                 f"Invalid degree of interpolation "
-                f"({self.interpolation_order}). Must be "
-                f"an integer greater than 0 and lower or "
-                f"equal than 5.",
+                f"({self.interpolation_order}). It must be an integer greater "
+                f"than 0 and lower or equal than 5."
             )
+            raise ValueError(msg)
 
         if self.monotone and self.interpolation_order not in {1, 3}:
-            raise ValueError(
-                f"monotone interpolation of degree "
-                f"{self.interpolation_order}"
-                f"not supported.",
+            msg = (
+                f"Monotone interpolation of degree "
+                f"{self.interpolation_order} not supported."
             )
+            raise ValueError(msg)
 
         # Monotone interpolation of degree 1 is performed with linear spline
         monotone = self.monotone and self.interpolation_order > 1
@@ -195,9 +194,9 @@ class SplineInterpolation(_BaseInterpolation):
     def _get_interpolator_nd(
         self,
         fdatagrid: FDataGrid,
-    ) -> Callable[[Array[InputDTypeT]], Array[OutputDTypeT]]:
+    ) -> Callable[[A], A]:
 
-        return _RegularGridInterpolatorWrapper(
+        return _RegularGridInterpolatorWrapper[A](
             fdatagrid,
             interpolation_order=self.interpolation_order,
         )
@@ -205,27 +204,29 @@ class SplineInterpolation(_BaseInterpolation):
     def _get_interpolator(
         self,
         fdatagrid: FDataGrid,
-    ) -> Callable[[Array[InputDTypeT]], Array[OutputDTypeT]]:
+    ) -> Callable[[A], A]:
 
         if fdatagrid.dim_domain == 1:
             return self._get_interpolator_1d(fdatagrid)
 
-        elif self.monotone:
-            raise ValueError(
+        if self.monotone:
+            msg = (
                 "Monotone interpolation is only supported with "
-                "domain dimension equal to 1.",
+                "domain dimension equal to 1."
             )
+            raise ValueError(msg)
 
         return self._get_interpolator_nd(fdatagrid)
 
-    def _evaluate_aligned(  # noqa: D102
+    def _evaluate_aligned(
         self,
         fdata: FDataGrid,
-        eval_points: Array[InputDTypeT],
-    ) -> Array[OutputDTypeT]:
+        eval_points: A,
+    ) -> A:
 
         interpolator = self._get_interpolator(fdata)
-        return np.reshape(
+        xp = fdata.array_backend
+        return xp.reshape(  # type: ignore[no-any-return]
             interpolator(eval_points),
             (fdata.n_samples, -1, fdata.dim_codomain),
         )
@@ -237,9 +238,10 @@ class SplineInterpolation(_BaseInterpolation):
             f"monotone={self.monotone})"
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             super().__eq__(other)
+            and isinstance(other, SplineInterpolation)
             and self.interpolation_order == other.interpolation_order
             and self.monotone == other.monotone
         )

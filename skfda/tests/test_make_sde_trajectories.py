@@ -937,9 +937,7 @@ def test_milstein_grid_points() -> None:
     stop = 10
     n_grid_points = 105
     n_L0_discretization_points = 1
-    expected_grid_points = np.atleast_2d(
-        np.linspace(start, stop, n_grid_points),
-    )
+    expected_grid_points = np.linspace(start, stop, n_grid_points)
 
     fd = make_sde_trajectories(
         initial_condition=initial_condition,
@@ -955,7 +953,7 @@ def test_milstein_grid_points() -> None:
     )
 
     np.testing.assert_array_equal(
-        fd.grid_points,
+        fd.grid_points[0],
         expected_grid_points,
     )
 

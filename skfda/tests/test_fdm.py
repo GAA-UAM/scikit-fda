@@ -42,13 +42,13 @@ def data_grid_param_check(
 @pytest.fixture(
     params=[
         FDataGrid(
-            data_matrix=[
+            data_matrix=np.array([
                 [52, 93, 15],
                 [72, 61, 21],
                 [83, 87, 75],
                 [75, 88, 24],
-            ],
-            grid_points=[0, 1 / 2, 1],
+            ]),
+            grid_points=np.array([0, 1 / 2, 1]),
         ),
     ],
 )

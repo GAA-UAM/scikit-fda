@@ -8,7 +8,7 @@ as the one performed for extrapolation and interpolation.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar
+from typing import TYPE_CHECKING, Protocol, TypeVar
 
 from ._array_api import Array, DType, Shape
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from ._ndfunction import NDFunction
 
 
-A = TypeVar('A', bound=Array[Shape, DType])
+A = TypeVar("A", bound=Array[Shape, DType])
 
 
 class Evaluator(Protocol[A]):
@@ -60,11 +60,10 @@ class Evaluator(Protocol[A]):
             result of the evaluation.
 
         """
-        pass
 
     def __repr__(self) -> str:
         return f"{type(self)}()"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Equality operator between evaluators."""
         return isinstance(other, type(self))

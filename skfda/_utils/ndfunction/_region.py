@@ -30,7 +30,6 @@ class Region(Protocol[A]):
         The first array contains the lower values allowed for each dimension.
         The second array contains the higher values allowed.
         """
-        pass
 
     @abstractmethod
     def contains(self, points: A) -> A:
@@ -49,7 +48,6 @@ class Region(Protocol[A]):
             ``False`` that it is outside the region.
 
         """
-        pass
 
 
 class AxisAlignedBox(Region[A]):
@@ -77,7 +75,7 @@ class AxisAlignedBox(Region[A]):
         return self.lower, self.upper
 
     @override
-    def contains(  # noqa:D102
+    def contains(
         self,
         points: A,
     ) -> A:

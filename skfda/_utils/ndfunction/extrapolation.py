@@ -11,9 +11,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Literal,
-    Mapping,
+    TypeAlias,
     TypeVar,
-    Union,
     overload,
 )
 
@@ -25,15 +24,25 @@ from .evaluator import Evaluator
 from .utils._points import input_points_batch_shape
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from ._ndfunction import NDFunction
 
-A = TypeVar('A', bound=Array[Shape, DType])
-RealArray = TypeVar('RealArray', bound=Array[Shape, RealDtype])
+A = TypeVar("A", bound=Array[Shape, DType])
+RealArray = TypeVar("RealArray", bound=Array[Shape, RealDtype])
 
-ExtrapolationLike = Union[
-    Evaluator[A],
-    Literal["bounds", "exception", "nan", "none", "periodic", "zeros"],
+ExtrapolationLike = Evaluator[A] | Literal[
+    "bounds",
+    "exception",
+    "nan",
+    "none",
+    "periodic",
+    "zeros",
 ]
+
+AcceptedExtrapolation: TypeAlias = (
+    ExtrapolationLike[A] | None | Literal["default"]
+)
 
 
 class PeriodicExtrapolation(Evaluator[RealArray]):
@@ -70,7 +79,7 @@ class PeriodicExtrapolation(Evaluator[RealArray]):
     """
 
     @override
-    def __call__(  # noqa:D102
+    def __call__(
         self,
         function: NDFunction[RealArray],
         /,
@@ -127,7 +136,7 @@ class BoundaryExtrapolation(Evaluator[RealArray]):
     """
 
     @override
-    def __call__(  # noqa:D102
+    def __call__(
         self,
         function: NDFunction[RealArray],
         /,
@@ -181,7 +190,7 @@ class ExceptionExtrapolation(Evaluator[A]):
     """
 
     @override
-    def __call__(  # noqa:D102
+    def __call__(
         self,
         function: NDFunction[A],
         /,
@@ -190,9 +199,8 @@ class ExceptionExtrapolation(Evaluator[A]):
         aligned: bool = True,
     ) -> A:
 
-        raise ValueError(
-            "Attempt to evaluate points outside the domain range.",
-        )
+        msg = "Attempt to evaluate points outside the domain range."
+        raise ValueError(msg)
 
 
 class FillExtrapolation(Evaluator[A]):
@@ -232,7 +240,7 @@ class FillExtrapolation(Evaluator[A]):
         self.fill_value = fill_value
 
     @override
-    def __call__(  # noqa:D102
+    def __call__(
         self,
         function: NDFunction[A],
         /,
@@ -260,17 +268,17 @@ class FillExtrapolation(Evaluator[A]):
             f"{type(self).__name__}(fill_value={self.fill_value})"
         )
 
-    def __eq__(self, other: Any) -> bool:
-        return (
-            super().__eq__(other)
-            and (
-                self.fill_value == other.fill_value
-                # NaNs compare unequal. Should we distinguish between
-                # different NaN types and payloads?
-                or (
-                    math.isnan(self.fill_value)
-                    and math.isnan(other.fill_value)
-                )
+    def __eq__(self, other: object) -> bool:
+        if not super().__eq__(other):
+            return False
+
+        return isinstance(other, FillExtrapolation) and (
+            self.fill_value == other.fill_value
+            # NaNs compare unequal. Should we distinguish between
+            # different NaN types and payloads?
+            or (
+                math.isnan(self.fill_value)
+                and math.isnan(other.fill_value)
             )
         )
 
@@ -307,7 +315,7 @@ def _parse_extrapolation(
     if extrapolation is None:
         return None
 
-    elif isinstance(extrapolation, str):
+    if isinstance(extrapolation, str):
         return extrapolation_methods[extrapolation.lower()]
 
     return extrapolation

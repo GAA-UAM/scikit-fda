@@ -1,7 +1,7 @@
 """Routines for input validation and conversion."""
 from __future__ import annotations
 
-from typing import Any, Literal, Sequence, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import numpy as np
 
@@ -14,9 +14,11 @@ from .._array_api import (
     is_array_api_obj,
     is_nested_array,
 )
-from ..typing import GridPoints, GridPointsLike
 
-A = TypeVar('A', bound=Array[Shape, DType])
+if TYPE_CHECKING:
+    from ..typing import GridPoints, GridPointsLike
+
+A = TypeVar("A", bound=Array[Shape, DType])
 
 
 def check_grid_points(grid_points_like: GridPointsLike[A]) -> GridPoints[A]:
@@ -50,10 +52,6 @@ def check_grid_points(grid_points_like: GridPointsLike[A]) -> GridPoints[A]:
 
     # It is a sequence!
     # Ensure that elements are compatible arrays
-
-    # This cast won't be needed once PEP 724 is accepted
-    grid_points_like = cast(Sequence[A], grid_points_like)
-
     array_namespace(*grid_points_like)
     grid_points = np.empty(shape=len(grid_points_like), dtype=np.object_)
     grid_points[...] = grid_points_like
@@ -87,14 +85,15 @@ def check_evaluation_points(
 
     """
     if not aligned and eval_points.shape[:len(shape)] != shape:
-        raise ValueError(
+        msg = (
             f"Invalid shape for evaluation points."
             f"The leading shape dimensions in the unaligned case "
             f"were expected to be {shape}, corresponding with the "
             f"shape of the array."
             f"Instead, the received evaluation points have shape "
-            f"{eval_points.shape}.",
+            f"{eval_points.shape}."
         )
+        raise ValueError(msg)
 
     if eval_points.shape[-len(input_shape):] != input_shape:
 
@@ -103,28 +102,29 @@ def check_evaluation_points(
             # Add a new dimension
             eval_points = eval_points[..., None]
         else:
-            raise ValueError(
+            msg = (
                 f"Invalid shape for evaluation points."
                 f"The trailing shape dimensions were expected to be "
                 f"{input_shape}, corresponding with the input shape."
                 f"Instead, the received evaluation points have shape "
-                f"{eval_points.shape}.",
+                f"{eval_points.shape}."
             )
+            raise ValueError(msg)
 
     return eval_points
 
 
 def _arraylike_conversion(
     array: ArrayLike,
+    *,
     namespace: Any,
     allow_array_like: bool = False,
 ) -> Array[Shape, DType]:
     if allow_array_like:
         return namespace.asarray(array)  # type: ignore[no-any-return]
 
-    raise ValueError(
-        f"{type(array)} is not compatible with the array API standard.",
-    )
+    msg = f"{type(array)} is not compatible with the array API standard."
+    raise ValueError(msg)
 
 
 @overload
@@ -162,7 +162,7 @@ def check_array_namespace(
         The input arrays as objects of the namespace.
 
     """
-    converted: list[Array[Shape, DType]] = [
+    converted: list[A] = [
         array  # type: ignore[misc]
         if is_array_api_obj(array)
         else _arraylike_conversion(

@@ -1,4 +1,5 @@
-"""Module for functional data manipulation.
+"""
+Module for functional data manipulation.
 
 Defines the abstract class that should be implemented by the funtional data
 objects of the package and contains some commons methods.
@@ -8,6 +9,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Iterable,
@@ -29,6 +31,8 @@ from skfda._utils.ndfunction._region import AxisAlignedBox
 from .._utils.ndfunction import NDFunction, concatenate as concatenate
 from .._utils.ndfunction._array_api import Array, DType, Shape, numpy_namespace
 from .._utils.ndfunction._region import Region
+from .._utils.ndfunction.extrapolation import AcceptedExtrapolation
+from .._utils.ndfunction.typing import GridPointsLike
 from .._utils.ndfunction.utils.validation import check_grid_points
 from ..typing._base import DomainRange, LabelTuple, LabelTupleLike
 from ..typing._numpy import (
@@ -38,6 +42,10 @@ from ..typing._numpy import (
     NDArrayObject,
 )
 from .extrapolation import ExtrapolationLike
+
+if TYPE_CHECKING:
+    from .basis import Basis, FDataBasis
+    from .grid import FDataGrid
 
 A = TypeVar('A', bound=Array[Shape, DType])
 
@@ -207,8 +215,8 @@ class FData(  # noqa: WPS214
     @override
     @property
     def domain(self) -> Region[A]:
-        lower = np.array([d[0] for d in self.domain_range])
-        upper = np.array([d[1] for d in self.domain_range])
+        lower = self.array_backend.asarray([d[0] for d in self.domain_range])
+        upper = self.array_backend.asarray([d[1] for d in self.domain_range])
 
         return AxisAlignedBox(lower, upper)
 
@@ -258,8 +266,8 @@ class FData(  # noqa: WPS214
         shifts: A | float,
         *,
         restrict_domain: bool = False,
-        extrapolation: ExtrapolationLike[A] = "default",
-        grid_points: GridPointsLike | None = None,
+        extrapolation: AcceptedExtrapolation[A] = "default",
+        grid_points: GridPointsLike[A] | None = None,
     ) -> FDataGrid:
         r"""
         Perform a shift of the curves.
@@ -497,7 +505,7 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def to_grid(
         self,
-        grid_points: GridPointsLike | None = None,
+        grid_points: GridPointsLike[A] | None = None,
     ) -> FDataGrid:
         """Return the discrete representation of the object.
 
@@ -709,7 +717,7 @@ class FData(  # noqa: WPS214
 
     def take(  # noqa: WPS238
         self,
-        indices: int | Sequence[int] | NDArrayInt,
+        indexer: Sequence[int] | NDArrayInt,
         allow_fill: bool = False,
         fill_value: Self | None = None,
         axis: int = 0,
@@ -762,7 +770,7 @@ class FData(  # noqa: WPS214
         if axis != 0:
             raise ValueError(f"Axis must be 0, not {axis}")
 
-        arr_indices = np.atleast_1d(indices)
+        arr_indices = np.atleast_1d(indexer)
 
         if fill_value is None:
             fill_value = self.dtype.na_value

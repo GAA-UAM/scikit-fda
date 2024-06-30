@@ -8,40 +8,39 @@ of functions.
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Iterable, Sequence
 from math import prod
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Iterable,
     Literal,
-    Optional,
     Protocol,
-    Sequence,
     TypeAlias,
     TypeVar,
-    Union,
     cast,
     overload,
 )
 
 from typing_extensions import Self
 
-from ...typing._base import LabelTupleLike
-from ...typing._numpy import NDArrayBool, NDArrayFloat, NDArrayInt
 from ._array_api import Array, DType, Shape, array_namespace
-from ._region import Region
-from .evaluator import Evaluator
-from .extrapolation import ExtrapolationLike, _parse_extrapolation
+from .extrapolation import (
+    AcceptedExtrapolation,
+    ExtrapolationLike,
+    _parse_extrapolation,
+)
 from .typing import GridPointsLike
 from .utils.validation import check_array_namespace, check_evaluation_points
 
-T = TypeVar('T', bound='NDFunction')
-A = TypeVar('A', bound=Array[Shape, DType])
+if TYPE_CHECKING:
+    from ...typing._base import LabelTupleLike
+    from ...typing._numpy import NDArrayBool, NDArrayFloat, NDArrayInt
+    from ._region import Region
+    from .evaluator import Evaluator
+
+A = TypeVar("A", bound=Array[Shape, DType])
 
 EvalPointsType: TypeAlias = A | GridPointsLike[A] | Sequence[GridPointsLike[A]]
-
-AcceptedExtrapolation: TypeAlias = (
-    ExtrapolationLike[A] | None | Literal["default"]
-)
 
 
 # When higher-kinded types are supported in Python, this should be generic on:
@@ -72,7 +71,7 @@ class NDFunction(Protocol[A]):
     def __init__(
         self,
         *,
-        extrapolation: Optional[ExtrapolationLike[A]] = None,
+        extrapolation: ExtrapolationLike[A] | None = None,
     ) -> None:
 
         self.extrapolation = extrapolation  # type: ignore[assignment]
@@ -87,7 +86,6 @@ class NDFunction(Protocol[A]):
         that the functions use as both input and output.
 
         """
-        pass
 
     @property
     def ndim(self) -> int:
@@ -104,7 +102,6 @@ class NDFunction(Protocol[A]):
         functions.
 
         """
-        pass
 
     @property
     def size(self) -> int:
@@ -126,7 +123,6 @@ class NDFunction(Protocol[A]):
         functions will accept.
 
         """
-        pass
 
     @property
     def output_ndim(self) -> int:
@@ -143,7 +139,6 @@ class NDFunction(Protocol[A]):
         functions will output.
 
         """
-        pass
 
     @property
     @abstractmethod
@@ -155,8 +150,6 @@ class NDFunction(Protocol[A]):
         scalar values conforming the output array.
 
         """
-        pass
-
     @property
     def extrapolation(self) -> Evaluator[A] | None:
         """Extrapolation used for evaluating values outside the bounds."""
@@ -177,7 +170,6 @@ class NDFunction(Protocol[A]):
     @abstractmethod
     def domain(self) -> Region[A]:
         """Domain of the function."""
-        pass
 
     @abstractmethod
     def _evaluate(
@@ -209,7 +201,6 @@ class NDFunction(Protocol[A]):
             dimension of the i-th sample, at the j-th evaluation point.
 
         """
-        pass
 
     @overload
     def __call__(
@@ -380,21 +371,20 @@ class NDFunction(Protocol[A]):
         self,
         *,
         deep: bool = False,  # For Pandas compatibility
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike[A]] = None,
+        dataset_name: str | None = None,
+        argument_names: LabelTupleLike | None = None,
+        coordinate_names: LabelTupleLike | None = None,
+        sample_names: LabelTupleLike | None = None,
+        extrapolation: ExtrapolationLike[A] | None = None,
     ) -> Self:
         """Make a copy of the object."""
-        pass
 
     @abstractmethod
     def compose(
         self,
         fd: Self,
         *,
-        eval_points: Optional[NDArrayFloat] = None,
+        eval_points: NDArrayFloat | None = None,
     ) -> Self:
         """Composition of functions.
 
@@ -407,15 +397,13 @@ class NDFunction(Protocol[A]):
             eval_points: Points to perform the evaluation.
 
         """
-        pass
 
     @abstractmethod
     def __getitem__(
         self,
-        key: Union[int, slice, NDArrayInt],
+        key: int | slice | NDArrayInt,
     ) -> Self:
         """Return self[key]."""
-        pass
 
     @abstractmethod
     def __eq__(self, other: Self) -> NDArrayBool:  # type: ignore[override]
@@ -433,22 +421,18 @@ class NDFunction(Protocol[A]):
     @abstractmethod
     def __add__(self, other: Self) -> Self:
         """Addition for FData object."""
-        pass
 
     @abstractmethod
     def __radd__(self, other: Self) -> Self:
         """Addition for FData object."""
-        pass
 
     @abstractmethod
     def __sub__(self, other: Self) -> Self:
         """Subtraction for FData object."""
-        pass
 
     @abstractmethod
     def __rsub__(self, other: Self) -> Self:
         """Right subtraction for FData object."""
-        pass
 
     @abstractmethod
     def __mul__(
@@ -456,7 +440,6 @@ class NDFunction(Protocol[A]):
         other: A | float,
     ) -> Self:
         """Multiplication for FData object."""
-        pass
 
     @abstractmethod
     def __rmul__(
@@ -464,7 +447,6 @@ class NDFunction(Protocol[A]):
         other: A | float,
     ) -> Self:
         """Multiplication for FData object."""
-        pass
 
     @abstractmethod
     def __truediv__(
@@ -472,7 +454,6 @@ class NDFunction(Protocol[A]):
         other: A | float,
     ) -> Self:
         """Division for FData object."""
-        pass
 
     @abstractmethod
     def __rtruediv__(
@@ -480,12 +461,13 @@ class NDFunction(Protocol[A]):
         other: A | float,
     ) -> Self:
         """Right division for FData object."""
-        pass
 
     @abstractmethod
     def __neg__(self) -> Self:
         """Negation of FData object."""
-        pass
+
+
+T = TypeVar("T", bound="NDFunction[Any]")
 
 
 def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
@@ -494,48 +476,31 @@ def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
 
     Joins samples of FData objects if they have the same
     dimensions and sampling points.
+
     Args:
-        objects: Objects to be concatenated.
+        functions: Objects to be concatenated.
         as_coordinates:  If False concatenates as
                 new samples, else, concatenates the other functions as
                 new components of the image. Defaults to False.
+
     Returns:
         FData object with the samples from the
         original objects.
+
     Raises:
         ValueError: In case the provided list of FData objects is
         empty.
+
     Todo:
-        By the moment, only unidimensional objects are supported in basis
+        For the moment, only unidimensional objects are supported in basis
         representation.
+
     """
     functions = iter(functions)
     first = next(functions, None)
 
     if first is None:
-        raise ValueError(
-            "At least one FData object must be provided to concatenate.",
-        )
+        msg = "At least one FData object must be provided to concatenate."
+        raise ValueError(msg)
 
     return first.concatenate(*functions, as_coordinates=as_coordinates)
-
-
-F = TypeVar("F", covariant=True)
-
-
-class _CoordinateSequence(Protocol[F]):
-    """
-    Sequence of coordinates.
-
-    Note that this represents a sequence of coordinates, not a sequence of
-    FData objects.
-    """
-
-    def __getitem__(
-        self,
-        key: Union[int, slice],
-    ) -> F:
-        pass
-
-    def __len__(self) -> int:
-        pass

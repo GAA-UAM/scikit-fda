@@ -122,7 +122,7 @@ class TestKernelSmoother(unittest.TestCase):
     def _test_hat_matrix(
         self,
         kernel_estimator: HatMatrix,
-    ) -> np.typing.NDArray[np.float_]:
+    ) -> np.typing.NDArray[np.float64]:
         return KernelSmoother(  # noqa: WPS437
             kernel_estimator=kernel_estimator,
         )._hat_matrix(

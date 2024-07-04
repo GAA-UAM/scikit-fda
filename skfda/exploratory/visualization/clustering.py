@@ -210,7 +210,7 @@ class ClusterPlot(BasePlot):
     ) -> None:
 
         if colormap is None:
-            colormap = plt.cm.get_cmap('rainbow')
+            colormap = matplotlib.colormaps['rainbow']
 
         super().__init__(
             chart,
@@ -385,7 +385,7 @@ class ClusterMembershipLinesPlot(BasePlot):
     ) -> None:
 
         if colormap is None:
-            colormap = plt.cm.get_cmap('rainbow')
+            colormap = matplotlib.colormaps['rainbow']
 
         super().__init__(
             chart,
@@ -529,7 +529,7 @@ class ClusterMembershipPlot(BasePlot):
     ) -> None:
 
         if colormap is None:
-            colormap = plt.cm.get_cmap('rainbow')
+            colormap = matplotlib.colormaps['rainbow']
 
         super().__init__(
             chart,

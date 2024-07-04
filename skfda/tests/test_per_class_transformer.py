@@ -25,7 +25,7 @@ class TestPerClassTransformer(unittest.TestCase):
 
     def test_transform(self) -> None:
         """Check the data transformation is done correctly."""
-        t = PerClassTransformer[FDataGrid, np.typing.NDArray[np.float_]](
+        t = PerClassTransformer[FDataGrid, np.typing.NDArray[np.float64]](
             RecursiveMaximaHunting(),
             array_output=True,
         )
@@ -46,7 +46,7 @@ class TestPerClassTransformer(unittest.TestCase):
 
     def test_not_transformer_argument(self) -> None:
         """Check that invalid arguments in fit raise exception."""
-        t = PerClassTransformer[FDataGrid, np.typing.NDArray[np.float_]](
+        t = PerClassTransformer[FDataGrid, np.typing.NDArray[np.float64]](
             KNeighborsClassifier(),
         )
         self.assertRaises(

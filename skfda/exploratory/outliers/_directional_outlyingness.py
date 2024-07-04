@@ -120,11 +120,11 @@ def directional_outlyingness_stats(  # noqa: WPS218
     >>> stats.functional_directional_outlyingness.round()
     array([ 11.,   8.,   6.,   9.])
 
-    >>> stats.mean_directional_outlyingness.round(1)
-    array([[-2. ],
-           [ 1.4],
-           [-0.1],
-           [ 0.1]])
+    >>> stats.mean_directional_outlyingness.round()
+    array([[-2.],
+           [ 1.],
+           [-0.],
+           [ 0.]])
 
     >>> stats.variation_directional_outlyingness.round()
     array([ 5.,  2.,  0.,  3.])

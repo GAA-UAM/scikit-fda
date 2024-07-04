@@ -134,12 +134,12 @@ class TestNeighbors(unittest.TestCase):
         """Test scalar regression, predicts mode location."""
         # Dummy test, with weight = distance, only the sample with distance 0
         # will be returned, obtaining the exact location
-        knnr = KNeighborsRegressor[FDataGrid, np.typing.NDArray[np.float_]](
+        knnr = KNeighborsRegressor[FDataGrid, np.typing.NDArray[np.float64]](
             weights='distance',
         )
         rnnr = RadiusNeighborsRegressor[
             FDataGrid,
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
         ](
             weights='distance',
             radius=0.1,
@@ -168,7 +168,7 @@ class TestNeighbors(unittest.TestCase):
         knn = KNeighborsClassifier()
         knn.fit(self.X, self.y)
 
-        knnr = KNeighborsRegressor[FDataGrid, np.typing.NDArray[np.float_]]()
+        knnr = KNeighborsRegressor[FDataGrid, np.typing.NDArray[np.float64]]()
         knnr.fit(self.X, self.modes_location)
 
         neigh: KNeighborsMixin[FDataGrid, Any]
@@ -201,7 +201,7 @@ class TestNeighbors(unittest.TestCase):
 
         knnr = RadiusNeighborsRegressor[
             FDataGrid,
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
         ](radius=0.1)
         knnr.fit(self.X, self.modes_location)
 
@@ -241,7 +241,7 @@ class TestNeighbors(unittest.TestCase):
         """Test that precomputed distances work for functional response."""
         # Non-precomputed
         knnr = KNeighborsRegressor[
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
             FDataGrid,
         ](
             weights='distance',
@@ -252,7 +252,7 @@ class TestNeighbors(unittest.TestCase):
 
         # Precomputed
         knnr_pre = KNeighborsRegressor[
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
             FDataGrid,
         ](
             weights='distance',
@@ -395,7 +395,7 @@ class TestNeighbors(unittest.TestCase):
         """Test regression with scalar response."""
         neigh = KNeighborsRegressor[
             FDataGrid,
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
         ]()
 
         neigh.fit(self.X, self.modes_location)
@@ -522,8 +522,8 @@ class TestNeighbors(unittest.TestCase):
 
     def _weights(
         self,
-        weights: np.typing.NDArray[np.float_],
-    ) -> np.typing.NDArray[np.float_]:
+        weights: np.typing.NDArray[np.float64],
+    ) -> np.typing.NDArray[np.float64]:
         return np.array([w == np.min(weights) for w in weights], dtype=float)
 
 

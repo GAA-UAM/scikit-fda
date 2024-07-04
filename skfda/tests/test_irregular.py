@@ -294,6 +294,11 @@ def test_fdatairregular_getitem(
     assert len(fdatairregular[:NUM_CURVES:2]) == NUM_CURVES / 2
     assert len(fdatairregular[:NUM_CURVES:2]) == NUM_CURVES / 2
 
+    idxs = np.array((2, 0, 6))
+    fd_subset = fdatairregular[idxs]
+    for i, idx in enumerate(idxs):
+        assert all(fd_subset[i] == fdatairregular[idx])
+
 
 def test_fdatairregular_coordinates(
     fdatairregular: FDataIrregular,

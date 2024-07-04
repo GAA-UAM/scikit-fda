@@ -181,7 +181,10 @@ class Covariance(abc.ABC):
 
         row_style = ''
 
-        def column_style(percent: float, margin_top: str = "0") -> str:
+        def column_style(  # noqa: WPS430
+            percent: float,
+            margin_top: str = "0",
+        ) -> str:
             return (
                 f'style="display: inline-block; '
                 f'margin:0; '
@@ -205,7 +208,7 @@ class Covariance(abc.ABC):
             {heatmap}
             </div>
         </div>
-        """
+        """  # noqa: WPS432
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         """Convert it to a sklearn kernel, if there is one."""
@@ -291,12 +294,11 @@ class Brownian(Covariance):
                 'Brownian covariance not defined for FData objects.',
             )
 
-        xx: NDArray[Any]
-        yy: NDArray[Any]
-        xx, yy = self._param_check_and_transform(x, y)
+        x = _transform_to_2d(x)
+        y = _transform_to_2d(y)
 
-        xx = xx - self.origin
-        yy = yy - self.origin
+        x = x - self.origin
+        y = y - self.origin
 
         sum_norms = np.add.outer(
             np.linalg.norm(x, axis=-1),
@@ -380,6 +382,7 @@ class Linear(Covariance):
         return self.variance * (x_y + self.intercept)
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance
             * (sklearn_kern.DotProduct(0) + self.intercept)
@@ -469,6 +472,7 @@ class Polynomial(Covariance):
         )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance
             * (self.slope * sklearn_kern.DotProduct(0) + self.intercept)
@@ -548,6 +552,7 @@ class Gaussian(Covariance):
         )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance * sklearn_kern.RBF(length_scale=self.length_scale)
         )
@@ -625,9 +630,13 @@ class Exponential(Covariance):
         x, y = self._param_check_and_transform(x, y)
 
         distance_x_y = PairwiseMetric(l2_distance)(x, y)
-        return self.variance * np.exp(-distance_x_y / (self.length_scale))
+        return self.variance * np.exp(  # type: ignore[no-any-return]
+            -distance_x_y
+            / (self.length_scale),
+        )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance
             * sklearn_kern.Matern(length_scale=self.length_scale, nu=0.5)
@@ -704,6 +713,7 @@ class WhiteNoise(Covariance):
         return self.variance * np.eye(x.shape[0])
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return sklearn_kern.WhiteKernel(noise_level=self.variance)
 
 
@@ -756,6 +766,7 @@ class Matern(Covariance):
         Matern()
 
     """
+
     _latex_formula = (
         r"K(x, x') = \sigma^2 \frac{2^{1-\nu}}{\Gamma(\nu)}"
         r"\left( \frac{\sqrt{2\nu}|x - x'|}{l} \right)^{\nu}"
@@ -818,23 +829,24 @@ class Matern(Covariance):
                     -distance_x_y ** 2 / (2 * self.length_scale ** 2),
                 )
             )
-        else:
-            # General formula
-            scaling = 2**(1 - self.nu) / gamma(self.nu)
-            body = np.sqrt(2 * self.nu) * distance_x_y / self.length_scale
-            power = body**self.nu
-            bessel = kv(self.nu, body)
 
-            with np.errstate(invalid='ignore'):
-                eval_cov = self.variance * scaling * power * bessel
+        # General formula
+        scaling = 2**(1 - self.nu) / gamma(self.nu)
+        body = np.sqrt(2 * self.nu) * distance_x_y / self.length_scale
+        power = body**self.nu
+        bessel = kv(self.nu, body)
 
-            # Values with nan are where the distance is 0
-            return np.nan_to_num(  # type: ignore[no-any-return]
-                eval_cov,
-                nan=self.variance,
-            )
+        with np.errstate(invalid='ignore'):
+            eval_cov = self.variance * scaling * power * bessel
+
+        # Values with nan are where the distance is 0
+        return np.nan_to_num(  # type: ignore[no-any-return]
+            eval_cov,
+            nan=self.variance,
+        )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance
             * sklearn_kern.Matern(length_scale=self.length_scale, nu=self.nu)

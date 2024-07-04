@@ -1,12 +1,14 @@
+"""Covariances module."""
 from __future__ import annotations
 
 import abc
-from typing import Callable, Sequence, Tuple, Union
+from typing import Any, Callable, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
+from numpy.typing import NDArray
 from scipy.special import gamma, kv
 
 from ..misc._math import inner_product_matrix
@@ -22,23 +24,20 @@ def _squared_norms(x: NDArrayFloat, y: NDArrayFloat) -> NDArrayFloat:
     ).sum(2)
 
 
-CovarianceLike = Union[
-    float,
-    NDArrayFloat,
-    Callable[[ArrayLike, ArrayLike], NDArrayFloat],
-]
+CovarianceLike = (
+    float
+    | NDArrayFloat
+    | Callable[[ArrayLike, ArrayLike], NDArrayFloat]
+)
 
-InputAcceptable = Union[
-    np.ndarray,
-    FData,
-]
+Input = NDArray[Any] | FData
 
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     """Transform 1d arrays in column vectors."""
     t = np.asfarray(t)
 
-    dim = len(t.shape)
+    dim = t.ndim
     assert dim <= 2
 
     if dim < 2:
@@ -58,39 +57,40 @@ def _execute_covariance(
 
     if isinstance(covariance, (int, float)):
         return np.array(covariance)
-    else:
-        if callable(covariance):
-            result = covariance(x, y)
-        elif isinstance(covariance, np.ndarray):
-            result = covariance
-        else:
-            # GPy kernel
-            result = covariance.K(x, y)
 
-        assert result.shape[0] == len(x)
-        assert result.shape[1] == len(y)
-        return result
+    if callable(covariance):
+        result = covariance(x, y)
+    elif isinstance(covariance, np.ndarray):
+        result = covariance
+    else:
+        # GPy kernel
+        result = covariance.K(x, y)
+
+    assert result.shape[0] == len(x)
+    assert result.shape[1] == len(y)
+    return result
 
 
 class Covariance(abc.ABC):
     """Abstract class for covariance functions."""
 
-    _parameters_str: Sequence[Tuple[str, str]]
+    _parameters_str: Sequence[tuple[str, str]]
     _latex_formula: str
 
     @abc.abstractmethod
     def __call__(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
+        x: Input,
+        y: Input | None = None,
     ) -> NDArrayFloat:
+        """Compute covariance function on input data."""
         pass
 
     def _param_check_and_transform(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
-    ) -> Tuple[np.ndarray | FData, np.ndarray | FData]:
+        x: Input,
+        y: Input | None = None,
+    ) -> tuple[Input, Input]:
         # Param check
         if y is None:
             y = x
@@ -101,8 +101,7 @@ class Covariance(abc.ABC):
                 f'({type(x)}, {type(y)}).',
             )
 
-        if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
-            x, y = np.array(x), np.array(y)
+        if not isinstance(x, FData) and not isinstance(y, FData):
             if len(x.shape) < 2:
                 x = np.atleast_2d(x)
             if len(y.shape) < 2:
@@ -110,7 +109,7 @@ class Covariance(abc.ABC):
 
         return x, y
 
-    def heatmap(self, limits: Tuple[float, float] = (-1, 1)) -> Figure:
+    def heatmap(self, limits: tuple[float, float] = (-1, 1)) -> Figure:
         """Return a heatmap plot of the covariance function."""
         from ..exploratory.visualization._utils import _create_figure
 
@@ -266,6 +265,7 @@ class Brownian(Covariance):
         Brownian()
 
     """
+
     _latex_formula = (
         r"K(x, x') = \sigma^2 \frac{|x - \mathcal{O}| + "
         r"|x' - \mathcal{O}| - |x - x'|}{2}"
@@ -282,14 +282,21 @@ class Brownian(Covariance):
 
     def __call__(
         self,
-        x: InputAcceptable | FData,
-        y: InputAcceptable | None = None,
+        x: NDArray[Any],
+        y: NDArray[Any] | None = None,
     ) -> NDArrayFloat:
+        """Compute Brownian covariance function on input data."""
         if isinstance(x, FData) or isinstance(y, FData):
-            raise ValueError('Not defined for FData objects.')
+            raise ValueError(
+                'Brownian covariance not defined for FData objects.',
+            )
 
-        x = _transform_to_2d(x) - self.origin
-        y = _transform_to_2d(y) - self.origin
+        xx: NDArray[Any]
+        yy: NDArray[Any]
+        xx, yy = self._param_check_and_transform(x, y)
+
+        xx = xx - self.origin
+        yy = yy - self.origin
 
         sum_norms = np.add.outer(
             np.linalg.norm(x, axis=-1),
@@ -363,9 +370,10 @@ class Linear(Covariance):
 
     def __call__(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
+        x: Input,
+        y: Input | None = None,
     ) -> NDArrayFloat:
+        """Compute linear covariance function on input data."""
         x, y = self._param_check_and_transform(x, y)
 
         x_y = inner_product_matrix(x, y)
@@ -445,12 +453,13 @@ class Polynomial(Covariance):
         self.intercept = intercept
         self.slope = slope
         self.degree = degree
-    
+
     def __call__(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
+        x: Input,
+        y: Input | None = None,
     ) -> NDArrayFloat:
+        """Compute polynomial covariance function on input data."""
         x, y = self._param_check_and_transform(x, y)
 
         x_y = inner_product_matrix(x, y)
@@ -527,13 +536,16 @@ class Gaussian(Covariance):
 
     def __call__(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
+        x: Input,
+        y: Input | None = None,
     ) -> NDArrayFloat:
+        """Compute Gaussian covariance function on input data."""
         x, y = self._param_check_and_transform(x, y)
 
         distance_x_y = PairwiseMetric(l2_distance)(x, y)
-        return self.variance * np.exp(-distance_x_y ** 2 / (2 * self.length_scale ** 2))
+        return self.variance * np.exp(  # type: ignore[no-any-return]
+            -distance_x_y ** 2 / (2 * self.length_scale ** 2),
+        )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         return (
@@ -606,9 +618,10 @@ class Exponential(Covariance):
 
     def __call__(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
+        x: Input,
+        y: Input | None = None,
     ) -> NDArrayFloat:
+        """Compute exponential covariance function on input data."""
         x, y = self._param_check_and_transform(x, y)
 
         distance_x_y = PairwiseMetric(l2_distance)(x, y)
@@ -680,9 +693,10 @@ class WhiteNoise(Covariance):
 
     def __call__(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
+        x: Input,
+        y: Input | None = None,
     ) -> NDArrayFloat:
+        """Compute white noise covariance function on input data."""
         if isinstance(x, FData) or isinstance(y, FData):
             raise ValueError('Not defined for FData objects.')
 
@@ -767,9 +781,10 @@ class Matern(Covariance):
 
     def __call__(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
+        x: Input,
+        y: Input | None = None,
     ) -> NDArrayFloat:
+        """Compute Matern covariance function on input data."""
         x, y = self._param_check_and_transform(x, y)
 
         distance_x_y = PairwiseMetric(l2_distance)(x, y)
@@ -864,12 +879,9 @@ class Empirical(Covariance):
 
     def __call__(
         self,
-        x: InputAcceptable,
-        y: InputAcceptable | None = None,
+        x: Input,
+        y: Input | None = None,
     ) -> NDArrayFloat:
-        if isinstance(x, FData) or isinstance(y, FData):
-            raise ValueError('Not defined for FData objects.')
-        
         """Evaluate the covariance function.
 
         Args:
@@ -879,6 +891,9 @@ class Empirical(Covariance):
         Returns:
             Covariance function evaluated at the grid formed by x and y.
         """
+        if isinstance(x, FData) or isinstance(y, FData):
+            raise ValueError('Not defined for FData objects.')
+
         return self.cov_fdata([x, y], grid=True)[0, ..., 0]
 
 

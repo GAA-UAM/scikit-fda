@@ -60,7 +60,11 @@ def covariances_raise_fixture(request: Any) -> Any:
 
 @pytest.fixture
 def fdatabasis_data() -> Tuple[FDataBasis, FDataBasis]:
-    """Fixture for getting fdatabasis objects."""
+    """Fixture for getting fdatabasis objects.
+
+    The dataset is used to test manual calculations of the covariance functions
+    against the implementation.
+    """
     basis = MonomialBasis(
         n_basis=2,
         domain_range=(-2, 2),
@@ -141,7 +145,7 @@ def test_covariances(
     fetch_functional_data: FDataGrid,
     covariances_fixture: cov.Covariance,
 ) -> None:
-    """Check that invalid parameters in fit raise exception."""
+    """Check that parameter conversion is done correctly."""
     fd = fetch_functional_data
     cov_kernel = covariances_fixture
 
@@ -160,11 +164,15 @@ def test_raises(
     fetch_functional_data: FDataGrid,
     covariances_raise_fixture: Any,
 ) -> None:
-    """Check that it raises a ValueError exception."""
+    """Check raises ValueError.
+
+    Check that non-functional kernels raise a ValueError exception
+    with functional data.
+    """
     fd = fetch_functional_data
     cov_kernel = covariances_raise_fixture
 
-    np.testing.assert_raises(
+    pytest.raises(
         ValueError,
         cov_kernel,
         fd,

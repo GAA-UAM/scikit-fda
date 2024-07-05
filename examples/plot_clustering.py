@@ -12,6 +12,7 @@ calculate the results plotted.
 
 # sphinx_gallery_thumbnail_number = 6
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -46,7 +47,7 @@ fd = fd_temperatures[indices_samples]
 climates = target[indices_samples].remove_unused_categories()
 
 # Assigning the color to each of the groups.
-colormap = plt.cm.get_cmap('tab20b')
+colormap = matplotlib.colormaps['tab20b']
 n_climates = len(climates.categories)
 climate_colors = colormap(np.arange(n_climates) / (n_climates - 1))
 

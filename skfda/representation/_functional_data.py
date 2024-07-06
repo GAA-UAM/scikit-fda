@@ -32,7 +32,7 @@ from .._utils.ndfunction import NDFunction, concatenate as concatenate
 from .._utils.ndfunction._array_api import Array, DType, Shape, numpy_namespace
 from .._utils.ndfunction._region import Region
 from .._utils.ndfunction.extrapolation import AcceptedExtrapolation
-from .._utils.ndfunction.typing import GridPointsLike
+from .._utils.ndfunction.typing import GridPointsLike, InputNames, OutputNames
 from .._utils.ndfunction.utils.validation import check_grid_points
 from ..typing._base import DomainRange, LabelTuple, LabelTupleLike
 from ..typing._numpy import (
@@ -179,12 +179,16 @@ class FData(  # noqa: WPS214
             Number of dimensions of the domain.
 
         """
-        pass
 
     @override
     @property
     def input_shape(self) -> tuple[int, ...]:
         return (self.dim_domain,)
+
+    @override
+    @property
+    def input_names(self) -> InputNames:
+        return np.array(self.argument_names, dtype=np.dtypes.StringDType())
 
     @property
     @abstractmethod
@@ -195,12 +199,16 @@ class FData(  # noqa: WPS214
             Number of dimensions of the codomain.
 
         """
-        pass
 
     @override
     @property
     def output_shape(self) -> tuple[int, ...]:
         return (self.dim_codomain,)
+
+    @override
+    @property
+    def output_names(self) -> OutputNames:
+        return np.array(self.coordinate_names, dtype=np.dtypes.StringDType())
 
     @property
     @abstractmethod

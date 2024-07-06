@@ -1,75 +1,50 @@
-"""Discretised functional data module.
+"""Implementation of functions discretized in a grid of values."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence, TypeVar, overload
+
+import pandas
+
+from ....typing._base import LabelTupleLike
+from .._array_api import Array, DType, Shape
+from .._ndfunction import NDFunction
+from .._region import Region
+from ..evaluator import Evaluator
+from ..extrapolation import AcceptedExtrapolation, ExtrapolationLike
+from ..interpolation import SplineInterpolation
+
+"""Discretized functional data module.
 
 This module defines a class for representing functional data as a series of
 lists of values, each representing the observation of a function measured in a
-list of discretisation points.
+list of discretization points.
 
 """
-from __future__ import annotations
-
-import copy
-import numbers
-import warnings
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-    overload,
-)
-
-import findiff
-import numpy as np
-import pandas.api.extensions
-import scipy.integrate
-import scipy.stats.mstats
-from matplotlib.figure import Figure
-
-from .._utils import _check_array_key, _int_to_real, constants
-from .._utils.ndfunction._grid import GridDiscretizedFunction
-from .._utils.ndfunction.evaluator import Evaluator
-from .._utils.ndfunction.extrapolation import ExtrapolationLike
-from .._utils.ndfunction.utils import cartesian_product, grid_points_equal
-from .._utils.ndfunction.utils.validation import check_grid_points
-from ..typing._base import (
-    DomainRange,
-    DomainRangeLike,
-    GridPoints,
-    GridPointsLike,
-    LabelTupleLike,
-)
-from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
-from ._functional_data import FData
-from .interpolation import SplineInterpolation
 
 if TYPE_CHECKING:
+    from ..typing import GridPointsLike, InputNamesLike, OutputNamesLike, InputNames, OutputNames
     from .basis import Basis, FDataBasis
 
-T = TypeVar("T", bound='FDataGrid')
+A = TypeVar('A', bound=Array[Shape, DType])
+T = TypeVar("T", bound='GridDiscretizedFunction')
 
 
-AcceptedExtrapolation = Union[ExtrapolationLike, None, Literal["default"]]
-
-
-class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
-    r"""Represent discretised functional data.
-
-    Class for representing functional data as a set of curves discretised
-    in a grid of points.
+class GridDiscretizedFunction(NDFunction[A]):  # noqa: WPS214
+    r"""
+    Array of functions discretized on a grid.
 
     Attributes:
-        data_matrix: a matrix where each entry of the first
-            axis contains the values of a functional datum evaluated at the
-            points of discretisation.
-        grid_points: 2 dimension matrix where each row
-            contains the points of dicretisation for each axis of data_matrix.
+        grid_values: A tensor containing the values of the functions at the
+            intersections of the grid. Its shape has three parts:
+                - The shape of the array of functions (:attr:`shape`).
+                - A shape (:math:`M_0`, ..., :math:`M_P`), where :math:`P` is
+                  the size of the raveled input, and :math:`M_p` the number of
+                  grid points in the :math:`p`-th coordinate of the raveled
+                  input.
+                - The shape of the output (:attr:`output_shape`).
+        grid_points: Object array with the same shape as the input
+            (:attr:`ìnput_shape`). The value at each location is an array with
+            the ordered grid points at that location.
         domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
             is considered to exist for each one of the axes.
@@ -90,6 +65,8 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`,
         with 3 discretization points.
 
+        >>> from skfda import FDataGrid
+        >>> import numpy as np
         >>> data_matrix = [[1, 2, 3], [4, 5, 6]]
         >>> grid_points = np.array([2, 4, 5])
         >>> FDataGrid(data_matrix, grid_points)
@@ -137,30 +114,20 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
 
     def __init__(  # noqa: WPS211
         self,
-        data_matrix: ArrayLike,
-        grid_points: Optional[GridPointsLike] = None,
+        grid_values: A,
+        grid_points: GridPointsLike[A] | None = None,
         *,
-        sample_points: Optional[GridPointsLike] = None,
-        domain_range: Optional[DomainRangeLike] = None,
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        interpolation: Optional[Evaluator] = None,
+        domain: Region[A] | None = None,
+        dataset_name: str | None = None,
+        input_names: LabelTupleLike | None = None,
+        output_names: LabelTupleLike | None = None,
+        sample_names: LabelTupleLike | None = None,
+        extrapolation: ExtrapolationLike[A] | None = None,
+        interpolation: Evaluator[A] | None = None,
     ):
-        """Construct a FDataGrid object."""
+        self.values = values
+
         from ..misc.validation import validate_domain_range
-
-        if sample_points is not None:
-            warnings.warn(
-                "Parameter sample_points is deprecated. Use the "
-                "parameter grid_points instead.",
-                DeprecationWarning,
-            )
-            grid_points = sample_points
-
-        self.data_matrix = _int_to_real(np.atleast_2d(data_matrix))
 
         if grid_points is None:
             self.grid_points = check_grid_points([
@@ -227,7 +194,7 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
     def round(  # noqa: WPS125
         self,
         decimals: int = 0,
-        out: Optional[FDataGrid] = None,
+        out: FDataGrid | None = None,
     ) -> FDataGrid:
         """Evenly round to the given number of decimals.
 
@@ -437,6 +404,9 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         Examples:
             First order derivative
 
+            >>> from skfda import FDataGrid
+            >>> import numpy as np
+
             >>> fdata = FDataGrid([1,2,4,5,8], np.arange(5))
             >>> fdata.derivative()
             FDataGrid(
@@ -511,6 +481,8 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
             with the integrated data.
 
         Examples:
+            >>> from skfda import FDataGrid
+            >>> import numpy as np
             >>> fdata = FDataGrid([1,2,4,5,8], np.arange(5))
             >>> fdata.integrate()
             array([[ 15.]])
@@ -539,7 +511,7 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
 
     def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:
         return (
-            cartesian_product(check_grid_points(self.grid_points)),
+            cartesian_product(self.grid_points),
             self.data_matrix.reshape((self.n_samples, -1)).T,
         )
 
@@ -592,7 +564,7 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         if min_count > 0:
             valid = ~np.isnan(self.data_matrix)
             n_valid = np.sum(valid, axis=0)
-            data[n_valid < min_count] = np.nan
+            data[n_valid < min_count] = np.NaN
 
         return self.copy(
             data_matrix=data,
@@ -626,7 +598,7 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         self: T,
         s_points: NDArrayFloat,
         t_points: NDArrayFloat,
-        / ,
+        /,
         correction: int = 0,
     ) -> NDArrayFloat:
         pass
@@ -634,7 +606,7 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
     @overload
     def cov(  # noqa: WPS451
         self: T,
-        / ,
+        /,
         correction: int = 0,
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
@@ -643,7 +615,7 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         self: T,
         s_points: Optional[NDArrayFloat] = None,
         t_points: Optional[NDArrayFloat] = None,
-        / ,
+        /,
         correction: int = 0,
     ) -> Union[
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
@@ -862,6 +834,8 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
             FDataGrid object with the samples from the original objects.
 
         Examples:
+            >>> from skfda import FDataGrid
+            >>> import numpy as np
             >>> fd = FDataGrid([1,2,4,5,8], np.arange(5))
             >>> fd_2 = FDataGrid([3,4,7,9,2], np.arange(5))
             >>> fd.concatenate(fd_2)
@@ -954,6 +928,7 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
             object.
 
         Examples:
+            >>> from skfda import FDataGrid
             >>> import numpy as np
             >>> import skfda
             >>> t = np.linspace(0, 1, 5)
@@ -1449,9 +1424,9 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         return result
 
     @property
-    def dtype(self) -> FDataGridDType:
-        """The dtype for this extension array, FDataGridDType"""
-        return FDataGridDType(
+    def dtype(self) -> GridDiscretizedFunctionDType:
+        """The dtype for this extension array, GridDiscretizedFunctionDType"""
+        return GridDiscretizedFunctionDType(
             grid_points=self.grid_points,
             domain_range=self.domain_range,
             dim_codomain=self.dim_codomain,
@@ -1479,14 +1454,14 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         )
 
 
-class FDataGridDType(
+class GridDiscretizedFunctionDType(
     pandas.api.extensions.ExtensionDtype,  # type: ignore[misc]
 ):
     """DType corresponding to FDataGrid in Pandas."""
 
-    name = 'FDataGrid'
+    name = 'GridDiscretizedFunction'
     kind = 'O'
-    type = FDataGrid  # noqa: WPS125
+    type = GridDiscretizedFunction  # noqa: WPS125
     na_value = pandas.NA
 
     def __init__(
@@ -1517,7 +1492,7 @@ class FDataGridDType(
             + (self.dim_codomain,)
         )
 
-        data_matrix = np.full(shape=shape, fill_value=np.nan)
+        data_matrix = np.full(shape=shape, fill_value=np.NaN)
 
         return FDataGrid(
             grid_points=self.grid_points,
@@ -1541,7 +1516,7 @@ class FDataGridDType(
             return True
 
         return (
-            isinstance(other, FDataGridDType)
+            isinstance(other, GridDiscretizedFunctionDType)
             and self.dim_codomain == other.dim_codomain
             and self.domain_range == other.domain_range
             and grid_points_equal(self.grid_points, other.grid_points)

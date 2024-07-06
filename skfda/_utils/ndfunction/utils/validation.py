@@ -16,7 +16,16 @@ from .._array_api import (
 )
 
 if TYPE_CHECKING:
-    from ..typing import GridPoints, GridPointsLike
+    from ..typing import (
+        GridPoints,
+        GridPointsLike,
+        InputNames,
+        InputNamesLike,
+        OutputNames,
+        OutputNamesLike,
+        _FunctionNames,
+        _FunctionNamesLike,
+    )
 
 A = TypeVar("A", bound=Array[Shape, DType])
 
@@ -174,3 +183,91 @@ def check_array_namespace(
     ]
 
     return tuple(converted)
+
+
+def _check_function_names(
+    names: _FunctionNamesLike,
+    shape: Shape,
+    names_type: Literal["input", "output"],
+) -> _FunctionNames:
+    """
+    Convert to proper input/output names.
+
+    Input/output names are a string array, broadcastable to ``shape``.
+    A string or a sequence of strings will be accepted and converted.
+
+    Args:
+        names: The names of inputs or outputs of the function.
+        shape: The corresponding shape of the input/output.
+        names_type: Whether the input or output names are being checked.
+
+    Returns:
+        The string array containing the names.
+
+    """
+    dtype = np.dtypes.StringDType(na_object=np.nan)
+    if isinstance(names, np.ndarray):
+        names = names.astype(dtype)
+    else:
+        old_names = np.nan if names is None else names
+        names = np.array(old_names, dtype=dtype)
+
+    # Check that it can be broadcasted
+    if np.broadcast_shapes(names.shape, shape) != shape:
+        msg = (
+            f"The {names_type} names have shape {names.shape}, which is not "
+            f"broadcastable to the {names_type} shape ({shape})."
+        )
+        raise ValueError(msg)
+
+    return names
+
+
+def check_input_names(
+    names: InputNamesLike,
+    shape: Shape,
+) -> InputNames:
+    """
+    Convert to proper input names.
+
+    Input names are a string array, broadcastable to ``shape``.
+    A string or a sequence of strings will be accepted and converted.
+
+    Args:
+        names: The names of inputs of the function.
+        shape: The corresponding shape of the input.
+
+    Returns:
+        The string array containing the names.
+
+    """
+    return _check_function_names(
+        names=names,
+        shape=shape,
+        names_type="input",
+    )
+
+
+def check_output_names(
+    names: OutputNamesLike,
+    shape: Shape,
+) -> OutputNames:
+    """
+    Convert to proper output names.
+
+    Output names are a string array, broadcastable to ``shape``.
+    A string or a sequence of strings will be accepted and converted.
+
+    Args:
+        names: The names of outputs of the function.
+        shape: The corresponding shape of the output.
+
+    Returns:
+        The string array containing the names.
+
+    """
+    return _check_function_names(
+        names=names,
+        shape=shape,
+        names_type="output",
+    )

@@ -8,6 +8,9 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "_functions": [
             "average_function_value",
         ],
+        "_grid": [
+            "GridDiscretizedFunction",
+        ],
         "_ndfunction": [
             "NDFunction", "concatenate",
         ],
@@ -16,9 +19,8 @@ __getattr__, __dir__, __all__ = lazy.attach(
 
 if TYPE_CHECKING:
 
-    from ._functions import (
-        average_function_value as average_function_value,
-    )
+    from ._functions import average_function_value as average_function_value
+    from ._grid import GridDiscretizedFunction
     from ._ndfunction import (
         NDFunction as NDFunction,
         concatenate as concatenate,

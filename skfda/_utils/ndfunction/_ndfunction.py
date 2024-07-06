@@ -29,8 +29,19 @@ from .extrapolation import (
     ExtrapolationLike,
     _parse_extrapolation,
 )
-from .typing import GridPointsLike
-from .utils.validation import check_array_namespace, check_evaluation_points
+from .typing import (
+    GridPointsLike,
+    InputNames,
+    InputNamesLike,
+    OutputNames,
+    OutputNamesLike,
+)
+from .utils.validation import (
+    check_array_namespace,
+    check_evaluation_points,
+    check_input_names,
+    check_output_names,
+)
 
 if TYPE_CHECKING:
     from ...typing._base import LabelTupleLike
@@ -72,9 +83,13 @@ class NDFunction(Protocol[A]):
         self,
         *,
         extrapolation: ExtrapolationLike[A] | None = None,
+        input_names: InputNamesLike,
+        output_names: OutputNamesLike,
     ) -> None:
 
         self.extrapolation = extrapolation  # type: ignore[assignment]
+        self.input_names = input_names  # type: ignore[assignment]
+        self.output_names = output_names  # type: ignore[assignment]
 
     @property
     @abstractmethod
@@ -125,6 +140,28 @@ class NDFunction(Protocol[A]):
         """
 
     @property
+    @abstractmethod
+    def input_names(self) -> InputNames:
+        """
+        Names of the input elements.
+
+        It is a string array broadcastable to the input shape.
+
+        """
+
+    @input_names.setter
+    def input_names(
+        self,
+        value: InputNamesLike,
+    ) -> None:
+        self._input_names = (  # type: ignore [misc, attr-defined]
+            check_input_names(
+                value,
+                shape=self.input_shape,
+            )
+        )
+
+    @property
     def output_ndim(self) -> int:
         """Number of dimensions of the n-dimensional output."""
         return len(self.output_shape)
@@ -142,6 +179,28 @@ class NDFunction(Protocol[A]):
 
     @property
     @abstractmethod
+    def output_names(self) -> OutputNames:
+        """
+        Names of the output elements.
+
+        It is a string array broadcastable to the output shape.
+
+        """
+
+    @output_names.setter
+    def output_names(
+        self,
+        value: OutputNamesLike,
+    ) -> None:
+        self._output_names = (  # type: ignore [misc, attr-defined]
+            check_output_names(
+                value,
+                shape=self.output_shape,
+            )
+        )
+
+    @property
+    @abstractmethod
     def coordinates(self) -> Self:
         """
         View of the coordinate functions as an array.
@@ -150,6 +209,7 @@ class NDFunction(Protocol[A]):
         scalar values conforming the output array.
 
         """
+
     @property
     def extrapolation(self) -> Evaluator[A] | None:
         """Extrapolation used for evaluating values outside the bounds."""

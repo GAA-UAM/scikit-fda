@@ -730,7 +730,7 @@ class Matern(Covariance):
 
     where :math:`\sigma^2` is the variance, :math:`l` is the length scale
     and :math:`\nu` controls the smoothness of the related Gaussian process.
-    The trajectories of a Gaussian process with Matérn covariance is 
+    The trajectories of a Gaussian process with Matérn covariance is
     :math:`\lceil \nu \rceil - 1` times differentiable.
 
 

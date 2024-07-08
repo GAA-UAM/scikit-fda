@@ -4,9 +4,10 @@ import unittest
 from typing import Any, Optional, Sequence, Tuple
 
 import numpy as np
+import pytest
 import sklearn.metrics
 
-from skfda import FDataBasis, FDataGrid
+from skfda import FDataBasis, FDataGrid, FDataIrregular
 from skfda.misc.scoring import (
     ScoreFunction,
     explained_variance_score,
@@ -30,6 +31,13 @@ score_functions: Sequence[ScoreFunction] = (
     mean_squared_error,
     mean_squared_log_error,
     r2_score,
+)
+
+irregular_score_functions: Sequence[ScoreFunction] = (
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    mean_squared_error,
+    mean_squared_log_error,
 )
 
 
@@ -461,3 +469,36 @@ class TestScoreZeroDenominator(unittest.TestCase):
             y_true_grid,
             y_pred_grid,
         )
+
+
+# ------------------ Test irregular data scoring ------------------
+
+
+@pytest.fixture(params=irregular_score_functions)
+def irregular_score_function(request) -> ScoreFunction:
+    """Fixture to test score functions with irregular data."""
+    return request.param
+
+
+def test_score_functions_irregular(
+    irregular_score_function: ScoreFunction,
+) -> None:
+    """Test score functions with irregular data."""
+    weight = np.array([3, 7])
+    y_true_grid, y_pred_grid = _create_data_grid()
+    y_true_irregular = FDataIrregular.from_fdatagrid(y_true_grid)
+    y_pred_irregular = FDataIrregular.from_fdatagrid(y_pred_grid)
+
+    score_grid = irregular_score_function(
+        y_true_grid,
+        y_pred_grid,
+        sample_weight=weight,
+    )
+    score_irregular = irregular_score_function(
+        y_true_irregular,
+        y_pred_irregular,
+        sample_weight=weight,
+    )
+    np.testing.assert_allclose(
+        score_grid, score_irregular,
+    )

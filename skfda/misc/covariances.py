@@ -208,7 +208,7 @@ class Covariance(abc.ABC):
             {heatmap}
             </div>
         </div>
-        """  # noqa: WPS432
+        """  # noqa: WPS432, WPS318
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         """Convert it to a sklearn kernel, if there is one."""

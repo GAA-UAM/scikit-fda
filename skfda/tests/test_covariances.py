@@ -1,5 +1,5 @@
 """Tests for Covariance module."""
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 import pytest
@@ -21,14 +21,27 @@ def _test_compare_sklearn(
 
     np.testing.assert_array_almost_equal(cov_matrix, cov_sklearn_matrix)
 
+###############################################################################
+# Example datasets for which to calculate the evaluation of the kernel by hand
+# to compare it against the results yielded by the implementation.
+###############################################################################
+
+
+basis = MonomialBasis(n_basis=2, domain_range=(-2, 2))
+
+fd = [
+    FDataBasis(basis=basis, coefficients=[[1, 0], [1, 2]]),
+    FDataBasis(basis=basis, coefficients=[[0, 1]]),
+]
+
 ##############################################################################
 # Fixtures
 ##############################################################################
 
 
 @pytest.fixture
-def fetch_functional_data() -> FDataGrid:
-    """Fixture for loading the phoneme dataset example."""
+def fetch_weather_subset() -> FDataGrid:
+    """Fixture for loading the canadian weather dataset example."""
     fd, _ = fetch_weather(return_X_y=True)
     return fd[:20]
 
@@ -58,34 +71,46 @@ def covariances_raise_fixture(request: Any) -> Any:
     return request.param
 
 
-@pytest.fixture
-def fdatabasis_data() -> Tuple[FDataBasis, FDataBasis]:
+@pytest.fixture(
+    params=[
+        [
+            cov.Linear(variance=1 / 2, intercept=3),
+            np.array([[3 / 2], [3 / 2 + 32 / 6]]),
+        ],
+        [
+            cov.Polynomial(variance=1 / 3, slope=2, intercept=1, degree=2),
+            np.array([[1 / 3], [67**2 / 3**3]]),
+        ],
+        [
+            cov.Gaussian(variance=3, length_scale=2),
+            np.array([[3 * np.exp(-7 / 6)], [3 * np.exp(-7 / 6)]]),
+        ],
+        [
+            cov.Exponential(variance=4, length_scale=5),
+            np.array([
+                [4 * np.exp(-np.sqrt(28 / 3) / 5)],
+                [4 * np.exp(-np.sqrt(28 / 3) / 5)],
+            ]),
+        ],
+        [
+            cov.Matern(variance=2, length_scale=3, nu=2),
+            np.array([
+                [(2 / 3) ** 2 * (28 / 3) * 0.239775899566],
+                [(2 / 3) ** 2 * (28 / 3) * 0.239775899566],
+            ]),
+        ],
+    ],
+)
+def precalc_example_data(
+    request: Any,
+) -> list[FDataBasis, FDataBasis, cov.Covariance, np.array]:
     """Fixture for getting fdatabasis objects.
 
     The dataset is used to test manual calculations of the covariance functions
     against the implementation.
     """
-    basis = MonomialBasis(
-        n_basis=2,
-        domain_range=(-2, 2),
-    )
-
-    fd1 = FDataBasis(
-        basis=basis,
-        coefficients=[
-            [1, 0],
-            [1, 2],
-        ],
-    )
-
-    fd2 = FDataBasis(
-        basis=basis,
-        coefficients=[
-            [0, 1],
-        ],
-    )
-
-    return fd1, fd2
+    # First fd, Second fd, kernel used, result
+    return *fd, *request.param
 
 
 @pytest.fixture
@@ -96,39 +121,44 @@ def multivariate_data() -> np.array:
 
 @pytest.fixture(
     params=[
-        (cov.Linear,
-         {
-             "variance": [1, 2],
-             "intercept": [3, 4],
-         },
-         ),
-        (cov.Polynomial,
-         {
-             "variance": [2],
-             "intercept": [0, 2],
-             "slope": [1, 2],
-             "degree": [1, 2, 3],
-         },
-         ),
-        (cov.Exponential,
-         {
-             "variance": [1, 2],
-             "length_scale": [0.5, 1, 2],
-         },
-         ),
-        (cov.Gaussian,
-         {
-             "variance": [1, 2],
-             "length_scale": [0.5, 1, 2],
-         },
-         ),
-        (cov.Matern,
-         {
-             "variance": [2],
-             "length_scale": [0.5],
-             "nu": [0.5, 1, 1.5, 2.5, 3.5, np.inf],
-         },
-         ),
+        [
+            cov.Linear,
+            {
+                "variance": [1, 2],
+                "intercept": [3, 4],
+            },
+        ],
+        [
+            cov.Polynomial,
+            {
+                "variance": [2],
+                "intercept": [0, 2],
+                "slope": [1, 2],
+                "degree": [1, 2, 3],
+            },
+        ],
+        [
+            cov.Exponential,
+            {
+                "variance": [1, 2],
+                "length_scale": [0.5, 1, 2],
+            },
+        ],
+        [
+            cov.Gaussian,
+            {
+                "variance": [1, 2],
+                "length_scale": [0.5, 1, 2],
+            },
+        ],
+        [
+            cov.Matern,
+            {
+                "variance": [2],
+                "length_scale": [0.5],
+                "nu": [0.5, 1, 1.5, 2.5, 3.5, np.inf],
+            },
+        ],
     ],
 )
 def covariance_and_params(request: Any) -> Any:
@@ -142,11 +172,11 @@ def covariance_and_params(request: Any) -> Any:
 
 
 def test_covariances(
-    fetch_functional_data: FDataGrid,
+    fetch_weather_subset: FDataGrid,
     covariances_fixture: cov.Covariance,
 ) -> None:
     """Check that parameter conversion is done correctly."""
-    fd = fetch_functional_data
+    fd = fetch_weather_subset
     cov_kernel = covariances_fixture
 
     # Also test that it does not fail
@@ -161,7 +191,7 @@ def test_covariances(
 
 
 def test_raises(
-    fetch_functional_data: FDataGrid,
+    fetch_weather_subset: FDataGrid,
     covariances_raise_fixture: Any,
 ) -> None:
     """Check raises ValueError.
@@ -169,7 +199,7 @@ def test_raises(
     Check that non-functional kernels raise a ValueError exception
     with functional data.
     """
-    fd = fetch_functional_data
+    fd = fetch_weather_subset
     cov_kernel = covariances_raise_fixture
 
     pytest.raises(
@@ -179,86 +209,24 @@ def test_raises(
     )
 
 
-def test_fdatabasis_example_linear(
-    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
-) -> None:
-    """Check a precalculated example for Linear covariance kernel."""
-    fd1, fd2 = fdatabasis_data
-    res1 = cov.Linear(variance=1 / 2, intercept=3)(fd1, fd2)
-    res2 = np.array([[3 / 2], [3 / 2 + 32 / 6]])
+def test_precalc_example(
+    precalc_example_data: list[  # noqa: WPS320
+        FDataBasis, FDataBasis, cov.Covariance, np.array,
+    ],
+):
+    """Check the precalculated example for Linear covariance kernel.
+
+    Compare the theoretical precalculated results against the covariance kernel
+    implementation, for different kernels.
+    The structure of the input is a list containing:
+        [First functional dataset, Second functional dataset,
+        Covariance kernel used, Result]
+    """
+    fd1, fd2, kernel, precalc_result = precalc_example_data
+    computed_result = kernel(fd1, fd2)
     np.testing.assert_allclose(
-        res1,
-        res2,
-        rtol=1e-6,
-    )
-
-
-def test_fdatabasis_example_polynomial(
-    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
-) -> None:
-    """Check a precalculated example for Polynomial covariance kernel."""
-    fd1, fd2 = fdatabasis_data
-    res1 = cov.Polynomial(
-        variance=1 / 3,
-        slope=2,
-        intercept=1,
-        degree=2,
-    )(fd1, fd2)
-    res2 = np.array([[1 / 3], [67**2 / 3**3]])
-    np.testing.assert_allclose(
-        res1,
-        res2,
-        rtol=1e-6,
-    )
-
-
-def test_fdatabasis_example_gaussian(
-    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
-) -> None:
-    """Check a precalculated example for Gaussian covariance kernel."""
-    fd1, fd2 = fdatabasis_data
-    res1 = cov.Gaussian(variance=3, length_scale=2)(fd1, fd2)
-    res2 = np.array([
-        [3 * np.exp(-7 / 6)],
-        [3 * np.exp(-7 / 6)],
-    ])
-    np.testing.assert_allclose(
-        res1,
-        res2,
-        rtol=1e-6,
-    )
-
-
-def test_fdatabasis_example_exponential(
-    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
-) -> None:
-    """Check a precalculated example for Exponential covariance kernel."""
-    fd1, fd2 = fdatabasis_data
-    res1 = cov.Exponential(variance=4, length_scale=5)(fd1, fd2)
-    res2 = np.array([
-        [4 * np.exp(-np.sqrt(28 / 3) / 5)],
-        [4 * np.exp(-np.sqrt(28 / 3) / 5)],
-    ])
-    np.testing.assert_allclose(
-        res1,
-        res2,
-        rtol=1e-6,
-    )
-
-
-def test_fdatabasis_example_matern(
-    fdatabasis_data: Tuple[FDataBasis, FDataBasis],
-) -> None:
-    """Check a precalculated example for Matern covariance kernel."""
-    fd1, fd2 = fdatabasis_data
-    res1 = cov.Matern(variance=2, length_scale=3, nu=2)(fd1, fd2)
-    res2 = np.array([
-        [(2 / 3) ** 2 * (28 / 3) * 0.239775899566],
-        [(2 / 3) ** 2 * (28 / 3) * 0.239775899566],
-    ])
-    np.testing.assert_allclose(
-        res1,
-        res2,
+        computed_result,
+        precalc_result,
         rtol=1e-6,
     )
 

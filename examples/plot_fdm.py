@@ -1,3 +1,5 @@
+# flake8: noqa: WPS440, WPS441
+
 """
 Functional Diffusion Maps
 ============================================================================
@@ -166,7 +168,7 @@ for ax, alpha in zip(axes[:, 0], alpha_set):
     ax.set_ylabel(f"$\\alpha$: {alpha}", size=20, rotation=0, ha="right")
 
 for ax, length_scale in zip(axes[0], length_scale_set):
-    ax.set_title(f"$len\_sc$: {length_scale}", size=20, va="bottom")
+    ax.set_title(f"$len-sc$: {length_scale}", size=20, va="bottom")
 
 plt.show()
 
@@ -227,8 +229,8 @@ axes[0].set_ylabel(
     f"$\\alpha$: {alpha_set[0]}", size=20, rotation=0, ha="right",
 )
 
-for ax, length_scale in zip(axes, length_scale_set):   
-    ax.set_title(f"$len\_sc$: {length_scale}", size=20, va="bottom")
+for ax, length_scale in zip(axes, length_scale_set):
+    ax.set_title(f"$len-sc$: {length_scale}", size=20, va="bottom")
 
 plt.show()
 
@@ -293,7 +295,7 @@ fig, axes = plt.subplots(
     subplot_kw={"projection": "3d"},
 )
 
-for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):   
+for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
     fdm = FDM(
         n_components=3,
         kernel=Gaussian(length_scale=length_scale),
@@ -306,7 +308,7 @@ for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_zticklabels([])
-    ax.set_title(f"$\\alpha$: {alpha}    $len\_sc$: {length_scale}")
+    ax.set_title(f"$\\alpha$: {alpha}    $len-sc$: {length_scale}")
 
 plt.show()
 
@@ -327,7 +329,7 @@ ax = fig.add_subplot(111, projection="3d")
 ax.scatter(embedding[:, 0], embedding[:, 1], embedding[:, 2], c=y)
 ax.set_title(
     "Diffusion coordinates for \n"
-    f"$\\alpha$: {alpha}    $len\_sc$: {length_scale}",
+    f"$\\alpha$: {alpha}    $len-sc$: {length_scale}",
 )
 plt.show()
 
@@ -391,8 +393,11 @@ fig, axes = plt.subplots(
 
 for view, ax in zip(view_points, axes.ravel()):
     ax.scatter(
-        diffusion_coord[:, 0], diffusion_coord[:, 1], diffusion_coord[:, 2],
-        c=y, cmap=cmap,
+        diffusion_coord[:, 0],
+        diffusion_coord[:, 1],
+        diffusion_coord[:, 2],
+        c=y,
+        cmap=cmap,
     )
     ax.view_init(*view)
     ax.set_title(f"View {view}", fontsize=26)

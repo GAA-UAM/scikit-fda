@@ -43,5 +43,6 @@ of the covariance between the two data blocks.
 .. autosummary::
    :toctree: autosummary
 
+   skfda.preprocessing.dim_reduction.FDM
    skfda.preprocessing.dim_reduction.FPCA
    skfda.preprocessing.dim_reduction.FPLS

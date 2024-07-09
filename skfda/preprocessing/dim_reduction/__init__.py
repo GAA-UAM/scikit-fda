@@ -12,6 +12,7 @@ _normal_getattr, __dir__, __all__ = lazy.attach(
         "variable_selection",
     ],
     submod_attrs={
+        "_fdm": ["FDM"],
         "_fpca": ["FPCA"],
         "_fpls": ["FPLS"],
         "_neighbor_transforms": ["KNeighborsTransformer"],
@@ -19,6 +20,7 @@ _normal_getattr, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
+    from ._fdm import FDM as FDM
     from ._fpca import FPCA as FPCA
     from ._fpls import FPLS as FPLS
     from ._neighbor_transforms import (

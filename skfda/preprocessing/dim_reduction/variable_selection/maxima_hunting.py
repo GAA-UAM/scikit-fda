@@ -100,7 +100,7 @@ class RelativeLocalMaximaSelector(BaseEstimator):
             values = X.data_matrix[:, indexes]
             partition_indexes = np.argpartition(
                 values,
-                -min(self.max_points, len(values)),
+                -min(self.max_points, len(values.ravel())),
                 axis=None,
             )
             indexes = indexes[np.sort(partition_indexes[-self.max_points:])]

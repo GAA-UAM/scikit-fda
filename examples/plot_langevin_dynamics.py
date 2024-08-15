@@ -262,7 +262,7 @@ fig, ax = plt.subplots()
 
 plt.contour(X, Y, Z, levels=25, cmap='autumn')
 plt.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
-rc('animation', html='jshmtl')
+rc('animation', html='jshtml')
 scatter = None
 
 

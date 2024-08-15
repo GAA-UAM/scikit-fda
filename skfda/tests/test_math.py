@@ -16,8 +16,8 @@ from skfda.representation.basis import (
 
 
 def _ndm(
-    *args: np.typing.NDArray[np.float_],
-) -> Sequence[np.typing.NDArray[np.float_]]:
+    *args: np.typing.NDArray[np.float64],
+) -> Sequence[np.typing.NDArray[np.float64]]:
     return [
         x[(None,) * i + (slice(None),) + (None,) * (len(args) - i - 1)]
         for i, x in enumerate(args)
@@ -30,10 +30,10 @@ class InnerProductTest(unittest.TestCase):
     def test_several_variables(self) -> None:
         """Test inner_product with functions of several variables."""
         def f(  # noqa: WPS430
-            x: np.typing.NDArray[np.float_],
-            y: np.typing.NDArray[np.float_],
-            z: np.typing.NDArray[np.float_],
-        ) -> np.typing.NDArray[np.float_]:
+            x: np.typing.NDArray[np.float64],
+            y: np.typing.NDArray[np.float64],
+            z: np.typing.NDArray[np.float64],
+        ) -> np.typing.NDArray[np.float64]:
             return x * y * z
 
         t = np.linspace(0, 1, 30)
@@ -73,9 +73,9 @@ class InnerProductTest(unittest.TestCase):
     def test_mixed_several_variables(self) -> None:
         """Test inner_product with basis and grid multivariable functions."""
         def f(  # noqa: WPS430
-            x: np.typing.NDArray[np.float_],
-            y: np.typing.NDArray[np.float_],
-        ) -> np.typing.NDArray[np.float_]:
+            x: np.typing.NDArray[np.float64],
+            y: np.typing.NDArray[np.float64],
+        ) -> np.typing.NDArray[np.float64]:
             return x + y
 
         t = np.linspace(0, 1, 50)
@@ -103,13 +103,13 @@ class InnerProductTest(unittest.TestCase):
     def test_vector_valued(self) -> None:
         """Test inner_product with vector valued functions."""
         def f(  # noqa: WPS430
-            x: np.typing.NDArray[np.float_],
-        ) -> np.typing.NDArray[np.float_]:
+            x: np.typing.NDArray[np.float64],
+        ) -> np.typing.NDArray[np.float64]:
             return x**2
 
         def g(  # noqa: WPS430
-            y: np.typing.NDArray[np.float_],
-        ) -> np.typing.NDArray[np.float_]:
+            y: np.typing.NDArray[np.float64],
+        ) -> np.typing.NDArray[np.float64]:
             return 3 * y
 
         t = np.linspace(0, 1, 100)

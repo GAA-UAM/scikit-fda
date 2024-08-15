@@ -401,7 +401,7 @@ class TestEvaluationSplineArbitraryImage(unittest.TestCase):
 @np.vectorize
 def _coordinate_function(
     *args: float,
-) -> np.typing.NDArray[np.float_]:
+) -> np.typing.NDArray[np.float64]:
     _, *domain_indexes, _ = args
     return np.sum(domain_indexes)  # type: ignore[no-any-return]
 

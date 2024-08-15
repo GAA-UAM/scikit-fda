@@ -318,7 +318,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         ])
 
         X: Sequence[
-            np.typing.NDArray[np.float_] | FDataBasis,
+            np.typing.NDArray[np.float64] | FDataBasis,
         ] = [multivariate, x_fd]
 
         # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E800

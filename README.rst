@@ -92,11 +92,14 @@ Please, if you find this software useful in your work, reference it citing the f
     doi = {10.18637/jss.v109.i02},
     journal = {Journal of Statistical Software},
     month = may,
+    number = {2},
+    pages = {1--37},
     title = {{scikit-fda: A Python Package for Functional Data Analysis}},
     url = {https://www.jstatsoft.org/article/view/v109i02},
     volume = {109},
     year = {2024}
   }
+
 
 You can additionally cite the software repository itself using:
 

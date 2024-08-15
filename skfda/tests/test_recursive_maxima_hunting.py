@@ -29,8 +29,8 @@ class TestRMH(unittest.TestCase):
         n_features = 101
 
         def mean_1(  # noqa: WPS430
-            t: np.typing.NDArray[np.float_],
-        ) -> np.typing.NDArray[np.float_]:
+            t: np.typing.NDArray[np.float64],
+        ) -> np.typing.NDArray[np.float64]:
 
             return (  # type: ignore[no-any-return]
                 np.abs(t - 0.25)
@@ -86,8 +86,8 @@ class TestRMH(unittest.TestCase):
         n_features = 101
 
         def mean_1(  # noqa: WPS430
-            t: np.typing.NDArray[np.float_],
-        ) -> np.typing.NDArray[np.float_]:
+            t: np.typing.NDArray[np.float64],
+        ) -> np.typing.NDArray[np.float64]:
 
             return (  # type: ignore[no-any-return]
                 np.abs(t - 0.25)

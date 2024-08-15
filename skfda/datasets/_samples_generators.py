@@ -331,13 +331,13 @@ def make_sde_trajectories(  # noqa: WPS211
         >>> n_L0_discretization_points = 5,
         >>>
         >>> trajectories = make_sde_trajectories(
-        ...     X_0,
-        ...     gbm_drift,
-        ...     gbm_diffusion,
-        ...     gbm_diff_derivative,
-        ...     n_L0_discretization_points,
-        ...     n_samples=10,
+        ...     initial_condition=X_0,
+        ...     drift=gbm_drift,
+        ...     diffusion=gbm_diffusion,
+        ...     diffusion_derivative=gbm_diff_derivative,
+        ...     n_L0_discretization_points=n_L0_discretization_points,
         ...     method="milstein",
+        ...     n_samples=10,
         ... )
 
     References:

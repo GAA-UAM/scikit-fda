@@ -47,11 +47,10 @@ The following functions are used to make synthetic functional datasets:
 .. autosummary::
    :toctree: autosummary
 	
-   skfda.datasets.euler_maruyama
    skfda.datasets.make_gaussian
    skfda.datasets.make_gaussian_process
    skfda.datasets.make_sinusoidal_process
    skfda.datasets.make_multimodal_samples
    skfda.datasets.make_multimodal_landmarks
    skfda.datasets.make_random_warping
-   skfda.datasets.milstein
+   skfda.datasets.make_sde_trajectories

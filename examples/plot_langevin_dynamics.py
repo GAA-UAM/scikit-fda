@@ -16,26 +16,27 @@ from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 from scipy.stats import multivariate_normal
 
-from skfda.datasets import euler_maruyama
+from skfda.datasets import make_sde_trajectories
 
 # %%
 # Langevin dynamics is a mathematical model used to describe the behaviour of
 # particles in a fluid, particularly in the context of statistical mechanic
-# and molecular dynamics. It’s named after Paul Langevin a French physicist.
-# In Langevin dynamics, the motion of particles is influenced by both
+# and molecular dynamics. It was initally formulated by French physicist Paul
+# Langevin. In Langevin dynamics, the motion of particles is influenced by both
 # determinist  and stochastic forces. The ideas presented by Paul Langevin can
 # be applied in various disciplines to simulate the behaviour of particles in
 # complex environments. In our case, we will use them to produce samples from
 # a probability distribution: a 2-d Gaussian mixture.
 #
 # Langevin dynamics enable us to sample from probability distributions from
-# which a non-normalised  pdf is known. This is possible thanks to the use
-# of the score function. Given a probability density function :math:`p(x),`
-# the score function is defined as the gradient of its logarithm
+# which a non-normalised pdf is known. This is possible thanks to the use
+# of the score function. Given a probability density function
+# :math:`p(\mathbf{x}),` the score function is defined as the gradient of its
+# logarithm
 #
 # .. math::
 #
-#   \nabla_x \log p(\mathbf{x}).
+#   \nabla_\mathbf{x} \log p(\mathbf{x}).
 #
 # For example, if :math:`p(\mathbf{x}) = \frac{q(\mathbf{x})}{Z}`, where
 # :math:`q(\mathbf{x}) \geq 0` is known but :math:`Z` is a not known
@@ -46,7 +47,9 @@ from skfda.datasets import euler_maruyama
 #   \nabla_\mathbf{x} \log p(\mathbf{x}) = \nabla_\mathbf{x} \log q(\mathbf{x})
 #   - \nabla_\mathbf{x} \log Z =  \nabla_\mathbf{x} \log q(\mathbf{x}),
 #
-# which is known. Once we know the score function, we can sample from the
+# which is known.
+#
+# Once we know the score function, we can sample from the
 # probability distribution :math:`p(\mathbf{x})` using a dynamic driven by
 # SDEs. The idea is to define an SDE whose stationary distribution is
 # :math:`p(\mathbf{x})`. If we evolve the SDE
@@ -68,8 +71,8 @@ from skfda.datasets import euler_maruyama
 # applied to other distributions.
 #
 # We will start by defining some notation. The Gaussian mixture is composed
-# of :math:`N` Gaussians of mean :math:`\mu_n` and covarianze matrix
-# :math:`\Sigma_n`. For the sake of simplicity, we will suppose the covarianze
+# of :math:`N` Gaussians of mean :math:`\mu_n` and covariance matrix
+# :math:`\Sigma_n`. For the sake of simplicity, we will suppose the covariance
 # matrices are diagonal. Let :math:`\sigma_n` then be the corresponding vector
 # of standard deviations. Each Gaussian will be weighted by :math:`\omega_n`,
 # such that :math:`\sum_{n=1}^N \omega_n = 1`. So, if :math:`p_n(x)` is the pdf
@@ -80,8 +83,8 @@ from skfda.datasets import euler_maruyama
 #
 # .. math::
 #
-#   \nabla_x \log p(x) =  \frac{\nabla p(x)}{p(x)} =
-#   \frac{\sum_{n=1}^{N}\omega_n \nabla p_n(x)}{\sum_{n=1}^{N}\omega_n p_n(x)}
+#   \nabla_x \log p(x) =  \frac{\nabla_x p(x)}{p(x)} =
+#   \frac{\sum_{n=1}^{N}\omega_n\nabla_x p_n(x)}{\sum_{n=1}^{N}\omega_n p_n(x)}
 #   = \frac{\sum_{n=1}^{N}\omega_n p_n(x) \frac{x - \mu_n}{\sigma_n}}
 #   {\sum_{n=1}^{N}\omega_n p_n(x)}.
 #
@@ -148,7 +151,7 @@ def score_gaussian_mixture(
 
 # %%
 # Once we have defined the pdf and the score of the distribution, we can
-# visualise them with a contour plot of the logprobability and the vector
+# visualize them with a contour plot of the logprobability and the vector
 # field given by the score.
 
 
@@ -230,14 +233,15 @@ n_grid_points = 200
 grid_points_per_frame = 10
 frames = 20
 # %%
-# We use :func:`skfda.datasets.euler_maruyama` method of the datasets module
-# to simulate solutions of the SDE. More information on how to use it can be
-# found in the example :ref:`sphx_glr_auto_examples_plot_sde_simulation.py`.
+# We use :func:`skfda.datasets.make_sde_trajectories` method of the datasets
+# module to simulate solutions of the SDE. More information on how to use it
+# can be found in the example
+# :ref:`sphx_glr_auto_examples_plot_sde_simulation.py`.
 t_0 = 0
 t_n = 3.0
 
-fd = euler_maruyama(
-    initial_distribution,
+fd = make_sde_trajectories(
+    initial_condition=initial_distribution,
     n_grid_points=n_grid_points,
     n_samples=n_samples,
     start=t_0,

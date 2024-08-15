@@ -16,7 +16,7 @@ from matplotlib.animation import FuncAnimation
 from scipy.stats import multivariate_normal, norm
 from sklearn.neighbors import KernelDensity
 
-from skfda.datasets import euler_maruyama, milstein
+from skfda.datasets import make_sde_trajectories
 
 # %%
 # SDEs represent a fundamental mathematical framework for modelling systems
@@ -40,7 +40,7 @@ from skfda.datasets import euler_maruyama, milstein
 # `Wiener process <https://en.wikipedia.org/wiki/Wiener_process>`_.
 #
 # To simulate SDEs practically, there exist various numerical integrators that
-# approximate the solution with different degrees of precision.scikit-fda
+# approximate the solution with different degrees of precision. scikit-fda
 # implements two of them: Euler-Maruyama and Milstein In this example we will
 # use the Euler-Maruyama scheme due to its simplicity. However, the results can
 # be reproduced also using Milstein scheme.
@@ -50,7 +50,7 @@ from skfda.datasets import euler_maruyama, milstein
 #
 # - In the first part a simulation of trajectories is made.
 # - In the second part, the marginal probability flow of a stochastic process
-#   is visualised.
+#   is visualized.
 
 # %%
 # Simulation of trajectories of an Ornstein-Uhlenbeck process
@@ -60,7 +60,7 @@ from skfda.datasets import euler_maruyama, milstein
 # process. One common SDE found in the literature is the Ornstein Uhlenbeck
 # process (OU). The OU process is particularly useful for modelling phenomena
 # where a system tends to return to a central value or equilibrium point over
-# time, exhibiting a form of stochastic stabilit.  In this case, te process
+# time, exhibiting a form of stochastic stability. In this case, the process
 # can be modelled with the equation:
 #
 # .. math::
@@ -69,10 +69,10 @@ from skfda.datasets import euler_maruyama, milstein
 #     d\mathbf{W}(t)
 #
 #
-# where :math:`\mathbf{W}` is the Brownian motion.The parameter mu represents
-# the equilibrium point of the process, :math:`\mathbf{A}` represents the rate
-# at which the process reverts to the mean and :math:`\mathbf{B}` represents
-# the volatility of the processs.
+# where :math:`\mathbf{W}` is the Brownian motion. The parameter :math:`\mu`
+# represents the equilibrium point of the process, :math:`\mathbf{A}`
+# represents the rate at which the process reverts to the mean and
+# :math:`\mathbf{B}` represents the volatility of the processs.
 #
 # To illustrate the example, we will define some concrete values for the
 # parameters:
@@ -93,14 +93,14 @@ def ou_drift(
 # For the first example, we will consider that all samples start from the same
 # initial state :math:`X_0`. We can simulate the trajectories using the
 # Euler - Maruyama method. The trajectories of the SDE calculated by
-# :func:`skfda.datasets.euler_maruyama` are stored in an FDataGrid. Then, we
-# can plot them using scikit-fda integrated functional data plots.
+# :func:`skfda.datasets.make_sde_trajectories` are stored in an FDataGrid.
+# Then, we can plot them using scikit-fda integrated functional data plots.
 
 
 X_0 = 1.0
 
-fd_ou = euler_maruyama(
-    X_0,
+fd_ou = make_sde_trajectories(
+    initial_condition=X_0,
     n_samples=30,
     drift=ou_drift,
     diffusion=B,
@@ -151,10 +151,10 @@ plt.show()
 # trajectories for the Ornstein-Uhlenbeck process for a range of initial
 # points.
 
-X_0 = np.linspace(0, 8, 30)
+X_0 = np.linspace(1, 11, 30)
 
-fd_ou = euler_maruyama(
-    X_0,
+fd_ou = make_sde_trajectories(
+    initial_condition=X_0,
     drift=ou_drift,
     diffusion=B,
     start=0.0,
@@ -202,13 +202,13 @@ plt.show()
 # Probability flow
 # ---------------------------------------------------
 #
-# In this section we exemplify how to visualise the evolution of the marginal
+# In this section we exemplify how to visualize the evolution of the marginal
 # probability density, i.e. probability flow, of a stochastic differential
 # equation. At a given time t, the solution of an SDE is not a real-valued
 # vector; it is a random variable. Numeric integrators allow us to generate
 # trajectories which represent samples of these random variables at a given
 # time t. Probability flow is a very interesting characteristic to study when
-# simulating SDE, as it gives us the possibility to visualiase the probability
+# simulating SDE, as it gives us the possibility to visualiaze the probability
 # distribution of the solution of the SDE at a given time. We will present a
 # 1-dimensional and a 2-dimensional example.
 #
@@ -242,8 +242,8 @@ X_0 = 0.0
 t_0 = 0.0
 t_n = 3.0
 
-fd = euler_maruyama(
-    X_0,
+fd = make_sde_trajectories(
+    initial_condition=X_0,
     n_samples=5000,
     drift=ou_drift,
     diffusion=B,
@@ -308,7 +308,7 @@ anim
 
 
 # %%
-# In the second example, we visualise the probability flow of a 2-dimensional
+# In the second example, we visualize the probability flow of a 2-dimensional
 # Ornstein Uhlenbeck process. This process has the same parameters than the
 # previous 1-dimensional one in each coordinate. In this case, instead of
 # starting all trajectories from the same value or range of values, the initial
@@ -341,16 +341,13 @@ def rvs_gaussian_mixture(
     """Generate samples of a gaussian mixture."""
     n_gaussians, dim = np.shape(means)
     selected_gaussians = np.random.multinomial(size, probabilities)
-    samples = []
-    for index in range(n_gaussians):
-        samples.append(
-            multivariate_normal.rvs(
-                means[index],
-                cov_matrices[index],
-                random_state=random_state,
-                size=selected_gaussians[index],
-            ),
-        )
+    samples = [multivariate_normal.rvs(
+        means[index],
+        cov_matrices[index],
+        random_state=random_state,
+        size=selected_gaussians[index],
+    ) for index in range(n_gaussians)
+    ]
 
     samples = np.concatenate(samples)
     np.random.shuffle(samples)
@@ -366,8 +363,8 @@ A = np.array([1, 1])
 mu = np.array([3, 3])
 B = 0.5 * np.eye(2)
 
-fd = euler_maruyama(
-    rvs_gaussian_mixture,
+fd = make_sde_trajectories(
+    initial_condition=rvs_gaussian_mixture,
     n_samples=500,
     drift=ou_drift,
     diffusion=B,
@@ -424,16 +421,16 @@ ani3d
 # Using Milstein's method to compute SDE solutions
 # ---------------------------------------------------
 #
-# Apart from func:`euler_maruyama`, scikit-fda also implements the Milstein
-# scheme, a numerical SDE integrator of a higher order of convergence than the
-# Euler-Maruyama scheme. When computing solution trajectories of an SDE, the
-# Milstein method adds a term which depends on the spacial derivative of the
-# diffusion term of the SDE (derivative with respect to :math:`\mathbf{X}`).
-# In the Ornstein-Uhlenbeck process, as the diffusion does not depend on the
-# value of :math:`\mathbf{X}`, then both functions
-# :func:`skfda.datasets.euler_maruyama` and :func:`skfda.datasets.milstein`
-# are equivalent. In this section we show how to use the
-# former function for SDEs where the diffusion term does depend on :math:`X`.
+# Apart from func:`~skfda.datasets.make_sde_trajectories`, scikit-fda also
+# implements the Milstein scheme, a numerical SDE integrator of a higher order
+# of convergence than the Euler-Maruyama scheme. When computing solution
+# trajectories of an SDE, the Milstein method adds a term which depends on the
+# spacial derivative of the diffusion term of the SDE (derivative with respect
+# to :math:`\mathbf{X}`). In the Ornstein-Uhlenbeck process, as the diffusion
+# does not depend on the value of :math:`\mathbf{X}`, then both methods
+# Euler Maruyama and Milstein are equivalent. In this section we show how
+# to use the former function for SDEs where the diffusion term does depend
+# :math:`X`.
 #
 # We will simulate a Geometric Brownian Motion (GBM). One of its notable
 # applications is in modelling stock prices in financial markets, as it forms
@@ -444,8 +441,8 @@ ani3d
 #
 #   dX(t) = \mu X(t) dt + \sigma X(t)  dW(t),
 #
-# where $\mu$ and $\sigma$ have constant values. To illustrate the example,
-# we will define some concrete values for the parameters:
+# where :math:`\mu` and :math:`\sigma` have constant values. To illustrate the
+# example, we will define some concrete values for the parameters:
 
 mu = 2
 sigma = 1
@@ -482,14 +479,14 @@ n_steps = 100
 n_l0_discretization_points = 5
 random_state = np.random.RandomState(1)
 
-fd = milstein(
-    X0,
+fd = make_sde_trajectories(
+    initial_condition=X0,
     n_samples=n_simulations,
     n_grid_points=n_steps,
     drift=gbm_drift,
     diffusion=gbm_diffusion,
     diffusion_derivative=gbm_diffusion_derivative,
-    diffusion_matricial_term=False,
+    method="milstein",
     random_state=random_state,
 )
 

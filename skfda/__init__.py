@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         FData as FData,
         FDataBasis as FDataBasis,
         FDataGrid as FDataGrid,
+        FDataIrregular as FDataIrregular,
         concatenate as concatenate,
     )
 

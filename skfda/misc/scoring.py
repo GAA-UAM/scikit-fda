@@ -4,14 +4,14 @@ from __future__ import annotations
 import math
 import warnings
 from functools import singledispatch
-from typing import Callable, Optional, TypeVar, Union, overload
+from typing import Callable, TypeVar, overload
 
 import numpy as np
 import sklearn.metrics
 from typing_extensions import Literal, Protocol
 
 from .._utils import nquad_vec
-from ..representation import FData, FDataBasis, FDataGrid
+from ..representation import FData, FDataBasis, FDataGrid, FDataIrregular
 from ..representation._functional_data import EvalPointsType
 from ..typing._numpy import NDArrayFloat
 
@@ -123,6 +123,42 @@ def _multioutput_score_grid(
     # If the dimension of the codomain is > 1,
     # the mean of the scores is taken
     return float(np.mean(score.integrate()[0]) / _domain_measure(score))
+
+
+def _integral_average_fdatairregular(
+    score: FDataIrregular,
+    squared: bool = True,
+    weights: NDArrayFloat | None = None,
+) -> float:
+    """Calculate the weighted average of the normalized integrals of the score.
+
+    The integral of the score is normalized because each integral is divided by
+    the length of the curve's domain.
+
+    If the score is vector-valued, then the mean of each codimension integral
+    is calculated for every functional observation.
+
+    Args:
+        score: Score of the functions.
+        squared: If False, the square root is taken.
+        weights: Weights for the mean.
+    """
+    if score.dim_domain != 1:
+        raise ValueError(
+            "Only univariate FDataIrregular objects are supported",
+        )
+    if not squared:
+        score = np.sqrt(score)
+
+    integrals = np.mean(score.integrate(), axis=1)
+    lebesgue_measures = np.diff(score.sample_range, axis=-1).reshape(-1)
+    normalized_integrals = np.divide(
+        integrals,
+        lebesgue_measures,
+        out=np.zeros_like(integrals),
+        where=lebesgue_measures != 0,
+    )
+    return np.average(normalized_integrals, weights=weights)
 
 
 @overload
@@ -238,9 +274,9 @@ def _explained_variance_score_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
 
     num = _var(y_true - y_pred, weights=sample_weight)
     den = _var(y_true, weights=sample_weight)
@@ -260,7 +296,7 @@ def _explained_variance_score_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
 
@@ -361,8 +397,9 @@ def mean_absolute_error(
     where :math:`D` is the function domain and :math:`V` the volume of that
     domain.
 
-    For :class:`~skfda.representation.FDataBasis` only
-    'uniform_average' is available.
+    For :class:`~skfda.representation.FDataBasis` and
+    :class:`~skfda.representation.FDataIrregular` only 'uniform_average' is
+    available.
 
     If :math:`y\_true` and :math:`y\_pred` are numpy arrays, sklearn function
     is called.
@@ -378,8 +415,10 @@ def mean_absolute_error(
         Mean absolute error.
 
         If multioutput = 'uniform_average' or
-        :math:`y\_pred` and :math:`y\_true` are
-        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+        :math:`y\_pred` and :math:`y\_true` are both
+        :class:`~skfda.representation.FDataBasis` or both
+        :class:`~skfda.representation.FDataIrregular` objects, float is
+        returned.
 
         If both :math:`y\_pred` and :math:`y\_true` are
         :class:`~skfda.representation.FDataGrid`
@@ -403,9 +442,9 @@ def _mean_absolute_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     error = mean(np.abs(y_true - y_pred), weights=sample_weight)
@@ -413,11 +452,25 @@ def _mean_absolute_error_fdatagrid(
 
 
 @mean_absolute_error.register  # type: ignore[attr-defined, misc]
+def _mean_absolute_error_fdatairregular(
+    y_true: FDataIrregular,
+    y_pred: FDataIrregular,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float:
+    return _integral_average_fdatairregular(
+        np.abs(y_true - y_pred),
+        weights=sample_weight,
+    )
+
+
+@mean_absolute_error.register  # type: ignore[attr-defined, misc]
 def _mean_absolute_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
 
@@ -491,8 +544,9 @@ def mean_absolute_percentage_error(
     where :math:`D` is the function domain and :math:`V` the volume of that
     domain.
 
-    For :class:`~skfda.representation.FDataBasis` only
-    'uniform_average' is available.
+    For :class:`~skfda.representation.FDataBasis` and
+    :class:`~skfda.representation.FDataIrregular` only 'uniform_average' is
+    available.
 
     If :math:`y\_true` and :math:`y\_pred` are numpy arrays, sklearn function
     is called.
@@ -511,8 +565,10 @@ def mean_absolute_percentage_error(
         Mean absolute percentage error.
 
         If multioutput = 'uniform_average' or
-        :math:`y\_pred` and :math:`y\_true` are
-        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+        :math:`y\_pred` and :math:`y\_true` are both
+        :class:`~skfda.representation.FDataBasis` or both
+        :class:`~skfda.representation.FDataIrregular` objects, float is
+        returned.
 
         If both :math:`y\_pred` and :math:`y\_true` are
         :class:`~skfda.representation.FDataGrid`
@@ -538,9 +594,9 @@ def _mean_absolute_percentage_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     epsilon = np.finfo(np.float64).eps
@@ -555,11 +611,28 @@ def _mean_absolute_percentage_error_fdatagrid(
 
 
 @mean_absolute_percentage_error.register  # type: ignore[attr-defined, misc]
+def _mean_absolute_percentage_error_fdatairregular(
+    y_true: FDataIrregular,
+    y_pred: FDataIrregular,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float:
+    epsilon = np.finfo(np.float64).eps
+
+    if np.any(np.abs(y_true.values) < epsilon):
+        warnings.warn('Zero denominator', RuntimeWarning)
+
+    mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
+    return _integral_average_fdatairregular(mape, weights=sample_weight)
+
+
+@mean_absolute_percentage_error.register  # type: ignore[attr-defined, misc]
 def _mean_absolute_percentage_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
 
@@ -644,8 +717,9 @@ def mean_squared_error(
     where :math:`D` is the function domain and :math:`V` the volume of that
     domain.
 
-    For :class:`~skfda.representation.FDataBasis` only
-    'uniform_average' is available.
+    For :class:`~skfda.representation.FDataBasis` and
+    :class:`~skfda.representation.FDataIrregular` only 'uniform_average' is
+    available.
 
     If :math:`y\_true` and :math:`y\_pred` are numpy arrays, sklearn function
     is called.
@@ -662,8 +736,10 @@ def mean_squared_error(
         Mean squared error.
 
         If multioutput = 'uniform_average' or
-        :math:`y\_pred` and :math:`y\_true` are
-        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+        :math:`y\_pred` and :math:`y\_true` are both
+        :class:`~skfda.representation.FDataBasis` or both
+        :class:`~skfda.representation.FDataIrregular` objects, float is
+        returned.
 
         If both :math:`y\_pred` and :math:`y\_true` are
         :class:`~skfda.representation.FDataGrid`
@@ -688,10 +764,10 @@ def _mean_squared_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
     squared: bool = True,
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     error: FDataGrid = mean(
@@ -703,11 +779,27 @@ def _mean_squared_error_fdatagrid(
 
 
 @mean_squared_error.register  # type: ignore[attr-defined, misc]
+def _mean_squared_error_fdatairregular(
+    y_true: FDataIrregular,
+    y_pred: FDataIrregular,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+    squared: bool = True,
+) -> float:
+    return _integral_average_fdatairregular(
+        np.power(y_true - y_pred, 2),
+        weights=sample_weight,
+        squared=squared,
+    )
+
+
+@mean_squared_error.register  # type: ignore[attr-defined, misc]
 def _mean_squared_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     squared: bool = True,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
@@ -791,8 +883,9 @@ def mean_squared_log_error(
     where :math:`D` is the function domain and :math:`V` the volume of that
     domain.
 
-    For :class:`~skfda.representation.FDataBasis` only
-    'uniform_average' is available.
+    For :class:`~skfda.representation.FDataBasis` and
+    :class:`~skfda.representation.FDataIrregular` only 'uniform_average' is
+    available.
 
     If :math:`y\_true` and :math:`y\_pred` are numpy arrays, sklearn function
     is called.
@@ -812,8 +905,10 @@ def mean_squared_log_error(
         Mean squared log error.
 
         If multioutput = 'uniform_average' or
-        :math:`y\_pred` and :math:`y\_true` are
-        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+        :math:`y\_pred` and :math:`y\_true` are both
+        :class:`~skfda.representation.FDataBasis` or both
+        :class:`~skfda.representation.FDataIrregular` objects, float is
+        returned.
 
         If both :math:`y\_pred` and :math:`y\_true` are
         :class:`~skfda.representation.FDataGrid`
@@ -840,12 +935,36 @@ def _mean_squared_log_error_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
     squared: bool = True,
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
 
     if np.any(y_true.data_matrix < 0) or np.any(y_pred.data_matrix < 0):
+        raise ValueError(
+            "Mean Squared Logarithmic Error cannot be used when "
+            "targets functions have negative values.",
+        )
+
+    return mean_squared_error(
+        np.log1p(y_true),
+        np.log1p(y_pred),
+        sample_weight=sample_weight,
+        multioutput=multioutput,
+        squared=squared,
+    )
+
+
+@mean_squared_log_error.register  # type: ignore[attr-defined, misc]
+def _mean_squared_log_error_fdatairregular(
+    y_true: FDataIrregular,
+    y_pred: FDataIrregular,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+    squared: bool = True,
+) -> float:
+    if np.any(y_true.values < 0) or np.any(y_pred.values < 0):
         raise ValueError(
             "Mean Squared Logarithmic Error cannot be used when "
             "targets functions have negative values.",
@@ -865,7 +984,7 @@ def _mean_squared_log_error_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     squared: bool = True,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
@@ -998,9 +1117,9 @@ def _r2_score_fdatagrid(
     y_true: FDataGrid,
     y_pred: FDataGrid,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
-) -> Union[float, FDataGrid]:
+) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     if y_pred.n_samples < 2:
@@ -1030,7 +1149,7 @@ def _r2_score_fdatabasis(
     y_true: FDataBasis,
     y_pred: FDataBasis,
     *,
-    sample_weight: Optional[NDArrayFloat] = None,
+    sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = 'uniform_average',
 ) -> float:
 

@@ -261,7 +261,7 @@ x_range = np.linspace(x_min, x_max, 200)
 epsilon_t = 1.0e-10  # Avoids evaluating singular pdf at t_0
 times = np.linspace(t_0 + epsilon_t, t_n, 100)
 fig, ax = plt.subplots(2, 1, figsize=(7, 10))
-rc('animation', html='html5')
+rc('animation', html='jshtml')
 
 # Creation of the plot.
 ax[0].set_xlim(t_0, t_n)

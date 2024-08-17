@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-48-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-49-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -71,6 +71,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://ddavo.me/"><img src="https://avatars.githubusercontent.com/u/10263941?v=4?s=100" width="100px;" alt="David Davó"/><br /><sub><b>David Davó</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Adaviddavo" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/eliegoudout"><img src="https://avatars.githubusercontent.com/u/114467748?v=4?s=100" width="100px;" alt="eliegoudout"/><br /><sub><b>eliegoudout</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=eliegoudout" title="Documentation">📖</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=eliegoudout" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/pulls?q=is%3Apr+reviewed-by%3Aeliegoudout" title="Reviewed Pull Requests">👀</a> <a href="#ideas-eliegoudout" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/mynanshan"><img src="https://avatars.githubusercontent.com/u/80438694?v=4?s=100" width="100px;" alt="mynanshan"/><br /><sub><b>mynanshan</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Amynanshan" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://jack-pan-ai.github.io/"><img src="https://avatars.githubusercontent.com/u/35600925?v=4?s=100" width="100px;" alt="Qilong Pan"/><br /><sub><b>Qilong Pan</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Ajack-pan-ai" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

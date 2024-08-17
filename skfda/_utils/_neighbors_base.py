@@ -313,9 +313,12 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
 
             >>> graph = neigh.kneighbors_graph(X[0])
             >>> print(graph)
-                (0, 0)    1.0
-                (0, 8)    1.0
-                (0, 1)    1.0
+            <Compressed Sparse Row sparse matrix of dtype 'float64'
+               with 3 stored elements and shape (1, 30)>
+              Coords    Values
+              (0, 0)    1.0
+              (0, 8)    1.0
+              (0, 1)    1.0
 
         Notes:
             This method wraps the corresponding sklearn routine in the

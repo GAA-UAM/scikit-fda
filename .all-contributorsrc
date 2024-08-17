@@ -554,6 +554,15 @@
         "review",
         "ideas"
       ]
+    },
+    {
+      "login": "mynanshan",
+      "name": "mynanshan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/80438694?v=4",
+      "profile": "https://github.com/mynanshan",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

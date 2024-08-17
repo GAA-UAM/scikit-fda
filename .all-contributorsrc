@@ -563,6 +563,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "jack-pan-ai",
+      "name": "Qilong Pan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/35600925?v=4",
+      "profile": "https://jack-pan-ai.github.io/",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

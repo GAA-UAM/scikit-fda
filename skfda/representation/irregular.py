@@ -627,7 +627,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         values_list = np.split(data.values, data.start_indices[1:])
         points_list = np.split(data.points, data.start_indices[1:])
         return np.array([
-            scipy.integrate.simpson(y, x, axis=0)
+            scipy.integrate.simpson(y, x=x, axis=0)
             for y, x in zip(values_list, points_list)
         ])
 

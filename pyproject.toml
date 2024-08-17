@@ -42,7 +42,7 @@ dependencies = [
 	"rdata",
 	"scikit-datasets[cran]>=0.2.2",
 	"scikit-learn>=0.20",
-	"scipy>=1.6.0, <1.14",
+	"scipy>=1.6.0",
 	"typing-extensions",
 ]
 
@@ -64,6 +64,7 @@ test = [
   "pytest",
   "pytest-env",
   "pytest-subtests",
+  "scipy>=1.14", # Changes in sparse array representation.
 ]
 
 [project.urls]

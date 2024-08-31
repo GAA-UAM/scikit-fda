@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
-    t = np.asfarray(t)
+    t = np.asarray(t, dtype=np.float64)
 
     dim = t.ndim
     assert dim <= 2
@@ -907,7 +907,7 @@ class RecursiveMaximaHunting(
         """Recursive maxima hunting algorithm."""
         self.features_shape_ = X.data_matrix.shape[1:]
 
-        y = np.asfarray(y)
+        y = np.asarray(y, dtype=np.float64)
 
         self.correction_ = (
             UniformCorrection()

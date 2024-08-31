@@ -63,7 +63,7 @@ class NearestCentroid(
         We can predict the class of new samples
 
         >>> neigh.predict(fd[::2]) # Predict labels for even samples
-        array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
+        array([ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
 
     See also:
         :class:`~skfda.ml.classification.DTMClassifier`
@@ -164,7 +164,7 @@ class DTMClassifier(NearestCentroid[Input, Target]):
         We can predict the class of new samples
 
         >>> clf.predict(X_test) # Predict labels for test samples
-        array([1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+        array([ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
                 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
 
         Finally, we calculate the mean accuracy for the test data

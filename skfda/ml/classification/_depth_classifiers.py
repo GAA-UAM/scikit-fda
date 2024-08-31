@@ -106,8 +106,8 @@ class DDClassifier(
         We can predict the class of new samples
 
         >>> clf.predict(X_test)
-        array([1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-               1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
+        array([ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
 
         Finally, we calculate the mean accuracy for the test data
 
@@ -278,8 +278,8 @@ class DDGClassifier(
         We can predict the class of new samples
 
         >>> clf.predict(X_test)
-        array([1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
-               1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
+        array([ 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
 
         Finally, we calculate the mean accuracy for the test data
 
@@ -299,8 +299,8 @@ class DDGClassifier(
         >>> clf.fit(X_train, y_train)
         DDGClassifier(...)
         >>> clf.predict(X_test)
-        array([1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
-               1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
+        array([ 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
         >>> clf.score(X_test, y_test)
         0.875
 
@@ -475,7 +475,7 @@ class _ArgMaxClassifier(
         We can predict the class of new samples
 
         >>> clf.predict(X) # Predict labels for test samples
-        array([1, 0, 0])
+        array([ 1, 0, 0])
     """
 
     def fit(self, X: NDArrayFloat, y: Target) -> _ArgMaxClassifier[Target]:
@@ -543,8 +543,8 @@ class MaximumDepthClassifier(DDGClassifier[Input, Target]):
         We can predict the class of new samples
 
         >>> clf.predict(X_test) # Predict labels for test samples
-        array([1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-               1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
+        array([ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
 
         Finally, we calculate the mean accuracy for the test data
 

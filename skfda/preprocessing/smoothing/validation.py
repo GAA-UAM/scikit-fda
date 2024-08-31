@@ -210,7 +210,7 @@ class SmoothingParameterSearch(
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-11.67, -12.37])
         >>> round(grid.best_score_, 2)
-        -11.67
+        np.float64(-11.67)
         >>> grid.best_params_['kernel_estimator__n_neighbors']
         2
         >>> grid.best_estimator_.hat_matrix().round(2)

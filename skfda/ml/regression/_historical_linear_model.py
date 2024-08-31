@@ -264,19 +264,19 @@ class HistoricalLinearRegression(
         >>> import scipy.integrate
 
         >>> random_state = np.random.RandomState(0)
-        >>> data_matrix = random_state.choice(10, size=(8, 6))
+        >>> data_matrix = random_state.choice(10, size=(8, 6)).astype(float)
         >>> data_matrix
-        array([[5, 0, 3, 3, 7, 9],
-               [3, 5, 2, 4, 7, 6],
-               [8, 8, 1, 6, 7, 7],
-               [8, 1, 5, 9, 8, 9],
-               [4, 3, 0, 3, 5, 0],
-               [2, 3, 8, 1, 3, 3],
-               [3, 7, 0, 1, 9, 9],
-               [0, 4, 7, 3, 2, 7]])
-        >>> intercept = random_state.choice(10, size=(1, 6))
+        array([[ 5., 0., 3., 3., 7., 9.],
+               [ 3., 5., 2., 4., 7., 6.],
+               [ 8., 8., 1., 6., 7., 7.],
+               [ 8., 1., 5., 9., 8., 9.],
+               [ 4., 3., 0., 3., 5., 0.],
+               [ 2., 3., 8., 1., 3., 3.],
+               [ 3., 7., 0., 1., 9., 9.],
+               [ 0., 4., 7., 3., 2., 7.]])
+        >>> intercept = random_state.choice(10, size=(1, 6)).astype(float)
         >>> intercept
-        array([[2, 0, 0, 4, 5, 5]])
+        array([[ 2., 0., 0., 4., 5., 5.]])
         >>> y_data = scipy.integrate.cumulative_trapezoid(
         ...              data_matrix,
         ...              initial=0,

@@ -37,7 +37,7 @@ dependencies = [
 	"lazy_loader",
 	"matplotlib",
 	"multimethod>=1.5, !=1.11, != 1.11.1",
-	"numpy>=1.16, <2",
+	"numpy>=1.16",
 	"pandas>=1.0",
 	"rdata",
 	"scikit-datasets[cran]>=0.2.2",
@@ -61,6 +61,7 @@ docs = [
   "sphinxcontrib-bibtex",
 ]
 test = [
+  "numpy>=2", # Changes in array representation.
   "pytest",
   "pytest-env",
   "pytest-subtests",

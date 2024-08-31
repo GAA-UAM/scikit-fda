@@ -201,22 +201,22 @@ def _cartesian_product(  # noqa: WPS234
         >>> from skfda._utils import _cartesian_product
         >>> axes = [[0,1],[2,3]]
         >>> _cartesian_product(axes)
-        array([[0, 2],
-               [0, 3],
-               [1, 2],
-               [1, 3]])
+        array([[ 0, 2],
+               [ 0, 3],
+               [ 1, 2],
+               [ 1, 3]])
 
         >>> axes = [[0,1],[2,3],[4]]
         >>> _cartesian_product(axes)
-        array([[0, 2, 4],
-               [0, 3, 4],
-               [1, 2, 4],
-               [1, 3, 4]])
+        array([[ 0, 2, 4],
+               [ 0, 3, 4],
+               [ 1, 2, 4],
+               [ 1, 3, 4]])
 
         >>> axes = [[0,1]]
         >>> _cartesian_product(axes)
-        array([[0],
-               [1]])
+        array([[ 0],
+               [ 1]])
     """
     cartesian = np.stack(np.meshgrid(*axes, indexing='ij'), -1)
 

@@ -107,7 +107,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, NDArrayInt]):
         Finally we can predict and check the score:
 
         >>> neigh1.predict(X_test1)
-        array([0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
+        array([ 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
             1, 1, 1], dtype=int8)
 
         >>> round(neigh1.score(X_test1, y_test1), 3)
@@ -145,7 +145,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, NDArrayInt]):
         >>> neigh2 = KNeighborsClassifier()
         >>> neigh2 = neigh2.fit(X_train2, y_train2)
         >>> neigh2.predict(X_test2)
-        array([1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
+        array([ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
                1, 1, 1], dtype=int8)
 
         >>> round(neigh2.score(X_test2, y_test2), 3)

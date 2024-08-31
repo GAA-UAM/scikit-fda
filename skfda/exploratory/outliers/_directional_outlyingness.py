@@ -316,7 +316,7 @@ class MSPlotOutlierDetector(  # noqa: WPS230
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> out_detector = MSPlotOutlierDetector()
         >>> out_detector.fit_predict(fd)
-        array([1, 1, 1, 1])
+        array([ 1, 1, 1, 1])
 
     References:
         Dai, Wenlin, and Genton, Marc G. "Multivariate functional data

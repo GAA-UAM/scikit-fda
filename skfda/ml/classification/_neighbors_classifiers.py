@@ -89,7 +89,7 @@ class KNeighborsClassifier(
         We can predict the class of new samples
 
         >>> neigh.predict(fd[::2]) # Predict labels for even samples
-        array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
+        array([ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
 
         And the estimated probabilities.
 
@@ -254,7 +254,7 @@ class RadiusNeighborsClassifier(
         We can predict the class of new samples.
 
         >>> neigh.predict(fd[::2]) # Predict labels for even samples
-        array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
+        array([ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
 
     See also:
         :class:`~skfda.ml.classification.KNeighborsClassifier`

@@ -226,7 +226,7 @@ class NumberCrossingsTransformer(
         FDataGrid created.
         >>> tf = NumberCrossingsTransformer(levels=0, direction="up")
         >>> tf.fit_transform(fd_grid)
-        array([[2]])
+        array([[ 2]])
     """
 
     def __init__(

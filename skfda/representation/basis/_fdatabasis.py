@@ -427,19 +427,48 @@ class FDataBasis(FData):  # noqa: WPS214
         """
         super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        coefs = (
-            np.nansum(self.coefficients, axis=0) if skipna
-            else np.sum(self.coefficients, axis=0)
-        )
-
-        if min_count > 0:
-            valid = ~np.isnan(self.coefficients)
-            n_valid = np.sum(valid, axis=0)
-            coefs[n_valid < min_count] = np.nan
+        valid_functions = ~self.isna()
+        valid_coefficients = self.coefficients[valid_functions]
+        
+        coefs = np.sum(valid_coefficients, axis=0)
 
         return self.copy(
             coefficients=coefs,
             sample_names=(None,),
+        )
+    
+    def mean(  # noqa: WPS125
+        self: T,
+        *,
+        axis: Optional[int] = None,
+        dtype: None = None,
+        out: None = None,
+        keepdims: bool = False,
+        skipna: bool = False,
+        min_count: int = 0,
+    ) -> T:
+        """Compute the mean of all the samples.
+
+        Args:
+            axis: Used for compatibility with numpy. Must be None or 0.
+            dtype: Used for compatibility with numpy. Must be None.
+            out: Used for compatibility with numpy. Must be None.
+            keepdims: Used for compatibility with numpy. Must be False.
+            skipna: Wether the NaNs are ignored or not.
+            min_count: Number of valid (non NaN) data to have in order
+                for the a variable to not be NaN when `skipna` is
+                `True`.
+
+        Returns:
+            A FDataBasis object with just one sample representing
+            the mean of all the samples in the original object.
+        """
+        super().mean(axis=axis, dtype=dtype, out=out, keepdims=keepdims, 
+                     skipna=skipna)
+        
+        return (
+            self.sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
+            / np.sum(~self.isna())
         )
 
     def var(
@@ -998,7 +1027,7 @@ class FDataBasis(FData):  # noqa: WPS214
         Returns:
             na_values (np.ndarray): Positions of NA.
         """
-        return np.all(  # type: ignore[no-any-return]
+        return np.any(  # type: ignore[no-any-return]
             np.isnan(self.coefficients),
             axis=1,
         )

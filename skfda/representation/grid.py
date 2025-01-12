@@ -544,6 +544,60 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _get_input_points(self: T) -> GridPoints:
         return self.grid_points
+    
+    def _compute_aggregate(
+        self: T,
+        operation = str,
+        *,
+        skipna: bool = False,
+        min_count: int = 0,
+    ) -> T:
+        """Compute a defined aggregation operation of the samples.
+        
+        Args:
+            operation: Operation to be performed. Can be 'mean', 'sum' or 
+                'var'.
+            axis: Used for compatibility with numpy. Must be None or 0.
+            out: Used for compatibility with numpy. Must be None.
+            keepdims: Used for compatibility with numpy. Must be False.
+            skipna: Wether the NaNs are ignored or not.
+            min_count: Number of valid (non NaN) data to have in order
+                for the a variable to not be NaN when `skipna` is
+                `True`.
+
+        Returns:
+            An FDataGrid object with just one sample representing
+            the aggregation of all the samples in the original object.
+
+        """
+        if operation not in {'sum', 'mean', 'var'}:
+            raise ValueError("Invalid operation."
+                             "Must be one of 'sum', 'mean', or 'var'.")
+        
+        if skipna:
+            agg_func = {
+                'sum': np.nansum, 
+                'mean': np.nanmean, 
+                'var': np.nanvar
+            }[operation]
+        else:
+            agg_func = {
+                'sum': np.sum, 
+                'mean': np.mean, 
+                'var': np.var
+            }[operation]
+        
+        data = agg_func(self.data_matrix, axis=0, keepdims=True)
+
+        if min_count > 0:
+            valid = ~np.isnan(self.data_matrix)
+            n_valid = np.sum(valid, axis=0)
+            data[n_valid < min_count] = np.nan
+
+        return self.copy(
+            data_matrix=data,
+            sample_names=(None,),
+        )
 
     def sum(  # noqa: WPS125
         self: T,
@@ -583,20 +637,40 @@ class FDataGrid(FData):  # noqa: WPS214
         """
         super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        data = (
-            np.nansum(self.data_matrix, axis=0, keepdims=True) if skipna
-            else np.sum(self.data_matrix, axis=0, keepdims=True)
-        )
+        return self._compute_aggregate(operation='sum', skipna=skipna, 
+                                       min_count=min_count)
 
-        if min_count > 0:
-            valid = ~np.isnan(self.data_matrix)
-            n_valid = np.sum(valid, axis=0)
-            data[n_valid < min_count] = np.nan
+    def mean(  # noqa: WPS125
+        self: T,
+        *,
+        axis: Optional[int] = None,
+        dtype: None = None,
+        out: None = None,
+        keepdims: bool = False,
+        skipna: bool = False,
+        min_count: int = 0,
+    ) -> T:
+        """Compute the mean of all the samples.
 
-        return self.copy(
-            data_matrix=data,
-            sample_names=(None,),
-        )
+        Args:
+            axis: Used for compatibility with numpy. Must be None or 0.
+            dtype: Used for compatibility with numpy. Must be None.
+            out: Used for compatibility with numpy. Must be None.
+            keepdims: Used for compatibility with numpy. Must be False.
+            skipna: Wether the NaNs are ignored or not.
+            min_count: Number of valid (non NaN) data to have in order
+                for the a variable to not be NaN when `skipna` is
+                `True`.
+
+        Returns:
+            A FDataGrid object with just one sample representing
+            the mean of all the samples in the original object.
+        """
+        super().mean(axis=axis, dtype=dtype, out=out, keepdims=keepdims, 
+                     skipna=skipna)
+        
+        return self._compute_aggregate(operation='mean', skipna=skipna,
+                                        min_count=min_count)
 
     def var(self: T, correction: int = 0) -> T:
         """Compute the variance of a set of samples in a FDataGrid object.

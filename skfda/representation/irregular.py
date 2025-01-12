@@ -716,6 +716,60 @@ class FDataIrregular(FData):  # noqa: WPS214
             values=sum_values,
             sample_names=(None,),
         )
+    
+    def mean(  # noqa: WPS125
+        self: T,
+        *,
+        axis: Optional[int] = None,
+        dtype: None = None,
+        out: None = None,
+        keepdims: bool = False,
+        skipna: bool = False,
+        min_count: int = 0,
+    ) -> T:
+        """Compute the mean of all the samples.
+
+        Args:
+            axis: Used for compatibility with numpy. Must be None or 0.
+            dtype: Used for compatibility with numpy. Must be None.
+            out: Used for compatibility with numpy. Must be None.
+            keepdims: Used for compatibility with numpy. Must be False.
+            skipna: Wether the NaNs are ignored or not.
+            min_count: Number of valid (non NaN) data to have in order
+                for the a variable to not be NaN when `skipna` is
+                `True`.
+
+        Returns:
+            An FDataIrregular object with just one sample representing
+            the mean of all the samples in the original object.
+        """
+        super().mean(axis=axis, dtype=dtype, out=out, keepdims=keepdims, 
+                     skipna=skipna)
+        
+        common_points, common_values = self._get_common_points_and_values()
+
+        if len(common_points) == 0:
+            raise ValueError("No common points in FDataIrregular object")
+
+        sum_function = np.nansum if skipna else np.sum
+        sum_values = sum_function(common_values, axis=0)
+
+        if skipna:
+            count_values = np.sum(~np.isnan(common_values), axis=0)
+        else:
+            count_values = np.full(sum_values.shape, self.n_samples)
+
+        if min_count > 0:
+            count_values[count_values < min_count] = np.nan
+
+        mean_values = sum_values / count_values
+        
+        return FDataIrregular(
+            start_indices=np.array([0]),
+            points=common_points,
+            values=mean_values,
+            sample_names=(None,),
+        )
 
     def var(self: T, correction: int = 0) -> T:
         """Compute the variance of all the samples.

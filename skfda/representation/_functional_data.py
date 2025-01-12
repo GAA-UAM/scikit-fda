@@ -882,6 +882,7 @@ class FData(  # noqa: WPS214
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
+        min_count: int = 0,
     ) -> T:
         """Compute the mean of all the samples.
 
@@ -891,6 +892,9 @@ class FData(  # noqa: WPS214
             out: Used for compatibility with numpy. Must be None.
             keepdims: Used for compatibility with numpy. Must be False.
             skipna: Wether the NaNs are ignored or not.
+            min_count: Number of valid (non NaN) data to have in order
+                for the a variable to not be NaN when `skipna` is
+                `True`.
 
         Returns:
             A FData object with just one sample representing
@@ -902,10 +906,7 @@ class FData(  # noqa: WPS214
                 "Not implemented for that parameter combination",
             )
 
-        return (
-            self.sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
-            / self.n_samples
-        )
+        return self
 
     @abstractmethod
     def to_grid(

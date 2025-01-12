@@ -48,7 +48,9 @@ plt.show()
 
 # %%
 # For spectrometric data, the relevant information of the curves can often
-# be found in the derivatives\ :footcite:`ferraty+vieu_2006_computational`.
+# be found in the derivatives, as discussed in Ferraty and Vieu's chapter, 
+# *"Computational Issues"*, pp. 99–108\ 
+# :footcite:`ferraty+vieu_2006`.
 # Thus, we compute numerically the second derivative and plot it.
 X_der = X.derivative(order=2)
 X_der.plot(gradient_criteria=y)

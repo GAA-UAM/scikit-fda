@@ -27,8 +27,10 @@ class LeastSquaresShiftRegistration(
 ):
     r"""Register data using shift alignment by least squares criterion.
 
-    Realizes the registration of a set of curves using a shift aligment
-    :footcite:`ramsay+silverman_2005_registration`.
+    Realizes the registration of a set of curves using a shift aligment,
+    as detailed in Ramsay and Silverman's chapter, *"The Registration 
+    and Display of Functional Data"*, pp. 127-145\ 
+    :footcite:`ramsay+silverman_2005`.
     Let :math:`\{x_i(t)\}_{i=1}^{N}` be a functional dataset, calculates
     :math:`\delta_{i}` for each sample such that :math:`x_i(t + \delta_{i})`
     minimizes the least squares criterion:
@@ -40,7 +42,8 @@ class LeastSquaresShiftRegistration(
     Estimates each shift parameter :math:`\delta_i` iteratively by
     using a modified Newton-Raphson algorithm, updating the template
     :math:`\mu` in each iteration as is described in detail in
-    :footcite:`ramsay+silverman_2005_registration`.
+    Ramsay and Silverman's chapter, *"The Registration and Display 
+    of Functional Data"*, pp. 127-145\ :footcite:`ramsay+silverman_2005`.
 
     Method only implemented for univariate functional data.
 
@@ -61,15 +64,19 @@ class LeastSquaresShiftRegistration(
             template to the registration, if it is a callable or "mean" the
             template is computed iteratively constructing a temporal template
             in each iteration.
-            In :footcite:`ramsay+silverman_2005_registration`
-            is described in detail this procedure. Defaults to "mean".
+            In Ramsay and Silverman's chapter, *"The Registration 
+            and Display of Functional Data"*, pp. 127-145\ 
+            :footcite:`ramsay+silverman_2005`
+            this procedure is described in detail. Defaults to "mean".
         extrapolation: Controls the
             extrapolation mode for points outside the :term:`domain` range.
             By default uses the method defined in the data to be transformed.
             See the `extrapolation` documentation to obtain more information.
         step_size: Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see
-            :footcite:`ramsay+silverman_2005_registration`.
+            Ramsay and Silverman's chapter, *"The Registration 
+            and Display of Functional Data"*, pp. 127-145\ 
+            :footcite:`ramsay+silverman_2005`.
             Defaults to 1.
         restrict_domain: If True restricts the :term:`domain`
             to avoid the need of using extrapolation, in which

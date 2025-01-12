@@ -32,8 +32,9 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     when fitting a FDataBasis or FDataGrid, except for ``components_basis``.
 
     For more information about the implementation of the computation of the
-    first principal components see 
-    :footcite:ts:`ramsay+silverman_2005_basisfuncexp`.
+    first principal components see Ramsay and Silverman's chapter, 
+    *"Basis function expansion of the functions"*, pp. 161-164\ 
+    :footcite:`ramsay+silverman_2005`.
 
     Parameters:
         n_components: Number of principal components to keep from

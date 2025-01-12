@@ -30,8 +30,10 @@ class BSplineBasis(Basis):
     Where k indicates the order of the spline.
 
     Implementation details: In order to allow a discontinuous behaviour at
-    the boundaries of the domain it is necessary to placing m knots at the
-    boundaries\ :footcite:p:`ramsay+silverman_2005_functionala`. This is
+    the boundaries of the domain it is necessary to place m knots at the
+    boundaries, as done in Ramsay and Silverman's chapter, *"From 
+    Functional Data to Smooth Functions"*, pp. 37-58\
+    :footcite:p:`ramsay+silverman_2005`. This is
     automatically done so that the user only has to specify a single knot
     at the boundaries.
 
@@ -386,8 +388,10 @@ class BSpline(BSplineBasis):
         Use BSplineBasis instead.
 
     Implementation details: In order to allow a discontinuous behaviour at
-    the boundaries of the domain it is necessary to placing m knots at the
-    boundaries\ :footcite:p:`ramsay+silverman_2005_functionala`. This is
+    the boundaries of the domain it is necessary to place m knots at the
+    boundaries, as done in Ramsay and Silverman's chapter, *"From 
+    Functional Data to Smooth Functions"*, pp. 37-58\
+    :footcite:p:`ramsay+silverman_2005`. This is
     automatically done so that the user only has to specify a single knot
     at the boundaries.
 

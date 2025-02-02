@@ -238,8 +238,8 @@ def directional_outlyingness_stats(  # noqa: WPS218
 
 
 class MSPlotOutlierDetector(  # noqa: WPS230
-    BaseEstimator,
     OutlierMixin[FDataGrid],
+    BaseEstimator,
 ):
     r"""Outlier detector using directional outlyingness.
 

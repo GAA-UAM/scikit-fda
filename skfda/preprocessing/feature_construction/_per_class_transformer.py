@@ -10,7 +10,7 @@ from sklearn.base import clone
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ..._utils import _classifier_get_classes
-from ..._utils._sklearn_adapter import TransformerMixin
+from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation import FData
 from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
@@ -41,7 +41,10 @@ def _fit_feature_transformer(  # noqa: WPS320 WPS234
     return classes, class_feature_transformers
 
 
-class PerClassTransformer(TransformerMixin[Input, Output, NDArrayInt]):
+class PerClassTransformer(
+    TransformerMixin[Input, Output, NDArrayInt],
+    BaseEstimator,
+):
     r"""Per class feature transformer for functional data.
 
     This class takes a transformer and performs the following map:

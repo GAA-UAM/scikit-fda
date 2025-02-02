@@ -20,8 +20,8 @@ Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 class NearestCentroid(
-    BaseEstimator,
     ClassifierMixin[Input, Target],
+    BaseEstimator,
 ):
     """
     Nearest centroid classifier for functional data.

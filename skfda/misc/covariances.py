@@ -702,8 +702,8 @@ class WhiteNoise(Covariance):
 
     def __call__(
         self,
-        x: Input,
-        y: Input | None = None,
+        x: NDArray[Any],
+        y: NDArray[Any] | None = None,
     ) -> NDArrayFloat:
         """Compute white noise covariance function on input data."""
         if isinstance(x, FData) or isinstance(y, FData):
@@ -891,8 +891,8 @@ class Empirical(Covariance):
 
     def __call__(
         self,
-        x: Input,
-        y: Input | None = None,
+        x: NDArray[Any],
+        y: NDArray[Any] | None = None,
     ) -> NDArrayFloat:
         """Evaluate the covariance function.
 

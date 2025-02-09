@@ -808,6 +808,8 @@ class Empirical(Covariance):
         Returns:
             Covariance function evaluated at the grid formed by x and y.
         """
+        x = _transform_to_2d(x)
+        y = _transform_to_2d(y)
         return self.cov_fdata([x, y], grid=True)[0, ..., 0]
 
 

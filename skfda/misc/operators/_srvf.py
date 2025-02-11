@@ -15,8 +15,8 @@ from ._operators import Operator
 
 class SRSF(
     Operator[FDataGrid, FDataGrid],
-    BaseEstimator,
     InductiveTransformerMixin[FDataGrid, FDataGrid, object],
+    BaseEstimator,
 ):
     r"""Square-Root Slope Function (SRSF) transform.
 

@@ -64,8 +64,8 @@ def _classifier_fit_depth_methods(
 
 
 class DDClassifier(
-    BaseEstimator,
     ClassifierMixin[Input, Target],
+    BaseEstimator,
 ):
     """
     Depth-versus-depth (DD) classifer for functional data.
@@ -215,8 +215,8 @@ class DDClassifier(
 
 
 class DDGClassifier(
-    BaseEstimator,
     ClassifierMixin[Input, Target],
+    BaseEstimator,
 ):
     r"""
     Generalized depth-versus-depth (DD) classifier for functional data.
@@ -451,8 +451,8 @@ class DDGClassifier(
 
 
 class _ArgMaxClassifier(
-    BaseEstimator,
     ClassifierMixin[NDArrayFloat, Target],
+    BaseEstimator,
 ):
     r"""Arg max classifier for multivariate data.
 

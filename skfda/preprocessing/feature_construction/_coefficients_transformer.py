@@ -10,8 +10,8 @@ from ...typing._numpy import NDArrayFloat
 
 
 class CoefficientsTransformer(
-    BaseEstimator,
     TransformerMixin[FDataBasis, NDArrayFloat, object],
+    BaseEstimator,
 ):
     r"""
     Transformer returning the coefficients of FDataBasis objects as a matrix.

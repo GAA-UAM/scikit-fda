@@ -16,8 +16,8 @@ Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])
 
 
 class KernelRegression(
-    BaseEstimator,
     RegressorMixin[Input, Prediction],
+    BaseEstimator,
 ):
     r"""Kernel regression with scalar response.
 

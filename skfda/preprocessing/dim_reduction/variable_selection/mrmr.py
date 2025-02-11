@@ -185,12 +185,12 @@ def _mrmr(
 
 
 class MinimumRedundancyMaximumRelevance(
-    BaseEstimator,
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
         Union[NDArrayInt, NDArrayFloat],
     ],
+    BaseEstimator,
     Generic[dtype_y_T],
 ):
     r"""

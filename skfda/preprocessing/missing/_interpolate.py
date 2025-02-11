@@ -69,8 +69,8 @@ def _interpolate_nans(
 
 
 class MissingValuesInterpolation(
-    BaseEstimator,
     InductiveTransformerMixin[T, T, Any],
+    BaseEstimator,
 ):
     """
     Class to interpolate missing values.

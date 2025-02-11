@@ -28,8 +28,8 @@ OutlierLabelType = Union[int, str, Sequence[int], Sequence[str], None]
 
 
 class KNeighborsClassifier(
-    KNeighborsMixin[Input, NDArrayInt],
     NeighborsClassifierMixin[Input, NDArrayInt],
+    KNeighborsMixin[Input, NDArrayInt],
 ):
     """
     Classifier implementing the k-nearest neighbors vote.
@@ -190,8 +190,8 @@ class KNeighborsClassifier(
 
 
 class RadiusNeighborsClassifier(
-    RadiusNeighborsMixin[Input, NDArrayInt],
     NeighborsClassifierMixin[Input, NDArrayInt],
+    RadiusNeighborsMixin[Input, NDArrayInt],
 ):
     """
     Classifier implementing a vote among neighbors within a given radius.

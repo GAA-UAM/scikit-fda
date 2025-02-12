@@ -1,14 +1,18 @@
+"""Covariances module."""
 from __future__ import annotations
 
 import abc
-from typing import Callable, Sequence, Tuple, Union
+from typing import Any, Callable, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
+from numpy.typing import NDArray
 from scipy.special import gamma, kv
 
+from ..misc._math import inner_product_matrix
+from ..misc.metrics import PairwiseMetric, l2_distance
 from ..representation import FData, FDataBasis, FDataGrid
 from ..representation.basis import TensorBasis
 from ..typing._numpy import ArrayLike, NDArrayFloat
@@ -20,11 +24,13 @@ def _squared_norms(x: NDArrayFloat, y: NDArrayFloat) -> NDArrayFloat:
     ).sum(2)
 
 
-CovarianceLike = Union[
-    float,
-    NDArrayFloat,
-    Callable[[ArrayLike, ArrayLike], NDArrayFloat],
-]
+CovarianceLike = (
+    float
+    | NDArrayFloat
+    | Callable[[ArrayLike, ArrayLike], NDArrayFloat]
+)
+
+Input = NDArray[Any] | FData
 
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
@@ -51,31 +57,59 @@ def _execute_covariance(
 
     if isinstance(covariance, (int, float)):
         return np.array(covariance)
-    else:
-        if callable(covariance):
-            result = covariance(x, y)
-        elif isinstance(covariance, np.ndarray):
-            result = covariance
-        else:
-            # GPy kernel
-            result = covariance.K(x, y)
 
-        assert result.shape[0] == len(x)
-        assert result.shape[1] == len(y)
-        return result
+    if callable(covariance):
+        result = covariance(x, y)
+    elif isinstance(covariance, np.ndarray):
+        result = covariance
+    else:
+        # GPy kernel
+        result = covariance.K(x, y)
+
+    assert result.shape[0] == len(x)
+    assert result.shape[1] == len(y)
+    return result
 
 
 class Covariance(abc.ABC):
     """Abstract class for covariance functions."""
 
-    _parameters_str: Sequence[Tuple[str, str]]
+    _parameters_str: Sequence[tuple[str, str]]
     _latex_formula: str
 
     @abc.abstractmethod
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+    def __call__(
+        self,
+        x: Input,
+        y: Input | None = None,
+    ) -> NDArrayFloat:
+        """Compute covariance function on input data."""
         pass
 
-    def heatmap(self, limits: Tuple[float, float] = (-1, 1)) -> Figure:
+    def _param_check_and_transform(
+        self,
+        x: Input,
+        y: Input | None = None,
+    ) -> tuple[Input, Input]:
+        # Param check
+        if y is None:
+            y = x
+
+        if type(x) is not type(y):  # noqa: WPS516
+            raise ValueError(
+                'Cannot operate objects x and y from different classes',
+                f'({type(x)}, {type(y)}).',
+            )
+
+        if not isinstance(x, FData) and not isinstance(y, FData):
+            if len(x.shape) < 2:
+                x = np.atleast_2d(x)
+            if len(y.shape) < 2:
+                y = np.atleast_2d(y)
+
+        return x, y
+
+    def heatmap(self, limits: tuple[float, float] = (-1, 1)) -> Figure:
         """Return a heatmap plot of the covariance function."""
         from ..exploratory.visualization._utils import _create_figure
 
@@ -147,7 +181,10 @@ class Covariance(abc.ABC):
 
         row_style = ''
 
-        def column_style(percent: float, margin_top: str = "0") -> str:
+        def column_style(  # noqa: WPS430
+            percent: float,
+            margin_top: str = "0",
+        ) -> str:
             return (
                 f'style="display: inline-block; '
                 f'margin:0; '
@@ -171,7 +208,7 @@ class Covariance(abc.ABC):
             {heatmap}
             </div>
         </div>
-        """
+        """  # noqa: WPS432, WPS318
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         """Convert it to a sklearn kernel, if there is one."""
@@ -231,6 +268,7 @@ class Brownian(Covariance):
         Brownian()
 
     """
+
     _latex_formula = (
         r"K(x, x') = \sigma^2 \frac{|x - \mathcal{O}| + "
         r"|x' - \mathcal{O}| - |x - x'|}{2}"
@@ -245,9 +283,22 @@ class Brownian(Covariance):
         self.variance = variance
         self.origin = origin
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x) - self.origin
-        y = _transform_to_2d(y) - self.origin
+    def __call__(
+        self,
+        x: NDArray[Any],
+        y: NDArray[Any] | None = None,
+    ) -> NDArrayFloat:
+        """Compute Brownian covariance function on input data."""
+        if isinstance(x, FData) or isinstance(y, FData):
+            raise ValueError(
+                'Brownian covariance not defined for FData objects.',
+            )
+
+        x = _transform_to_2d(x)
+        y = _transform_to_2d(y)
+
+        x = x - self.origin
+        y = y - self.origin
 
         sum_norms = np.add.outer(
             np.linalg.norm(x, axis=-1),
@@ -319,13 +370,19 @@ class Linear(Covariance):
         self.variance = variance
         self.intercept = intercept
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: Input,
+        y: Input | None = None,
+    ) -> NDArrayFloat:
+        """Compute linear covariance function on input data."""
+        x, y = self._param_check_and_transform(x, y)
 
-        return self.variance * (x @ y.T + self.intercept)
+        x_y = inner_product_matrix(x, y)
+        return self.variance * (x_y + self.intercept)
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance
             * (sklearn_kern.DotProduct(0) + self.intercept)
@@ -400,16 +457,22 @@ class Polynomial(Covariance):
         self.slope = slope
         self.degree = degree
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: Input,
+        y: Input | None = None,
+    ) -> NDArrayFloat:
+        """Compute polynomial covariance function on input data."""
+        x, y = self._param_check_and_transform(x, y)
 
+        x_y = inner_product_matrix(x, y)
         return (
             self.variance
-            * (self.slope * x @ y.T + self.intercept) ** self.degree
+            * (self.slope * x_y + self.intercept) ** self.degree
         )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance
             * (self.slope * sklearn_kern.DotProduct(0) + self.intercept)
@@ -475,15 +538,21 @@ class Gaussian(Covariance):
         self.variance = variance
         self.length_scale = length_scale
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: Input,
+        y: Input | None = None,
+    ) -> NDArrayFloat:
+        """Compute Gaussian covariance function on input data."""
+        x, y = self._param_check_and_transform(x, y)
 
-        x_y = _squared_norms(x, y)
-
-        return self.variance * np.exp(-x_y / (2 * self.length_scale ** 2))
+        distance_x_y = PairwiseMetric(l2_distance)(x, y)
+        return self.variance * np.exp(  # type: ignore[no-any-return]
+            -distance_x_y ** 2 / (2 * self.length_scale ** 2),
+        )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance * sklearn_kern.RBF(length_scale=self.length_scale)
         )
@@ -552,14 +621,22 @@ class Exponential(Covariance):
         self.variance = variance
         self.length_scale = length_scale
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: Input,
+        y: Input | None = None,
+    ) -> NDArrayFloat:
+        """Compute exponential covariance function on input data."""
+        x, y = self._param_check_and_transform(x, y)
 
-        x_y = _squared_norms(x, y)
-        return self.variance * np.exp(-np.sqrt(x_y) / (self.length_scale))
+        distance_x_y = PairwiseMetric(l2_distance)(x, y)
+        return self.variance * np.exp(  # type: ignore[no-any-return]
+            -distance_x_y
+            / (self.length_scale),
+        )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance
             * sklearn_kern.Matern(length_scale=self.length_scale, nu=0.5)
@@ -623,11 +700,20 @@ class WhiteNoise(Covariance):
     def __init__(self, *, variance: float = 1):
         self.variance = variance
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+    def __call__(
+        self,
+        x: NDArray[Any],
+        y: NDArray[Any] | None = None,
+    ) -> NDArrayFloat:
+        """Compute white noise covariance function on input data."""
+        if isinstance(x, FData) or isinstance(y, FData):
+            raise ValueError('Not defined for FData objects.')
+
         x = _transform_to_2d(x)
         return self.variance * np.eye(x.shape[0])
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return sklearn_kern.WhiteKernel(noise_level=self.variance)
 
 
@@ -644,7 +730,7 @@ class Matern(Covariance):
 
     where :math:`\sigma^2` is the variance, :math:`l` is the length scale
     and :math:`\nu` controls the smoothness of the related Gaussian process.
-    The trajectories of a Gaussian process with Matérn covariance is 
+    The trajectories of a Gaussian process with Matérn covariance is
     :math:`\lceil \nu \rceil - 1` times differentiable.
 
 
@@ -680,6 +766,7 @@ class Matern(Covariance):
         Matern()
 
     """
+
     _latex_formula = (
         r"K(x, x') = \sigma^2 \frac{2^{1-\nu}}{\Gamma(\nu)}"
         r"\left( \frac{\sqrt{2\nu}|x - x'|}{l} \right)^{\nu}"
@@ -703,18 +790,21 @@ class Matern(Covariance):
         self.length_scale = length_scale
         self.nu = nu
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
-        x = _transform_to_2d(x)
-        y = _transform_to_2d(y)
+    def __call__(
+        self,
+        x: Input,
+        y: Input | None = None,
+    ) -> NDArrayFloat:
+        """Compute Matern covariance function on input data."""
+        x, y = self._param_check_and_transform(x, y)
 
-        x_y_squared = _squared_norms(x, y)
-        x_y = np.sqrt(x_y_squared)
+        distance_x_y = PairwiseMetric(l2_distance)(x, y)
 
         p = self.nu - 0.5
         if p.is_integer():
             # Formula for half-integers
             p = int(p)
-            body = np.sqrt(2 * p + 1) * x_y / self.length_scale
+            body = np.sqrt(2 * p + 1) * distance_x_y / self.length_scale
             exponential = np.exp(-body)
             power_list = np.full(shape=(p,) + body.shape, fill_value=2 * body)
             power_list = np.cumprod(power_list, axis=0)
@@ -734,28 +824,29 @@ class Matern(Covariance):
                 self.variance * exponential * np.sum(sum_terms, axis=-1)
             )
         elif self.nu == np.inf:
-            return (
+            return (  # type: ignore[no-any-return]
                 self.variance * np.exp(
-                    -x_y_squared / (2 * self.length_scale ** 2),
+                    -distance_x_y ** 2 / (2 * self.length_scale ** 2),
                 )
             )
-        else:
-            # General formula
-            scaling = 2**(1 - self.nu) / gamma(self.nu)
-            body = np.sqrt(2 * self.nu) * x_y / self.length_scale
-            power = body**self.nu
-            bessel = kv(self.nu, body)
 
-            with np.errstate(invalid='ignore'):
-                eval_cov = self.variance * scaling * power * bessel
+        # General formula
+        scaling = 2**(1 - self.nu) / gamma(self.nu)
+        body = np.sqrt(2 * self.nu) * distance_x_y / self.length_scale
+        power = body**self.nu
+        bessel = kv(self.nu, body)
 
-            # Values with nan are where the distance is 0
-            return np.nan_to_num(  # type: ignore[no-any-return]
-                eval_cov,
-                nan=self.variance,
-            )
+        with np.errstate(invalid='ignore'):
+            eval_cov = self.variance * scaling * power * bessel
+
+        # Values with nan are where the distance is 0
+        return np.nan_to_num(  # type: ignore[no-any-return]
+            eval_cov,
+            nan=self.variance,
+        )
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
+        """Obtain corresponding scikit-learn kernel type."""
         return (
             self.variance
             * sklearn_kern.Matern(length_scale=self.length_scale, nu=self.nu)
@@ -798,7 +889,11 @@ class Empirical(Covariance):
                 "for univariate functions",
             )
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+    def __call__(
+        self,
+        x: NDArray[Any],
+        y: NDArray[Any] | None = None,
+    ) -> NDArrayFloat:
         """Evaluate the covariance function.
 
         Args:
@@ -808,6 +903,9 @@ class Empirical(Covariance):
         Returns:
             Covariance function evaluated at the grid formed by x and y.
         """
+        if isinstance(x, FData) or isinstance(y, FData):
+            raise ValueError('Not defined for FData objects.')
+
         return self.cov_fdata([x, y], grid=True)[0, ..., 0]
 
 

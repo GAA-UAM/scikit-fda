@@ -1234,8 +1234,8 @@ def fetch_gait(
 
 if fetch_gait.__doc__ is not None:  # docstrings can be stripped off
     fetch_gait.__doc__ += _gait_template.format(
-        cite="Ramsay and Silverman, *'Introduction'*, pp. 1-18"
-        ":footcite:p:`ramsay+silverman_2005`.",
+        cite="Ramsay and Silverman, *'Introduction'*, pp. 1-18 "
+             ":footcite:p:`ramsay+silverman_2005`.",
         bibliography=".. footbibliography::",
     ) + _param_descr
 

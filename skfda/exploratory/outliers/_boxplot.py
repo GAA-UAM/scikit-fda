@@ -8,8 +8,8 @@ from . import _envelopes
 
 
 class BoxplotOutlierDetector(
-    BaseEstimator,
     OutlierMixin[FDataGrid],
+    BaseEstimator,
 ):
     r"""
     Outlier detector using the interquartile range.

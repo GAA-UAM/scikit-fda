@@ -141,6 +141,35 @@ class LinearSmootherGeneralizedCVScorer:
         )
 
 
+class _FullSplitter:
+    """
+    Class that serves as a CV splitter for :class:`SmoothingParameterSearch`.
+
+    It returns the full dataset as both train and test set.
+    This is because the actual CV is performed over the function measurements,
+    using a fixed formula.
+
+    """
+    def split(
+        self,
+        X: FDataGrid,
+        y: FDataGrid | None = None,
+        groups: NDArrayInt | None = None,
+    ) -> Iterable[tuple[NDArrayInt, NDArrayInt]]:
+        """Return the split."""
+        idx = np.arange(len(X))
+
+        return [(idx, idx)]
+    
+    def get_n_splits(
+        self,
+        X: FDataGrid,
+        y: FDataGrid | None = None,
+        groups: NDArrayInt | None = None,
+    ) -> int:
+        """Return the number of splits."""
+        return 1
+
 class SmoothingParameterSearch(
     GridSearchCV,  # type: ignore[misc]
 ):
@@ -210,7 +239,7 @@ class SmoothingParameterSearch(
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-11.67, -12.37])
         >>> round(grid.best_score_, 2)
-        -11.67
+        np.float64(-11.67)
         >>> grid.best_params_['kernel_estimator__n_neighbors']
         2
         >>> grid.best_estimator_.hat_matrix().round(2)
@@ -324,7 +353,7 @@ class SmoothingParameterSearch(
             param_grid={param_name: param_values},
             n_jobs=n_jobs,
             refit=True,
-            cv=[(slice(None), slice(None))],
+            cv=_FullSplitter(),
             verbose=verbose,
             pre_dispatch=pre_dispatch,
             error_score=error_score,

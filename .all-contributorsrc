@@ -554,6 +554,47 @@
         "review",
         "ideas"
       ]
+    },
+    {
+      "login": "mynanshan",
+      "name": "mynanshan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/80438694?v=4",
+      "profile": "https://github.com/mynanshan",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "jack-pan-ai",
+      "name": "Qilong Pan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/35600925?v=4",
+      "profile": "https://jack-pan-ai.github.io/",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "psotom",
+      "name": "psotom",
+      "avatar_url": "https://avatars.githubusercontent.com/u/166627986?v=4",
+      "profile": "https://github.com/psotom",
+      "contributions": [
+        "code",
+        "example",
+        "ideas",
+        "test",
+        "research",
+        "doc"
+      ]
+    },
+    {
+      "login": "luisheb",
+      "name": "Luis Hebrero",
+      "avatar_url": "https://avatars.githubusercontent.com/u/24703335?v=4",
+      "profile": "https://github.com/luisheb",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,

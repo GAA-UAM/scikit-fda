@@ -68,7 +68,7 @@ def data_missing() -> ExtensionArray:
         2 * 10 * 10 * 3,
         dtype=np.float64,
     ).reshape(2, 10, 10, 3)
-    data_matrix[0, ...] = np.NaN
+    data_matrix[0, ...] = np.nan
     grid_points = [
         np.arange(10),
         np.arange(10) / 10,

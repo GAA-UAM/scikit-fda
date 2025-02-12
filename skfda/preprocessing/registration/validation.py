@@ -103,10 +103,10 @@ class AmplitudePhaseDecompositionStats():
     :func:`mse_r_squared`, returned when `return_stats` is `True`.
 
     Args:
-        r_square (float): Squared correlation index :math:`R^2`.
-        mse_amplitude (float): Mean square error of amplitude
+        r_square: Squared correlation index :math:`R^2`.
+        mse_amplitude: Mean square error of amplitude
             :math:`\text{MSE}_{amp}`.
-        mse_phase (float): Mean square error of phase :math:`\text{MSE}_{pha}`.
+        mse_phase: Mean square error of phase :math:`\text{MSE}_{pha}`.
         c_r (float): Constant :math:`C_R`.
 
     """
@@ -297,10 +297,10 @@ class AmplitudePhaseDecomposition(
         X_mean = X.mean()
         y_mean = y.mean()
 
-        c_r = np.sum(l2_norm(X)**2) / np.sum(l2_norm(y)**2)
+        c_r = float(np.sum(l2_norm(X)**2) / np.sum(l2_norm(y)**2))
 
-        mse_amplitude = c_r * np.mean(l2_distance(y, y.mean())**2)
-        mse_phase = (c_r * l2_norm(y_mean)**2 - l2_norm(X_mean)**2).item()
+        mse_amplitude = float(c_r * np.mean(l2_distance(y, y.mean())**2))
+        mse_phase = float(c_r * l2_norm(y_mean)**2 - l2_norm(X_mean)**2)
 
         # Should be equal to np.mean(l2_distance(X, X_mean)**2)
         mse_total = mse_amplitude + mse_phase

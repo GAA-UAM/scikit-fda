@@ -435,7 +435,7 @@ class FDataBasis(FData):  # noqa: WPS214
         if min_count > 0:
             valid = ~np.isnan(self.coefficients)
             n_valid = np.sum(valid, axis=0)
-            coefs[n_valid < min_count] = np.NaN
+            coefs[n_valid < min_count] = np.nan
 
         return self.copy(
             coefficients=coefs,
@@ -1026,7 +1026,7 @@ class FDataBasisDType(
     def _na_repr(self) -> FDataBasis:
         return FDataBasis(
             basis=self.basis,
-            coefficients=((np.NaN,) * self.basis.n_basis,),
+            coefficients=((np.nan,) * self.basis.n_basis,),
         )
 
     def __eq__(self, other: Any) -> bool:

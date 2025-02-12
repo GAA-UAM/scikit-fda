@@ -197,17 +197,17 @@ class FDataIrregular(FData):  # noqa: WPS214
         >>> values = [[1], [2], [3], [4], [5]]
         >>> FDataIrregular(indices, arguments, values)
         FDataIrregular(
-            start_indices=array([0, 2]),
-            points=array([[1],
-                [2],
-                [3],
-                [4],
-                [5]]),
-            values=array([[1],
-                [2],
-                [3],
-                [4],
-                [5]]),
+            start_indices=array([ 0, 2]),
+            points=array([[ 1],
+                [ 2],
+                [ 3],
+                [ 4],
+                [ 5]]),
+            values=array([[ 1],
+                [ 2],
+                [ 3],
+                [ 4],
+                [ 5]]),
             domain_range=((1.0, 5.0),),
             ...)
 
@@ -627,7 +627,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         values_list = np.split(data.values, data.start_indices[1:])
         points_list = np.split(data.points, data.start_indices[1:])
         return np.array([
-            scipy.integrate.simpson(y, x, axis=0)
+            scipy.integrate.simpson(y, x=x, axis=0)
             for y, x in zip(values_list, points_list)
         ])
 
@@ -963,7 +963,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             >>> fd_2 = FDataIrregular(indices, arguments_2, values_2)
             >>> fd.concatenate(fd_2)
             FDataIrregular(
-                start_indices=array([0, 2, 5, 7]),
+                start_indices=array([ 0, 2, 5, 7]),
                 points=array([[ 0.],
                     [ 1.],
                     [ 2.],

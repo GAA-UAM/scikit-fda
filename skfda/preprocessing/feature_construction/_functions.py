@@ -349,7 +349,7 @@ def number_crossings(
         FDataGrid created.
 
         >>> number_crossings(fd_grid, levels=0, direction="up")
-        array([[2]])
+        array([[ 2]])
     """
     # This is only defined for univariate functions
     check_fdata_dimensions(fd, dim_domain=1, dim_codomain=1)

@@ -35,7 +35,7 @@ Input = NDArray[Any] | FData
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     """Transform 1d arrays in column vectors."""
-    t = np.asfarray(t)
+    t = np.asarray(t, dtype=np.float64)
 
     dim = t.ndim
     assert dim <= 2

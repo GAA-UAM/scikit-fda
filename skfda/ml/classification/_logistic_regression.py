@@ -16,8 +16,8 @@ Solver = Literal["newton-cg", "lbfgs", "liblinear", "sag", "saga"]
 
 
 class LogisticRegression(
-    BaseEstimator,
     ClassifierMixin[FDataGrid, NDArrayAny],
+    BaseEstimator,
 ):
     r"""Logistic Regression classifier for functional data.
 

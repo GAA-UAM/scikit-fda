@@ -21,8 +21,8 @@ WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
 class FPCA(  # noqa: WPS230 (too many public attributes)
-    BaseEstimator,
     InductiveTransformerMixin[FData, NDArrayFloat, object],
+    BaseEstimator,
 ):
     r"""
     Principal component analysis.
@@ -349,7 +349,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             # grid_points is a list with one array in the 1D case
             identity = np.eye(len(X.grid_points[0]))
             self._weights = scipy.integrate.simpson(
-                identity,
+                y=identity,
                 x=X.grid_points[0],
             )
         elif callable(self._weights):

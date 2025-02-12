@@ -19,8 +19,8 @@ from ...typing._numpy import NDArrayFloat
 
 
 class _LinearSmoother(
-    BaseEstimator,
     TransformerMixin[FDataGrid, FDataGrid, object],
+    BaseEstimator,
 ):
     """Linear smoother.
 

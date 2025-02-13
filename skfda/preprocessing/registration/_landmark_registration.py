@@ -203,8 +203,7 @@ def landmark_elastic_registration_warping(
         :math:`h_i(t^*_j)=t_{ij}`.
         The registered samples can be obtained as :math:`x^*_i(t)=x_i(h_i(t))`.
 
-        See Ramsay and Silverman's chapter, *"The Registration and Display of 
-        Functional Data"*, pp. 127-145\ :footcite:`ramsay+silverman_2005`
+        See Ramsay and Silverman (chapter 7)\ :footcite:`ramsay+silverman_2005`
         for a detailed explanation.
 
     Args:
@@ -345,8 +344,7 @@ def landmark_elastic_registration(
     The registered samples will have their features aligned, i.e.,
     :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
     
-    See Ramsay and Silverman's chapter, *"The Registration and Display of 
-    Functional Data"*, pp. 127-145\ :footcite:`ramsay+silverman_2005`
+    See Ramsay and Silverman (chapter7)\ :footcite:`ramsay+silverman_2005`
     for a detailed explanation.
 
     Args:

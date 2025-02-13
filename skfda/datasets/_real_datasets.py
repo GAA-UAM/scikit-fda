@@ -1234,8 +1234,8 @@ def fetch_gait(
 
 if fetch_gait.__doc__ is not None:  # docstrings can be stripped off
     fetch_gait.__doc__ += _gait_template.format(
-        cite="Ramsay and Silverman, *'Introduction'*, pp. 1-18 "
-             ":footcite:p:`ramsay+silverman_2005`.",
+        cite="Ramsay and Silverman (chapter 1) "
+             ":footcite:p:`ramsay+silverman_2005`",
         bibliography=".. footbibliography::",
     ) + _param_descr
 
@@ -1345,9 +1345,8 @@ def fetch_handwriting(
 
 if fetch_handwriting.__doc__ is not None:  # docstrings can be stripped off
     fetch_handwriting.__doc__ += _handwriting_template.format(
-        cite="Ramsay and Silverman,"
-        "*'From Functional Data to Smooth Functions'*, pp. 37-58"
-        ":footcite:p:`ramsay+silverman_2005`.",
+        cite="Ramsay and Silverman (chapter 3) "
+            ":footcite:p:`ramsay+silverman_2005`",
         bibliography=".. footbibliography::",
     ) + _param_descr
 

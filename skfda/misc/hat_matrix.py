@@ -150,14 +150,13 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     For smoothing, :math:`\{x_1, ..., x_n\}` are the points with known value
     and :math:`\{x_1', ..., x_m'\}` are the points for which it is desired to
     estimate the smoothed value. The distance :math:`d` is the absolute value
-    function, as detailed in Wasserman's chapter *"Nonparametric Regression"*,
-    pp. 61-123\ :footcite:`wasserman_2006`.
+    function, as detailed in Wasserman (chapter 5)\ 
+    :footcite:`wasserman_2006`.
 
     For regression, :math:`\{x_1, ..., x_n\}` is the functional data and
     :math:`\{x_1', ..., x_m'\}` are the functions for which it is desired to
     estimate the scalar value. Here, :math:`d` is some functional distance.
-    For more information, see Ferraty and Vieu's chapter, *"Functional 
-    Nonparametric Prediction Methodologies"*, pp. 49-59\
+    For more information, see Ferraty and Vieu (chapter 5)\
     :footcite:`ferraty+vieu_2006`.
 
     In both cases :math:`K(\cdot)` is a kernel function and :math:`h` is the
@@ -228,8 +227,8 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     where :math:`\{t_1, t_2, ..., t_n\}` are points with known value and
     :math:`\{t_1', t_2', ..., t_m'\}` are the points for which it is
     desired to estimate the smoothed value.
-    For a more detailed explanation, see Wasserman's chapter *"Nonparametric
-    Regression"*, pp. 61-123\ :footcite:`wasserman_2006`.
+    For a more detailed explanation, see Wasserman (chapter 5)\ 
+    :footcite:`wasserman_2006`.
 
     For **kernel regression** algorithm:
 
@@ -451,8 +450,8 @@ class KNeighborsHatMatrix(HatMatrix):
     In both cases, :math:`K(\cdot)` is a kernel function and
     :math:`h_{i}` is calculated as the distance from :math:`x_i'` to its
     ``n_neighbors``-th nearest neighbor in :math:`\{x_1, ..., x_n\}`, as
-    detailed in Ferraty and Vieu's chapter, *"Computational Issues"*,
-    pp. 99.-108\ :footcite:ps:`ferraty+vieu_2006`.
+    detailed in Ferraty and Vieu (chapter 7)\ 
+    :footcite:ps:`ferraty+vieu_2006`.
 
     Used with the uniform kernel, it takes the average of the closest
     ``n_neighbors`` points to a given point.

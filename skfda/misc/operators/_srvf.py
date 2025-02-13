@@ -29,8 +29,8 @@ class SRSF(
     This representation is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
     becomes the usual :math:`\mathbb{L}^2` distance between functions.
-    See Srivastava and Klassen's chapter, *"Functional Data and Elastic 
-    Registration"*, pp. 73-123\ :footcite:p:`srivastava+klassen_2016`.
+    See Srivastava and Klassen (chapter 4)\ 
+    :footcite:p:`srivastava+klassen_2016`.
 
     The inverse SRSF transform is defined as
 
@@ -134,8 +134,8 @@ class SRSF(
 
         Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely
         continuous function, the SRSF transform is defined as in
-        Srivastava and Klassen's chapter, *"Functional Data and Elastic 
-        Registration"*, pp. 73-123\ :footcite:p:`srivastava+klassen_2016`
+        Srivastava and Klassen (chapter 4)\ 
+        :footcite:p:`srivastava+klassen_2016`
 
         .. math::
 
@@ -186,8 +186,7 @@ class SRSF(
         Compute the inverse SRSF transform.
 
         Given the srsf and the initial value the original function can be
-        obtained as detailed in Srivastava and Klassen's chapter, *"Functional
-        Data and Elastic Registration"*, pp. 73-123\ 
+        obtained as detailed in Srivastava and Klassen (chapter 4)\ 
         :footcite:p:`srivastava+klassen_2016`:
 
         .. math::

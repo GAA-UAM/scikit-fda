@@ -61,8 +61,8 @@ class FisherRaoElasticRegistration(
     distances. See :func:`~elastic_mean`.
 
     The algorithms employed and the SRSF framework are described extensively
-    in Srivastava and Klassen's chapter, *"Functional Data and Elastic 
-    Registration"*, pp. 73-123\ :footcite:p:`srivastava+klassen_2016`. 
+    in Srivastava and Klassen (chapter 4)\ 
+    :footcite:p:`srivastava+klassen_2016`. 
 
     Args:
         template: Template to

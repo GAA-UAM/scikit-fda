@@ -14,8 +14,8 @@ from ._functions import local_averages, number_crossings, occupation_measure
 
 
 class LocalAveragesTransformer(
-    BaseEstimator,
     TransformerMixin[FData, NDArrayFloat, object],
+    BaseEstimator,
 ):
     r"""
     Transforms functional data to its local averages.
@@ -102,8 +102,8 @@ class LocalAveragesTransformer(
 
 
 class OccupationMeasureTransformer(
-    BaseEstimator,
     TransformerMixin[FData, NDArrayFloat, object],
+    BaseEstimator,
 ):
     """
     Transformer that works as an adapter for the occupation_measure function.
@@ -175,8 +175,8 @@ class OccupationMeasureTransformer(
 
 
 class NumberCrossingsTransformer(
-    BaseEstimator,
     TransformerMixin[FDataGrid, NDArrayInt, object],
+    BaseEstimator,
 ):
     """
     Transformer that works as an adapter for the number_up_crossings function.
@@ -226,7 +226,7 @@ class NumberCrossingsTransformer(
         FDataGrid created.
         >>> tf = NumberCrossingsTransformer(levels=0, direction="up")
         >>> tf.fit_transform(fd_grid)
-        array([[2]])
+        array([[ 2]])
     """
 
     def __init__(

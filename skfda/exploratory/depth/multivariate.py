@@ -22,8 +22,8 @@ Input = TypeVar("Input", contravariant=True)
 
 
 class _DepthOrOutlyingness(
-    BaseEstimator,
     InductiveTransformerMixin[Input, NDArrayFloat, object],
+    BaseEstimator,
 ):
     """Abstract class representing a depth or outlyingness function."""
 

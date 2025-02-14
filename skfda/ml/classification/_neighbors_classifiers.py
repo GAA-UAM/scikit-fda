@@ -28,8 +28,8 @@ OutlierLabelType = Union[int, str, Sequence[int], Sequence[str], None]
 
 
 class KNeighborsClassifier(
-    KNeighborsMixin[Input, NDArrayInt],
     NeighborsClassifierMixin[Input, NDArrayInt],
+    KNeighborsMixin[Input, NDArrayInt],
 ):
     """
     Classifier implementing the k-nearest neighbors vote.
@@ -89,7 +89,7 @@ class KNeighborsClassifier(
         We can predict the class of new samples
 
         >>> neigh.predict(fd[::2]) # Predict labels for even samples
-        array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
+        array([ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
 
         And the estimated probabilities.
 
@@ -190,8 +190,8 @@ class KNeighborsClassifier(
 
 
 class RadiusNeighborsClassifier(
-    RadiusNeighborsMixin[Input, NDArrayInt],
     NeighborsClassifierMixin[Input, NDArrayInt],
+    RadiusNeighborsMixin[Input, NDArrayInt],
 ):
     """
     Classifier implementing a vote among neighbors within a given radius.
@@ -254,7 +254,7 @@ class RadiusNeighborsClassifier(
         We can predict the class of new samples.
 
         >>> neigh.predict(fd[::2]) # Predict labels for even samples
-        array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
+        array([ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
 
     See also:
         :class:`~skfda.ml.classification.KNeighborsClassifier`

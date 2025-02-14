@@ -28,8 +28,8 @@ class BaseEstimator(  # noqa: D101
 
 class TransformerMixin(  # noqa: D101
     ABC,
-    Generic[Input, Output, Target],
     sklearn.base.TransformerMixin,  # type: ignore[misc]
+    Generic[Input, Output, Target],
 ):
 
     @overload
@@ -52,6 +52,10 @@ class TransformerMixin(  # noqa: D101
         X: Input,
         y: Target | None = None,
     ) -> SelfType:
+        fit = getattr(super(), "fit", None)
+        if fit:
+            return super().fit(X, y)
+        
         return self
 
     @overload
@@ -75,6 +79,10 @@ class TransformerMixin(  # noqa: D101
         y: Target | None = None,
         **fit_params: Any,
     ) -> Output:
+        fit_transform = getattr(super(), "fit_transform", None)
+        if fit_transform:
+            return fit_transform(X, y, **fit_params)
+
         if y is None:
             return self.fit(  # type: ignore[no-any-return]
                 X,
@@ -97,13 +105,13 @@ class InductiveTransformerMixin(  # noqa: D101
         self: SelfType,
         X: Input,
     ) -> Output:
-        pass
+        return super().transform(X)
 
 
 class OutlierMixin(  # noqa: D101
     ABC,
-    Generic[Input],
     sklearn.base.OutlierMixin,  # type: ignore[misc]
+    Generic[Input],
 ):
 
     def fit_predict(  # noqa: D102
@@ -111,19 +119,27 @@ class OutlierMixin(  # noqa: D101
         X: Input,
         y: object = None,
     ) -> NDArrayInt:
+        fit_predict = getattr(super(), "fit_predict", None)
+        if fit_predict:
+            return fit_predict(X, y)
+        
         return self.fit(X, y).predict(X)  # type: ignore[no-any-return]
 
 
 class ClassifierMixin(  # noqa: D101
     ABC,
-    Generic[Input, TargetPrediction],
     sklearn.base.ClassifierMixin,  # type: ignore[misc]
+    Generic[Input, TargetPrediction],
 ):
     def fit(  # noqa: D102
         self: SelfType,
         X: Input,
         y: TargetPrediction,
     ) -> SelfType:
+        fit = getattr(super(), "fit", None)
+        if fit:
+            return super().fit(X, y)
+        
         return self
 
     @abstractmethod
@@ -131,7 +147,7 @@ class ClassifierMixin(  # noqa: D101
         self: SelfType,
         X: Input,
     ) -> TargetPrediction:
-        pass
+        return super().predict(X)
 
     def score(  # noqa: D102
         self,
@@ -148,8 +164,8 @@ class ClassifierMixin(  # noqa: D101
 
 class ClusterMixin(  # noqa: D101
     ABC,
-    Generic[Input],
     sklearn.base.ClusterMixin,  # type: ignore[misc]
+    Generic[Input],
 ):
     def fit_predict(  # noqa: D102
         self,
@@ -161,14 +177,18 @@ class ClusterMixin(  # noqa: D101
 
 class RegressorMixin(  # noqa: D101
     ABC,
-    Generic[Input, TargetPrediction],
     sklearn.base.RegressorMixin,  # type: ignore[misc]
+    Generic[Input, TargetPrediction],
 ):
     def fit(  # noqa: D102
         self: SelfType,
         X: Input,
         y: TargetPrediction,
     ) -> SelfType:
+        fit = getattr(super(), "fit", None)
+        if fit:
+            return super().fit(X, y)
+        
         return self
 
     @abstractmethod
@@ -176,7 +196,7 @@ class RegressorMixin(  # noqa: D101
         self: SelfType,
         X: Input,
     ) -> TargetPrediction:
-        pass
+        return super().predict(X)
 
     def score(  # noqa: D102
         self,

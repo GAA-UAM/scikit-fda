@@ -750,12 +750,17 @@ def mean_squared_error(
         multioutput = 'raw_values', ndarray.
 
     """
-    return sklearn.metrics.mean_squared_error(  # type: ignore [no-any-return]
+    function = (
+        sklearn.metrics.mean_squared_error
+        if squared
+        else sklearn.metrics.root_mean_squared_error
+    )
+
+    return function(  # type: ignore [no-any-return]
         y_true,
         y_pred,
         sample_weight=sample_weight,
         multioutput=multioutput,
-        squared=squared,
     )
 
 
@@ -919,13 +924,18 @@ def mean_squared_log_error(
         multioutput = 'raw_values', ndarray.
 
     """
+    function = (
+        sklearn.metrics.mean_squared_log_error
+        if squared
+        else sklearn.metrics.root_mean_squared_log_error
+    )
+
     return (  # type: ignore [no-any-return]
-        sklearn.metrics.mean_squared_log_error(
+        function(
             y_true,
             y_pred,
             sample_weight=sample_weight,
             multioutput=multioutput,
-            squared=squared,
         )
     )
 

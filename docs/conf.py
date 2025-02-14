@@ -412,6 +412,7 @@ sphinx_gallery_conf = {
         "dependencies": ["../binder/requirements.txt"],
         "notebooks_dir": "../examples",
     },
+    "matplotlib_animations": True,
 }
 
 warnings.filterwarnings(

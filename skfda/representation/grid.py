@@ -591,7 +591,7 @@ class FDataGrid(FData):  # noqa: WPS214
         if min_count > 0:
             valid = ~np.isnan(self.data_matrix)
             n_valid = np.sum(valid, axis=0)
-            data[n_valid < min_count] = np.NaN
+            data[n_valid < min_count] = np.nan
 
         return self.copy(
             data_matrix=data,
@@ -1518,7 +1518,7 @@ class FDataGridDType(
             + (self.dim_codomain,)
         )
 
-        data_matrix = np.full(shape=shape, fill_value=np.NaN)
+        data_matrix = np.full(shape=shape, fill_value=np.nan)
 
         return FDataGrid(
             grid_points=self.grid_points,

@@ -65,21 +65,55 @@ class DataBinner(
     To complete
 
     Examples:
-        Given a FDataGrid with 10 grid points and 2 functions, bin the data
-        into 3 bins.
+        For the one-dimensional case:
+        Given a FDataGrid with 3 observarions and 6 measurements each, bin
+        the data into 3 bins.
 
         >>> import numpy as np
         >>> import skfda
-        >>> grid_points = np.linspace(0, 10, 10)
+        >>> grid_points = np.linspace(0, 5, 6)
         >>> data_matrix = np.array(
         >>>     [
-        >>>         [2, 2, 3, 3, 4, 4, 5, 5, np.nan, np.nan],
-        >>>         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        >>>         [np.nan, 2.0, 3.0, 4.0, 5.0, np.nan],
+        >>>         [np.nan, 2.0, 2.0, 3.0, 5.0, 6.0],
+        >>>         [np.nan, 2.0, 3.0, 4.0, 5.0, 6.0],
         >>>     ]
         >>> )
-        >>> fd = FDataGrid(data_matrix=data_matrix, grid_points=grid_points)
-        >>> bin_edges = np.array([-1, 1, 4, 10])
-        >>> binner = DataBinner(bin_edges=bin_edges, non_empty=False)
+        >>> fd = FDataGrid(
+        >>>     data_matrix=data_matrix,
+        >>>     grid_points=grid_points,
+        >>>     domain_range=(-2, 7),
+        >>> )
+        >>> binner = DataBinner(bins=3, bin_aggregation="median")
+        >>> binned_fd = binner.fit_transform(fd)
+
+        For the two-dimensional case:
+        Given a FDataGrid with one observation with shape of (4, 3), bin the
+        data into bins given by their limits.
+
+        >>> import numpy as np
+        >>> import skfda
+        >>> grid_points = [np.linspace(0, 3, 4), np.linspace(0, 2, 3)]
+        >>> data_matrix = np.array(
+        >>>     [
+        >>>         [
+        >>>             [0.5, 1.5, 2.5],
+        >>>             [0.7, 1.7, 2.7],
+        >>>             [0.9, 1.9, 2.9],
+        >>>             [1.1, 2.1, 3.1]
+        >>>         ]
+        >>>     ]
+        >>> )
+        >>> fd = FDataGrid(
+        >>>     data_matrix=data_matrix,
+        >>>     grid_points=grid_points,
+        >>>     domain_range=((-2, 7), (0, 5)),
+        >>> )
+        >>> binner = DataBinner(
+        >>>     bins=(np.array([-1, 1, 2, 4]), np.array([0, 1, 2, 3])),
+        >>>     output_grid=(np.array([0, 1.5, 2.2]), np.array([0, 1, 2.5])),
+        >>>     bin_aggregation="median"
+        >>> )
         >>> binned_fd = binner.fit_transform(fd)
     """
 
@@ -436,7 +470,8 @@ class DataBinner(
                     raise ValueError(
                         f"Some output grid points in dimension {dim_index} "
                         "are outside their bin ranges. Ensure all values lie "
-                        f"within [{edges[0]}, {edges[-1]}].",
+                        f"within [{edges[0]}, {edges[-1]}] and their intended "
+                        "bin.",
                     )
 
     def transform(
@@ -487,17 +522,7 @@ class DataBinner(
                 binned_values = binned_values[:, mask]
 
             else:
-                masks = None
-                for bin_i in self.n_bins:
-                    aux_mask = []
-                    if masks is None:
-                        masks = np.array_split(counts, bin_i)
-                    else:
-                        for mask in masks:
-                            aux_mask.append(np.array_split(mask, bin_i))
-                        masks = aux_mask
-
-                masks = np.array(masks, dtype=bool)
+                masks = np.reshape(counts, (self.n_bins))
                 max_dim = len(self.n_bins)
                 output_grid = [None] * max_dim
 
@@ -575,7 +600,10 @@ class DataBinner(
         points_in_bin: np.ndarray,
     ) -> np.ndarray:
         """
-        Compute bin values based on the specified bin_aggregation.
+        Compute individual bin value.
+
+        Compute individual bin value based on the specified bin_aggregation
+        for the univariate case.
 
         Args:
             data_matrix: The data matrix from the FDataGrid.
@@ -618,16 +646,17 @@ class DataBinner(
 
         points_in_bin = []
         for i in range(self.dim):
+            bin_edges_i = bin_edges[i]
             points_in_bin.append([])
-            for j in range(len(bin_edges[i]) - 1):
+            for j in range(len(bin_edges_i) - 1):
                 points_in_bin[i].append(
-                    (grid_points[i] >= bin_edges[i][j])
-                    & (grid_points[i] < bin_edges[i][j + 1])
+                    (grid_points[i] >= bin_edges_i[j])
+                    & (grid_points[i] < bin_edges_i[j + 1]),
                 )
-                if j == len(bin_edges[i]) - 2:
+                if j == len(bin_edges_i) - 2:
                     # Include right endpoint in the last bin
                     points_in_bin[i][j] |= (
-                        grid_points[i] == bin_edges[i][j + 1]
+                        grid_points[i] == bin_edges_i[j + 1]
                     )
 
         points_in_bin_combinations = list(itertools.product(*points_in_bin))
@@ -667,7 +696,10 @@ class DataBinner(
         data_matrix: np.ndarray,
     ) -> np.ndarray:
         """
-        Compute bin values based on the specified bin_aggregation.
+        Compute individual bin value.
+
+        Compute individual bin value based on the specified bin_aggregation
+        for the multivariate case.
 
         Args:
             data_matrix: The data matrix with the elements in the bin.

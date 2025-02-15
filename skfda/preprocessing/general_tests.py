@@ -158,3 +158,80 @@ binner = DataBinner(
 )
 binner.fit_transform(fd)
 check_params(binner)
+
+
+
+
+
+
+print("Original Domain, Data and Grid Points:")
+print(fd.data_matrix)
+print(fd.grid_points)
+
+print("Test Case 1: bins is an integer, range is None, non_empty is False, bin aggregation mode is median")
+
+binner = DataBinner(bins=3, non_empty=False, bin_aggregation="median")
+binned_data = binner.fit_transform(fd)
+
+print(binned_data.data_matrix)
+print(binned_data.grid_points)
+
+print("Test Case 2: bins is an integer, range is None, non_empty is True, bin aggregation mode is mean")
+
+binner = DataBinner(bins=3, non_empty=True, bin_aggregation="mean")
+binned_data = binner.fit_transform(fd)
+
+print(binned_data.data_matrix)
+print(binned_data.grid_points)
+
+print("Test Case 3: bins is an array, range is None")
+
+bins = np.array([-1, 1, 2, 10])
+
+binner = DataBinner(bins=bins, bin_aggregation="median")
+binned_data = binner.fit_transform(fd)
+
+print(binned_data.data_matrix)
+print(binned_data.grid_points)
+
+print("Test Case 4: bins is an integer, range is smaller than domain")
+
+binner = DataBinner(bins=3, bin_aggregation="mean", range=(1, 4))
+binned_data = binner.fit_transform(fd)
+
+print(binned_data.data_matrix)
+print(binned_data.grid_points)
+
+print("Test Case 5: bins is an integer, range is bigger than domain")
+
+binner = DataBinner(bins=3, bin_aggregation="mean", range=(-5, 9))
+binned_data = binner.fit_transform(fd)
+
+print(binned_data.data_matrix)
+print(binned_data.grid_points)
+
+print("Test Case 6: bins is an array, range is not None")
+
+binner = DataBinner(bins=bins, bin_aggregation="median", range=(1, 4))
+binned_data = binner.fit_transform(fd)
+
+print(binned_data.data_matrix)
+print(binned_data.grid_points)
+
+
+
+
+
+
+
+
+
+binner = DataBinner(
+    bins=(2,3), 
+    bin_aggregation="median", 
+    range=((0, 4), (0, 4)),
+    output_grid=(np.array([2, 3]), np.array([1, 2, 4])),
+    non_empty=False,
+)
+
+print(binner.fit_transform(fd))

@@ -731,6 +731,8 @@ def mean_squared_error(
             are taken.
         multioutput: Defines format of the return.
         squared: If True returns MSE value, if False returns RMSE value.
+            Deprecated since version 1.X: The 'squared' parameter will be removed in a future version.
+            Use `root_mean_squared_error` instead if `squared=False` was used.
 
     Returns:
         Mean squared error.
@@ -750,6 +752,13 @@ def mean_squared_error(
         multioutput = 'raw_values', ndarray.
 
     """
+    if not squared:
+        warnings.warn(
+            "The 'squared' parameter is deprecated and will be removed in a future version. "
+            "Use `root_mean_squared_error` instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
     function = (
         sklearn.metrics.mean_squared_error
         if squared

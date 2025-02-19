@@ -933,6 +933,13 @@ def mean_squared_log_error(
         multioutput = 'raw_values', ndarray.
 
     """
+    if not squared:
+        warnings.warn(
+            "The 'squared' parameter is deprecated and will be removed in a future version. "
+            "Use `root_mean_squared_log_error` instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
     function = (
         sklearn.metrics.mean_squared_log_error
         if squared

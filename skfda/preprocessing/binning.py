@@ -37,7 +37,7 @@ class DataBinner(
             domain range of the FDataGrid is used.
         output_grid: Method to select the grid points of the output FDataGrid.
             The validity of this parameter is not ensured untl the input
-            FDataGrid is fitted. The available methods are: 'left', 'center',
+            FDataGrid is fitted. The available methods are: 'left', 'middle',
             'right' or a tuple of numpy arrays with the grid points for each
             dimension, which must fit within the output bins.
         bin_aggregation: Method to compute the value of the bin. The available
@@ -124,7 +124,7 @@ class DataBinner(
         range: Optional[
             Union[Tuple[float, float], Tuple[Tuple[float, float], ...]]
         ] = None,
-        output_grid: Union[str, np.ndarray, Tuple[np.ndarray, ...]] = "center",
+        output_grid: Union[str, np.ndarray, Tuple[np.ndarray, ...]] = "middle",
         bin_aggregation: str = "mean",
         non_empty: bool = False,
     ):
@@ -291,7 +291,7 @@ class DataBinner(
         """
         if isinstance(output_grid, str) and output_grid in {
             "left",
-            "center",
+            "middle",
             "right",
         }:
             return output_grid, None
@@ -299,7 +299,7 @@ class DataBinner(
         if isinstance(output_grid, np.ndarray):
             if self.dim != 1:
                 raise ValueError(
-                    f"Output grid must be 'left', 'center', 'right' or a "
+                    f"Output grid must be 'left', 'middle', 'right' or a "
                     f"{self.dim} tuple of numpy arrays for {self.dim}"
                     f"-dimensional data.",
                 )
@@ -325,7 +325,7 @@ class DataBinner(
         ):
             if len(output_grid) != self.dim:
                 raise ValueError(
-                    f"Output grid must be 'left', 'center', 'right' or a "
+                    f"Output grid must be 'left', 'middle', 'right' or a "
                     f"{self.dim} tuple of numpy arrays for {self.dim}"
                     f"-dimensional data.",
                 )
@@ -348,7 +348,7 @@ class DataBinner(
             return None, output_grid
 
         raise ValueError(
-            f"Output grid must be 'left', 'center', 'right' or a {self.dim} "
+            f"Output grid must be 'left', 'middle', 'right' or a {self.dim} "
             f"tuple of numpy arrays for {self.dim}-dimensional data.",
         )
 
@@ -439,7 +439,7 @@ class DataBinner(
 
                 if self.bin_representative == "left":
                     grid = bin_edges_i[:-1]
-                elif self.bin_representative == "center":
+                elif self.bin_representative == "middle":
                     grid = (bin_edges_i[:-1] + bin_edges_i[1:]) / 2
                 elif self.bin_representative == "right":
                     grid = bin_edges_i[1:]

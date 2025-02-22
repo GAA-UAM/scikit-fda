@@ -18,34 +18,34 @@ class LpNorm:
     r"""
     Norm of all the observations in a FDataGrid object.
 
-    For each observation f the Lp norm is defined as:
+    For each observation :math:`\mathbf{X}` the Lp norm is defined as:
 
     .. math::
-        \| f \| = \left( \int_D \| f \|^p dx \right)^{
+        \| \mathbf{X} \| = \left( \int_D \| \mathbf{X} \|^p dt \right)^{
         \frac{1}{p}}
 
-    Where D is the :term:`domain` over which the functions are defined.
+    Where :math:`\Omega` is the :term:`domain` over which the functions are defined.
 
     The integral is approximated using Simpson's rule.
 
-    In general, if f is a multivariate function :math:`(f_1, ..., f_d)`, and
-    :math:`D \subset \mathbb{R}^n`, it is applied the following generalization
+    In general, if :math:`\mathbf{X}` is a multivariate function :math:`(X^{(1)}, ..., X^{(D)})`, and
+    :math:`\Omega \subset \mathbb{R}^n`, it is applied the following generalization
     of the Lp norm.
 
     .. math::
-        \| f \| = \left( \int_D \| f \|_{*}^p dx \right)^{
+        \| \mathbf{X} \| = \left( \int_\Omega \| \mathbf{X} \|_{*}^p dt \right)^{
         \frac{1}{p}}
 
     Where :math:`\| \cdot \|_*` denotes a vectorial norm. See
     :func:`vectorial_norm` to more information.
 
-    For example, if :math:`f: \mathbb{R}^2 \rightarrow \mathbb{R}^2`, and
+    For example, if :math:`\mathbf{X}: \mathbb{R}^2 \rightarrow \mathbb{R}^2`, and
     :math:`\| \cdot \|_*` is the euclidean norm
-    :math:`\| (x,y) \|_* = \sqrt{x^2 + y^2}`, the lp norm applied is
+    :math:`\| (t,s) \|_* = \sqrt{t^2 + s^2}`, the lp norm applied is
 
     .. math::
-        \| f \| = \left( \int \int_D \left ( \sqrt{ \| f_1(x,y)
-        \|^2 + \| f_2(x,y) \|^2 } \right )^p dxdy \right)^{
+        \| \mathbf{X} \| = \left( \int \int_\Omega \left ( \sqrt{ \| X^{(1)}(t,s)
+        \|^2 + \| X^{(2)}(t,s) \|^2 } \right )^p dtds \right)^{
         \frac{1}{p}}
 
     The objects ``l1_norm``, ``l2_norm`` and ``linf_norm`` are instances of
@@ -199,34 +199,34 @@ def lp_norm(
 ) -> NDArrayFloat:
     r"""Calculate the norm of all the observations in a FDataGrid object.
 
-    For each observation f the Lp norm is defined as:
+    For each observation :math:`\mathbf{X}` the Lp norm is defined as:
 
     .. math::
-        \| f \| = \left( \int_D \| f \|^p dx \right)^{
+        \|`\mathbf{X}` \| = \left( \int_\Omega \|`\mathbf{X}` \|^p dt \right)^{
         \frac{1}{p}}
 
-    Where D is the :term:`domain` over which the functions are defined.
+    Where :math:`\Omega` is the :term:`domain` over which the functions are defined.
 
     The integral is approximated using Simpson's rule.
 
-    In general, if f is a multivariate function :math:`(f_1, ..., f_d)`, and
-    :math:`D \subset \mathbb{R}^n`, it is applied the following generalization
+    In general, if :math:`\mathbf{X}` is a multivariate function :math:`(X^{(1)}, ..., X^{(D)})`, and
+    :math:`\Omega \subset \mathbb{R}^n`, it is applied the following generalization
     of the Lp norm.
 
     .. math::
-        \| f \| = \left( \int_D \| f \|_{*}^p dx \right)^{
+        \| \mathbf{X} \| = \left( \int_\Omega \| \mathbf{X} \|_{*}^p dt \right)^{
         \frac{1}{p}}
 
     Where :math:`\| \cdot \|_*` denotes a vectorial norm. See
     :func:`vectorial_norm` to more information.
 
-    For example, if :math:`f: \mathbb{R}^2 \rightarrow \mathbb{R}^2`, and
+    For example, if :math:`\mathbf{X}: \mathbb{R}^2 \rightarrow \mathbb{R}^2`, and
     :math:`\| \cdot \|_*` is the euclidean norm
-    :math:`\| (x,y) \|_* = \sqrt{x^2 + y^2}`, the lp norm applied is
+    :math:`\| (t,s) \|_* = \sqrt{t^2 + s^2}`, the lp norm applied is
 
     .. math::
-        \| f \| = \left( \int \int_D \left ( \sqrt{ \| f_1(x,y)
-        \|^2 + \| f_2(x,y) \|^2 } \right )^p dxdy \right)^{
+        \| \mathbf{X} \| = \left( \int \int_\Omega \left ( \sqrt{ \| X^{(1)}(t,s)
+        \|^2 + \| X^{(2)}(t,s) \|^2 } \right )^p dtds \right)^{
         \frac{1}{p}}
 
     Note:

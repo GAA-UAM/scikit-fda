@@ -1,21 +1,22 @@
 """Data Binning Module with DataBinner class."""
 
-import warnings
-from typing import Optional, Tuple, Union
 import itertools
+from typing import Optional, Tuple, Union
 
 import numpy as np
 
 from skfda._utils._sklearn_adapter import BaseEstimator, TransformerMixin
-from skfda.representation import FDataGrid
+from skfda.representation import FDataGrid, FDataIrregular
 
 
 class DataBinner(
+    # class DomainBinner(
+    # class Binner(
     BaseEstimator,
     TransformerMixin[FDataGrid, FDataGrid, object],
 ):
-    """
-    Data Binner.
+    r"""
+    FData Binner.
 
     Class to group the grid points of a FDataGrid into bins. The values
     of the new grid points are computed based on the method specified in
@@ -42,7 +43,6 @@ class DataBinner(
             dimension, which must fit within the output bins.
         bin_aggregation: Method to compute the value of the bin. The available
             methods are: 'mean', 'median'.
-        non_empty: If True, exclude empty bins from the output grid.
 
     Attributes:
         dim: Dimension of the FDataGrid the binner can process.
@@ -59,61 +59,38 @@ class DataBinner(
         output_grid: Value of the points in the output grid of the FDataGrid.
             Can be None if output_grid has been specified as string.
         bin_aggregation: Method to compute the value of the bin.
-        non_empty: If True, exclude empty bins from the output grid.
+        is_irregular: Structure of the fitted data. If True, the data is
+            irregular. If False, the data is regular. Defined after fitting.
+        bins: User-defined n_bins or bin_edges, used for scikit-learn
+            compatibility.
 
     --------------------------------------------------------------------------
     To complete
 
     Examples:
-        For the one-dimensional case:
-        Given a FDataGrid with 3 observarions and 6 measurements each, bin
-        the data into 3 bins.
+        Given a FDataGrid with 2 samples representing a function
+        :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
 
         >>> import numpy as np
-        >>> import skfda
-        >>> grid_points = np.linspace(0, 5, 6)
-        >>> data_matrix = np.array(
-        >>>     [
-        >>>         [np.nan, 2.0, 3.0, 4.0, 5.0, np.nan],
-        >>>         [np.nan, 2.0, 2.0, 3.0, 5.0, 6.0],
-        >>>         [np.nan, 2.0, 3.0, 4.0, 5.0, 6.0],
-        >>>     ]
-        >>> )
-        >>> fd = FDataGrid(
-        >>>     data_matrix=data_matrix,
-        >>>     grid_points=grid_points,
-        >>>     domain_range=(-2, 7),
-        >>> )
-        >>> binner = DataBinner(bins=3, bin_aggregation="median")
+        >>> from skfda.representation import FDataGrid
+        >>> from skfda.preprocessing import DataBinner
+        >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
+        >>> grid_points = [2, 4]
+        >>> fd = FDataGrid(data_matrix, grid_points,
+        >>>                coordinate_names=["C1", "C2"])
+        >>> binner = DataBinner(bins=1)
         >>> binned_fd = binner.fit_transform(fd)
 
-        For the two-dimensional case:
-        Given a FDataGrid with one observation with shape of (4, 3), bin the
-        data into bins given by their limits.
+        Given a FDataGrid with 2 samples representing a function
+        :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
 
         >>> import numpy as np
-        >>> import skfda
-        >>> grid_points = [np.linspace(0, 3, 4), np.linspace(0, 2, 3)]
-        >>> data_matrix = np.array(
-        >>>     [
-        >>>         [
-        >>>             [0.5, 1.5, 2.5],
-        >>>             [0.7, 1.7, 2.7],
-        >>>             [0.9, 1.9, 2.9],
-        >>>             [1.1, 2.1, 3.1]
-        >>>         ]
-        >>>     ]
-        >>> )
-        >>> fd = FDataGrid(
-        >>>     data_matrix=data_matrix,
-        >>>     grid_points=grid_points,
-        >>>     domain_range=((-2, 7), (0, 5)),
-        >>> )
-        >>> binner = DataBinner(
-        >>>     bins=(np.array([-1, 1, 2, 4]), np.array([0, 1, 2, 3])),
-        >>>     output_grid=(np.array([0, 1.5, 2.2]), np.array([0, 1, 2.5])),
-        >>>     bin_aggregation="median"
-        >>> )
+        >>> from skfda.representation import FDataGrid
+        >>> from skfda.preprocessing import DataBinner
+        >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
+        >>> grid_points = [[2, 4], [3,6]]
+        >>> fd = FDataGrid(data_matrix, grid_points)
+        >>> binner = DataBinner(bins=(1,2), bin_aggregation="median")
         >>> binned_fd = binner.fit_transform(fd)
     """
 
@@ -126,8 +103,9 @@ class DataBinner(
         ] = None,
         output_grid: Union[str, np.ndarray, Tuple[np.ndarray, ...]] = "middle",
         bin_aggregation: str = "mean",
-        non_empty: bool = False,
     ):
+        # Used for scikit-learn compatibility
+        self.bins = bins
         bins_result = self._process_bins(bins)
         self.dim = bins_result[0]
         self.bin_edges = bins_result[1]
@@ -146,7 +124,6 @@ class DataBinner(
 
         self.range = range
         self.bin_aggregation = bin_aggregation
-        self.non_empty = non_empty
 
     def _process_bins(self, bins):
         """
@@ -169,7 +146,7 @@ class DataBinner(
             if bins < 1:
                 raise ValueError(
                     "Number of bins must be greater than 0 in every "
-                    "dimension.",
+                    "dimension of the domain.",
                 )
             return 1, None, [bins]
 
@@ -178,7 +155,7 @@ class DataBinner(
                 if not all(b > 0 for b in bins):
                     raise ValueError(
                         "Number of bins must be greater than 0 in every "
-                        "dimension.",
+                        "dimension of the domain.",
                     )
                 return len(bins), None, bins
 
@@ -201,8 +178,8 @@ class DataBinner(
             return 1, bins, None
 
         raise ValueError(
-            "Bins must be an int or a numpy array for one-dimensional data, "
-            "or a tuple of ints or numpy arrays for n-dimensional data.",
+            "Bins must be an int or a numpy array for one-dimensional domain "
+            "data, or a tuple of ints or numpy arrays for n-dimensional data.",
         )
 
     def _check_bin_edges(self, bin_edges: np.ndarray) -> bool:
@@ -230,7 +207,8 @@ class DataBinner(
         """
         Validate the range parameter.
 
-        Validate the range parameter based on the dimension of the data.
+        Validate the range parameter based on the dimension of the domain of
+        the data.
 
         Args:
             range_param: Range parameter to be validated.
@@ -254,7 +232,7 @@ class DataBinner(
                 return
 
             raise ValueError(
-                "For 1-dimensional data, range must be a tuple of two "
+                "For 1-dimensional domain, range must be a tuple of two "
                 "numbers with the first being smaller than the second.",
             )
 
@@ -268,7 +246,7 @@ class DataBinner(
             return
 
         raise ValueError(
-            f"For {dim}-dimensional data, range must be a tuple with {dim} "
+            f"For {dim}-dimensional domain, range must be a tuple with {dim} "
             "tuples, each containing two numbers where the first is smaller "
             "than the second.",
         )
@@ -301,7 +279,7 @@ class DataBinner(
                 raise ValueError(
                     f"Output grid must be 'left', 'middle', 'right' or a "
                     f"{self.dim} tuple of numpy arrays for {self.dim}"
-                    f"-dimensional data.",
+                    f"-dimensional domain.",
                 )
             if not np.all(np.diff(output_grid) > 0):
                 raise ValueError(
@@ -327,7 +305,7 @@ class DataBinner(
                 raise ValueError(
                     f"Output grid must be 'left', 'middle', 'right' or a "
                     f"{self.dim} tuple of numpy arrays for {self.dim}"
-                    f"-dimensional data.",
+                    f"-dimensional domain.",
                 )
             if not all(np.all(np.diff(arr) > 0) for arr in output_grid):
                 raise ValueError(
@@ -349,27 +327,29 @@ class DataBinner(
 
         raise ValueError(
             f"Output grid must be 'left', 'middle', 'right' or a {self.dim} "
-            f"tuple of numpy arrays for {self.dim}-dimensional data.",
+            f"tuple of numpy arrays for {self.dim}-dimensional domains.",
         )
 
     def fit(
         self,
-        X: FDataGrid,
+        X: Union[FDataGrid, FDataIrregular],
         y: object = None,
     ) -> "DataBinner":
         """
         Prepare the binning parameters based on the domain range.
 
         Args:
-            X: FDataGrid to be binned.
+            X: FDataGrid or FDataIrregular to be binned.
             y: Ignored.
 
         Returns:
             self
         """
-        if len(X.domain_range) != self.dim:
+        self.is_irregular = isinstance(X, FDataIrregular)
+
+        if X.dim_domain != self.dim:
             raise ValueError(
-                f"Input FDataGrid must have {self.dim} dimensions.",
+                f"Input FData must have {self.dim} domain dimensions.",
             )
 
         self._compute_domain_range(X)
@@ -429,6 +409,7 @@ class DataBinner(
                 self.max_domain.append(range_value[1])
 
     def _compute_output_grid(self):
+        """Prepare the output grid based on the domain range."""
         if self.output_grid is None:
             self.output_grid = []
 
@@ -489,14 +470,27 @@ class DataBinner(
         Returns:
             Binned FDataGrid.
         """
+        if self.is_irregular:
+            if isinstance(X, FDataGrid):
+                raise ValueError(
+                    "Binner fitted with irregular data must receive an "
+                    "FDataIrregular instance.",
+                )
+            return self._transform_irregular(X)
+
+        if isinstance(X, FDataIrregular):
+            raise ValueError(
+                "Binner fitted with regular data must receive an FDataGrid "
+                "instance.",
+            )
+
         grid_points = X.grid_points
         data_matrix = X.data_matrix
 
         binned_values = []
-        counts = []
 
         if self.dim == 1:
-            counts, binned_values = self._compute_univariate_binning(
+            binned_values = self._compute_univariate_domain_binning(
                 grid_points[0],
                 data_matrix,
                 self.bin_edges,
@@ -505,52 +499,115 @@ class DataBinner(
             self.output_grid = [np.array(self.output_grid)]
 
         else:
-            counts, binned_values = self._compute_multivariate_binning(
+            binned_values = self._compute_multivariate_domain_binning(
                 grid_points,
                 data_matrix,
                 self.bin_edges,
             )
 
-        if self.non_empty:
-            if self.dim == 1:
-                mask = np.array(counts) > 0
-                self.output_grid = (
-                    [m[mask] for m in self.output_grid]
-                    if self.dim > 1
-                    else np.array(self.output_grid)[0][mask]
-                )
-                binned_values = binned_values[:, mask]
-
-            else:
-                masks = np.reshape(counts, (self.n_bins))
-                max_dim = len(self.n_bins)
-                output_grid = [None] * max_dim
-
-                for dim, bin_i in enumerate(self.n_bins):
-                    dim_mask = []
-                    for i in range(bin_i):
-                        index_tuple = (slice(None),) * dim + (i,)
-                        if all(
-                            mask == False
-                            for mask in masks[index_tuple].ravel()
-                        ):
-                            dim_mask.append(False)
-                        else:
-                            dim_mask.append(True)
-
-                    output_grid[dim] = self.output_grid[dim][dim_mask]
-                    index_tuple = (slice(None),) * (dim + 1) + (dim_mask,)
-                    binned_values = binned_values[index_tuple]
-
-                self.output_grid = output_grid
-
         return X.copy(
             data_matrix=binned_values,
             grid_points=self.output_grid,
             domain_range=tuple(zip(self.min_domain, self.max_domain)),
+            dataset_name=X.dataset_name,
+            argument_names=X.argument_names,
+            coordinate_names=X.coordinate_names,
+            extrapolation=X.extrapolation,
+            interpolation=X.interpolation,
         )
 
-    def _compute_univariate_binning(
+    def _transform_irregular(
+        self,
+        X: FDataIrregular,
+    ) -> FDataGrid:
+        """
+        Group the FDataIrregular points into bins.
+
+        Args:
+            X: FDataIrregular to be binned.
+
+        Returns:
+            Binned FDataGrid.
+        """
+        n_samples = len(X.start_indices)
+        dim_domain = X.dim_domain
+        dim_codomain = X.dim_codomain
+
+        if self.dim == 1:
+            self.bin_edges = (self.bin_edges,)
+            self.output_grid = (self.output_grid,)
+
+        grid_shape = tuple(len(g) for g in self.output_grid)
+        binned_values = np.full((n_samples, *grid_shape, dim_codomain), np.nan)
+
+        for sample_idx in range(n_samples):
+            start = X.start_indices[sample_idx]
+            end = (
+                X.start_indices[sample_idx + 1]
+                if sample_idx + 1 < len(X.start_indices)
+                else len(X.points)
+            )
+
+            arg_array = X.points[start:end]
+            val_array = X.values[start:end]
+
+            if val_array.ndim == 1:
+                val_array = val_array[:, np.newaxis]
+
+            bin_indices = np.empty((arg_array.shape[0], dim_domain), dtype=int)
+            for d in range(dim_domain):
+                bin_indices[:, d] = (
+                    np.digitize(
+                        arg_array[:, d], self.bin_edges[d], right=False
+                    )
+                    - 1
+                )
+
+                out_of_range = (arg_array[:, d] < self.bin_edges[d][0]) | (
+                    arg_array[:, d] > self.bin_edges[d][-1]
+                )
+                bin_indices[:, d][out_of_range] = -1
+
+                last_bin_index = len(self.bin_edges[d]) - 2
+                bin_indices[:, d][
+                    arg_array[:, d] == self.bin_edges[d][-1],
+                ] = last_bin_index
+
+            for bin_idx in np.ndindex(*grid_shape):
+                mask = np.logical_and.reduce(
+                    [
+                        bin_indices[:, d] == bin_idx[d]
+                        for d in range(dim_domain)
+                    ],
+                )
+                points_in_bin = val_array[mask]
+
+                if points_in_bin.shape[0] > 0:
+                    if self.bin_aggregation == "mean":
+                        binned_values[sample_idx][bin_idx] = np.nanmean(
+                            points_in_bin, axis=0,
+                        )
+                    else:
+                        binned_values[sample_idx][bin_idx] = np.nanmedian(
+                            points_in_bin, axis=0,
+                        )
+
+        grid_points = (
+            self.output_grid if dim_domain > 1 else [self.output_grid[0]]
+        )
+
+        return FDataGrid(
+            data_matrix=binned_values,
+            grid_points=grid_points,
+            domain_range=X.domain_range,
+            dataset_name=X.dataset_name,
+            argument_names=X.argument_names,
+            coordinate_names=X.coordinate_names,
+            extrapolation=X.extrapolation,
+            interpolation=X.interpolation,
+        )
+
+    def _compute_univariate_domain_binning(
         self,
         grid_points: np.ndarray,
         data_matrix: np.ndarray,
@@ -568,8 +625,11 @@ class DataBinner(
             Tuple with the counts of points in each bin and the computed bin
             values.
         """
-        counts = []
-        binned_values = []
+        n_samples, _, n_codomain = data_matrix.shape
+        binned_values = np.full(
+            (n_samples, len(bin_edges) - 1, n_codomain),
+            np.nan,
+        )
 
         for i in range(len(bin_edges) - 1):
             points_in_bin = (grid_points >= bin_edges[i]) & (
@@ -579,20 +639,20 @@ class DataBinner(
                 # Include right endpoint in the last bin
                 points_in_bin |= grid_points == bin_edges[i + 1]
 
-            if ~np.all(np.isnan(data_matrix[:, points_in_bin])):
-                mean_values = self._compute_univariate_bin_values(
-                    data_matrix,
-                    points_in_bin,
-                )
-                counts.append(np.sum(points_in_bin))
-                binned_values.append(mean_values)
-            else:
-                counts.append(0)
-                binned_values.append(np.full(data_matrix.shape[0], np.nan))
+            if np.any(points_in_bin):
+                bin_values = np.full((n_samples, n_codomain), np.nan)
 
-        binned_values = np.array(binned_values).T
+                for codomain_dim in range(n_codomain):
+                    bin_values[:, codomain_dim] = (
+                        self._compute_univariate_bin_values(
+                            data_matrix[:, :, codomain_dim],
+                            points_in_bin,
+                        )
+                    )
 
-        return counts, binned_values
+                binned_values[:, i, :] = bin_values
+
+        return binned_values
 
     def _compute_univariate_bin_values(
         self,
@@ -612,19 +672,21 @@ class DataBinner(
         Returns:
             Array of computed bin values for the current bin.
         """
-        mean_values = np.full(data_matrix.shape[0], np.nan)
+        n_samples = data_matrix.shape[0]
+        bin_values = np.full(n_samples, np.nan)
 
-        for row_idx in range(data_matrix.shape[0]):
+        for row_idx in range(n_samples):
             row_data = data_matrix[row_idx, points_in_bin]
 
             if not np.all(np.isnan(row_data)):
                 if self.bin_aggregation == "mean":
-                    mean_values[row_idx] = np.nanmean(row_data)
+                    bin_values[row_idx] = np.nanmean(row_data)
                 else:
-                    mean_values[row_idx] = np.nanmedian(row_data)
-        return mean_values
+                    bin_values[row_idx] = np.nanmedian(row_data)
 
-    def _compute_multivariate_binning(
+        return bin_values
+
+    def _compute_multivariate_domain_binning(
         self,
         grid_points: np.ndarray,
         data_matrix: np.ndarray,
@@ -642,54 +704,42 @@ class DataBinner(
             Tuple with the counts of points in each bin and the computed bin
             values.
         """
-        counts = []
-
+        n_samples, *grid_shape, n_codomain = data_matrix.shape
         points_in_bin = []
+
         for i in range(self.dim):
             bin_edges_i = bin_edges[i]
             points_in_bin.append([])
             for j in range(len(bin_edges_i) - 1):
-                points_in_bin[i].append(
-                    (grid_points[i] >= bin_edges_i[j])
-                    & (grid_points[i] < bin_edges_i[j + 1]),
+                mask = (grid_points[i] >= bin_edges_i[j]) & (
+                    grid_points[i] < bin_edges_i[j + 1]
                 )
                 if j == len(bin_edges_i) - 2:
-                    # Include right endpoint in the last bin
-                    points_in_bin[i][j] |= (
-                        grid_points[i] == bin_edges_i[j + 1]
-                    )
+                    mask |= grid_points[i] == bin_edges_i[j + 1]
+                points_in_bin[i].append(mask)
 
         points_in_bin_combinations = list(itertools.product(*points_in_bin))
-        points_in_bin_combinations = [
-            tuple(arrays) for arrays in points_in_bin_combinations
-        ]
 
-        output_values = np.full((data_matrix.shape[0], *self.n_bins), np.nan)
+        output_values = np.full((n_samples, *self.n_bins, n_codomain), np.nan)
 
-        for i, combination in enumerate(points_in_bin_combinations):
+        for k, combination in enumerate(points_in_bin_combinations):
             combination_data = data_matrix
 
-            for dim, mask in enumerate(combination, start=1):
-                index_tuple = (slice(None),) * dim + (mask,)
+            for dim, comb_mask in enumerate(combination, start=1):
+                index_tuple = (slice(None),) * dim + (comb_mask,)
                 combination_data = combination_data[index_tuple]
 
-            if ~np.all(np.isnan(combination_data)):
+            if np.any(~np.isnan(combination_data)):
                 combination_output_values = (
-                    self._compute_multivariate_bin_values(
-                        combination_data,
-                    )
+                    self._compute_multivariate_bin_values(combination_data)
                 )
 
-                multi_dim_index = np.unravel_index(i, self.n_bins)
+                multi_dim_index = np.unravel_index(k, self.n_bins)
                 for obs_idx, value in enumerate(combination_output_values):
-                    index_tuple = (obs_idx,) + multi_dim_index
+                    index_tuple = (obs_idx,) + multi_dim_index + (slice(None),)
                     output_values[index_tuple] = value
 
-                counts.append(True)
-            else:
-                counts.append(False)
-
-        return counts, output_values
+        return output_values
 
     def _compute_multivariate_bin_values(
         self,
@@ -707,21 +757,28 @@ class DataBinner(
         Returns:
             Array of computed bin values for the current bin.
         """
-        n_obs = data_matrix.shape[0]
-        output_values = np.full(n_obs, np.nan)
+        n_samples, *bin_shape, n_codomain = data_matrix.shape
+        output_values = np.full((n_samples, n_codomain), np.nan)
 
-        for obs in range(n_obs):
+        for codomain_dim in range(n_codomain):
             obs_data = []
 
-            for idx in np.ndindex(data_matrix.shape[1:]):
-                obs_data.append(data_matrix[(obs,) + idx])
+            for idx in np.ndindex(*bin_shape):
+                obs_data.append(
+                    data_matrix[(slice(None),) + idx + (codomain_dim,)],
+                )
 
-            if not np.all(np.isnan(obs_data)):
-                if self.bin_aggregation == "mean":
-                    obs_value = np.nanmean(obs_data)
-                else:
-                    obs_value = np.nanmedian(obs_data)
+            obs_data = np.array(obs_data).T
 
-                output_values[obs] = obs_value
+            for obs in range(n_samples):
+                if not np.all(np.isnan(obs_data[obs])):
+                    if self.bin_aggregation == "mean":
+                        output_values[obs, codomain_dim] = np.nanmean(
+                            obs_data[obs],
+                        )
+                    else:
+                        output_values[obs, codomain_dim] = np.nanmedian(
+                            obs_data[obs],
+                        )
 
         return output_values

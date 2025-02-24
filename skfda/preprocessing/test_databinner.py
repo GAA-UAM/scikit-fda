@@ -1,6 +1,6 @@
 import numpy as np
-from binning import DataBinner
 
+from skfda.preprocessing.binning import DataBinner
 from skfda.representation import FDataGrid
 
 
@@ -20,7 +20,6 @@ def check_params(
     range=None,
     output_grid=None,
     bin_aggregation=None,
-    non_empty=None,
 ):
     try:
         DataBinner(
@@ -28,7 +27,6 @@ def check_params(
             range=range,
             output_grid=output_grid,
             bin_aggregation=bin_aggregation,
-            non_empty=non_empty,
         )
 
     except ValueError as e:
@@ -162,12 +160,12 @@ data_matrix = np.array(
 fd_3 = FDataGrid(
     data_matrix=data_matrix,
     grid_points=grid_points,
-    domain_range=((-2, 7), (0, 5), (-1, 2)),
+    # domain_range=((-2, 7), (0, 5), (-1, 2)),
 )
 
 # -- Tests --------------------------------------------------------------------
 
-binner = DataBinner(bins=3, non_empty=False, bin_aggregation="median")
+binner = DataBinner(bins=3, bin_aggregation="median")
 
 check_binning_result(
     binner,
@@ -273,7 +271,6 @@ check_params(
     range=(0, 2),
     output_grid=(np.array([0, 1, 2]), np.array([0, 1, 2])),
     bin_aggregation="median",
-    non_empty=False,
 )
 
 check_params(
@@ -282,7 +279,6 @@ check_params(
     range=((0, 2), (0, 2)),
     output_grid=np.array([0, 1, 2]),
     bin_aggregation="median",
-    non_empty=False,
 )
 
 check_params(
@@ -291,7 +287,6 @@ check_params(
     range=((0, 2), (0, 2)),
     output_grid=(np.array([0, 1, 2]), np.array([0, 1, 2])),
     bin_aggregation="median",
-    non_empty=False,
 )
 
 check_params(
@@ -300,7 +295,6 @@ check_params(
     range=((0, 2), (0, 2)),
     output_grid=(np.array([0, 1, 1]), np.array([0, 1])),
     bin_aggregation="median",
-    non_empty=False,
 )
 
 binner = DataBinner(
@@ -308,7 +302,6 @@ binner = DataBinner(
     range=((0, 2), (0, 2)),
     output_grid=(np.array([0, 1, 1.5]), np.array([0, 1])),
     bin_aggregation="median",
-    non_empty=False,
 )
 
 check_binning_result(
@@ -319,48 +312,10 @@ check_binning_result(
 )
 
 binner = DataBinner(
-    bins=(2,3), 
-    bin_aggregation="median", 
-    range=((0, 4), (0, 4)),
-    output_grid=(np.array([2, 3]), np.array([1, 2, 4])),
-    non_empty=False,
-)
-
-check_binning_result(
-    binner,
-    fd_nan,
-    "Test Case 15: check non_empty parameter in two dimensions, to compare "
-    "with the next test case. This has to work across every dimension.",
-)
-
-binner = DataBinner(
-    bins=(2,3), 
-    bin_aggregation="median", 
-    range=((0, 4), (0, 4)),
-    output_grid=(np.array([2, 3]), np.array([1, 2, 4])),
-    non_empty=True,
-)
-
-check_binning_result(
-    binner,
-    fd_nan,
-    "Test Case 16: check non_empty parameter in two dimensions.",
-)
-
-binner = DataBinner(
-    bins=(2,3), 
-    bin_aggregation="median", 
-    range=((0, 4), (0, 4)),
-    output_grid=(np.array([2, 3]), np.array([1, 2, 4])),
-    non_empty=True,
-)
-
-binner = DataBinner(
     bins=(2,3,2), 
-    bin_aggregation="mean", 
-    range=((0, 3), (0, 8), (-1, 10)),
-    output_grid="left",
-    non_empty=True,
+    bin_aggregation="median", 
+    # range=((0, 3), (0, 8), (-1, 10)),
+    output_grid="right",
 )
 
 # Adds 4 upper elements, and then the two lower for the first two points in
@@ -368,19 +323,5 @@ binner = DataBinner(
 check_binning_result(
     binner,
     fd_3,
-    "Test Case 17: check three-dimensional case.",
-)
-
-binner = DataBinner(
-    bins=(2,3,2), 
-    bin_aggregation="mean", 
-    range=((0, 3), (0, 8), (-1, 10)),
-    output_grid="left",
-    non_empty=False,
-)
-
-check_binning_result(
-    binner,
-    fd_3,
-    "Test Case 18: compare three-dimensional case.",
+    "Test Case 15: check three-dimensional case.",
 )

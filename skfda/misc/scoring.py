@@ -835,6 +835,24 @@ def _mean_squared_error_fdatabasis(
 
     return _multioutput_score_basis(y_true, multioutput, _mse_func)
 
+@singledispatch
+def root_mean_squared_error(
+    y_true: DataType,
+    y_pred: DataType,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = "uniform_average",
+) -> float | DataType:
+    """Root Mean Squared Error for functional data."""
+
+    return mean_squared_error(
+        y_true,
+        y_pred,
+        sample_weight=sample_weight,
+        multioutput=multioutput,
+        squared=False,  # Apply the square root directly
+    )
+
 
 @overload
 def mean_squared_log_error(
@@ -1040,6 +1058,132 @@ def _mean_squared_log_error_fdatabasis(
         return error[0]  # type: ignore [no-any-return]
 
     return _multioutput_score_basis(y_true, multioutput, _msle_func)
+
+@overload
+def root_mean_squared_log_error(
+    y_true: DataType,
+    y_pred: DataType,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    pass  # noqa: WPS428
+
+
+@overload
+def root_mean_squared_log_error(
+    y_true: DataType,
+    y_pred: DataType,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: Literal['raw_values'],
+) -> DataType:
+    pass  # noqa: WPS428
+
+
+@singledispatch
+def root_mean_squared_log_error(
+    y_true: DataType,
+    y_pred: DataType,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float | DataType:
+    r"""Root Mean Squared Log Error for :class:`~skfda.representation.FData`.
+
+    This function applies the same logic as `mean_squared_log_error`, but
+    directly takes the square root of the result.
+
+    Args:
+        y_true: True target values.
+        y_pred: Predicted values.
+        sample_weight: Sample weights.
+        multioutput: Return format (raw values or uniform average).
+
+    Returns:
+        Root mean squared logarithmic error.
+    """
+    return sklearn.metrics.root_mean_squared_log_error(
+        y_true,
+        y_pred,
+        sample_weight=sample_weight,
+        multioutput=multioutput,
+    )
+
+@root_mean_squared_log_error.register  # type: ignore[attr-defined, misc]
+def _root_mean_squared_log_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float | FDataGrid:
+    
+    if np.any(y_true.data_matrix < 0) or np.any(y_pred.data_matrix < 0):
+        raise ValueError(
+            "Root Mean Squared Logarithmic Error cannot be used when "
+            "targets functions have negative values.",
+        )
+
+    return root_mean_squared_error(
+        np.log1p(y_true),
+        np.log1p(y_pred),
+        sample_weight=sample_weight,
+        multioutput=multioutput,
+    )
+
+@root_mean_squared_log_error.register  # type: ignore[attr-defined, misc]
+def _root_mean_squared_log_error_fdatairregular(
+    y_true: FDataIrregular,
+    y_pred: FDataIrregular,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float:
+    
+    if np.any(y_true.values < 0) or np.any(y_pred.values < 0):
+        raise ValueError(
+            "Root Mean Squared Logarithmic Error cannot be used when "
+            "targets functions have negative values.",
+        )
+
+    return root_mean_squared_error(
+        np.log1p(y_true),
+        np.log1p(y_pred),
+        sample_weight=sample_weight,
+        multioutput=multioutput,
+    )
+
+@root_mean_squared_log_error.register  # type: ignore[attr-defined, misc]
+def _root_mean_squared_log_error_fdatabasis(
+    y_true: FDataBasis,
+    y_pred: FDataBasis,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float:
+
+    def _rmsle_func(x: EvalPointsType) -> NDArrayFloat:
+        y_true_eval = y_true(x)
+        y_pred_eval = y_pred(x)
+
+        if np.any(y_true_eval < 0) or np.any(y_pred_eval < 0):
+            raise ValueError(
+                "Root Mean Squared Logarithmic Error cannot be used when "
+                "targets functions have negative values.",
+            )
+
+        error: NDArrayFloat = np.sqrt(np.average(
+            (np.log1p(y_true_eval) - np.log1p(y_pred_eval)) ** 2,
+            weights=sample_weight,
+            axis=0,
+        ))
+
+        # Verify that the error only contains 1 input point
+        assert error.shape[0] == 1
+        return error[0]  # type: ignore [no-any-return]
+
+    return _multioutput_score_basis(y_true, multioutput, _rmsle_func)
 
 
 @overload

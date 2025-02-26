@@ -1,13 +1,21 @@
 """Tests for DataBinner module."""
 
 import re
-from typing import Any, Tuple, Union
+from typing import Any, Tuple, TypeAlias, Union
 
 import numpy as np
 import pytest
 
 from skfda.preprocessing.binning import DataBinner
 from skfda.representation import FData, FDataGrid, FDataIrregular
+
+BinnerFixture: TypeAlias = list[
+    Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]],
+    Union[Tuple[float, float], Tuple[Tuple[float, float], ...]],
+    Union[str, np.ndarray, Tuple[np.ndarray, ...]],
+    str,
+    str,
+]
 
 ##############################################################################
 # Example FDataGrid to check parameters
@@ -69,13 +77,7 @@ fd = FDataGrid(
         ],
     ],
 )
-def databinner_raises_fixture(request: Any) -> list[
-    Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]],
-    Union[Tuple[float, float], Tuple[Tuple[float, float], ...]],
-    Union[str, np.ndarray, Tuple[np.ndarray, ...]],
-    str,
-    str,
-]:
+def databinner_raises_fixture(request: Any) -> BinnerFixture:
     """Fixture for getting a DataBinner object that raises a ValueError."""
     return request.param
 
@@ -433,23 +435,16 @@ def precalc_example_data_domain_3(
 ##############################################################################
 
 
-def test_raises(
-    databinner_raises_fixture: list[
-        Union[int, np.ndarray, Tuple[Union[int, np.ndarray], ...]],
-        Union[Tuple[float, float], Tuple[Tuple[float, float], ...]],
-        Union[str, np.ndarray, Tuple[np.ndarray, ...]],
-        str,
-        str,
-    ],
-) -> None:
+def test_raises(databinner_raises_fixture: BinnerFixture) -> None:
     """
     Check raises ValueError.
 
     Check that DataBinners raise a ValueError exception.
     """
-    bins, range_, output_grid, bin_aggregation, error_msg = (
+    bins, range_, output_grid, *rest = (
         databinner_raises_fixture
     )
+    bin_aggregation, error_msg = rest
 
     with pytest.raises(ValueError, match=error_msg):
         DataBinner(

@@ -50,7 +50,7 @@ fd = FDataGrid(
             (0, 2),
             "middle",
             "median",
-            "For 2-dimensional domain, range must be a tuple with 2 tuples",
+            "For 2-dimensional domain, range must be a tuple with 2 " "tuples",
         ],
         [
             (2, 2),
@@ -89,7 +89,7 @@ def databinner_raises_fixture(request: Any) -> BinnerFixture:
             fd.domain_range,
         ],
         [
-            DataBinner(bins=(1, 1), range=((0, 2), (0, 2))),
+            DataBinner(bins=(1, 1), domain_range=((0, 2), (0, 2))),
             ((0, 2), (0, 2)),
         ],
         [
@@ -99,13 +99,15 @@ def databinner_raises_fixture(request: Any) -> BinnerFixture:
         [
             DataBinner(
                 bins=(np.array([-1, 1]), np.array([-1, 1])),
-                range=((0, 2), (0, 2)),
+                domain_range=((0, 2), (0, 2)),
             ),
             ((-1, 1), (-1, 1)),
         ],
     ],
 )
-def range_interactions_fixture(request: Any) -> list[FData, DataBinner, tuple]:
+def domain_range_interactions_fixture(
+    request: Any,
+) -> list[FData, DataBinner, tuple]:
     """Fixture for checking domain behaviour."""
     return fd, *request.param
 
@@ -322,7 +324,7 @@ def precalc_example_data_domain_1(
                                 [[2.6, 3.6], [2.7, 3.7], [2.8, 3.8]],
                             ],
                         ],
-                    ]
+                    ],
                 ),
             ),
             FDataGrid(
@@ -355,7 +357,7 @@ def precalc_example_data_domain_1(
                                 [[2.45, 3.45], [2.6, 3.6]],
                             ],
                         ],
-                    ]
+                    ],
                 ),
             ),
         ],
@@ -410,7 +412,7 @@ def precalc_example_data_domain_1(
                                 [[5.0, 6.0], [np.nan, np.nan]],
                             ],
                         ],
-                    ]
+                    ],
                 ),
             ),
         ],
@@ -441,30 +443,28 @@ def test_raises(databinner_raises_fixture: BinnerFixture) -> None:
 
     Check that DataBinners raise a ValueError exception.
     """
-    bins, range_, output_grid, *rest = (
-        databinner_raises_fixture
-    )
+    bins, domain_range_, output_grid, *rest = databinner_raises_fixture
     bin_aggregation, error_msg = rest
 
     with pytest.raises(ValueError, match=error_msg):
         DataBinner(
             bins=bins,
-            range=range_,
+            domain_range=domain_range_,
             output_grid=output_grid,
             bin_aggregation=bin_aggregation,
         )
 
 
 def test_domain_range_interactions(
-    range_interactions_fixture: list[FData, DataBinner, tuple],
+    domain_range_interactions_fixture: list[FData, DataBinner, tuple],
 ) -> None:
     """
     Check the domain parameter behaviour.
 
     Check that the domain is correctly calculated for different combinations
-    of range, bins and domain.
+    of domain_range, bins and domain.
     """
-    fd, binner, expected_domain = range_interactions_fixture
+    fd, binner, expected_domain = domain_range_interactions_fixture
     binned_fd = binner.fit_transform(fd)
 
     np.testing.assert_array_equal(

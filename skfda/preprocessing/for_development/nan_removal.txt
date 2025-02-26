@@ -1,0 +1,32 @@
+        if self.non_empty:
+            if self.dim == 1:
+                mask = np.array(counts) > 0
+                self.output_grid = (
+                    [m[mask] for m in self.output_grid]
+                    if self.dim > 1
+                    else np.array(self.output_grid)[0][mask]
+                )
+                binned_values = binned_values[:, mask]
+
+            else:
+                masks = np.reshape(counts, (self.n_bins))
+                max_dim = len(self.n_bins)
+                output_grid = [None] * max_dim
+
+                for dim, bin_i in enumerate(self.n_bins):
+                    dim_mask = []
+                    for i in range(bin_i):
+                        index_tuple = (slice(None),) * dim + (i,)
+                        if all(
+                            mask == False
+                            for mask in masks[index_tuple].ravel()
+                        ):
+                            dim_mask.append(False)
+                        else:
+                            dim_mask.append(True)
+
+                    output_grid[dim] = self.output_grid[dim][dim_mask]
+                    index_tuple = (slice(None),) * (dim + 1) + (dim_mask,)
+                    binned_values = binned_values[index_tuple]
+
+                self.output_grid = output_grid

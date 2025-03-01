@@ -547,7 +547,7 @@ class FDataGrid(FData):  # noqa: WPS214
     
     def _compute_aggregate(
         self: T,
-        operation = str,
+        operation: str,
         *,
         skipna: bool = False,
         min_count: int = 0,
@@ -589,7 +589,7 @@ class FDataGrid(FData):  # noqa: WPS214
         
         data = agg_func(self.data_matrix, axis=0, keepdims=True)
 
-        if min_count > 0:
+        if min_count > 0 and skipna:
             valid = ~np.isnan(self.data_matrix)
             n_valid = np.sum(valid, axis=0)
             data[n_valid < min_count] = np.nan
@@ -637,8 +637,11 @@ class FDataGrid(FData):  # noqa: WPS214
         """
         super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        return self._compute_aggregate(operation='sum', skipna=skipna, 
-                                       min_count=min_count)
+        return self._compute_aggregate(
+            operation='sum',
+            skipna=skipna,
+            min_count=min_count,
+        )
 
     def mean(  # noqa: WPS125
         self: T,
@@ -666,11 +669,19 @@ class FDataGrid(FData):  # noqa: WPS214
             A FDataGrid object with just one sample representing
             the mean of all the samples in the original object.
         """
-        super().mean(axis=axis, dtype=dtype, out=out, keepdims=keepdims, 
-                     skipna=skipna)
+        super().mean(
+            axis=axis,
+            dtype=dtype,
+            out=out,
+            keepdims=keepdims,
+            skipna=skipna,
+        )
         
-        return self._compute_aggregate(operation='mean', skipna=skipna,
-                                        min_count=min_count)
+        return self._compute_aggregate(
+            operation='mean',
+            skipna=skipna,
+            min_count=min_count,
+        )
 
     def var(self: T, correction: int = 0) -> T:
         """Compute the variance of a set of samples in a FDataGrid object.

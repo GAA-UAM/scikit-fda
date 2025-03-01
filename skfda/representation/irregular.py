@@ -743,8 +743,13 @@ class FDataIrregular(FData):  # noqa: WPS214
             An FDataIrregular object with just one sample representing
             the mean of all the samples in the original object.
         """
-        super().mean(axis=axis, dtype=dtype, out=out, keepdims=keepdims, 
-                     skipna=skipna)
+        super().mean(
+            axis=axis,
+            dtype=dtype,
+            out=out,
+            keepdims=keepdims,
+            skipna=skipna,
+        )
         
         common_points, common_values = self._get_common_points_and_values()
 
@@ -759,7 +764,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         else:
             count_values = np.full(sum_values.shape, self.n_samples)
 
-        if min_count > 0:
+        if min_count > 0 and skipna:
             count_values[count_values < min_count] = np.nan
 
         mean_values = sum_values / count_values

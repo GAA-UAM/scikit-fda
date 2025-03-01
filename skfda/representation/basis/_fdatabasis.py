@@ -461,9 +461,8 @@ class FDataBasis(FData):  # noqa: WPS214
             out: Used for compatibility with numpy. Must be None.
             keepdims: Used for compatibility with numpy. Must be False.
             skipna: Wether the NaNs are ignored or not.
-            min_count: Number of valid (non NaN) data to have in order
-                for the a variable to not be NaN when `skipna` is
-                `True`.
+            min_count: Ignored, used for compatibility with FDataGrid
+                and FDataIrregular.
 
         Returns:
             A FDataBasis object with just one sample representing

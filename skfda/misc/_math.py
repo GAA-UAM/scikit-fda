@@ -209,6 +209,46 @@ def cumsum(fdatagrid: FDataGrid) -> FDataGrid:
         data_matrix=np.cumsum(fdatagrid.data_matrix, axis=0),
     )
 
+@multimethod.multidispatch
+def weighted_inner_product(
+    arg1: Vector,
+    arg2: Vector,
+    weight: Union[float, Callable[[NDArrayFloat], NDArrayFloat], None]= None,
+    *,
+    _matrix: bool = False,
+    _domain_range: Optional[DomainRange] = None,
+    **kwargs: Any,
+) -> NDArrayFloat:
+    
+    if weight is None:
+        weight = 1.0
+
+    
+    if callable(arg1) and callable(arg2):
+        
+        if callable(weight):
+            integrand = lambda x: arg1(x) * weight(x)
+        else:
+            integrand = lambda x: arg1(x) * weight
+
+        return _inner_product_integrate(
+            integrand,
+            arg2,
+            _matrix=_matrix,
+            _domain_range=_domain_range,
+        )
+    
+    elif isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
+        if not callable(weight):
+            return (  # type: ignore[no-any-return]
+                np.einsum('n...,m...->nm...', weight*arg1, arg2).sum(axis=-1)
+                if _matrix else (weight* arg1 * arg2).sum(axis=-1)
+            )
+
+    raise ValueError(
+        "Cannot compute inner product between "
+        f"{type(arg1)} and {type(arg2)} with weights {type(weight)}",
+    )
 
 @multimethod.multidispatch
 def inner_product(

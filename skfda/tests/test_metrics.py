@@ -3,6 +3,7 @@
 import unittest
 
 import numpy as np
+from typing import Callable
 
 from skfda import FDataBasis, FDataGrid
 from skfda.datasets import make_multimodal_samples
@@ -14,6 +15,9 @@ from skfda.misc.metrics import (
     lp_norm,
 )
 from skfda.representation.basis import MonomialBasis
+import scipy.integrate
+
+from skfda.typing._numpy import NDArrayFloat
 
 
 class TestLp(unittest.TestCase):
@@ -135,6 +139,45 @@ class TestLp(unittest.TestCase):
 
         with np.testing.assert_raises(ValueError):
             l2_distance(self.fd, fd2)
+    
+    def test_lp_norm_with_measure(self) -> None:
+        """Test Lp norm with a custom measure."""
+        measure: Callable[[NDArrayFloat], NDArrayFloat] = lambda t: np.exp(-t)
+
+        result = lp_norm(self.fd,p=2, measure=measure)
+
+        # Expected result for the first sample with the measure applied
+        expected_result = scipy.integrate.quad(
+            lambda t: measure(t) * (2 + (t - 1)) ** 2,
+            1,
+            5,
+        )[0] ** 0.5
+
+        np.testing.assert_allclose(result[0], expected_result, rtol=1e-5)
+
+    def test_lp_norm_with_uniform_measure(self) -> None:
+        """Test Lp norm with a uniform measure (equivalent to standard norm)."""
+        uniform_measure = lambda t: np.ones_like(t)  # Uniform measure
+
+        result_with_measure = lp_norm(self.fd,p=2, measure=uniform_measure)
+
+        result_standard = l2_norm(self.fd)
+
+        np.testing.assert_allclose(result_with_measure, result_standard, rtol=1e-5)
+
+    def test_lp_norm_with_linear_measure(self) -> None:
+        """Test Lp norm with a linear measure."""
+        linear_measure = lambda t: t  # Measure proportional to t
+
+        result = lp_norm(self.fd, p=2, measure=linear_measure)
+
+        expected_result = scipy.integrate.quad(
+            lambda t: t * (2 + (t - 1)) ** 2,
+            1,
+            5,
+        )[0] ** 0.5
+
+        np.testing.assert_allclose(result[0], expected_result, rtol=1e-5)
 
 
 if __name__ == '__main__':

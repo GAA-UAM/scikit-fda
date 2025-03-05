@@ -2,21 +2,18 @@
 
 import math
 from builtins import isinstance
-from typing import Union
+from typing import Union, Callable, List
 
 import numpy as np
 import scipy.integrate
 from typing_extensions import Final
-from typing import Union, Callable
-
 
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
-from ..._utils import nquad_vec
 
 
-class LpNorm:
+class WeightedLpNorm:
     r"""
     Norm of all the observations in a FDataGrid object.
 
@@ -69,7 +66,7 @@ class LpNorm:
         >>>
         >>> x = np.linspace(0, 1, 1001)
         >>> fd = skfda.FDataGrid([np.ones(len(x)), x] ,x)
-        >>> norm = skfda.misc.metrics.LpNorm(2)
+        >>> norm = skfda.misc.metrics.WeightedLpNorm(2)
         >>> norm(fd).round(2)
         array([ 1.  ,  0.58])
 
@@ -81,7 +78,7 @@ class LpNorm:
 
         The lp norm is only defined if p >= 1.
 
-        >>> norm = skfda.misc.metrics.LpNorm(0.5)
+        >>> norm = skfda.misc.metrics.WeightedLpNorm(0.5)
         Traceback (most recent call last):
             ....
         ValueError: p (=0.5) must be equal or greater than 1.
@@ -91,9 +88,9 @@ class LpNorm:
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
-        lp_weight: Union[
-            Callable[[NDArrayFloat], NDArrayFloat],
+        pointwise_weights: Union[NDArrayFloat, None] = None,
+        weights: Union[
+            List[Callable[[NDArrayFloat], NDArrayFloat]],
             None,
         ] = None,
     ) -> None:
@@ -103,90 +100,96 @@ class LpNorm:
             raise ValueError(f"p (={p}) must be equal or greater than 1.")
 
         self.p = p
-        self.vector_norm = vector_norm
-        self.lp_weight = lp_weight if lp_weight is not None else lambda x: np.ones_like(x)
+        self.lp_weight = lp_weight
+        self.filter = filter
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(" f"p={self.p}, vector_norm={self.vector_norm})"
+        return f"{type(self).__name__}(" f"p={self.p}, measure={self.lp_weight}"
 
     def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
-        from ...misc import inner_product
+        from ...misc import weighted_inner_product
 
+        lp_weight = self.lp_weight
+        filter = self.filter
         if isinstance(vector, np.ndarray):
-            return np.linalg.norm(  # type: ignore[no-any-return]
-                vector,
-                ord=self.p,
-                axis=-1,
-            )
+            if isinstance(lp_weight, (float, int)):
+                vector = vector * lp_weight
+                return np.linalg.norm(  # type: ignore[no-any-return]
+                    vector,
+                    ord=self.p,
+                    axis=-1,
+                )
 
-        vector_norm = self.vector_norm
+        # Special case, the inner product is heavily optimized: TODO: Is it insteresting to optimize the inner product with weights and ...
+        """ if self.p == 2:
+            return np.sqrt(weighted_inner_product(vector, vector, lp_weight)) """
 
-        if vector_norm is None:
-            vector_norm = self.p
+        D = vector.dim_codomain
 
-        # Special case, the inner product is heavily optimized
-        if self.p == vector_norm == 2:
-            return np.sqrt(inner_product(vector, vector))
+        if D == 1:
+            lp_weight = lp_weight if lp_weight else 1
+            filter = filter if filter else lambda x: np.ones_like(x)
+        else:
+            lp_weight = lp_weight if lp_weight else np.ones(D)
+
+            aux = np.ones(D)
+            aux[: len(lp_weight)] = lp_weight
+            lp_weight = aux
+
+            filter = filter if filter else [lambda x: 1.0 for _ in range(D)]
 
         if isinstance(vector, FDataBasis):
-            domain = vector.basis.domain_range
-            call = vector
+            if self.p != 2:
+                raise NotImplementedError
 
-            def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
-                f_args = np.asarray(args)
+            start, end = vector.domain_range[0]
+            if D == 1:
+                X = lambda x: (filter(x) * lp_weight) * np.power(
+                    np.abs(vector(x)), self.p
+                )
+            else:
+                X = lambda x: sum(
+                    [
+                        lp_weight[d]
+                        * filter[d](x)
+                        * np.power(np.abs(vector[d](x)), self.p)
+                        for d in range(D)
+                    ]
+                )
 
-                try:
-                    f1 = call(f_args)[:, 0, :]
-                except Exception:
-                    f1 = call(f_args)
-
-                return np.power(np.abs(f1), self.p)
-
-            integral = nquad_vec(
-                integrand,
-                domain,
-            )
-
-            res = (np.sum(integral, axis=-1)) ** (1 / self.p)
+            integral = scipy.integrate.quad_vec(X, start, end)
+            res = np.sqrt(integral[0]).flatten()
 
         elif isinstance(vector, FDataGrid):
             data_matrix = vector.data_matrix
-            weights_matrix = self.lp_weight(vector.grid_points[0])
-
-            if isinstance(vector_norm, (float, int)):
-                data_matrix = np.linalg.norm(
-                    vector.data_matrix,
-                    ord=vector_norm,
-                    axis=-1,
-                    keepdims=True,
-                )
-            else:
-                original_shape = data_matrix.shape
-                data_matrix = data_matrix.reshape(-1, original_shape[-1])
-                data_matrix = vector_norm(data_matrix)
-                data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
-                data_matrix = data_matrix * weights_matrix[:, np.newaxis, np.newaxis]
 
             if np.isinf(self.p):
-
+                modified_matrix = (
+                    data_matrix
+                    * np.stack([f(vector.grid_points[0]) for f in filter], axis=-1)
+                    * lp_weight
+                )
                 res = np.max(
-                    data_matrix,
+                    modified_matrix,
                     axis=tuple(range(1, data_matrix.ndim)),
                 )
 
             else:
-
-                integrand = vector.copy(
-                    data_matrix=data_matrix**self.p,
-                    coordinate_names=(None,),
+                modified_matrix = (
+                    data_matrix**self.p
+                    * np.stack([f(vector.grid_points[0]) for f in filter], axis=-1)
+                    * lp_weight
                 )
-                # Computes the norm, approximating the integral with Simpson's
-                # rule.
-                res = integrand.integrate().ravel() ** (1 / self.p)
+                integrand = vector.copy(
+                    data_matrix=modified_matrix, coordinate_names=(None,)
+                )
+            # Computes the norm, approximating the integral with Simpson's
+            # rule.
+            res = integrand.integrate().ravel() ** (1 / self.p)
         else:
             raise NotImplementedError(
-                f"LpNorm not implemented for type {type(vector)}",
+                f"WeightedLpNorm not implemented for type {type(vector)}",
             )
 
         if len(res) == 1:
@@ -195,16 +198,11 @@ class LpNorm:
         return res  # type: ignore[no-any-return]
 
 
-l1_norm: Final = LpNorm(1)
-l2_norm: Final = LpNorm(2)
-linf_norm: Final = LpNorm(math.inf)
-
-
-def lp_norm(
+def weighted_lp_norm(
     vector: Union[NDArrayFloat, FData],
     *,
     p: float,
-    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+    lp_weight: Union[Callable[[NDArrayFloat], NDArrayFloat], NDArrayFloat, None] = None,
 ) -> NDArrayFloat:
     r"""Calculate the norm of all the observations in a FDataGrid object.
 
@@ -239,10 +237,10 @@ def lp_norm(
         \frac{1}{p}}
 
     Note:
-        This function is a wrapper of :class:`LpNorm`, available only for
+        This function is a wrapper of :class:`WeightedLpNorm`, available only for
         convenience. As the parameter ``p`` is mandatory, it cannot be used
         where a fully-defined norm is required: use an instance of
-        :class:`LpNorm` in those cases.
+        :class:`WeightedLpNorm` in those cases.
 
     Args:
         vector: Vector object.
@@ -268,7 +266,7 @@ def lp_norm(
         >>>
         >>> x = np.linspace(0,1,1001)
         >>> fd = skfda.FDataGrid([np.ones(len(x)), x] ,x)
-        >>> skfda.misc.metrics.lp_norm(fd, p=2).round(2)
+        >>> skfda.misc.metrics.weighted_lp_norm(fd, p=2).round(2)
         array([ 1.  ,  0.58])
 
         As the norm with ``p=2`` is a common choice, one can use ``l2_norm``
@@ -279,13 +277,13 @@ def lp_norm(
 
         The lp norm is only defined if p >= 1.
 
-        >>> skfda.misc.metrics.lp_norm(fd, p=0.5)
+        >>> skfda.misc.metrics.weighted_lp_norm(fd, p=0.5)
         Traceback (most recent call last):
             ....
         ValueError: p (=0.5) must be equal or greater than 1.
 
     See also:
-        :class:`LpNorm`
+        :class:`WeightedLpNorm`
 
     """
-    return LpNorm(p=p, vector_norm=vector_norm)(vector)
+    return WeightedLpNorm(p=p, lp_weight=lp_weight)(vector)

@@ -40,6 +40,7 @@ if TYPE_CHECKING:
         cumsum as cumsum,
         exp as exp,
         inner_product as inner_product,
+        weighted_inner_product as weighted_inner_product,
         inner_product_matrix as inner_product_matrix,
         log as log,
         log2 as log2,

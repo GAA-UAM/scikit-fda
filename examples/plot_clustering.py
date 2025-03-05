@@ -103,7 +103,7 @@ fuzzy_kmeans.fit(fd)
 print(fuzzy_kmeans.predict_proba(fd))
 
 ##############################################################################
-# To see the information in a graphic way, the method
+# To see the information in a graphic way, the class
 # :class:`~skfda.exploratory.visualization.clustering.ClusterPlot` can
 # be used. It assigns each sample to the cluster whose membership value is the
 # greatest.

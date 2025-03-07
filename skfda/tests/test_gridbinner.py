@@ -1,4 +1,4 @@
-"""Tests for CommonGridBinner module."""
+"""Tests for GridBinner module."""
 
 import re
 from typing import Any, Tuple, Union
@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from skfda.preprocessing.binning import CommonGridBinner
+from skfda.preprocessing.binning import GridBinner
 from skfda.representation import FData, FDataGrid, FDataIrregular
 
 RaisesFixture = Tuple[
@@ -19,7 +19,7 @@ RaisesFixture = Tuple[
     str,
     str,
 ]
-ParamFixture = Tuple[FData, CommonGridBinner, Tuple[NDArray[np.float64], ...]]
+ParamFixture = Tuple[FData, GridBinner, Tuple[NDArray[np.float64], ...]]
 
 
 ##############################################################################
@@ -82,27 +82,27 @@ fd = FDataGrid(
         ],
     ],
 )
-def commongridbinner_raises_fixture(request: Any) -> RaisesFixture:
-    """Fixture for getting a CommonGridBinner that raises a ValueError."""
+def gridbinner_raises_fixture(request: Any) -> RaisesFixture:
+    """Fixture for getting a GridBinner that raises a ValueError."""
     return tuple(request.param)
 
 
 @pytest.fixture(
     params=[
         [
-            CommonGridBinner(bins=(1, 1)),
+            GridBinner(bins=(1, 1)),
             fd.domain_range,
         ],
         [
-            CommonGridBinner(bins=(1, 1), domain_range=((0, 2), (0, 2))),
+            GridBinner(bins=(1, 1), domain_range=((0, 2), (0, 2))),
             ((0, 2), (0, 2)),
         ],
         [
-            CommonGridBinner(bins=(np.array([-1, 1]), np.array([-1, 1]))),
+            GridBinner(bins=(np.array([-1, 1]), np.array([-1, 1]))),
             ((-1, 1), (-1, 1)),
         ],
         [
-            CommonGridBinner(
+            GridBinner(
                 bins=(np.array([-1, 1]), np.array([-1, 1])),
                 domain_range=((0, 2), (0, 2)),
             ),
@@ -120,22 +120,22 @@ def domain_range_interactions_fixture(
 @pytest.fixture(
     params=[
         [
-            CommonGridBinner(
+            GridBinner(
                 bins=(2, 2),
                 output_grid=(np.array([0, 1]), np.array([0, 1])),
             ),
             (np.array([0, 1]), np.array([0, 1])),
         ],
         [
-            CommonGridBinner(bins=(2, 2), output_grid="left"),
+            GridBinner(bins=(2, 2), output_grid="left"),
             (np.array([0, 0.5]), np.array([0, 0.5])),
         ],
         [
-            CommonGridBinner(bins=(2, 2), output_grid="right"),
+            GridBinner(bins=(2, 2), output_grid="right"),
             (np.array([0.5, 1]), np.array([0.5, 1])),
         ],
         [
-            CommonGridBinner(bins=(2, 2), output_grid="middle"),
+            GridBinner(bins=(2, 2), output_grid="middle"),
             (np.array([0.25, 0.75]), np.array([0.25, 0.75])),
         ],
     ],
@@ -150,11 +150,11 @@ def output_grid_interactions_fixture(
 @pytest.fixture(
     params=[
         [
-            CommonGridBinner(bins=2),
+            GridBinner(bins=2),
             "Input FData must have 1 domain dimensions.",
         ],
         [
-            CommonGridBinner(
+            GridBinner(
                 bins=(2, 2),
                 output_grid=(np.array([0.6, 1]), np.array([0, 1])),
             ),
@@ -166,7 +166,7 @@ def output_grid_interactions_fixture(
 )
 def fitting_raises_fixture(
     request: Any,
-) -> Tuple[FDataGrid, CommonGridBinner, str]:
+) -> Tuple[FDataGrid, GridBinner, str]:
     """Fixture for checking mismatch between binner and FData."""
     return fd, *request.param
 
@@ -444,17 +444,17 @@ def precalc_example_data_domain_3(
 ##############################################################################
 
 
-def test_raises(commongridbinner_raises_fixture: RaisesFixture) -> None:
+def test_raises(gridbinner_raises_fixture: RaisesFixture) -> None:
     """
     Check raises ValueError.
 
-    Check that CommonGridBinners raise a ValueError exception.
+    Check that GridBinners raise a ValueError exception.
     """
-    bins, domain_range_, output_grid, *rest = commongridbinner_raises_fixture
+    bins, domain_range_, output_grid, *rest = gridbinner_raises_fixture
     bin_aggregation, error_msg = rest
 
     with pytest.raises(ValueError, match=error_msg):
-        CommonGridBinner(
+        GridBinner(
             bins=bins,
             domain_range=domain_range_,
             output_grid=output_grid,
@@ -499,7 +499,7 @@ def test_output_grid_interactions(
 
 
 def test_fitting_raises(
-    fitting_raises_fixture: Tuple[FDataGrid, CommonGridBinner, str],
+    fitting_raises_fixture: Tuple[FDataGrid, GridBinner, str],
 ) -> None:
     """
     Check the domain parameter behaviour in fitting.
@@ -519,12 +519,12 @@ def test_precalc_example_domain_1(
     Check the precalculated example for binned FData.
 
     Compare the theoretical precalculated results against the binned data
-    with CommonGridBinner implementation, for different FData.
+    with GridBinner implementation, for different FData.
 
     Dimensions interacting are 1->n.
     """
     fd, precalc_result = precalc_example_data_domain_1
-    binner = CommonGridBinner(bins=2)
+    binner = GridBinner(bins=2)
     computed_result = binner.fit_transform(fd)
 
     np.testing.assert_array_equal(
@@ -545,12 +545,12 @@ def test_precalc_example_domain_3(
     Check the precalculated example for binned FData.
 
     Compare the theoretical precalculated results against the binned data
-    with CommonGridBinner implementation, for different FData.
+    with GridBinner implementation, for different FData.
 
     Dimensions interacting are 3->n.
     """
     fd, precalc_result = precalc_example_data_domain_3
-    binner = CommonGridBinner(bins=(2, 2, 2))
+    binner = GridBinner(bins=(2, 2, 2))
     computed_result = binner.fit_transform(fd)
 
     np.testing.assert_allclose(

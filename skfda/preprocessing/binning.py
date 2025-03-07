@@ -1,7 +1,7 @@
-"""Data Binning Module with CommonGridBinner class."""
+"""Data Binning Module with GridBinner class."""
 
 import itertools
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -12,40 +12,30 @@ from skfda.representation import FDataGrid, FDataIrregular
 BinsTypeDim1 = Union[int, NDArray[np.float64]]
 BinsType = Union[BinsTypeDim1, Tuple[BinsTypeDim1, ...]]
 NBinsNDim = Union[Tuple[int, ...], List[int]]
-ArrayNDImType = Union[
+ArrayNDimType = Union[
     NDArray[np.float64],
     Tuple[NDArray[np.float64], ...],
-    List[NDArray[np.float64]],
 ]
 RangeType = Optional[
     Union[Tuple[float, float], Tuple[Tuple[float, float], ...]]
 ]
 ProcessBins = Tuple[
     int,
-    Optional[ArrayNDImType],
+    Optional[ArrayNDimType],
     Optional[Tuple[int, ...]],
 ]
-OutputGridType = Union[
+OutputGridTypeStr = Union[
     str,
-    NDArray[np.float64],
-    Tuple[NDArray[np.float64], ...],
+    ArrayNDimType,
 ]
 ProcessOutputGrid = Tuple[
     Optional[str],
-    Optional[ArrayNDImType],
+    Optional[ArrayNDimType],
 ]
 TupleOutputGrid = Tuple[None, Tuple[NDArray[np.float64], ...]]
 
 
-class CommonGridBinner(  # noqa: WPS214, WPS230
-    # class DomainBinner(
-    # class Binner(
-    # class FunctionalDataBinningTransformer(
-    # class CommonGridTransformer(
-    # class DataBinner(
-    # class Discretizer(
-    # class FunctionalDataDiscretizer(
-    # class CommonGridDiscretizer(
+class GridBinner(  # noqa: WPS230
     BaseEstimator,
     TransformerMixin[FDataGrid, FDataGrid, object],
 ):
@@ -81,26 +71,30 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
 
     Attributes:
     -----------
-        dim: Dimension of the FDataGrid the binner can process.
-        bin_edges: Array with the specific bin edges. Can value to None until
-            the FDataGrid is fitted.
-        n_bins: Number of bins. Can value to None until the FDataGrid is
-            fitted.
-        min_domain: List with the minimum value of the domain range of the
+        ``bins``: User-defined number of bins or bin edges, used for
+            scikit-learn compatibility.
+        ``n_bins``: User-defined number of bins. Can value to None.
+        ``bin_edges``: User-defined array with the specified bin edges. Can
+            value to None.
+        ``domain_range``: User-defined domain range, used for scikit-learn
+            compatibility.
+        ``output_grid``: User-defined output grid. Can value to None.
+        ``dim``: Dimension of the FDataGrid the binner can process.
+        ``n_bins_``: Number of bins. Defined after fitting.
+        ``bin_edges_``: Array with the specified or calculated bin edges.
+            Defined after fitting.
+        ``min_domain``: List with the minimum value of the domain range of the
             output FDataGrid for each dimension. Defined after fitting.
-        max_domain: List with the maximum value of the domain range of the
+        ``max_domain``: List with the maximum value of the domain range of the
             output FDataGrid for each dimension. Defined after fitting.
-        bin_representative: Mode to compute the value in domain of each bin.
-            Can be None if output_grid has been specified as array.
-        output_grid: Value of the points in the output grid of the FDataGrid.
-            Can be None if output_grid has been specified as string.
-        bin_aggregation: Method to compute the value of the bin.
-        is_irregular: Structure of the fitted data. If True, the data is
+        ``bin_representative``: Mode to compute the value in domain of each
+            bin. Can be None if the grid has been specified as array.
+        ``bin_aggregation``: Method to compute the value of the bin. Can be
+            None.
+        ``output_grid_``: Value of the points in the output grid of the
+            FDataGrid. Defined after fitting.
+        ``is_irregular``: Structure of the fitted data. If True, the data is
             irregular. If False, the data is regular. Defined after fitting.
-        bins: User-defined n_bins or bin_edges, used for scikit-learn
-            compatibility.
-        domain_range: User-defined domain_range, used for scikit-learn
-            compatibility.
 
     --------------------------------------------------------------------------
 
@@ -109,7 +103,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         Given an FDataIrregular with 2 samples representing a function
         :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
 
-        >>> from skfda.preprocessing.binning import CommonGridBinner
+        >>> from skfda.preprocessing.binning import GridBinner
         >>> from skfda.representation import FDataIrregular
         >>> indices=[0,2]
         >>> points=[[1.0],[4.0],[1.0],[3.0],[5.0]]
@@ -125,14 +119,14 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         ...     points=points,
         ...     values=values,
         ... )
-        >>> binner = CommonGridBinner(bins=2)
+        >>> binner = GridBinner(bins=2)
         >>> binner.fit_transform(fd)
 
         Given a FDataGrid with 2 samples representing a function
         :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
 
         >>> import numpy as np
-        >>> from skfda.preprocessing.binning import CommonGridBinner
+        >>> from skfda.preprocessing.binning import GridBinner
         >>> from skfda.representation import FDataGrid
         >>> grid_points=[
         ...     [1., 2.],
@@ -154,7 +148,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         ...     grid_points=grid_points,
         ...     data_matrix=values
         ... )
-        >>> binner = CommonGridBinner(bins=(2, 1))
+        >>> binner = GridBinner(bins=(2, 1))
         >>> binner.fit_transform(fd)
     """
 
@@ -163,19 +157,19 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         *,
         bins: BinsType,
         domain_range: RangeType = None,
-        output_grid: OutputGridType = "middle",
+        output_grid: OutputGridTypeStr = "middle",
         bin_aggregation: str = "mean",
     ):
         # Used for scikit-learn compatibility
         self.bins = bins
-        bins_result = self._process_bins(bins)
+        bins_result = self._process_bins_param(bins)
         self.dim = bins_result[0]
-        self.bin_edges: Optional[ArrayNDImType] = bins_result[1]
+        self.bin_edges: Optional[ArrayNDimType] = bins_result[1]
         self.n_bins: Optional[NBinsNDim] = bins_result[2]
 
-        self._validate_range(domain_range, self.dim)
+        self._validate_range_param(domain_range, self.dim)
 
-        grid_result = self._process_output_grid(output_grid)
+        grid_result = self._process_output_grid_param(output_grid)
         self.bin_representative = grid_result[0]
         self.output_grid = grid_result[1]
 
@@ -187,7 +181,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         self.domain_range: RangeType = domain_range
         self.bin_aggregation = bin_aggregation
 
-    def _process_bins(self, bins: BinsType) -> ProcessBins:
+    def _process_bins_param(self, bins: BinsType) -> ProcessBins:
         """
         Validate and process the bins parameter.
 
@@ -201,30 +195,34 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         Raises:
             ValueError: If the bins parameter is invalid.
         """
+        # One dimensional cases
         if isinstance(bins, int):
-            return self._process_int_bins(bins)
-
-        if isinstance(bins, tuple):
-            return self._process_tuple_bins(bins)
+            if bins < 1:
+                raise ValueError(
+                    "Number of bins must be greater than 0 in every dimension "
+                    "of the domain.",
+                )
+            return 1, None, (bins,)
 
         if isinstance(bins, np.ndarray):
-            return self._process_ndarray_bins(bins)
+            if not self._check_bin_edges(bins):
+                raise ValueError(
+                    "If bins represent bin edges, the array must be a "
+                    "1-dimensional array with at least two elements, "
+                    "strictly increasing and without any NaN values.",
+                )
+            return 1, bins, None
+
+        # N-dimensional case
+        if isinstance(bins, tuple):
+            return self._process_bins_param_tuple(bins)
 
         raise ValueError(
             "Bins must be an int or a numpy array for one-dimensional domain "
             "data, or a tuple of ints or numpy arrays for n-dimensional data.",
         )
 
-    def _process_int_bins(self, bins: int) -> ProcessBins:
-        """Process bins when it's an integer."""
-        if bins < 1:
-            raise ValueError(
-                "Number of bins must be greater than 0 in every dimension of "
-                "the domain.",
-            )
-        return 1, None, (bins,)
-
-    def _process_tuple_bins(
+    def _process_bins_param_tuple(
         self,
         bins: tuple[BinsTypeDim1, ...],
     ) -> ProcessBins:
@@ -238,15 +236,12 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             return (
                 len(bins),
                 None,
-                tuple(b for b in bins if isinstance(b, int)) if bins else None,
+                tuple(b for b in bins if isinstance(b, int)),
             )
 
         if all(isinstance(b, np.ndarray) for b in bins):
-            if not all(
-                self._check_bin_edges(b)
-                for b in bins
-                if isinstance(b, np.ndarray)
-            ):
+            array_bins = cast(Tuple[NDArray[np.float64], ...], bins)
+            if not all(map(self._check_bin_edges, array_bins)):
                 raise ValueError(
                     "If bins represent bin edges, each array must be a "
                     "1-dimensional array with at least two elements, "
@@ -254,11 +249,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
                 )
             return (
                 len(bins),
-                (
-                    tuple(b for b in bins if isinstance(b, np.ndarray))
-                    if bins
-                    else None
-                ),
+                tuple(b for b in array_bins),
                 None,
             )
 
@@ -266,16 +257,6 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             "If bins is a tuple, it must contain either integers or numpy "
             "arrays.",
         )
-
-    def _process_ndarray_bins(self, bins: NDArray[np.float64]) -> ProcessBins:
-        """Process bins when it's a numpy ndarray."""
-        if not self._check_bin_edges(bins):
-            raise ValueError(
-                "If bins represent bin edges, the array must be a "
-                "1-dimensional array with at least two elements, "
-                "strictly increasing and without any NaN values.",
-            )
-        return 1, bins, None
 
     def _check_bin_edges(self, bin_edges: NDArray[np.float64]) -> bool:
         """
@@ -298,7 +279,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             np.any(np.isnan(bin_edges)) or not np.all(np.diff(bin_edges) > 0)
         )
 
-    def _validate_range(self, range_param: RangeType, dim: int) -> None:
+    def _validate_range_param(self, range_param: RangeType, dim: int) -> None:
         """
         Validate the domain_range parameter.
 
@@ -318,13 +299,10 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         if not isinstance(range_param, tuple):
             raise ValueError("Range must be a tuple.")
 
+        range_array = np.asarray(range_param, dtype=float)
+
         if dim == 1:
-            if (
-                len(range_param) == 2
-                and isinstance(range_param[0], (float, int))
-                and isinstance(range_param[1], (float, int))
-                and float(range_param[0]) < float(range_param[1])
-            ):
+            if range_array.shape == (2,) and range_array[0] < range_array[1]:
                 return
 
             raise ValueError(
@@ -332,12 +310,8 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
                 "numbers with the first being smaller than the second.",
             )
 
-        if len(range_param) == dim and all(
-            isinstance(x, tuple)
-            and len(x) == 2
-            and all(isinstance(y, (float, int)) for y in x)
-            and x[0] < x[1]
-            for x in range_param
+        if range_array.shape == (dim, 2) and np.all(
+            range_array[:, 0] < range_array[:, 1],
         ):
             return
 
@@ -347,9 +321,9 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             "than the second.",
         )
 
-    def _process_output_grid(
+    def _process_output_grid_param(
         self,
-        output_grid: OutputGridType,
+        output_grid: OutputGridTypeStr,
     ) -> ProcessOutputGrid:
         """
         Validate and process the output grid parameter.
@@ -364,34 +338,27 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             ValueError: If the output grid parameter is invalid.
         """
         if isinstance(output_grid, str):
-            return self._process_string_output_grid(output_grid)
+            if output_grid in {"left", "middle", "right"}:
+                return output_grid, None
+            raise ValueError(
+                "Invalid output grid string. Must be 'left', 'middle', or "
+                "'right'.",
+            )
 
         if isinstance(output_grid, np.ndarray):
-            return self._process_ndarray_output_grid(output_grid)
+            return self._process_output_grid_param_ndarray(output_grid)
 
         if isinstance(output_grid, tuple) and all(
             isinstance(arr, np.ndarray) for arr in output_grid
         ):
-            return self._process_tuple_output_grid(output_grid)
+            return self._process_output_grid_param_tuple(output_grid)
 
         raise ValueError(
             f"Output grid must be 'left', 'middle', 'right' or a {self.dim} "
             f"tuple of numpy arrays for {self.dim}-dimensional domains.",
         )
 
-    def _process_string_output_grid(
-        self,
-        output_grid: str,
-    ) -> Tuple[str, None]:
-        """Process string output grid."""
-        if output_grid in {"left", "middle", "right"}:
-            return output_grid, None
-        raise ValueError(
-            "Invalid output grid string. Must be 'left', 'middle', or "
-            "'right'.",
-        )
-
-    def _process_ndarray_output_grid(
+    def _process_output_grid_param_ndarray(
         self,
         output_grid: NDArray[np.float64],
     ) -> Tuple[None, NDArray[np.float64]]:
@@ -421,7 +388,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             )
         return None, output_grid
 
-    def _process_tuple_output_grid(
+    def _process_output_grid_param_tuple(
         self,
         output_grid: Tuple[NDArray[np.float64], ...],
     ) -> TupleOutputGrid:
@@ -457,7 +424,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         self,
         X: Union[FDataGrid, FDataIrregular],
         y: object = None,
-    ) -> "CommonGridBinner":
+    ) -> "GridBinner":
         """
         Prepare the binning parameters based on the domain range.
 
@@ -478,27 +445,34 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         self._compute_domain_range(X)
 
         if self.n_bins is None:
+            # Here we always have defined the bin_edges_ attribute.
             self._initialize_n_bins()
 
         else:
+            self.n_bins_ = cast(NBinsNDim, self.n_bins)
             if self.dim == 1:
-                self.bin_edges = np.linspace(
-                    self.min_domain[0],
-                    self.max_domain[0],
-                    self.n_bins[0] + 1,
+                self.bin_edges_ = cast(
+                    ArrayNDimType,
+                    np.linspace(
+                        self.min_domain[0],
+                        self.max_domain[0],
+                        self.n_bins_[0] + 1,
+                    ),
                 )
             else:
-                self.bin_edges = []
-                for i in range(self.dim):
-                    self.bin_edges.append(
+                self.bin_edges_ = cast(
+                    ArrayNDimType,
+                    tuple(
                         np.linspace(
                             self.min_domain[i],
                             self.max_domain[i],
-                            self.n_bins[i] + 1,
-                        ),
-                    )
+                            self.n_bins_[i] + 1,
+                        )
+                        for i in range(self.dim)
+                    ),
+                )
 
-        self._compute_output_grid()
+        self._compute_validate_output_grid()
 
         return self
 
@@ -512,86 +486,78 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         self.max_domain: List[float] = []
 
         if self.bin_edges is None:
-            self._process_domain_range(X)
+            if self.domain_range is None:
+                min_max_domain = np.array(X.domain_range).T
+                self.min_domain = min_max_domain[0]
+                self.max_domain = min_max_domain[1]
+            else:
+                self._extract_min_max_from_range()
         else:
-            self._process_bin_edges()
-
-    def _process_domain_range(self, X: FDataGrid) -> None:
-        """Process domain range when bin edges are None."""
-        if self.domain_range is None:
-            for domain in X.domain_range:
-                self.min_domain.append(domain[0])
-                self.max_domain.append(domain[1])
-        else:
-            self._extract_min_max_from_range()
+            self.bin_edges_ = cast(ArrayNDimType, self.bin_edges)
+            self._compute_domain_range_bin_edges()
 
     def _extract_min_max_from_range(self) -> None:
         """Extract min and max values from the domain range."""
         if self.domain_range is not None:
-            for range_value in (
-                self.domain_range if self.dim > 1 else [self.domain_range]
-            ):
-                if (
-                    isinstance(range_value, tuple)
-                    and isinstance(range_value[0], (int, float))
-                    and isinstance(range_value[1], (int, float))
-                ):
-                    self.min_domain.append(range_value[0])
-                    self.max_domain.append(range_value[1])
+            domain_array = np.array(self.domain_range, dtype=float)
 
-    def _process_bin_edges(self) -> None:
+            if domain_array.ndim == 1:
+                self.min_domain = domain_array[0]
+                self.max_domain = domain_array[1]
+            elif domain_array.ndim == 2 and domain_array.shape[1] == 2:
+                self.min_domain = domain_array[:, 0].tolist()
+                self.max_domain = domain_array[:, 1].tolist()
+            else:
+                raise ValueError("Invalid domain_range format.")
+
+    def _compute_domain_range_bin_edges(self) -> None:
         """Process bin edges to determine min and max domain values."""
-        if isinstance(self.bin_edges, np.ndarray):
-            self.min_domain.append(float(self.bin_edges[0]))
-            self.max_domain.append(float(self.bin_edges[-1]))
-        elif isinstance(self.bin_edges, (list, tuple)):
-            for edges in self.bin_edges:
-                if isinstance(edges, np.ndarray):
-                    self.min_domain.append(float(edges[0]))
-                    self.max_domain.append(float(edges[-1]))
+        if isinstance(self.bin_edges_, np.ndarray):
+            self.min_domain.append(float(self.bin_edges_[0]))
+            self.max_domain.append(float(self.bin_edges_[-1]))
+        else:
+            for edges in self.bin_edges_:
+                self.min_domain.append(float(edges[0]))
+                self.max_domain.append(float(edges[-1]))
 
     def _initialize_n_bins(self) -> None:
-        """Initialize self.n_bins to avoid deep nesting in fit()."""
-        self.n_bins = []
-
-        if self.dim == 1:
-            if isinstance(self.bin_edges, np.ndarray):
-                self.n_bins.append(len(self.bin_edges) - 1)
+        """Initialize the number of bins."""
+        if isinstance(self.bin_edges_, np.ndarray):
+            self.n_bins_ = [len(self.bin_edges_) - 1]
         else:
-            self._process_multidimensional_bins()
+            self.n_bins_ = [len(edges) - 1 for edges in self.bin_edges_]
 
-    def _process_multidimensional_bins(self) -> None:
-        """Process multidimensional bins to avoid deep nesting."""
-        for j in range(self.dim):
-            if (
-                isinstance(self.bin_edges, tuple)
-                and isinstance(self.bin_edges[j], np.ndarray)
-                and isinstance(self.n_bins, list)
-            ):
-                self.n_bins.append(len(self.bin_edges[j]) - 1)
-
-    def _compute_output_grid(self) -> None:
+    def _compute_validate_output_grid(self) -> None:
         """Prepare the output grid based on the domain range."""
         if self.output_grid is None:
-            self.output_grid = []
-
-            for i in range(self.dim):
-                bin_edges_i = (
-                    self.bin_edges[i]
-                    if self.dim > 1
-                    and isinstance(self.bin_edges, (tuple, list))
-                    else self.bin_edges
+            bin_edges = (
+                self.bin_edges_
+                if isinstance(self.bin_edges_, (tuple, list))
+                else (self.bin_edges_,)
+            )
+            output_grid_list = [
+                (
+                    self._compute_output_grid_str(edges)
+                    if isinstance(edges, np.ndarray)
+                    else edges
                 )
-                if isinstance(bin_edges_i, np.ndarray):
-                    grid = self._compute_grid(bin_edges_i)
-                    self.output_grid.append(grid)
+                for edges in bin_edges
+            ]
+            self.output_grid_ = cast(
+                ArrayNDimType,
+                (
+                    tuple(output_grid_list)
+                    if self.dim > 1
+                    else output_grid_list[0]
+                ),
+            )
 
-            if self.dim == 1:
-                self.output_grid = self.output_grid[0]
+        else:
+            self.output_grid_ = cast(ArrayNDimType, self.output_grid)
 
         self._validate_output_grid()
 
-    def _compute_grid(
+    def _compute_output_grid_str(
         self,
         bin_edges_i: NDArray[np.float64],
     ) -> NDArray[np.float64]:
@@ -604,28 +570,29 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
 
     def _validate_output_grid(self) -> None:
         """Validate the output grid to ensure points are within bin ranges."""
-        if isinstance(self.output_grid, np.ndarray) and isinstance(
-            self.bin_edges,
+        if isinstance(self.output_grid_, np.ndarray) and isinstance(
+            self.bin_edges_,
             np.ndarray,
         ):
             for index, point in enumerate(
-                self.output_grid[:-1],
+                self.output_grid_[:-1],
             ):  # Exclude the last point
                 if (
-                    point < self.bin_edges[index]
-                    or point > self.bin_edges[index + 1]
+                    point < self.bin_edges_[index]
+                    or point > self.bin_edges_[index + 1]
                 ):
                     raise ValueError(
                         f"Output grid point {point} is "
-                        f"outside its bin range [{self.bin_edges[index]}, "
-                        f"{self.bin_edges[index + 1]}].",
+                        f"outside its bin range [{self.bin_edges_[index]}, "
+                        f"{self.bin_edges_[index + 1]}].",
                     )
-        elif isinstance(self.output_grid, tuple) and isinstance(
-            self.bin_edges,
+
+        elif isinstance(self.output_grid_, tuple) and isinstance(
+            self.bin_edges_,
             (tuple, list),
         ):
             for dim_index, (grid_values, edges) in enumerate(
-                zip(self.output_grid, self.bin_edges),
+                zip(self.output_grid_, self.bin_edges_),
             ):
                 is_within_bounds = (edges[:-1] <= grid_values) & (
                     grid_values <= edges[1:]
@@ -637,6 +604,12 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
                         f"within [{edges[0]}, {edges[-1]}] and their intended "
                         "bin.",
                     )
+
+        else:
+            raise ValueError(
+                "There seems to be an internal error: mismatch between the "
+                "dimensions of the output grid and the bin edges.",
+            )
 
     def transform(
         self,
@@ -670,25 +643,25 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         grid_points = X.grid_points
         data_matrix = X.data_matrix
 
-        if self.dim == 1 and isinstance(self.bin_edges, np.ndarray):
+        if self.dim == 1 and isinstance(self.bin_edges_, np.ndarray):
             binned_values = self._compute_univariate_domain_binning(
                 grid_points[0],
                 data_matrix,
-                self.bin_edges,
+                self.bin_edges_,
             )
             binned_values = np.array(binned_values)
-            self.output_grid = [np.array(self.output_grid)]
+            self.output_grid_ = tuple(self.output_grid_)
 
-        elif self.bin_edges is not None:
+        else:
             binned_values = self._compute_multivariate_domain_binning(
                 grid_points,
                 data_matrix,
-                self.bin_edges,
+                self.bin_edges_,
             )
 
         return X.copy(
             data_matrix=binned_values,
-            grid_points=self.output_grid,
+            grid_points=self.output_grid_,
             domain_range=tuple(zip(self.min_domain, self.max_domain)),
             dataset_name=X.dataset_name,
             argument_names=X.argument_names,
@@ -716,18 +689,17 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
 
         if (
             self.dim == 1
-            and isinstance(self.bin_edges, np.ndarray)
-            and isinstance(self.output_grid, np.ndarray)
+            and isinstance(self.bin_edges_, np.ndarray)
+            and isinstance(self.output_grid_, np.ndarray)
         ):
-            self.bin_edges = (self.bin_edges,)
-            self.output_grid = (self.output_grid,)
+            self.bin_edges_ = (self.bin_edges_,)
+            self.output_grid_ = (self.output_grid_,)
 
-        if self.output_grid is not None:
-            grid_shape = tuple(len(g) for g in self.output_grid)
-            binned_values = np.full(  # noqa: WPS317
-                (n_samples, *grid_shape, dim_codomain),
-                np.nan,
-            )
+        grid_shape = tuple(len(g) for g in self.output_grid_)
+        binned_values = np.full(  # noqa: WPS317
+            (n_samples, *grid_shape, dim_codomain),
+            np.nan,
+        )
 
         for sample_idx in range(n_samples):
             start = X.start_indices[sample_idx]
@@ -743,7 +715,10 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             if val_array.ndim == 1:
                 val_array = val_array[:, np.newaxis]
 
-            bin_indices = self._get_bin_indices(dim_domain, arg_array)
+            bin_indices = self._get_bin_indices_irregular(
+                dim_domain,
+                arg_array,
+            )
 
             for bin_idx in np.ndindex(*grid_shape):
                 mask = np.all(bin_indices == bin_idx, axis=1)
@@ -755,10 +730,9 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
                         if self.bin_aggregation == "mean"
                         else np.nanmedian(points_in_bin, axis=0)
                     )
-        if self.output_grid is not None:
-            grid_points = (
-                self.output_grid if dim_domain > 1 else [self.output_grid[0]]
-            )
+        grid_points = (
+            self.output_grid_ if dim_domain > 1 else [self.output_grid_[0]]
+        )
 
         return FDataGrid(
             data_matrix=binned_values,
@@ -771,7 +745,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             interpolation=X.interpolation,
         )
 
-    def _get_bin_indices(
+    def _get_bin_indices_irregular(
         self,
         dim_domain: int,
         arg_array: NDArray[np.float64],
@@ -781,23 +755,21 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         bin_indices = np.empty((n_points, dim_domain), dtype=int)
 
         for d in range(dim_domain):
-            if self.bin_edges is not None:
-                bin_edges_d = self.bin_edges[d]
-                arg_array_d = arg_array[:, d]
+            bin_edges_d = self.bin_edges_[d]
+            arg_array_d = arg_array[:, d]
 
-                bin_indices[:, d] = (
-                    np.digitize(arg_array_d, bin_edges_d, right=False) - 1
-                )
+            bin_indices[:, d] = (
+                np.digitize(arg_array_d, bin_edges_d, right=False) - 1
+            )
 
-                out_of_range = (arg_array_d < bin_edges_d[0]) | (
-                    arg_array_d > bin_edges_d[-1]
-                )
-                bin_indices[:, d][out_of_range] = -1
+            out_of_range = (arg_array_d < bin_edges_d[0]) | (
+                arg_array_d > bin_edges_d[-1]
+            )
 
-                last_bin_index = len(bin_edges_d) - 2
-                bin_indices[:, d][
-                    arg_array_d == bin_edges_d[-1]
-                ] = last_bin_index
+            bin_indices[:, d][out_of_range] = -1
+            last_bin_index = len(bin_edges_d) - 2
+
+            bin_indices[:, d][arg_array_d == bin_edges_d[-1]] = last_bin_index
 
         return bin_indices
 
@@ -820,71 +792,43 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
             values.
         """
         n_samples, _, n_codomain = data_matrix.shape
+
+        bin_indices = np.digitize(grid_points, bin_edges, right=False) - 1
+
+        # Ensure points at the rightmost bin edge are included in the last bin
+        bin_indices[grid_points == bin_edges[-1]] = self.n_bins_[0] - 1
+
         binned_values = np.full(  # noqa: WPS317
-            (n_samples, len(bin_edges) - 1, n_codomain),
+            (n_samples, self.n_bins_[0], n_codomain),
             np.nan,
         )
 
-        for i in range(len(bin_edges) - 1):
-            points_in_bin = (grid_points >= bin_edges[i]) & (
-                grid_points < bin_edges[i + 1]
-            )
-            if i == len(bin_edges) - 2:
-                # Include right endpoint in the last bin
-                points_in_bin |= grid_points == bin_edges[i + 1]
-
-            if np.any(points_in_bin):
-                bin_values = np.full((n_samples, n_codomain), np.nan)
-
-                for codomain_dim in range(n_codomain):
-                    bin_values[:, codomain_dim] = (
-                        self._compute_univariate_bin_values(
-                            data_matrix[:, :, codomain_dim],
-                            points_in_bin,
-                        )
-                    )
-
-                binned_values[:, i, :] = bin_values
+        # Vectorized binning
+        for i in range(self.n_bins_[0]):
+            mask = bin_indices == i
+            if np.any(mask):
+                binned_values[:, i, :] = self._compute_univariate_bin_values(
+                    data_matrix,
+                    mask,
+                )
 
         return binned_values
 
     def _compute_univariate_bin_values(
         self,
         data_matrix: NDArray[np.float64],
-        points_in_bin: NDArray[np.float64],
+        mask: NDArray[np.bool_],
     ) -> NDArray[np.float64]:
-        """
-        Compute individual bin value.
-
-        Compute individual bin value based on the specified bin_aggregation
-        for the univariate case.
-
-        Args:
-            data_matrix: The data matrix from the FDataGrid.
-            points_in_bin: Boolean array indicating points in the current bin.
-
-        Returns:
-            Array of computed bin values for the current bin.
-        """
-        n_samples = data_matrix.shape[0]
-        bin_values = np.full(n_samples, np.nan)
-
-        for row_idx in range(n_samples):
-            row_data = data_matrix[row_idx, points_in_bin]
-
-            if not np.all(np.isnan(row_data)):
-                if self.bin_aggregation == "mean":
-                    bin_values[row_idx] = np.nanmean(row_data)
-                else:
-                    bin_values[row_idx] = np.nanmedian(row_data)
-
-        return bin_values
+        """Compute bin values using NumPy's vectorized functions."""
+        if self.bin_aggregation == "mean":
+            return np.asarray(np.nanmean(data_matrix[:, mask], axis=1))
+        return np.asarray(np.nanmedian(data_matrix[:, mask], axis=1))
 
     def _compute_multivariate_domain_binning(
         self,
         grid_points: tuple[NDArray[np.float64], ...],
         data_matrix: NDArray[np.float64],
-        bin_edges: ArrayNDImType,
+        bin_edges: ArrayNDimType,
     ) -> NDArray[np.float64]:
         """
         Compute bin values for multivariate data.
@@ -902,11 +846,10 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         points_in_bin = self._get_points_in_bin(grid_points, bin_edges)
         points_in_bin_combinations = list(itertools.product(*points_in_bin))
 
-        if self.n_bins is not None:
-            output_values = np.full(  # noqa: WPS317
-                (n_samples, *tuple(self.n_bins), n_codomain),
-                np.nan,
-            )
+        output_values = np.full(  # noqa: WPS317
+            (n_samples, *tuple(self.n_bins_), n_codomain),
+            np.nan,
+        )
 
         for k, combination in enumerate(points_in_bin_combinations):
             combination_data = self._filter_combination_data(
@@ -929,21 +872,21 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
     def _get_points_in_bin(
         self,
         grid_points: tuple[NDArray[np.float64], ...],
-        bin_edges: ArrayNDImType,
+        bin_edges: ArrayNDimType,
     ) -> list[list[Any]]:
         """Get boolean masks for points in bins."""
         points_in_bin = []
         for i in range(self.dim):
             bin_edges_i = bin_edges[i]
-            masks = []
-            for j in range(len(bin_edges_i) - 1):
-                mask = (grid_points[i] >= bin_edges_i[j]) & (
-                    grid_points[i] < bin_edges_i[j + 1]
-                )
-                if j == len(bin_edges_i) - 2:
-                    mask |= grid_points[i] == bin_edges_i[j + 1]
-                masks.append(mask)
+            indices = np.digitize(grid_points[i], bin_edges_i, right=False) - 1
+
+            # Ensure last bin includes rightmost edge
+            indices[grid_points[i] == bin_edges_i[-1]] = len(bin_edges_i) - 2
+
+            # Create boolean masks efficiently
+            masks = [(indices == j) for j in range(len(bin_edges_i) - 1)]
             points_in_bin.append(masks)
+
         return points_in_bin
 
     def _filter_combination_data(
@@ -965,8 +908,7 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         k: int,
     ) -> None:
         """Assign computed values to the output array."""
-        if self.n_bins is not None:
-            multi_dim_index = np.unravel_index(k, self.n_bins)
+        multi_dim_index = np.unravel_index(k, self.n_bins_)
         for obs_idx, value in enumerate(combination_output_values):
             index_tuple = (obs_idx,) + multi_dim_index + (slice(None),)
             output_values[index_tuple] = value
@@ -976,10 +918,10 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         data_matrix: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         """
-        Compute individual bin value.
+        Compute individual bin values.
 
-        Compute individual bin value based on the specified bin_aggregation
-        for the multivariate case.
+        Compute individual bin values based on the specified bin_aggregation
+        for the multivariate case using efficient NumPy operations.
 
         Args:
             data_matrix: The data matrix with the elements in the bin.
@@ -987,41 +929,20 @@ class CommonGridBinner(  # noqa: WPS214, WPS230
         Returns:
             Array of computed bin values for the current bin.
         """
-        n_samples, *bin_shape, n_codomain = data_matrix.shape
-        output_values = np.full((n_samples, n_codomain), np.nan)
+        n_samples, *_, n_codomain = data_matrix.shape
 
-        for codomain_dim in range(n_codomain):
-            obs_data = self._get_obs_data(data_matrix, bin_shape, codomain_dim)
-
-            for obs in range(n_samples):
-                if not np.all(np.isnan(obs_data[obs])):
-                    output_values[obs, codomain_dim] = self._aggregate_data(
-                        obs_data[obs],
-                    )
-
-        return output_values
-
-    def _get_obs_data(
-        self,
-        data_matrix: NDArray[np.float64],
-        bin_shape: list[int],
-        codomain_dim: int,
-    ) -> NDArray[np.float64]:
-        """Extract observed data for the given codomain dimension."""
-        obs_data = []
-        for idx in np.ndindex(*bin_shape):
-            obs_data.append(
-                data_matrix[(slice(None),) + idx + (codomain_dim,)],
-            )
-        return np.array(obs_data).T
-
-    def _aggregate_data(self, obs_data: NDArray[np.float64]) -> float:
-        """
-        Aggregate the data.
-
-        Aggregate the data based on the specified bin aggregation method.
-        """
+        # Compute aggregated values along bin dimensions
         if self.bin_aggregation == "mean":
-            return float(np.nanmean(obs_data))
+            output_values: NDArray[np.float64] = np.nanmean(
+                data_matrix,
+                axis=tuple(range(1, data_matrix.ndim - 1)),
+                dtype=np.float64,
+            )
+        else:  # Median aggregation
+            output_values = np.nanmedian(
+                data_matrix, axis=tuple(range(1, data_matrix.ndim - 1)),
+            ).astype(
+                np.float64,
+            )  # Explicitly cast dtype for MyPy
 
-        return float(np.nanmedian(obs_data))
+        return output_values.reshape(n_samples, n_codomain)

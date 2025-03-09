@@ -75,9 +75,8 @@ kmeans.fit(fd)
 print(kmeans.predict(fd))
 
 ##############################################################################
-# To see the information in a graphic way, the method
-# :func:`~skfda.exploratory.visualization.clustering_plots.plot_clusters` can
-# be used.
+# To see the information in a graphic way, we can use the class
+# :class:`~skfda.exploratory.visualization.clustering.ClusterPlot`.
 
 # Customization of cluster colors and labels in order to match the first image
 # of raw data.
@@ -104,8 +103,8 @@ fuzzy_kmeans.fit(fd)
 print(fuzzy_kmeans.predict_proba(fd))
 
 ##############################################################################
-# To see the information in a graphic way, the method
-# :func:`~skfda.exploratory.visualization.clustering_plots.plot_clusters` can
+# To see the information in a graphic way, the class
+# :class:`~skfda.exploratory.visualization.clustering.ClusterPlot` can
 # be used. It assigns each sample to the cluster whose membership value is the
 # greatest.
 
@@ -115,7 +114,7 @@ ClusterPlot(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
 ##############################################################################
 # Another plot implemented to show the results in the class
 # :class:`~skfda.ml.clustering.FuzzyCMeans` is
-# :func:`~skfda.exploratory.visualization.clustering_plots.plot_cluster_lines`
+# :class:`~skfda.exploratory.visualization.clustering.ClusterMembershipLinesPlot`.
 # which is similar to parallel coordinates. It is recommended to assign colors
 # to each of the samples in order to identify them. In this example, the
 # colors are the ones of the first plot, dividing the samples by climate.
@@ -126,8 +125,9 @@ ClusterMembershipLinesPlot(fuzzy_kmeans, fd, cluster_labels=cluster_labels,
                            sample_colors=colors_by_climate).plot()
 
 ##############################################################################
-# Finally, the function
-# :func:`~skfda.exploratory.visualization.clustering_plots.plot_cluster_bars`
+# Finally, the class
+# :class:`~skfda.exploratory.visualization.clustering.ClusterMembershipPlot`
+# has a plot method which
 # returns a barplot. Each sample is designated with a bar which is filled
 # proportionally to the membership values with the color of each cluster.
 

@@ -35,7 +35,7 @@ Input = NDArray[Any] | FData
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     """Transform 1d arrays in column vectors."""
-    t = np.asfarray(t)
+    t = np.asarray(t, dtype=np.float64)
 
     dim = t.ndim
     assert dim <= 2
@@ -702,8 +702,8 @@ class WhiteNoise(Covariance):
 
     def __call__(
         self,
-        x: Input,
-        y: Input | None = None,
+        x: NDArray[Any],
+        y: NDArray[Any] | None = None,
     ) -> NDArrayFloat:
         """Compute white noise covariance function on input data."""
         if isinstance(x, FData) or isinstance(y, FData):
@@ -891,8 +891,8 @@ class Empirical(Covariance):
 
     def __call__(
         self,
-        x: Input,
-        y: Input | None = None,
+        x: NDArray[Any],
+        y: NDArray[Any] | None = None,
     ) -> NDArrayFloat:
         """Evaluate the covariance function.
 

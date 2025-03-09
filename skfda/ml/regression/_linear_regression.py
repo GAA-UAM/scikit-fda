@@ -60,11 +60,11 @@ ArgcheckResultType = Tuple[
 
 
 class LinearRegression(
-    BaseEstimator,
     RegressorMixin[
         Union[AcceptedDataType, Sequence[AcceptedDataType]],
         NDArrayFloat,
     ],
+    BaseEstimator,
 ):
     r"""Linear regression with multivariate and functional response.
 

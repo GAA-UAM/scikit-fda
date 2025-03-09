@@ -144,7 +144,7 @@ class AgglomerativeClustering(  # noqa: WPS230
         >>> clustering.fit(X)
         AgglomerativeClustering(...)
         >>> clustering.labels_.astype(np.int_)
-        array([0, 0, 1, 0, 0, 1])
+        array([ 0, 0, 1, 0, 0, 1])
     """
 
     LinkageCriterion = LinkageCriterion

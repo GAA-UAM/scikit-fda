@@ -257,14 +257,14 @@ def inner_product(
         >>> array1 = np.array([1, 2, 3])
         >>> array2 = np.array([4, 5, 6])
         >>> inner_product(array1, array2)
-        32
+        np.int64(32)
 
         If the arrays contain more than one sample
 
         >>> array1 = np.array([[1, 2, 3], [2, 3, 4]])
         >>> array2 = np.array([[4, 5, 6], [1, 1, 1]])
         >>> inner_product(array1, array2)
-        array([32, 9])
+        array([ 32, 9])
 
         The inner product of the :math:`f(x) = x` and the constant
         :math:`y=1` defined over the interval :math:`[0,1]` is the area of
@@ -592,7 +592,7 @@ def cosine_similarity(
         >>> array1 = np.array([1, 2, 3])
         >>> array2 = np.array([4, 5, 6])
         >>> cosine_similarity(array1, array2)
-        0.9746318461970762
+        np.float64(0.9746318461970762)
 
         If the arrays contain more than one sample
 

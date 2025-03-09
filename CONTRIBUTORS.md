@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-47-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-52-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -70,6 +70,13 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/sparnez"><img src="https://avatars.githubusercontent.com/u/43633383?v=4?s=100" width="100px;" alt="sparnez"/><br /><sub><b>sparnez</b></sub></a><br /><a href="#ideas-sparnez" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://ddavo.me/"><img src="https://avatars.githubusercontent.com/u/10263941?v=4?s=100" width="100px;" alt="David Davó"/><br /><sub><b>David Davó</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Adaviddavo" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/eliegoudout"><img src="https://avatars.githubusercontent.com/u/114467748?v=4?s=100" width="100px;" alt="eliegoudout"/><br /><sub><b>eliegoudout</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=eliegoudout" title="Documentation">📖</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=eliegoudout" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/pulls?q=is%3Apr+reviewed-by%3Aeliegoudout" title="Reviewed Pull Requests">👀</a> <a href="#ideas-eliegoudout" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mynanshan"><img src="https://avatars.githubusercontent.com/u/80438694?v=4?s=100" width="100px;" alt="mynanshan"/><br /><sub><b>mynanshan</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Amynanshan" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://jack-pan-ai.github.io/"><img src="https://avatars.githubusercontent.com/u/35600925?v=4?s=100" width="100px;" alt="Qilong Pan"/><br /><sub><b>Qilong Pan</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Ajack-pan-ai" title="Bug reports">🐛</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/psotom"><img src="https://avatars.githubusercontent.com/u/166627986?v=4?s=100" width="100px;" alt="psotom"/><br /><sub><b>psotom</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Code">💻</a> <a href="#example-psotom" title="Examples">💡</a> <a href="#ideas-psotom" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Tests">⚠️</a> <a href="#research-psotom" title="Research">🔬</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/luisheb"><img src="https://avatars.githubusercontent.com/u/24703335?v=4?s=100" width="100px;" alt="Luis Hebrero"/><br /><sub><b>Luis Hebrero</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=luisheb" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/E105D104U125"><img src="https://avatars.githubusercontent.com/u/72515278?v=4?s=100" width="100px;" alt="E69D68U85"/><br /><sub><b>E69D68U85</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=E105D104U125" title="Code">💻</a></td>
     </tr>
   </tbody>
   <tfoot>

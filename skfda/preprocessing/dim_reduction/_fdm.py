@@ -40,13 +40,13 @@ class FDM(
 
 
     Attributes:
-        transition_matrix\_: trasition matrix computed from the data.
-        eigenvalues\_: highest n_components eigenvalues of transition_matrix\_
+        transition_matrix\_: Transition matrix computed from the data.
+        eigenvalues\_: Highest n_components eigenvalues of transition_matrix\_
             in descending order starting from the second highest.
-        eigenvectors\_right\_: right eigenvectors of transition\_matrix\_
+        eigenvectors\_right\_: Right eigenvectors of transition\_matrix\_
             corresponding to eigenvalues\_.
-        d\_alpha\_: vector of densities of the weigthed graph.
-        training\_dataset\_: dataset used for training the method. It is needed
+        d\_alpha\_: Vector of densities of the weigthed graph.
+        training\_dataset\_: Dataset used for training the method. It is needed
         for the transform method.
 
     Examples:

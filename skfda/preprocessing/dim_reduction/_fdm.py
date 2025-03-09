@@ -25,28 +25,33 @@ class FDM(
     Class that implements functional diffusion maps for both
     basis and grid representations of the data.
 
+    Notes:
+        Performing fit and transform actions is not equivalent to performing
+        fit_transform. In the former case an approximation of the diffusion
+        coordinates is computed via the Nyström method. In the latter, the
+        true diffusion coordinates are computed.
+
     Parameters:
         n_components: Dimension of the space where the embedded
             functional data belongs to. For visualization of the
             data purposes, a value of 2 or 3 shall be used.
-        kernel: Kernel function used over the functional observations.
+        kernel: kernel function used over the functional observations.
             It serves as a measure of connectivity or similitude between
             points, where higher value means greater connectivity.
-        alpha: Density parameter in the interval [0, 1] used in the
+        alpha: density parameter in the interval [0, 1] used in the
             normalization step. A value of 0 means the data distribution
             is not taken into account during the normalization step.
             The opposite holds for a higher value of alpha.
         n_steps: Number of steps in the random walk.
 
-
     Attributes:
-        transition_matrix\_: Transition matrix computed from the data.
-        eigenvalues\_: Highest n_components eigenvalues of transition_matrix\_
+        transition_matrix\_: trasition matrix computed from the data.
+        eigenvalues\_: highest n_components eigenvalues of transition_matrix\_
             in descending order starting from the second highest.
-        eigenvectors\_right\_: Right eigenvectors of transition\_matrix\_
+        eigenvectors\_right\_: right eigenvectors of transition\_matrix\_
             corresponding to eigenvalues\_.
-        d\_alpha\_: Vector of densities of the weigthed graph.
-        training\_dataset\_: Dataset used for training the method. It is needed
+        d\_alpha\_: vector of densities of the weigthed graph.
+        training\_dataset\_: dataset used for training the method. It is needed
         for the transform method.
 
     Examples:
@@ -69,12 +74,6 @@ class FDM(
         ... )
         >>> embedding_train = fdm.fit_transform(X=fd_train)
         >>> embedding_test = fdm.transform(X=fd_test)
-
-    Notes:
-        Performing fit and transform actions is not equivalent to performing
-        fit_transform. In the former case an approximation of the diffusion
-        coordinates is computed via the Nyström method. In the latter, the
-        true diffusion coordinates are computed.
     """
 
     def __init__(

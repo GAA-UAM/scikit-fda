@@ -29,10 +29,10 @@ class FDM(
         n_components: Dimension of the space where the embedded
             functional data belongs to. For visualization of the
             data purposes, a value of 2 or 3 shall be used.
-        kernel: kernel function used over the functional observations.
+        kernel: Kernel function used over the functional observations.
             It serves as a measure of connectivity or similitude between
             points, where higher value means greater connectivity.
-        alpha: density parameter in the interval [0, 1] used in the
+        alpha: Density parameter in the interval [0, 1] used in the
             normalization step. A value of 0 means the data distribution
             is not taken into account during the normalization step.
             The opposite holds for a higher value of alpha.

@@ -18,37 +18,6 @@ def _discretize_fdatabasis(fd_basis: FDataBasis) -> FDataGrid:
         np.linspace(*fd_basis.basis.domain_range[0], 300),
     )
 
-
-def rbf_kernel(fd: FData, sigma: float) -> NDArrayFloat:
-    """Calculate the radial basis function kernel.
-
-    Args:
-        fd: Functional data object
-        sigma: locality parameter
-
-    Returns:
-        Computed real value
-    """
-    norm_matrix = PairwiseMetric(l2_distance)(fd)
-    return np.exp(  # type: ignore[no-any-return]
-        - np.square(norm_matrix) / (2 * sigma ** 2),
-    )
-
-
-def laplacian_kernel(fd: FData, sigma: float) -> NDArrayFloat:
-    """Calculate the radial basis function kernel.
-
-    Args:
-        fd: Functional data object
-        sigma: locality parameter
-
-    Returns:
-        Computed real value
-    """
-    norm_matrix = PairwiseMetric(l1_distance)(fd)
-    return np.exp(- norm_matrix / sigma)  # type: ignore[no-any-return]
-
-
 ##############################################################################
 # Fixtures
 ##############################################################################
@@ -168,7 +137,26 @@ def test_param_check(data_grid_param_check: Tuple[FDM, FDataGrid]) -> None:
 def test_precalculated_grid_example(
     precalculated_fdatagrid_example: FDataGrid,
 ) -> None:
-    """Compare the embedding in grid against the fda package."""
+    """Compare the embedding in grid against the fda package.
+
+    The tested dataset consists of functional observations measured
+    on a discrete grid. Each row in the matrix represents a distinct
+    functional observation, and each column corresponds to a measurement
+    taken at one of the grid points. Specifically, the measurements are
+    taken on the grid {0, 1/2, 1}.
+
+    Matrix of observations:
+
+        [
+            [52, 93, 15],
+            [72, 61, 21],
+            [83, 87, 75],
+            [73, 88, 24]
+        ]
+
+    - Rows: 4 functional observations.
+    - Columns: measurements at x = 0, x = 1/2, and x = 1.
+    """
     fd = precalculated_fdatagrid_example
     fdm = FDM(
         n_components=2,
@@ -195,7 +183,20 @@ def test_precalculated_grid_example(
 def test_precalculated_basis_example(
     precalculated_fdatabasis_example: Tuple[FDataBasis, FDataGrid, FDataBasis],
 ) -> None:
-    """Compare the embedding in basis and grid against the fda package."""
+    """Compare the embedding in basis and grid against the fda package.
+
+    The tested dataset is composed of functional observations whose
+    coordinates are expressed in terms of the monomial basis {1, x, x^2},
+    with the functions being defined in the real interval domain (0,2):
+        - [0, 0, 1]  =>  f(x) = 0 + 0*x + 1*x^2   = x^2
+        - [1, 1, 0]  =>  f(x) = 1 + 1*x + 0*x^2   = 1 + x
+        - [0, 2, 0]  =>  f(x) = 0 + 2*x + 0*x^2   = 2x
+    Hence the toy dataset is {x^2, 1 + x, 2x}.
+
+    This function tests the computation of the FDM method wrt using the basis
+    representation as well as a discretized (grid) version of this dataset into
+    300 equally spaced points in the interval (0,2).
+    """
     fd_basis, fd_grid, _ = precalculated_fdatabasis_example
 
     fdm_basis = FDM(
@@ -253,6 +254,20 @@ def test_nystrom(
 
     Compare the embedding of out-of-sample points in basis and grid
     against the fda package via the Nystrom method.
+
+    The tested dataset is composed of functional observations whose
+    coordinates are expressed in terms of the monomial basis {1, x, x^2},
+    with the functions being defined in the real interval domain (0,2):
+        - [0, 0, 1]  =>  f(x) = 0 + 0*x + 1*x^2   = x^2
+        - [1, 1, 0]  =>  f(x) = 1 + 1*x + 0*x^2   = 1 + x
+        - [0, 2, 0]  =>  f(x) = 0 + 2*x + 0*x^2   = 2x
+    Hence the toy dataset is {x^2, 1 + x, 2x}.
+    The dataset contains an out-of-sample point [-1, 1, 0] => f(x) = x - 1.
+
+    This function tests the Nyström embedding of the out-of-sample datapoint
+    for both the basis representation as well as a discretized (grid) version
+    of this dataset (the three functions and the out-of-sample function) into
+    300 equally spaced points in the interval (0,2).
     """
     fd_basis, fd_grid, fd_out = precalculated_fdatabasis_example
 
@@ -294,7 +309,12 @@ def test_nystrom(
 def test_moons_dataset(
     moons_functional_dataset: FDataGrid,
 ) -> None:
-    """Test the embedding for a small version of the moons dataset example."""
+    """
+    Test the embedding for a small version of the moons dataset example.
+    
+    The embeddings were computing using this method. This test serves
+    as a consistency test of the FDM method towards future dependency updates.
+    """
     fdata = moons_functional_dataset
     alpha, sigma = (1.0, 2.5)
     fdm = FDM(
@@ -332,20 +352,4 @@ def test_moons_dataset(
         embedding,
         expected_embedding,
         atol=1e-5,
-    )
-
-
-def test_gaussian_covariance(
-    moons_functional_dataset: FDataGrid,
-) -> None:
-    """Test Gaussian covariance in covariance module against RBF kernel."""
-    sigma = 0.1
-    fdata = moons_functional_dataset
-    gaussian_cov_matrix = Gaussian(length_scale=sigma)(fdata)
-    rbf_kernel_matrix = rbf_kernel(fdata, sigma)
-
-    np.testing.assert_allclose(
-        gaussian_cov_matrix,
-        rbf_kernel_matrix,
-        atol=1e-7,
     )

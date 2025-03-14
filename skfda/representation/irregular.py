@@ -762,7 +762,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         if skipna:
             count_values = np.sum(~np.isnan(common_values), axis=0)
         else:
-            count_values = np.full(sum_values.shape, self.n_samples)
+            count_values = self.n_samples
 
         if min_count > 0 and skipna:
             count_values[count_values < min_count] = np.nan

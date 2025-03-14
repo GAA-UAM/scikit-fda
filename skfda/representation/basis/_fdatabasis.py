@@ -428,9 +428,15 @@ class FDataBasis(FData):  # noqa: WPS214
         super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
         valid_functions = ~self.isna()
+        valid_counts = np.sum(valid_functions, axis=0)
         valid_coefficients = self.coefficients[valid_functions]
         
-        coefs = np.sum(valid_coefficients, axis=0)
+        coefs = (
+            np.nansum(valid_coefficients, axis=0) if skipna 
+            else np.sum(valid_coefficients, axis=0)
+        )
+        
+        coefs = np.where(valid_counts >= min_count, coefs, np.nan)
 
         return self.copy(
             coefficients=coefs,
@@ -471,6 +477,7 @@ class FDataBasis(FData):  # noqa: WPS214
                 out=out,
                 keepdims=keepdims, 
                 skipna=skipna,
+                min_count=min_count,
             )
             / np.sum(~self.isna()),
         )

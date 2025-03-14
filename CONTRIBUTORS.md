@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-52-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-53-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -77,6 +77,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/psotom"><img src="https://avatars.githubusercontent.com/u/166627986?v=4?s=100" width="100px;" alt="psotom"/><br /><sub><b>psotom</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Code">💻</a> <a href="#example-psotom" title="Examples">💡</a> <a href="#ideas-psotom" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Tests">⚠️</a> <a href="#research-psotom" title="Research">🔬</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/luisheb"><img src="https://avatars.githubusercontent.com/u/24703335?v=4?s=100" width="100px;" alt="Luis Hebrero"/><br /><sub><b>Luis Hebrero</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=luisheb" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/E105D104U125"><img src="https://avatars.githubusercontent.com/u/72515278?v=4?s=100" width="100px;" alt="E69D68U85"/><br /><sub><b>E69D68U85</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=E105D104U125" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/aleexarias"><img src="https://avatars.githubusercontent.com/u/79541307?v=4?s=100" width="100px;" alt="Alejandro Arias"/><br /><sub><b>Alejandro Arias</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=aleexarias" title="Documentation">📖</a></td>
     </tr>
   </tbody>
   <tfoot>

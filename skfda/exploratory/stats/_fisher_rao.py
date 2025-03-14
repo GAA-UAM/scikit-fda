@@ -72,8 +72,9 @@ def _fisher_rao_warping_mean(
     \gamma_i(b)=b`.
 
     The karcher mean :math:`\bar \gamma` is defined as the warping that
-    minimises locally the sum of Fisher-Rao squared distances
-    :footcite:`srivastava+klassen_2016_statistical`.
+    minimises locally the sum of Fisher-Rao squared distances.
+    See Srivastava and Klassen (chapter 8)\ 
+    :footcite:p:`srivastava+klassen_2016` for a detailed explanation.
 
     .. math::
         \bar \gamma = argmin_{\gamma \in \Gamma} \sum_{i=1}^{n}
@@ -211,7 +212,8 @@ def fisher_rao_karcher_mean(
     equivalence class which makes the mean of the warpings employed be the
     identity.
 
-    See :footcite:`srivastava+klassen_2016_statistical` and
+    See Srivastava and Klassen (chapter 8)\ 
+    :footcite:p:`srivastava+klassen_2016` and 
     :footcite:`srivastava++_2011_registration`.
 
     Args:

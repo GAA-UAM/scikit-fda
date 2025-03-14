@@ -203,7 +203,7 @@ def landmark_elastic_registration_warping(
         :math:`h_i(t^*_j)=t_{ij}`.
         The registered samples can be obtained as :math:`x^*_i(t)=x_i(h_i(t))`.
 
-        See :footcite:`ramsay+silverman_2005_registration`
+        See Ramsay and Silverman (chapter 7)\ :footcite:`ramsay+silverman_2005`
         for a detailed explanation.
 
     Args:
@@ -343,8 +343,8 @@ def landmark_elastic_registration(
     :math:`j` and :math:`t^*_j` the new time for the feature.
     The registered samples will have their features aligned, i.e.,
     :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
-
-    See :footcite:`ramsay+silverman_2005_registration`
+    
+    See Ramsay and Silverman (chapter7)\ :footcite:`ramsay+silverman_2005`
     for a detailed explanation.
 
     Args:

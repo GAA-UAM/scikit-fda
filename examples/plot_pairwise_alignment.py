@@ -34,8 +34,9 @@ from skfda.preprocessing.registration import (
 #
 # In the case of elastic registration it is taken as energy function the
 # Fisher-Rao distance with a penalisation term, due to the property of
-# invariance to reparameterizations of warpings functions
-# :footcite:p:`srivastava+klassen_2016_functionala`.
+# invariance to reparameterizations of warpings functions,
+# as detailed in Srivastava and Klassen (chapter 4)\ 
+# :footcite:p:`srivastava+klassen_2016`.
 #
 # .. math::
 #   E[f \circ \gamma, g] = d_{FR} (f \circ \gamma, g)

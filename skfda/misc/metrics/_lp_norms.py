@@ -7,8 +7,6 @@ from typing import Union
 import numpy as np
 import scipy.integrate
 from typing_extensions import Final
-from typing import Union, Callable
-
 
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
@@ -92,10 +90,6 @@ class LpNorm:
         self,
         p: float,
         vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
-        lp_weight: Union[
-            Callable[[NDArrayFloat], NDArrayFloat],
-            None,
-        ] = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
@@ -104,14 +98,13 @@ class LpNorm:
 
         self.p = p
         self.vector_norm = vector_norm
-        self.lp_weight = lp_weight if lp_weight is not None else lambda x: np.ones_like(x)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(" f"p={self.p}, vector_norm={self.vector_norm})"
 
     def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
-        from ...misc import inner_product
+        from .. import inner_product
 
         if isinstance(vector, np.ndarray):
             return np.linalg.norm(  # type: ignore[no-any-return]
@@ -152,7 +145,6 @@ class LpNorm:
 
         elif isinstance(vector, FDataGrid):
             data_matrix = vector.data_matrix
-            weights_matrix = self.lp_weight(vector.grid_points[0])
 
             if isinstance(vector_norm, (float, int)):
                 data_matrix = np.linalg.norm(
@@ -166,7 +158,6 @@ class LpNorm:
                 data_matrix = data_matrix.reshape(-1, original_shape[-1])
                 data_matrix = vector_norm(data_matrix)
                 data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
-                data_matrix = data_matrix * weights_matrix[:, np.newaxis, np.newaxis]
 
             if np.isinf(self.p):
 
@@ -219,7 +210,7 @@ def lp_norm(
     The integral is approximated using Simpson's rule.
 
     In general, if :math:`\mathbf{X}` is a multivariate function :math:`(X^{(1)}, ..., X^{(D)})`, and
-    :math:`\Omega \subset \mathbb{R}^n`, it is applied the following generalization
+    :math:`D \subset \mathbb{R}^n`, it is applied the following generalization
     of the Lp norm.
 
     .. math::

@@ -113,7 +113,11 @@ class FunctionalStandardScaler(BaseEstimator, TransformerMixin):
             raise TypeError("X must be an FDataGrid or FDataBasis object.")
 
         if self.with_mean and self.mean_ is not None:
-            X = X - self.mean_
+            if isinstance(X, FDataGrid):
+                X = X - self.mean_
+            elif isinstance(X, FDataBasis):
+                basis = X.basis
+                # Create a equivalent FDataBasis with constant value self.mean_
 
         if self.with_std and self.scale_ is not None:
             X = X / self.scale_

@@ -17,6 +17,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         'basis': ["FDataBasis"],
         'grid': ["FDataGrid"],
         'irregular': ["FDataIrregular"],
+        "_mixed_mfdata_extension": ["MFdataAccessor"],
     },
 )
 
@@ -25,3 +26,4 @@ if TYPE_CHECKING:
     from .basis import FDataBasis as FDataBasis
     from .grid import FDataGrid as FDataGrid
     from .irregular import FDataIrregular as FDataIrregular
+    from ._mixed_mfdata_extension import MFdataAccessor as MFdataAccessor

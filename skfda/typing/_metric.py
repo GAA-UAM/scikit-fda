@@ -1,6 +1,6 @@
 """Typing for norms and metrics."""
 from abc import abstractmethod
-from typing import TypeVar
+from typing import TypeVar, runtime_checkable
 
 from typing_extensions import Protocol
 
@@ -10,7 +10,7 @@ from ._numpy import NDArrayFloat
 VectorType = TypeVar("VectorType", contravariant=True, bound=Vector)
 MetricElementType = TypeVar("MetricElementType", contravariant=True)
 
-
+@runtime_checkable
 class Norm(Protocol[VectorType]):
     """Protocol for a norm of a vector."""
 

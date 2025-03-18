@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 from ...typing._numpy import NDArrayFloat
@@ -10,12 +10,11 @@ from ..._utils._sklearn_adapter import BaseEstimator
 
 from typing import Optional, Union
 import numpy as np
-from sklearn.base import BaseEstimator
 from ...representation.grid import FDataGrid
 from ...preprocessing.dim_reduction import FPCA
-from ...misc.metrics import pairwise_distance
 from ...representation.basis import Basis
 from ...misc.regularization import TikhonovRegularization
+
 
 class MultivariateMahalanobisDistance(BaseEstimator):
     def __init__(
@@ -40,7 +39,7 @@ class MultivariateMahalanobisDistance(BaseEstimator):
         self.eigenvectors = eigenvectors
         self.p = p
 
-    def fit(self, X: FDataGrid, y: None = None) -> 'MultivariateMahalanobisDistance':
+    def fit(self, X: FDataGrid, y: None = None) -> "MultivariateMahalanobisDistance":
         if self.eigenvalues is None or self.eigenvectors is None:
             fpca = FPCA(
                 n_components=self.n_components,
@@ -62,22 +61,22 @@ class MultivariateMahalanobisDistance(BaseEstimator):
         return lambda_l / (lambda_l + 1 / self.p)
 
     def __call__(self, e1: FDataGrid, e2: FDataGrid) -> np.ndarray:
-        if not hasattr(self, 'eigenvalues_') or not hasattr(self, 'eigenvectors_'):
+        if not hasattr(self, "eigenvalues_") or not hasattr(self, "eigenvectors_"):
             raise ValueError("The model has not been fitted yet.")
 
         distances = []
-        for l, (eigenvalue, eigenvector) in enumerate(zip(self.eigenvalues_, self.eigenvectors_)):
-            inner_product = pairwise_distance(e1, e2, metric='inner_product')
-            d_M_l = (inner_product / eigenvalue) ** 2
+        for l, (eigenvalue, eigenvector) in enumerate(
+            zip(self.eigenvalues_, self.eigenvectors_)
+        ):
+            #d_M_l = (inner_product / eigenvalue) ** 2
             h_l = self._compute_h_l(eigenvalue)
-            distances.append(d_M_l * h_l)
+            #distances.append(d_M_l * h_l)
 
         return np.sqrt(np.sum(distances, axis=0))
 
 
-
 class BasisBasedDistance:
-    """
+    r"""
     Class for computing the weighted distance between two functional observations 
     represented as FDataBasis objects in the same basis.
 
@@ -172,3 +171,23 @@ class BasisBasedDistance:
             self.weights = aux
 
         return float(np.sqrt(np.sum(self.weights * np.square(np.dot((c1 - c2), M)))))
+
+
+def basis_based_distance(
+    fd1: FDataBasis,
+    fd2: FDataBasis,
+    weights: Optional[NDArrayFloat] = None,
+) -> float:
+    r"""
+    Computes the distance between two functional data objects represented in the same basis.
+
+    Args:
+        fd1 (FDataBasis): First functional data object.
+        fd2 (FDataBasis): Second functional data object.
+        weights (ndarray, optional): Weighting function \( \nu_k \). Defaults to None.
+
+    Returns:
+        float: The computed distance between the two functional data objects.
+    """
+    distance = BasisBasedDistance(weights)
+    return distance(fd1, fd2)

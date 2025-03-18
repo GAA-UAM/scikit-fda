@@ -14,7 +14,7 @@ from ...typing._numpy import NDArrayFloat
 from ..._utils import nquad_vec
 
 
-class LpNorm:
+class LpNorm(Norm):
     r"""
     Norm of all the observations in a FDataGrid object.
 
@@ -210,7 +210,7 @@ def lp_norm(
     The integral is approximated using Simpson's rule.
 
     In general, if :math:`\mathbf{X}` is a multivariate function :math:`(X^{(1)}, ..., X^{(D)})`, and
-    :math:`D \subset \mathbb{R}^n`, it is applied the following generalization
+    :math:`\Omega \subset \mathbb{R}^n`, it is applied the following generalization
     of the Lp norm.
 
     .. math::

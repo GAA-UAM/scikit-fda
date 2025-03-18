@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-import lazy_loader as lazy
+import lazy_loader as lazy # type: ignore[import-untyped]
 
 __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
@@ -36,6 +36,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "TransformationMetric",
             "pairwise_metric_optimization",
         ],
+        "_basis_distance": [
+            "BasisBasedDistance",
+            "basis_based_distance",
+        ],
     },
 )
 
@@ -68,4 +72,8 @@ if TYPE_CHECKING:
         PairwiseMetric as PairwiseMetric,
         TransformationMetric as TransformationMetric,
         pairwise_metric_optimization as pairwise_metric_optimization,
+    )
+    from ._basis_distance import (
+        BasisBasedDistance as BasisBasedDistance,
+        basis_based_distance as basis_based_distance,
     )

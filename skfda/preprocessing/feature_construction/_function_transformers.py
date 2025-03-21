@@ -119,6 +119,7 @@ class OccupationMeasureTransformer(
     Example:
         We will create the FDataGrid that we will use to extract
         the occupation measure
+
         >>> from skfda.representation import FDataGrid
         >>> import numpy as np
         >>> t = np.linspace(0, 10, 100)
@@ -136,6 +137,7 @@ class OccupationMeasureTransformer(
         and (2.0, 3.0). We need also to specify the number of points
         we want that the function takes into account to interpolate.
         We are going to use 501 points.
+
         >>> from skfda.preprocessing.feature_construction import (
         ...     OccupationMeasureTransformer,
         ... )
@@ -195,6 +197,7 @@ class NumberCrossingsTransformer(
         the Bessel Function of first type and order 0.
         First of all we import the Bessel Function and create the X axis
         data grid. Then we create the FdataGrid.
+        
         >>> from skfda.preprocessing.feature_construction import (
         ...     NumberCrossingsTransformer,
         ... )
@@ -224,6 +227,7 @@ class NumberCrossingsTransformer(
 
         Finally we evaluate the number of zero-upcrossings method with the
         FDataGrid created.
+        
         >>> tf = NumberCrossingsTransformer(levels=0, direction="up")
         >>> tf.fit_transform(fd_grid)
         array([[ 2]])

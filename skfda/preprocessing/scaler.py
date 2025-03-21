@@ -14,8 +14,9 @@ from ..exploratory import stats
 from typing import Any, Union, Optional
 from ..typing._numpy import NDArrayFloat
 
-
-class FunctionalStandardScaler(BaseEstimator, TransformerMixin):
+def center_scale(x: FData, center: Callable, scale: Callable)
+ 
+class StandardScaler(BaseEstimator, TransformerMixin):
     """
     Standardize the functional data.
     """
@@ -38,7 +39,7 @@ class FunctionalStandardScaler(BaseEstimator, TransformerMixin):
         self.centering_method_ = centering_method
         self.correction_ = correction
 
-    def fit(self, X: FData, y: Optional[Any] = None) -> FunctionalStandardScaler:
+    def fit(self, X: FData, y: Optional[Any] = None) -> StandardScaler:
         """Compute the mean and standard deviation for each functional component."""
         if not isinstance(X, (FDataGrid, FDataBasis)):
             raise TypeError("X must be an FDataGrid or FDataBasis object.")

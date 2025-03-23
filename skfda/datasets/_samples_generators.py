@@ -182,7 +182,7 @@ def make_sde_trajectories(  # noqa: WPS211
     stop: float = 1.0,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
-    r"""Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
+    r"""Numerical integration of an Itô SDE.
 
     An SDE can be expressed with the following formula
 
@@ -406,7 +406,7 @@ def make_sde_trajectories(  # noqa: WPS211
             random_state,
         )
 
-    raise ValueError("Method for computing SDEs not implemented")
+    raise ValueError(f"Method \"{method}\" for computing SDEs not implemented")
 
 
 def _euler_maruyama(
@@ -508,7 +508,7 @@ def _milstein(  # noqa: WPS211
     times: NDArrayFloat,
     random_state: np.random.RandomState,
 ) -> FDataGrid:
-    r"""Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
+    r"""Numerical integration of an Itô SDE.
 
     An SDE can be expressed with the following formula
 

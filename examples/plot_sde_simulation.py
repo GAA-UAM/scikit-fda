@@ -118,13 +118,13 @@ plt.fill_between(
     mean_ou + 2 * std_ou,
     mean_ou - 2 * std_ou,
     alpha=0.25,
-    color='gray',
+    color="gray",
 )
 plt.plot(
     grid_points,
     mean_ou,
     linewidth=2,
-    color='k',
+    color="k",
     label="empirical mean",
 )
 plt.plot(
@@ -132,8 +132,8 @@ plt.plot(
     mu * np.ones_like(grid_points),
     linewidth=2,
     label="stationary mean",
-    color='b',
-    linestyle='dashed',
+    color="b",
+    linestyle="dashed",
 )
 plt.xlabel("t")
 plt.ylabel("X(t)")
@@ -171,13 +171,13 @@ plt.fill_between(
     mean_ou + 2 * std_ou,
     mean_ou - 2 * std_ou,
     alpha=0.25,
-    color='gray',
+    color="gray",
 )
 plt.plot(
     grid_points,
     mean_ou,
     linewidth=2,
-    color='k',
+    color="k",
     label="empirical mean",
 )
 plt.plot(
@@ -185,8 +185,8 @@ plt.plot(
     mu * np.ones_like(grid_points),
     linewidth=2,
     label="stationary mean",
-    color='b',
-    linestyle='dashed',
+    color="b",
+    linestyle="dashed",
 )
 plt.xlabel("t")
 plt.ylabel("X(t)")
@@ -261,7 +261,7 @@ x_range = np.linspace(x_min, x_max, 200)
 epsilon_t = 1.0e-10  # Avoids evaluating singular pdf at t_0
 times = np.linspace(t_0 + epsilon_t, t_n, 100)
 fig, ax = plt.subplots(2, 1, figsize=(7, 10))
-rc('animation', html='jshtml')
+rc("animation", html="jshtml")
 
 # Creation of the plot.
 ax[0].set_xlim(t_0, t_n)
@@ -384,16 +384,16 @@ X, Y = np.meshgrid(x_range, y_range)
 coords = np.column_stack((X.ravel(), Y.ravel()))
 
 fig3d = plt.figure(figsize=(7, 8))
-ax = fig3d.add_subplot(2, 1, 1, projection='3d')
+ax = fig3d.add_subplot(2, 1, 1, projection="3d")
 ax2 = fig3d.add_subplot(2, 1, 2)
-fig3d.suptitle('Kernel Density Estimation')
+fig3d.suptitle("Kernel Density Estimation")
 
 
 def update3d(frame: int) -> None:
     """Creation of each frame of the 3d animation."""
     data = fd.data_matrix[:, frame, :]
 
-    kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
+    kde = KernelDensity(bandwidth=0.5, kernel="gaussian")
     kde.fit(data)
     grid_points_3d = np.c_[X.ravel(), Y.ravel()]
     Z = np.exp(kde.score_samples(grid_points_3d))
@@ -403,14 +403,14 @@ def update3d(frame: int) -> None:
     ax.set_xlim(-4, 6)
     ax.set_ylim(-4, 6)
     ax.set_zlim(0, 0.35)
-    ax.plot_surface(X, Y, Z, cmap='cividis', lw=0.2, rstride=5, cstride=5)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
+    ax.plot_surface(X, Y, Z, cmap="cividis", lw=0.2, rstride=5, cstride=5)
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
 
     ax2.clear()
     ax2.set_xlim(-4, 6)
     ax2.set_ylim(-4, 6)
-    ax2.contourf(X, Y, Z, levels=25, cmap='cividis')
+    ax2.contourf(X, Y, Z, levels=25, cmap="cividis")
 
 
 ani3d = FuncAnimation(fig3d, update3d, frames=range(100))
@@ -421,7 +421,7 @@ ani3d
 # Using Milstein's method to compute SDE solutions
 # ---------------------------------------------------
 #
-# Apart from func:`~skfda.datasets.make_sde_trajectories`, scikit-fda also
+# Apart from the default Euler-Maruyana scheme, scikit-fda also
 # implements the Milstein scheme, a numerical SDE integrator of a higher order
 # of convergence than the Euler-Maruyama scheme. When computing solution
 # trajectories of an SDE, the Milstein method adds a term which depends on the
@@ -430,7 +430,7 @@ ani3d
 # does not depend on the value of :math:`\mathbf{X}`, then both methods
 # Euler Maruyama and Milstein are equivalent. In this section we show how
 # to use the former function for SDEs where the diffusion term does depend
-# :math:`X`.
+# on :math:`X`.
 #
 # We will simulate a Geometric Brownian Motion (GBM). One of its notable
 # applications is in modelling stock prices in financial markets, as it forms
@@ -499,13 +499,13 @@ plt.fill_between(
     mean_gbm + 2 * std_gbm,
     mean_gbm - 2 * std_gbm,
     alpha=0.25,
-    color='gray',
+    color="gray",
 )
 plt.plot(
     grid_points,
     mean_gbm,
     linewidth=2,
-    color='k',
+    color="k",
     label="empirical mean",
 )
 plt.plot(
@@ -513,8 +513,8 @@ plt.plot(
     np.exp(grid_points * mu),
     linewidth=2,
     label="theoretical mean",
-    color='b',
-    linestyle='dashed',
+    color="b",
+    linestyle="dashed",
 )
 plt.xlabel("t")
 plt.ylabel("X(t)")

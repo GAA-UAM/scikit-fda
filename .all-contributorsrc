@@ -586,6 +586,37 @@
         "research",
         "doc"
       ]
+    },
+    {
+      "login": "luisheb",
+      "name": "Luis Hebrero",
+      "avatar_url": "https://avatars.githubusercontent.com/u/24703335?v=4",
+      "profile": "https://github.com/luisheb",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "E105D104U125",
+      "name": "E69D68U85",
+      "avatar_url": "https://avatars.githubusercontent.com/u/72515278?v=4",
+      "profile": "https://github.com/E105D104U125",
+      "contributions": [
+        "code",
+        "doc",
+        "test",
+        "example",
+        "research"
+      ]
+    },
+    {
+      "login": "aleexarias",
+      "name": "Alejandro Arias",
+      "avatar_url": "https://avatars.githubusercontent.com/u/79541307?v=4",
+      "profile": "https://github.com/aleexarias",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,

@@ -17,8 +17,8 @@ Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 class QuadraticDiscriminantAnalysis(
-    BaseEstimator,
     ClassifierMixin[FDataGrid, Target],
+    BaseEstimator,
 ):
     """
     Functional quadratic discriminant analysis.

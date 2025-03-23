@@ -109,12 +109,12 @@ class RelativeLocalMaximaSelector(BaseEstimator):
 
 
 class MaximaHunting(
-    BaseEstimator,
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
         NDArrayReal,
     ],
+    BaseEstimator,
 ):
     r"""
     Maxima Hunting variable selection.

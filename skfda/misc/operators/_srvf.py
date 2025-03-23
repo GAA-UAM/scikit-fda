@@ -15,8 +15,8 @@ from ._operators import Operator
 
 class SRSF(
     Operator[FDataGrid, FDataGrid],
-    BaseEstimator,
     InductiveTransformerMixin[FDataGrid, FDataGrid, object],
+    BaseEstimator,
 ):
     r"""Square-Root Slope Function (SRSF) transform.
 
@@ -26,10 +26,11 @@ class SRSF(
     .. math::
         SRSF(f(t)) = sgn(f'(t)) \sqrt{|f'(t)|} = q(t)
 
-    This representation it is used to compute the extended non-parametric
+    This representation is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
     becomes the usual :math:`\mathbb{L}^2` distance between functions.
-    See :footcite:`srivastava+klassen_2016_functionala`.
+    See Srivastava and Klassen (chapter 4)\ 
+    :footcite:p:`srivastava+klassen_2016`.
 
     The inverse SRSF transform is defined as
 
@@ -132,8 +133,9 @@ class SRSF(
         Compute the square-root slope function (SRSF) transform.
 
         Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely
-        continuous function, the SRSF transform is defined as
-        :footcite:`srivastava+klassen_2016_functionala`:
+        continuous function, the SRSF transform is defined as in
+        Srivastava and Klassen (chapter 4)\ 
+        :footcite:p:`srivastava+klassen_2016`
 
         .. math::
 
@@ -184,7 +186,8 @@ class SRSF(
         Compute the inverse SRSF transform.
 
         Given the srsf and the initial value the original function can be
-        obtained as :footcite:`srivastava+klassen_2016_functionala`:
+        obtained as detailed in Srivastava and Klassen (chapter 4)\ 
+        :footcite:p:`srivastava+klassen_2016`:
 
         .. math::
             f(t) = f(a) + \int_{a}^t q(t)|q(t)|dt

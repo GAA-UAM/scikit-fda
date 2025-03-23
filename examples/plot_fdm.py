@@ -29,13 +29,14 @@ from skfda.representation import FDataGrid
 
 random_state = 0
 
-####################################################################
+# %%
 # Some examples shown here are further explained in the
 # article :footcite:t:`barroso++_2023_fdm`.
 
 
-####################################################################
-# **MOONS DATASET EXAMPLE**
+# %%
+# Moons dataset example
+# ---------------------
 #
 # Firstly, a basic example of execution is presented using a functional version
 # of the moons dataset, a dataset consisting of two dimentional coordinates
@@ -53,7 +54,7 @@ plt.scatter(data_moons[:, 0], data_moons[:, 1], c=y, cmap=cmap)
 plt.title("Moons data")
 plt.show()
 
-####################################################################
+# %%
 # Using a two elements basis, the functional observation corresponding
 # to a multivariate observation is obtained by treating the coordinates
 # as coefficients that multiply the elements of the basis.
@@ -73,7 +74,7 @@ fd_moons.plot(linewidth=0.5, group=y, group_colors=colors)
 plt.xlim((-np.pi, np.pi))
 plt.show()
 
-####################################################################
+# %%
 # Once the functional data is available, it simply remains to choose
 # the value of the parameters of the model.
 #
@@ -92,14 +93,15 @@ plt.scatter(embedding[:, 0], embedding[:, 1], c=y, cmap=cmap)
 plt.title("Diffusion coordinates for the functional moons data")
 plt.show()
 
-####################################################################
+# %%
 # As we can see, the functional diffusion map has correctly interpreted
 # the topological nature of the data, by successfully separating the
 # coordinates associated to both moons.
 
 
-####################################################################
-# **SPIRALS DATASET EXAMPLE**
+# %%
+# Spirals dataset example
+# -----------------------
 #
 # Next is an example of parameter tuning in the form of a grid
 # search for a set of given values for the length_scale kernel parameter
@@ -138,7 +140,7 @@ fd_spirals.plot(linewidth=0.5, group=y, group_colors=colors)
 plt.show()
 
 
-####################################################################
+# %%
 # Once the functional data is ready, we will perform a grid search
 # for the following values of the parameters, as well as plot
 # the resulting embeddings for visual comparison.
@@ -146,7 +148,6 @@ alpha_set = [0, 0.33, 0.66, 1]
 length_scale_set = [2.5, 3, 4.5, 7, 10, 11, 15]
 param_grid = product(alpha_set, length_scale_set)
 
-####################################################################
 fig, axes = plt.subplots(
     len(alpha_set), len(length_scale_set), figsize=(16, 8),
 )
@@ -172,7 +173,7 @@ for ax, length_scale in zip(axes[0], length_scale_set):
 
 plt.show()
 
-####################################################################
+# %%
 # The first thing to notice is that the parameter length scale exerts
 # a greater influence in the resulting embedding than the parameter alpha.
 # In this sense, the figures of any given column are more similar than those
@@ -197,7 +198,7 @@ plt.show()
 # but its not too wide so that points in contiguous arms of the spiral are
 # also considered similar.
 
-####################################################################
+# %%
 # For a reliable comparison between embeddings, it is advisable to use
 # the same scale in all axis.
 # To ilustrate this idea, next is a re-execution for the row alpha
@@ -234,8 +235,9 @@ for ax, length_scale in zip(axes, length_scale_set):
 
 plt.show()
 
-####################################################################
-# **SWISS ROLL DATASET EXAMPLE**
+# %%
+# Swiss roll dataset example
+# --------------------------
 #
 # So far, the above examples have been computed with a value of the
 # n_components parameter of 2. This implies that the resulting
@@ -259,7 +261,7 @@ axis.set_title("Swiss roll data")
 axis.scatter(data_swiss[:, 0], data_swiss[:, 1], data_swiss[:, 2], c=y)
 plt.show()
 
-####################################################################
+# %%
 # Similarly to the previous examples, the functional data object is defined.
 # In this case a three element base will be used, since the multivariate data
 # points belong to a three-dimensional space.
@@ -279,7 +281,7 @@ fd_swiss[:50].plot(linewidth=0.5, group=y[:50])
 plt.show()
 
 
-####################################################################
+# %%
 # Now, the FDM method will be applied for different values of the
 # parameters, again in the form of a grid search.
 # Note that the diffusion coordinates will now consist of three components.
@@ -287,7 +289,6 @@ alpha_set = [0, 0.5, 1]
 length_scale_set = [1.5, 2.5, 4, 5]
 param_grid = product(alpha_set, length_scale_set)
 
-####################################################################
 fig, axes = plt.subplots(
     len(alpha_set),
     len(length_scale_set),
@@ -312,7 +313,7 @@ for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
 
 plt.show()
 
-####################################################################
+# %%
 # Let's take a closer look at the resulting embedding for a value
 # of length_scale and alpha equal to 2.5 and 0, respectively.
 alpha, length_scale = 0, 2.5
@@ -333,7 +334,7 @@ ax.set_title(
 )
 plt.show()
 
-####################################################################
+# %%
 # The election of the optimal parameters is relative to the problem at hand.
 # The goal behind choosing values of length_scale equal to 2.5 and alpha equal
 # to 0 is to obtain a unrolled transformation to the Swiss roll.
@@ -347,8 +348,9 @@ plt.show()
 # This new diffusion coordinates could be useful to gain more insights into
 # the initial data through further analysis.
 
-#########################################################################
-# **REAL DATASET: PHONEME**
+# %%
+# Real dataset: phoneme
+# ---------------------
 #
 # The aim of this section is to provide an example of application of
 # the FDM method to a non-synthetic dataset.
@@ -371,7 +373,7 @@ fd_phoneme.plot(
 )
 plt.show()
 
-####################################################################
+# %%
 # The resulting diffusion coordinates in three dimensions will be
 # plotted, using different views to better understand the plot.
 cmap = ListedColormap(colors)
@@ -403,7 +405,7 @@ for view, ax in zip(view_points, axes.ravel()):
     ax.set_title(f"View {view}", fontsize=26)
 plt.show()
 
-####################################################################
+# %%
 # We can see that the diffusion coordinates for the different phonemes
 # have been clustered in the 3D space. This representation enables a
 # more clear separation of the data into the different phoneme groups.
@@ -412,6 +414,8 @@ plt.show()
 # (orange and blue).
 
 
-###############################################################################
-# **References:**
+# %%
+# References
+# ----------
+#
 #     .. footbibliography::

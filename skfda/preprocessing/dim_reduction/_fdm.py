@@ -26,7 +26,7 @@ class DiffusionMap(
     :footcite:p:`barroso++_2023_fdm` for both basis and grid representations
     of the data.
 
-    Notes:
+    Note:
         Performing fit and transform actions is not equivalent to performing
         fit_transform. In the former case an approximation of the diffusion
         coordinates is computed via the Nyström method. In the latter, the

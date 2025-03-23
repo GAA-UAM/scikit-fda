@@ -25,7 +25,18 @@ from skfda.representation.basis import (
 # to explore datasets and obtain conclusions about said dataset using this
 # technique.
 #
-# First we are going to fetch the Berkeley Growth Study data. This dataset
+# FPCA is a dimensionality reduction method for functional data that aims to 
+# reduce the complexity of studying observations by finding a finite number of
+# principal components. These components are the directions that capture the 
+# main modes of variation across the function (the directions in which the
+# curves vary the most). FPCA can be though of as a basis expansion, but what 
+# distinguishes FPCA is that among all basis expansions that use K components
+# for a fixed K, the FPCA expansion explains most of the variation in X.
+#
+# For more information abour FPCA and its objectives, see 
+# :footcite:ts:`wang+chiou+muller_2016_fpca`.
+# 
+# Firstly, we are going to fetch the Berkeley Growth Study data. This dataset
 # correspond to the height of several boys and girls measured from birth to
 # when they are 18 years old. The number and time of the measurements are the
 # same for each individual. To better understand the data we plot it.
@@ -111,3 +122,9 @@ basis_fd = fd.to_basis(BSplineBasis(n_basis=7))
 fpca = FPCA(n_components=2, components_basis=MonomialBasis(n_basis=4))
 fpca.fit(basis_fd)
 fpca.components_.plot()
+
+# %%
+# References
+# ----------
+#
+# .. footbibliography::

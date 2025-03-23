@@ -608,6 +608,15 @@
         "example",
         "research"
       ]
+    },
+    {
+      "login": "aleexarias",
+      "name": "Alejandro Arias",
+      "avatar_url": "https://avatars.githubusercontent.com/u/79541307?v=4",
+      "profile": "https://github.com/aleexarias",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,

@@ -1,4 +1,4 @@
-"""Tests for FDM."""
+"""Tests for DiffusionMap."""
 from typing import Tuple
 
 import numpy as np
@@ -8,7 +8,7 @@ from sklearn import datasets
 from skfda import FData, FDataBasis, FDataGrid
 from skfda.misc.covariances import Gaussian
 from skfda.misc.metrics import PairwiseMetric, l1_distance, l2_distance
-from skfda.preprocessing.dim_reduction import FDM
+from skfda.preprocessing.dim_reduction import DiffusionMap
 from skfda.representation.basis import MonomialBasis
 from skfda.typing._numpy import NDArrayFloat
 
@@ -26,13 +26,15 @@ dummy_fdata = FDataGrid(data_matrix=[[0.9]])
 
 @pytest.fixture(
     params=[
-        FDM(kernel=Gaussian(), alpha=-1),
-        FDM(kernel=Gaussian(), n_components=0),
-        FDM(kernel=Gaussian(), n_components=2),
-        FDM(kernel=Gaussian(), n_steps=0),
+        DiffusionMap(kernel=Gaussian(), alpha=-1),
+        DiffusionMap(kernel=Gaussian(), n_components=0),
+        DiffusionMap(kernel=Gaussian(), n_components=2),
+        DiffusionMap(kernel=Gaussian(), n_steps=0),
     ],
 )
-def data_grid_param_check(request: FDM) -> Tuple[FDM, FDataGrid]:
+def data_grid_param_check(
+    request: DiffusionMap,
+) -> Tuple[DiffusionMap, FDataGrid]:
     """Fixture for testing parameter checks."""
     return request.param, dummy_fdata
 
@@ -123,7 +125,7 @@ def moons_functional_dataset() -> FDataGrid:
 ##############################################################################
 
 
-def test_param_check(data_grid_param_check: Tuple[FDM, FDataGrid]) -> None:
+def test_param_check(data_grid_param_check: Tuple[DiffusionMap, FDataGrid]) -> None:
     """Check that invalid parameters in fit raise exception."""
     fdm, fd = data_grid_param_check
 
@@ -158,7 +160,7 @@ def test_precalculated_grid_example(
     - Columns: measurements at x = 0, x = 1/2, and x = 1.
     """
     fd = precalculated_fdatagrid_example
-    fdm = FDM(
+    fdm = DiffusionMap(
         n_components=2,
         kernel=Gaussian(length_scale=10),
         alpha=0.9,
@@ -199,7 +201,7 @@ def test_precalculated_basis_example(
     """
     fd_basis, fd_grid, _ = precalculated_fdatabasis_example
 
-    fdm_basis = FDM(
+    fdm_basis = DiffusionMap(
         n_components=2,
         kernel=Gaussian(),
         alpha=1,
@@ -207,7 +209,7 @@ def test_precalculated_basis_example(
     )
     embedding_basis = fdm_basis.fit_transform(fd_basis)
 
-    fdm_grid = FDM(
+    fdm_grid = DiffusionMap(
         n_components=2,
         kernel=Gaussian(),
         alpha=1,
@@ -271,7 +273,7 @@ def test_nystrom(
     """
     fd_basis, fd_grid, fd_out = precalculated_fdatabasis_example
 
-    fdm_basis = FDM(
+    fdm_basis = DiffusionMap(
         n_components=2,
         kernel=Gaussian(),
         alpha=1,
@@ -279,7 +281,7 @@ def test_nystrom(
     )
     embedding_basis = fdm_basis.fit(fd_basis).transform(fd_out)
 
-    fdm_grid = FDM(
+    fdm_grid = DiffusionMap(
         n_components=2,
         kernel=Gaussian(),
         alpha=1,
@@ -317,7 +319,7 @@ def test_moons_dataset(
     """
     fdata = moons_functional_dataset
     alpha, sigma = (1.0, 2.5)
-    fdm = FDM(
+    fdm = DiffusionMap(
         n_components=2,
         kernel=Gaussian(length_scale=sigma),
         alpha=alpha,

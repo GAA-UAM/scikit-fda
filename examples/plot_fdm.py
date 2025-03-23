@@ -3,7 +3,7 @@
 """
 Functional Diffusion Maps
 ============================================================================
-In this example, the use of the Functional Diffusion Map (FDM) technique is
+In this example, the use of the functional diffusion map (FDM) technique is
 shown over different datasets.
 Firstly, an example of basic use of the technique is provided.
 Later, two examples of parameter tuning are presented, for embedding spaces
@@ -24,7 +24,7 @@ from sklearn import datasets
 
 from skfda.datasets import fetch_phoneme
 from skfda.misc.covariances import Gaussian
-from skfda.preprocessing.dim_reduction import FDM
+from skfda.preprocessing.dim_reduction import DiffusionMap 
 from skfda.representation import FDataGrid
 
 random_state = 0
@@ -80,7 +80,7 @@ plt.show()
 # The FDM technique involves the use of a kernel operator, that acts
 # as a measure of similarity for the data. In this case we will be using
 # the Gaussian kernel, with a length scale parameter of 0.25.
-fdm = FDM(
+fdm = DiffusionMap(
     n_components=2,
     kernel=Gaussian(length_scale=0.25),
     alpha=0,
@@ -152,7 +152,7 @@ fig, axes = plt.subplots(
 )
 
 for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
-    fdm = FDM(
+    fdm = DiffusionMap(
         n_components=2,
         kernel=Gaussian(length_scale=length_scale),
         alpha=alpha,
@@ -213,7 +213,7 @@ fig, axes = plt.subplots(
 )
 
 for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
-    fdm = FDM(
+    fdm = DiffusionMap(
         n_components=2,
         kernel=Gaussian(length_scale=length_scale),
         alpha=alpha,
@@ -296,7 +296,7 @@ fig, axes = plt.subplots(
 )
 
 for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
-    fdm = FDM(
+    fdm = DiffusionMap(
         n_components=3,
         kernel=Gaussian(length_scale=length_scale),
         alpha=alpha,
@@ -316,7 +316,7 @@ plt.show()
 # Let's take a closer look at the resulting embedding for a value
 # of length_scale and alpha equal to 2.5 and 0, respectively.
 alpha, length_scale = 0, 2.5
-fdm = FDM(
+fdm = DiffusionMap(
     n_components=3,
     kernel=Gaussian(length_scale=length_scale),
     alpha=alpha,
@@ -376,7 +376,7 @@ plt.show()
 # plotted, using different views to better understand the plot.
 cmap = ListedColormap(colors)
 alpha, length_scale = 1, 10
-fdm = FDM(
+fdm = DiffusionMap(
     n_components=3,
     kernel=Gaussian(length_scale=length_scale),
     alpha=alpha,

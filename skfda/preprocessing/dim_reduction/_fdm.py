@@ -15,7 +15,7 @@ from ...typing._numpy import NDArrayFloat
 KernelFunction = Callable[[FData, FData | None], NDArrayFloat]
 
 
-class FDM(
+class DiffusionMap(
     BaseEstimator,
     InductiveTransformerMixin[FData, NDArrayFloat, object],
 ):
@@ -66,7 +66,7 @@ class FDM(
         >>> fd : FDataGrid = X.iloc[:, 0].values
         >>> fd_train = fd[:25]
         >>> fd_test = fd[25:]
-        >>> fdm = FDM(
+        >>> fdm = DiffusionMap(
         ...     n_components=2,
         ...     kernel=Gaussian(variance=1, length_scale=1),
         ...     alpha=1,

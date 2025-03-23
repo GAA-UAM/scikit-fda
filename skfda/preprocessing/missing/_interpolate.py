@@ -2,7 +2,7 @@ from typing import Any, TypeVar
 
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.interpolate.interpnd import LinearNDInterpolator
+from scipy.interpolate import LinearNDInterpolator
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation import FDataGrid

@@ -195,7 +195,7 @@ def landmark_elastic_registration_warping(
     location: Optional[ArrayLike] = None,
     grid_points: Optional[GridPointsLike] = None,
 ) -> FDataGrid:
-    """Calculate the transformation used in landmark registration.
+    r"""Calculate the transformation used in landmark registration.
 
         Let :math:`t_{ij}` the time where the sample :math:`i` has the feature
         :math:`j` and :math:`t^*_j` the new time for the feature. The warping
@@ -336,14 +336,14 @@ def landmark_elastic_registration(
     location: Optional[ArrayLike] = None,
     grid_points: Optional[GridPointsLike] = None,
 ) -> FDataGrid:
-    """
+    r"""
     Perform landmark registration of the curves.
 
     Let :math:`t_{ij}` the time where the sample :math:`i` has the feature
     :math:`j` and :math:`t^*_j` the new time for the feature.
     The registered samples will have their features aligned, i.e.,
     :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
-    
+
     See Ramsay and Silverman (chapter7)\ :footcite:`ramsay+silverman_2005`
     for a detailed explanation.
 

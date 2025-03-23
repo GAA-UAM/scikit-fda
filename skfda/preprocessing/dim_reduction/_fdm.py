@@ -22,8 +22,9 @@ class DiffusionMap(
     r"""
     Functional diffusion maps.
 
-    Class that implements functional diffusion maps for both
-    basis and grid representations of the data.
+    Class that implements functional diffusion maps
+    :footcite:p:`barroso++_2023_fdm` for both basis and grid representations
+    of the data.
 
     Notes:
         Performing fit and transform actions is not equivalent to performing
@@ -74,6 +75,11 @@ class DiffusionMap(
         ... )
         >>> embedding_train = fdm.fit_transform(X=fd_train)
         >>> embedding_test = fdm.transform(X=fd_test)
+
+    References:
+
+        .. footbibliography::
+
     """
 
     def __init__(

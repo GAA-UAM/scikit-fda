@@ -64,7 +64,7 @@ class MultivariateMahalanobisDistance(BaseEstimator):
         if not hasattr(self, "eigenvalues_") or not hasattr(self, "eigenvectors_"):
             raise ValueError("The model has not been fitted yet.")
 
-        distances = []
+        #distances = []
         for l, (eigenvalue, eigenvector) in enumerate(
             zip(self.eigenvalues_, self.eigenvectors_)
         ):
@@ -72,7 +72,7 @@ class MultivariateMahalanobisDistance(BaseEstimator):
             h_l = self._compute_h_l(eigenvalue)
             #distances.append(d_M_l * h_l)
 
-        return np.sqrt(np.sum(distances, axis=0))
+        return np.sqrt(np.sum(10, axis=0))
 
 
 class BasisBasedDistance:
@@ -137,6 +137,7 @@ class BasisBasedDistance:
         compute_distance(): Computes the functional distance \( d_{\nu}(X_1, X_2) \).
 
     Example:
+
         >>> from skfda.representation.basis import FDataBasis, BSplineBasis
         >>> import numpy as np
         >>> basis = BSplineBasis(n_basis=5)
@@ -154,30 +155,45 @@ class BasisBasedDistance:
     def __repr__(self) -> str:
         return f"{type(self).__name__}(weights={self.weights})"
 
-    def __call__(self, fd1: FDataBasis, fd2: FDataBasis) -> float:
+    def __call__(self, fd1: FDataBasis, fd2: FDataBasis) -> NDArrayFloat:
 
         if fd1.basis != fd2.basis:
             raise ValueError("Both functional data objects must have the same basis.")
 
-        c1 = fd1.coefficients
-        c2 = fd2.coefficients
-        M = fd1.basis.gram_matrix()
+        c1 = fd1.coefficients  # shape (n_samples_1, n_basis)
+        c2 = fd2.coefficients  # shape (n_samples_2, n_basis)
 
+        M = fd1.basis.gram_matrix()  # shape (n_basis, n_basis)
+
+        # Prepare weights
+        n_basis = c1.shape[1]
         if self.weights is None:
-            self.weights = np.ones(c1.shape[1])
+            weights = np.ones(n_basis)
         else:
-            aux = np.zeros(c1.shape[1])
-            aux[: self.weights.shape[0]] = self.weights
-            self.weights = aux
+            weights = np.zeros(n_basis)
+            weights[: self.weights.shape[0]] = self.weights
 
-        return float(np.sqrt(np.sum(self.weights * np.square(np.dot((c1 - c2), M)))))
+        # If c2 has one sample and c1 has many, broadcast c2
+        if c1.shape[0] != c2.shape[0]:
+            if c2.shape[0] == 1:
+                c2 = np.repeat(c2, c1.shape[0], axis=0)
+            else:
+                raise ValueError("fd1 and fd2 must have the same number of samples or fd2 must have one sample.")
+
+        # Compute (c1 - c2) @ M
+        delta = np.dot((c1 - c2), M)  # shape (n_samples, n_basis)
+
+        # Weighted squared norm per sample
+        squared_dists = np.sum(weights * delta**2, axis=1)  # shape (n_samples,)
+
+        return np.sqrt(squared_dists)
 
 
 def basis_based_distance(
     fd1: FDataBasis,
     fd2: FDataBasis,
     weights: Optional[NDArrayFloat] = None,
-) -> float:
+) -> NDArrayFloat:
     r"""
     Computes the distance between two functional data objects represented in the same basis.
 

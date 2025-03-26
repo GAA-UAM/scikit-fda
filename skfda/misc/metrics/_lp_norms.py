@@ -1,4 +1,5 @@
 """Implementation of Lp norms."""
+
 import math
 from builtins import isinstance
 from typing import Union
@@ -13,7 +14,7 @@ from ...typing._numpy import NDArrayFloat
 from ..._utils import nquad_vec
 
 
-class LpNorm():
+class LpNorm:
     r"""
     Norm of all the observations in a FDataGrid object.
 
@@ -99,10 +100,7 @@ class LpNorm():
         self.vector_norm = vector_norm
 
     def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__}("
-            f"p={self.p}, vector_norm={self.vector_norm})"
-        )
+        return f"{type(self).__name__}(" f"p={self.p}, vector_norm={self.vector_norm})"
 
     def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
@@ -137,13 +135,13 @@ class LpNorm():
                     f1 = call(f_args)
 
                 return np.power(np.abs(f1), self.p)
-            
+
             integral = nquad_vec(
                 integrand,
                 domain,
             )
 
-            res = (np.sum(integral, axis=-1))**(1/self.p)
+            res = (np.sum(integral, axis=-1)) ** (1 / self.p)
 
         elif isinstance(vector, FDataGrid):
             data_matrix = vector.data_matrix
@@ -171,7 +169,7 @@ class LpNorm():
             else:
 
                 integrand = vector.copy(
-                    data_matrix=data_matrix ** self.p,
+                    data_matrix=data_matrix**self.p,
                     coordinate_names=(None,),
                 )
                 # Computes the norm, approximating the integral with Simpson's

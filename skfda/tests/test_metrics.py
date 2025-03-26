@@ -50,7 +50,6 @@ class TestLp(unittest.TestCase):
             dtype=float,
         )
 
-
     def test_lp_norm_grid(self) -> None:
         """Test that the Lp norms work with FDataGrid."""
         np.testing.assert_allclose(
@@ -72,7 +71,7 @@ class TestLp(unittest.TestCase):
             linf_norm(self.fd),
             [6, 25],
         )
-    
+
     def test_lp_norm_basis(self) -> None:
         """Test that the L2 norm works with FDataBasis."""
         np.testing.assert_allclose(
@@ -179,13 +178,14 @@ class TestLp(unittest.TestCase):
 
         np.testing.assert_allclose(
             lp_norm(self.array, p=3),
-            [ 7.60590492, 27.37519199],
+            [7.60590492, 27.37519199],
         )
 
         np.testing.assert_allclose(
             linf_norm(self.array),
-            [ 6, 25],
+            [6, 25],
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

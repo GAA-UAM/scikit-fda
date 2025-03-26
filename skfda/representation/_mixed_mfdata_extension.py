@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 from math import ceil, sqrt
 
 
-@pd.api.extensions.register_dataframe_accessor("mfdata")
-class MFdataAccessor:
+@pd.api.extensions.register_dataframe_accessor("mxdata")
+class MixedDataAccessor:
     def __init__(self, pandas_obj: pd.DataFrame) -> None:
         self._obj = pandas_obj
 

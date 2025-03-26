@@ -62,7 +62,7 @@ def center_scale(
     X: FData,
     center: Optional[Callable[[NDArrayFloat], NDArrayFloat]],
     scale: Optional[Callable[[NDArrayFloat], NDArrayFloat]],
-):
+) -> FData:
     pass
 
 

@@ -10,6 +10,7 @@ from typing_extensions import Final
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
+from ..._utils import nquad_vec
 
 
 class LpNorm():
@@ -124,16 +125,25 @@ class LpNorm():
             return np.sqrt(inner_product(vector, vector))
 
         if isinstance(vector, FDataBasis):
-            if self.p != 2:
-                raise NotImplementedError
+            domain = vector.basis.domain_range
+            call = vector
 
-            start, end = vector.domain_range[0]
-            integral = scipy.integrate.quad_vec(
-                lambda x: np.power(np.abs(vector(x)), self.p),
-                start,
-                end,
+            def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+                f_args = np.asarray(args)
+
+                try:
+                    f1 = call(f_args)[:, 0, :]
+                except Exception:
+                    f1 = call(f_args)
+
+                return np.power(np.abs(f1), self.p)
+            
+            integral = nquad_vec(
+                integrand,
+                domain,
             )
-            res = np.sqrt(integral[0]).flatten()
+
+            res = (np.sum(integral, axis=-1))**(1/self.p)
 
         elif isinstance(vector, FDataGrid):
             data_matrix = vector.data_matrix

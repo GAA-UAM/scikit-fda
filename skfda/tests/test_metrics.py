@@ -31,6 +31,7 @@ class TestLp(unittest.TestCase):
         )
         basis = MonomialBasis(n_basis=3, domain_range=(1, 5))
         self.fd_basis = FDataBasis(basis, [[1, 1, 0], [0, 0, 1]])
+        self.fd_grid_in_basis = self.fd.to_basis(MonomialBasis(n_basis=4))
         self.fd_vector_valued = self.fd.concatenate(
             self.fd,
             as_coordinates=True,
@@ -40,6 +41,15 @@ class TestLp(unittest.TestCase):
             dim_domain=2,
             random_state=0,
         )
+
+        self.array = np.array(
+            [
+                [2, 3, 4, 5, 6],
+                [1, 4, 9, 16, 25],
+            ],
+            dtype=float,
+        )
+
 
     def test_lp_norm_grid(self) -> None:
         """Test that the Lp norms work with FDataGrid."""
@@ -62,12 +72,32 @@ class TestLp(unittest.TestCase):
             linf_norm(self.fd),
             [6, 25],
         )
-
+    
     def test_lp_norm_basis(self) -> None:
         """Test that the L2 norm works with FDataBasis."""
         np.testing.assert_allclose(
             l2_norm(self.fd_basis),
             [8.326664, 24.996],
+        )
+
+    def test_lp_norm_basis_equivalent(self) -> None:
+        """Test that the Lp norms in basis are similar to FDataGrid"""
+        np.testing.assert_allclose(
+            l1_norm(self.fd_grid_in_basis),
+            [16.0, 41.33333333],
+            rtol=1e-2,
+        )
+
+        np.testing.assert_allclose(
+            l2_norm(self.fd_grid_in_basis),
+            [8.326664, 25.006666],
+            rtol=1e-2,
+        )
+
+        np.testing.assert_allclose(
+            lp_norm(self.fd_grid_in_basis, p=3),
+            [6.839904, 22.401268],
+            rtol=1e-2,
         )
 
     def test_lp_norm_vector_valued(self) -> None:
@@ -136,6 +166,26 @@ class TestLp(unittest.TestCase):
         with np.testing.assert_raises(ValueError):
             l2_distance(self.fd, fd2)
 
+    def test_lp_array(self) -> None:
+        """Test that the Lp norms work with arrays."""
+        np.testing.assert_allclose(
+            l1_norm(self.array),
+            [20, 55],
+        )
+        np.testing.assert_allclose(
+            l2_norm(self.array),
+            [9.48683298, 31.28897569],
+        )
+
+        np.testing.assert_allclose(
+            lp_norm(self.array, p=3),
+            [ 7.60590492, 27.37519199],
+        )
+
+        np.testing.assert_allclose(
+            linf_norm(self.array),
+            [ 6, 25],
+        )
 
 if __name__ == '__main__':
     unittest.main()

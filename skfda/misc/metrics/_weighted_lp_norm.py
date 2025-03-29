@@ -7,7 +7,7 @@ from typing import Union
 import numpy as np
 import scipy.integrate # type: ignore[import-untyped]
 from typing_extensions import Final
-from typing import Union, Callable
+from typing import Callable
 
 
 from ...representation import FData, FDataBasis, FDataGrid

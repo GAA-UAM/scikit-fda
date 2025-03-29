@@ -924,9 +924,16 @@ def root_mean_squared_error(
 @root_mean_squared_error.register
 def _(y_true: np.ndarray, y_pred: np.ndarray, *, sample_weight=None, multioutput: MultiOutputType = "uniform_average"):
     """For the NumPy array."""
-    return sklearn.metrics.root_mean_squared_error(
-        y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput
-    )
+    try:
+        #We try to use the function if available in scikit-learn
+        return sklearn.metrics.root_mean_squared_error(
+            y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput
+        )
+    except AttributeError:
+        # Fallback for older scikit-learn versions
+        return np.sqrt(sklearn.metrics.mean_squared_error(
+            y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput
+        ))
 
 @root_mean_squared_error.register
 def _(y_true: FData, y_pred: FData, *, sample_weight=None, multioutput="uniform_average"):
@@ -1184,12 +1191,22 @@ def root_mean_squared_log_error(
     Returns:
         Root mean squared logarithmic error.
     """
-    return sklearn.metrics.root_mean_squared_log_error(
-        y_true,
-        y_pred,
-        sample_weight=sample_weight,
-        multioutput=multioutput,
-    )
+    try:
+        #We try to use the function if available in scikit-learn
+        return sklearn.metrics.root_mean_squared_log_error(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+        )
+    except AttributeError:
+        # Fallback for older sklearn versions that don't have root_mean_squared_log_error
+        return np.sqrt(sklearn.metrics.mean_squared_log_error(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+        ))
 
 @root_mean_squared_log_error.register  # type: ignore[attr-defined, misc]
 def _root_mean_squared_log_error_fdatagrid(

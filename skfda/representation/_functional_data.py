@@ -90,6 +90,9 @@ class FData(  # noqa: WPS214
         self.coordinate_names = coordinate_names  # type: ignore[assignment]
         self.sample_names = sample_names  # type: ignore[assignment]
 
+        self.input_names = argument_names
+        self.output_names = coordinate_names
+
     @override
     @property
     def array_backend(self) -> Any:
@@ -185,11 +188,6 @@ class FData(  # noqa: WPS214
     def input_shape(self) -> tuple[int, ...]:
         return (self.dim_domain,)
 
-    @override
-    @property
-    def input_names(self) -> InputNames:
-        return np.array(self.argument_names, dtype=np.dtypes.StringDType())
-
     @property
     @abstractmethod
     def dim_codomain(self) -> int:
@@ -205,11 +203,6 @@ class FData(  # noqa: WPS214
     def output_shape(self) -> tuple[int, ...]:
         return (self.dim_codomain,)
 
-    @override
-    @property
-    def output_names(self) -> OutputNames:
-        return np.array(self.coordinate_names, dtype=np.dtypes.StringDType())
-
     @property
     @abstractmethod
     def domain_range(self) -> DomainRange:
@@ -219,14 +212,6 @@ class FData(  # noqa: WPS214
             List of tuples with the ranges for each domain dimension.
         """
         pass
-
-    @override
-    @property
-    def domain(self) -> Region[A]:
-        lower = self.array_backend.asarray([d[0] for d in self.domain_range])
-        upper = self.array_backend.asarray([d[1] for d in self.domain_range])
-
-        return AxisAlignedBox(lower, upper)
 
     @abstractmethod
     def derivative(self, *, order: int = 1) -> Self:

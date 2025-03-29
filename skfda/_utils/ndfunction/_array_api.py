@@ -21,6 +21,7 @@ A = TypeVar("A", bound=Array[Shape, DType])
 ArrayLike: TypeAlias = np.typing.ArrayLike
 
 numpy_namespace = array_api_compat.numpy
+ArrayNamespace: TypeAlias[A] = Any
 
 
 class NestedArray(Protocol[A]):  # type: ignore [misc]
@@ -46,9 +47,11 @@ class NestedArray(Protocol[A]):  # type: ignore [misc]
 
 
 def array_namespace(
-    *args: Array[Shape, DType] | NestedArray[Array[Shape, DType]],
-) -> Any:
-    return array_api_compat.array_namespace(*args)
+    *args: A | NestedArray[A],
+) -> ArrayNamespace[A]:
+    return (  # type: ignore [no-any-return]
+        array_api_compat.array_namespace(*args)
+    )
 
 
 def is_array_api_obj(

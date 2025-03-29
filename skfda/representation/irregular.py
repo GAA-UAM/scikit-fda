@@ -15,8 +15,10 @@ import numpy as np
 import pandas.api.extensions
 import scipy
 from matplotlib.figure import Figure
+from typing_extensions import override
 
 from .._utils import _check_array_key
+from .._utils.ndfunction._region import AxisAlignedBox, Region
 from .._utils.ndfunction.evaluator import Evaluator
 from .._utils.ndfunction.utils import cartesian_product
 from .._utils.ndfunction.utils.validation import check_grid_points
@@ -328,6 +330,14 @@ class FDataIrregular(FData):  # noqa: WPS214
             coordinate_names=coordinate_names,
             sample_names=sample_names,
         )
+
+    @override
+    @property
+    def domain(self) -> Region[A]:
+        lower = self.array_backend.asarray([d[0] for d in self.domain_range])
+        upper = self.array_backend.asarray([d[1] for d in self.domain_range])
+
+        return AxisAlignedBox(lower, upper)
 
     @classmethod
     def _from_dataframe(

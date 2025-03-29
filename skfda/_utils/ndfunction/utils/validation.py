@@ -14,6 +14,7 @@ from .._array_api import (
     is_array_api_obj,
     is_nested_array,
 )
+from .._region import AxisAlignedBox, Region
 
 if TYPE_CHECKING:
     from ..typing import (
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
         InputNamesLike,
         OutputNames,
         OutputNamesLike,
+        RegionLike,
         _FunctionNames,
         _FunctionNamesLike,
     )
@@ -187,7 +189,7 @@ def check_array_namespace(
 
 def _check_function_names(
     names: _FunctionNamesLike,
-    shape: Shape,
+    shape: tuple[int, ...],
     names_type: Literal["input", "output"],
 ) -> _FunctionNames:
     """
@@ -205,11 +207,15 @@ def _check_function_names(
         The string array containing the names.
 
     """
-    dtype = np.dtypes.StringDType(na_object=np.nan)
+    # TODO: Change when https://github.com/numpy/numpy/issues/28609 is fixed.
+    # dtype = np.dtypes.StringDType(na_object=np.nan)
+    # default_value = np.nan
+    dtype = np.str_
+    default_value = ""
     if isinstance(names, np.ndarray):
         names = names.astype(dtype)
     else:
-        old_names = np.nan if names is None else names
+        old_names = default_value if names is None else names
         names = np.array(old_names, dtype=dtype)
 
     # Check that it can be broadcasted
@@ -225,7 +231,7 @@ def _check_function_names(
 
 def check_input_names(
     names: InputNamesLike,
-    shape: Shape,
+    shape: tuple[int, ...],
 ) -> InputNames:
     """
     Convert to proper input names.
@@ -250,7 +256,7 @@ def check_input_names(
 
 def check_output_names(
     names: OutputNamesLike,
-    shape: Shape,
+    shape: tuple[int, ...],
 ) -> OutputNames:
     """
     Convert to proper output names.
@@ -271,3 +277,32 @@ def check_output_names(
         shape=shape,
         names_type="output",
     )
+
+
+def check_region(
+    region: RegionLike[A],
+) -> Region[A]:
+    """
+    Convert to a proper region.
+
+    Args:
+        region: The value to convert to a region. If it is already a region,
+            it is checked and returned. Otherwise, the input needs to be a
+            tuple of two arrays.
+
+    Returns:
+        A valid region object with the desired shape and array type.
+
+    """
+    match region:
+        case (lower, upper):
+            return AxisAlignedBox(lower=lower, upper=upper)
+        case _:
+            if not isinstance(region, Region):
+                msg = (
+                    f"Expected an instance of an object that follows the "
+                    f"Region protocol. Got {type(region)} instead."
+                )
+                raise TypeError(msg)
+
+            return region

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Protocol, TypeVar
+from typing import Protocol, TypeVar, runtime_checkable
 
 from array_api_compat import array_namespace
 from typing_extensions import override
@@ -9,6 +9,7 @@ from ._array_api import Array, DType, Shape
 A = TypeVar("A", bound=Array[Shape, DType])
 
 
+@runtime_checkable
 class Region(Protocol[A]):
     """
     Protocol for regions of points.
@@ -65,7 +66,12 @@ class AxisAlignedBox(Region[A]):
     ) -> None:
         # If we want to allow broadcastable arrays we can do so in the future.
         # For now, they have to had the same dimensions as the points.
-        assert lower.shape == upper.shape
+        if lower.shape != upper.shape:
+            msg = (
+                f"The shape of lower ({lower.shape}) and upper "
+                f"({upper.shape}) bounds does not match."
+            )
+            raise ValueError(msg)
         self.lower = lower
         self.upper = upper
 

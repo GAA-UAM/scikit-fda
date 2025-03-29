@@ -1,17 +1,20 @@
 """Implementation of functions discretized in a grid of values."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence, TypeVar, overload
+from functools import cached_property
+import math
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Mapping, TypeVar, overload
 
-import pandas
+import numpy as np
+import pandas as pd
+from typing_extensions import override
 
-from ....typing._base import LabelTupleLike
-from .._array_api import Array, DType, Shape
+from .._array_api import Array, DType, Shape, array_namespace, ArrayNamespace
 from .._ndfunction import NDFunction
-from .._region import Region
-from ..evaluator import Evaluator
-from ..extrapolation import AcceptedExtrapolation, ExtrapolationLike
 from ..interpolation import SplineInterpolation
+from ..utils.validation import check_grid_points, check_region
+from .._region import AxisAlignedBox
 
 """Discretized functional data module.
 
@@ -22,11 +25,173 @@ list of discretization points.
 """
 
 if TYPE_CHECKING:
-    from ..typing import GridPointsLike, InputNamesLike, OutputNamesLike, InputNames, OutputNames
+
+    from ....typing._base import LabelTupleLike
+    from .._region import Region
+    from ..evaluator import Evaluator
+    from ..extrapolation import AcceptedExtrapolation, ExtrapolationLike
+    from ..typing import (
+        GridPoints,
+        GridPointsLike,
+        InputNamesLike,
+        OutputNamesLike,
+    )
     from .basis import Basis, FDataBasis
 
-A = TypeVar('A', bound=Array[Shape, DType])
-T = TypeVar("T", bound='GridDiscretizedFunction')
+A = TypeVar("A", bound=Array[Shape, DType])
+T = TypeVar("T", bound="GridDiscretizedFunction")
+
+
+def _infer_shapes(
+    shape: tuple[int, ...] | None = None,
+    input_shape: tuple[int, ...] | None = None,
+    output_shape: tuple[int, ...] | None = None,
+    *,
+    grid_values_shape: tuple[int, ...],
+    grid_points_shape: tuple[int, ...] | None = None,
+    domain_shape: tuple[int, ...] | None = None,
+) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
+    """
+    Infer the correct shapes from the supplied parameters.
+
+    Infers the values of ``shape``, ``input_shape`` and ``output_shape`` from
+    the remaining arguments.
+
+    Args:
+        shape: The shape of the array of functions, if present.
+        input_shape: The input shape of the functions, if present.
+        output_shape: The output shape of the functions, if present.
+        grid_values_shape: Shape of the grid values.
+        grid_points_shape: Shape of the grid points, if passed.
+        domain_shape: Shape of the domain, if passed.
+
+    Returns:
+        Inferred ``shape``, ``input_shape`` and ``output_shape``, in that
+        order.
+
+    Examples:
+        If everything is present, it should be returned as is:
+
+        >>> _infer_shapes(
+        ...     shape=(3, 4),
+        ...     input_shape=(2, 2),
+        ...     output_shape=(5, 6, 7),
+        ...     grid_values_shape=(3, 4, 10, 11, 12, 13, 5, 6, 7),
+        ... )
+        ((3, 4), (2, 2), (5, 6, 7))
+
+        Infer shape from the other two and the grid values:
+
+        >>> _infer_shapes(
+        ...     input_shape=(2, 2),
+        ...     output_shape=(5, 6, 7),
+        ...     grid_values_shape=(3, 4, 10, 11, 12, 13, 5, 6, 7),
+        ... )
+        ((3, 4), (2, 2), (5, 6, 7))
+
+        Infer output shape from the other two and the grid values:
+
+        >>> _infer_shapes(
+        ...     shape=(3, 4),
+        ...     input_shape=(2, 2),
+        ...     grid_values_shape=(3, 4, 10, 11, 12, 13, 5, 6, 7),
+        ... )
+        ((3, 4), (2, 2), (5, 6, 7))
+
+        Infer (raveled) input shape from the other two and the grid values:
+
+        >>> _infer_shapes(
+        ...     shape=(3, 4),
+        ...     output_shape=(5, 6, 7),
+        ...     grid_values_shape=(3, 4, 10, 11, 12, 13, 5, 6, 7),
+        ... )
+        ((3, 4), (4,), (5, 6, 7))
+
+        Infer input shape from the grid points:
+
+        >>> _infer_shapes(
+        ...     shape=(3, 4),
+        ...     output_shape=(5, 6, 7),
+        ...     grid_values_shape=(3, 4, 10, 11, 12, 13, 5, 6, 7),
+        ...     grid_points_shape=(2, 2),
+        ... )
+        ((3, 4), (2, 2), (5, 6, 7))
+
+        Infer input shape from the domain:
+
+        >>> _infer_shapes(
+        ...     shape=(3, 4),
+        ...     output_shape=(5, 6, 7),
+        ...     grid_values_shape=(3, 4, 10, 11, 12, 13, 5, 6, 7),
+        ...     domain_shape=(2, 2),
+        ... )
+        ((3, 4), (2, 2), (5, 6, 7))
+
+        Infer one scalar-valued function when not enough info is given:
+
+        >>> _infer_shapes(
+        ...     grid_values_shape=(3, 4, 10, 11, 12, 13, 5, 6, 7),
+        ... )
+        ((), (9,), ())
+
+    """
+    # First we will try to infer the shapes (shape, input shape and
+    # output shape, given all available information).
+
+    # Try to infer input shape, if None.
+    if input_shape is None:
+
+        # Infer from grid points.
+        if grid_points_shape is not None:
+            input_shape = grid_points_shape
+
+        # Infer from domain.
+        elif domain_shape is not None:
+            input_shape = domain_shape
+
+        # Infer from remaining shapes, falling back to default values
+        # if there is no other choice.
+        else:
+            # We do not have enough info, unless the other two are defined.
+            # We will assume by default one function, scalar response, and
+            # vector input.
+            if shape is None:
+                shape = ()
+
+            if output_shape is None:
+                output_shape = ()
+
+            input_shape = (
+                len(grid_values_shape)  # Assume vector (raveled) shape.
+                - len(shape)  # If shape is present, it matches the left part.
+                - len(output_shape),  # If output_shape is present, it matches
+                                      # the right part.
+            )
+
+    # We have the input shape. We can deduce the shape from the output
+    # shape or vice versa.
+    match (shape, output_shape):
+        case (None, None):
+            # Not enough info. Let's assume both are one and roll with
+            # it.
+            shape = ()
+            output_shape = ()
+        case (None, _):
+            # Last dimensions of grid values must be raveled input and
+            # output shape. So, shape must be the remaining first ones.
+            last_index = - math.prod(input_shape) - len(output_shape)
+            shape = grid_values_shape[:last_index]
+        case (_, None):
+            # First dimensions of grid values must be shape and raveled
+            # input. So, output shape must be the remaining last ones.
+            first_index = len(shape) + math.prod(input_shape)
+            output_shape = grid_values_shape[first_index:]
+
+        case _:
+            # Nothing left to infer.
+            pass
+
+    return shape, input_shape, output_shape
 
 
 class GridDiscretizedFunction(NDFunction[A]):  # noqa: WPS214
@@ -88,7 +253,7 @@ class GridDiscretizedFunction(NDFunction[A]):  # noqa: WPS214
         >>> FDataGrid(np.array([1,2,4,5,8]), np.arange(6))
         Traceback (most recent call last):
             ....
-        ValueError: Incorrect dimension in data_matrix and grid_points...
+        ValueError: The number of grid points for each dimension...
 
 
         FDataGrid support higher dimensional data both in the domain and image.
@@ -118,78 +283,177 @@ class GridDiscretizedFunction(NDFunction[A]):  # noqa: WPS214
         grid_points: GridPointsLike[A] | None = None,
         *,
         domain: Region[A] | None = None,
-        dataset_name: str | None = None,
-        input_names: LabelTupleLike | None = None,
-        output_names: LabelTupleLike | None = None,
-        sample_names: LabelTupleLike | None = None,
+        input_names: InputNamesLike = None,
+        output_names: OutputNamesLike = None,
         extrapolation: ExtrapolationLike[A] | None = None,
         interpolation: Evaluator[A] | None = None,
+        shape: tuple[int, ...] | None = None,
+        input_shape: tuple[int, ...] | None = None,
+        output_shape: tuple[int, ...] | None = None,
     ):
-        self.values = values
+        self.grid_values = grid_values
 
-        from ..misc.validation import validate_domain_range
+        if domain is not None:
+            domain = check_region(domain)
+
+        if grid_points is not None:
+            grid_points = check_grid_points(grid_points)
+
+        shape, input_shape, output_shape = _infer_shapes(
+            shape=shape,
+            input_shape=input_shape,
+            output_shape=output_shape,
+            grid_values_shape=grid_values.shape,
+            grid_points_shape=(
+                None
+                if grid_points is None
+                else grid_points.shape
+            ),
+            domain_shape=(
+                None
+                if domain is None
+                else domain.bounding_box[0].shape
+            ),
+        )
+
+        # Check that grid_values start with the given shape.
+        middle_part_index = len(shape)
+        if grid_values.shape[:middle_part_index] != shape:
+            msg = (
+                f"The grid values shape ({grid_values.shape}) is not "
+                f"compatible with the given shape ({shape}). All dimensions "
+                f"starting from the left should match exactly."
+            )
+            raise ValueError(msg)
+
+        # Check that grid_values end with the given output_shape.
+        output_shape_index = len(grid_values.shape) - len(output_shape)
+        if grid_values.shape[output_shape_index:] != output_shape:
+            msg = (
+                f"The grid values shape ({grid_values.shape}) is not "
+                f"compatible with the given output shape ({output_shape}). "
+                f"All dimensions starting from the right should match exactly."
+            )
+            raise ValueError(msg)
+
+        # Check that grid_values have a shape with the raveled input shape
+        # length in the middle.
+        middle_shape = grid_values.shape[middle_part_index:output_shape_index]
+        raveled_input_shape_len = math.prod(input_shape)
+        if len(middle_shape) != raveled_input_shape_len:
+            msg = (
+                f"The grid values shape ({grid_values.shape}) is not "
+                f"compatible with the given input shape ({input_shape}). "
+                f"The middle part of the grid values shape ({middle_shape}) "
+                f"should have the same length as the raveled input "
+                f"({raveled_input_shape_len})."
+            )
+            raise ValueError(msg)
+
+        if domain is None:
+            if grid_points is None:
+                # Set the domain as the unit square.
+                lower = self.array_backend.zeros(shape=input_shape)
+                upper = self.array_backend.ones(shape=input_shape)
+            else:
+                # Set the domain as the bounding box of the grid points.
+                lower = np.vectorize(self.array_backend.min)(grid_points)
+                upper = np.vectorize(self.array_backend.max)(grid_points)
+
+            domain = AxisAlignedBox(lower=lower, upper=upper)
+        else:
+            # Check that the provided domain shape is correct.
+            lower, upper = domain.bounding_box
+            if lower.shape != input_shape:
+                msg = (
+                    f"The shape of the domain ({lower.shape}) does not match "
+                    f"the shape of the input ({input_shape})."
+                )
+                raise ValueError(msg)
 
         if grid_points is None:
-            self.grid_points = check_grid_points([
-                np.linspace(0, 1, self.data_matrix.shape[i])
-                for i in range(1, self.data_matrix.ndim)
-            ])
+            # Create equispaced gridpoints in the domain, with the number of
+            # points according to the shape of the grid values.
+            grid_points_num = self.array_backend.reshape(
+                self.array_backend.asarray(middle_shape),
+                shape=input_shape,
+            )
+            lower, upper = domain.bounding_box
 
+            grid_points = np.vectorize(
+                self.array_backend.linspace,
+                otypes=(np.object_,),
+            )(lower, upper, grid_points_num)
         else:
-            # Check that the dimension of the data matches the grid_points
-            # list
+            # Check that the grid points shapes and lengths match their
+            # intended values, and that they are in the domain.
+            if grid_points.shape != input_shape:
+                msg = (
+                    f"The shape of the grid points ({grid_points.shape}) does "
+                    f"not match the input shape ({input_shape})."
+                )
+                raise ValueError(msg)
 
-            self.grid_points = check_grid_points(grid_points).reshape(-1)
+            grid_points_num = np.vectorize(len)(grid_points)
+            grid_values_num = np.reshape(middle_shape, shape=input_shape)
+            if not np.all(grid_points_num == grid_values_num):
+                msg = (
+                    f"The number of grid points for each dimension "
+                    f"({grid_points_num}) does not match the number of values "
+                    f"provided for each dimension ({grid_values_num})."
+                )
+                raise ValueError(msg)
 
-            data_shape = self.data_matrix.shape[1: 1 + self.dim_domain]
-            grid_points_shape = [len(i) for i in self.grid_points]
+            lower, upper = domain.bounding_box
 
-            if not np.array_equal(data_shape, grid_points_shape):
+            # Set the domain as the bounding box of the grid points.
+            # TODO: Should we disallow this (or make it even more strict)?
+            min_grid_points = np.vectorize(self.array_backend.min)(grid_points)
+            max_grid_points = np.vectorize(self.array_backend.max)(grid_points)
+
+            points_outside = self.array_backend.any(
+                (min_grid_points < lower)
+                | (max_grid_points > upper),
+            )
+            if points_outside:
                 raise ValueError(
-                    f"Incorrect dimension in data_matrix and "
-                    f"grid_points. Data has shape {data_shape} and grid "
-                    f"points have shape {grid_points_shape}",
+                    f"There are grid points outside the domain's bounding box "
+                    f"({lower}, {upper})."
                 )
 
-        self._sample_range = tuple(
-            (s[0], s[-1]) for s in self.grid_points
-        )
+        self._shape = shape
+        self._input_shape = input_shape
+        self._output_shape = output_shape
+        self.grid_points = grid_points
+        self._domain = domain
+        self.interpolation = interpolation
 
-        if domain_range is None:
-            domain_range = self.sample_range
-            # Default value for domain_range is a list of tuples with
-            # the first and last element of each list of the grid_points.
-
-        self._domain_range = validate_domain_range(domain_range)
-
-        if len(self._domain_range) != self.dim_domain:
-            raise ValueError("Incorrect shape of domain_range.")
-
-        for domain_range, grid_points in zip(
-            self._domain_range,
-            self.grid_points,
-        ):
-            if (
-                domain_range[0] > grid_points[0]
-                or domain_range[-1] < grid_points[-1]
-            ):
-                raise ValueError(
-                    "Grid points must be within the domain range.",
-                )
-
-        # Adjust the data matrix if the dimension of the image is one
-        if self.data_matrix.ndim == 1 + self.dim_domain:
-            self.data_matrix = self.data_matrix[..., np.newaxis]
-
-        self.interpolation = interpolation  # type: ignore[assignment]
-
+        # We check this at the end because we do not know the shape before.
         super().__init__(
             extrapolation=extrapolation,
-            dataset_name=dataset_name,
-            argument_names=argument_names,
-            coordinate_names=coordinate_names,
-            sample_names=sample_names,
+            input_names=input_names,
+            output_names=output_names,
         )
+
+    @override
+    @cached_property
+    def array_backend(self) -> ArrayNamespace[A]:
+        return array_namespace(self.grid_values)
+    
+    @override
+    @property
+    def shape(self) -> tuple[int, ...]:
+        return self._shape
+
+    @override
+    @property
+    def input_shape(self) -> tuple[int, ...]:
+        return self._input_shape
+
+    @override
+    @property
+    def output_shape(self) -> tuple[int, ...]:
+        return self._output_shape
 
     def round(  # noqa: WPS125
         self,
@@ -328,18 +592,6 @@ class GridDiscretizedFunction(NDFunction[A]):  # noqa: WPS214
 
         """
         return self.data_matrix.shape[0]
-
-    @property
-    def sample_range(self) -> DomainRange:
-        """
-        Return the sample range of the function.
-
-        This contains the minimum and maximum values of the grid points in
-        each dimension.
-
-        It does not have to be equal to the `domain_range`.
-        """
-        return self._sample_range
 
     @property
     def domain_range(self) -> DomainRange:
@@ -1455,14 +1707,14 @@ class GridDiscretizedFunction(NDFunction[A]):  # noqa: WPS214
 
 
 class GridDiscretizedFunctionDType(
-    pandas.api.extensions.ExtensionDtype,  # type: ignore[misc]
+    pd.api.extensions.ExtensionDtype,  # type: ignore[misc]
 ):
     """DType corresponding to FDataGrid in Pandas."""
 
     name = 'GridDiscretizedFunction'
     kind = 'O'
     type = GridDiscretizedFunction  # noqa: WPS125
-    na_value = pandas.NA
+    na_value = pd.NA
 
     def __init__(
         self,

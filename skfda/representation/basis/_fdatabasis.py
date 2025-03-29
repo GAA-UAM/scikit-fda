@@ -19,8 +19,10 @@ from typing import (
 
 import numpy as np
 import pandas.api.extensions
+from typing_extensions import override
 
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
+from ..._utils.ndfunction._region import AxisAlignedBox, Region
 from ..._utils.ndfunction.extrapolation import ExtrapolationLike
 from ..._utils.ndfunction.utils._points import input_points_batch_shape
 from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
@@ -113,6 +115,14 @@ class FDataBasis(FData):  # noqa: WPS214
             coordinate_names=coordinate_names,
             sample_names=sample_names,
         )
+
+    @override
+    @property
+    def domain(self) -> Region[A]:
+        lower = self.array_backend.asarray([d[0] for d in self.domain_range])
+        upper = self.array_backend.asarray([d[1] for d in self.domain_range])
+
+        return AxisAlignedBox(lower, upper)
 
     @classmethod
     def from_data(

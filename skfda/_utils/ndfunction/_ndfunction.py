@@ -23,7 +23,7 @@ from typing import (
 
 from typing_extensions import Self
 
-from ._array_api import Array, DType, Shape, array_namespace
+from ._array_api import Array, ArrayNamespace, DType, Shape, array_namespace
 from .extrapolation import (
     AcceptedExtrapolation,
     ExtrapolationLike,
@@ -83,8 +83,8 @@ class NDFunction(Protocol[A]):
         self,
         *,
         extrapolation: ExtrapolationLike[A] | None = None,
-        input_names: InputNamesLike,
-        output_names: OutputNamesLike,
+        input_names: InputNamesLike = None,
+        output_names: OutputNamesLike = None,
     ) -> None:
 
         self.extrapolation = extrapolation  # type: ignore[assignment]
@@ -93,7 +93,7 @@ class NDFunction(Protocol[A]):
 
     @property
     @abstractmethod
-    def array_backend(self) -> Any:
+    def array_backend(self) -> ArrayNamespace[A]:
         """
         Return the array backend used.
 
@@ -140,7 +140,6 @@ class NDFunction(Protocol[A]):
         """
 
     @property
-    @abstractmethod
     def input_names(self) -> InputNames:
         """
         Names of the input elements.
@@ -148,6 +147,9 @@ class NDFunction(Protocol[A]):
         It is a string array broadcastable to the input shape.
 
         """
+        return (  # type: ignore [no-any-return]
+            self._input_names  # type: ignore [attr-defined]
+        )
 
     @input_names.setter
     def input_names(
@@ -178,7 +180,6 @@ class NDFunction(Protocol[A]):
         """
 
     @property
-    @abstractmethod
     def output_names(self) -> OutputNames:
         """
         Names of the output elements.
@@ -186,6 +187,9 @@ class NDFunction(Protocol[A]):
         It is a string array broadcastable to the output shape.
 
         """
+        return (  # type: ignore [no-any-return]
+            self._output_names  # type: ignore [attr-defined]
+        )
 
     @output_names.setter
     def output_names(

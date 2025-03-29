@@ -30,29 +30,34 @@ import numpy as np
 import pandas.api.extensions
 import scipy.integrate
 import scipy.stats.mstats
-from matplotlib.figure import Figure
+from typing_extensions import override
 
 from .._utils import _check_array_key, _int_to_real, constants
+from .._utils.ndfunction._array_api import is_array_api_obj
 from .._utils.ndfunction._grid import GridDiscretizedFunction
-from .._utils.ndfunction.evaluator import Evaluator
 from .._utils.ndfunction.extrapolation import ExtrapolationLike
 from .._utils.ndfunction.utils import cartesian_product, grid_points_equal
 from .._utils.ndfunction.utils.validation import check_grid_points
-from ..typing._base import (
-    DomainRange,
-    DomainRangeLike,
-    GridPoints,
-    GridPointsLike,
-    LabelTupleLike,
-)
-from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from ._functional_data import FData
 from .interpolation import SplineInterpolation
 
 if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
+    from .._utils.ndfunction._region import Region
+    from .._utils.ndfunction.evaluator import Evaluator
+    from .._utils.ndfunction.typing import InputNamesLike, OutputNamesLike
+    from ..typing._base import (
+        DomainRange,
+        DomainRangeLike,
+        GridPoints,
+        GridPointsLike,
+        LabelTupleLike,
+    )
+    from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
     from .basis import Basis, FDataBasis
 
-T = TypeVar("T", bound='FDataGrid')
+T = TypeVar("T", bound="FDataGrid")
 
 
 AcceptedExtrapolation = Union[ExtrapolationLike, None, Literal["default"]]
@@ -111,7 +116,7 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         >>> FDataGrid(np.array([1,2,4,5,8]), np.arange(6))
         Traceback (most recent call last):
             ....
-        ValueError: Incorrect dimension in data_matrix and grid_points...
+        ValueError: The number of grid points for each dimension...
 
 
         FDataGrid support higher dimensional data both in the domain and image.
@@ -137,12 +142,14 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
 
     def __init__(  # noqa: WPS211
         self,
-        data_matrix: ArrayLike,
+        grid_values: ArrayLike | None = None,
         grid_points: Optional[GridPointsLike] = None,
         *,
-        sample_points: Optional[GridPointsLike] = None,
+        data_matrix: ArrayLike | None = None,
         domain_range: Optional[DomainRangeLike] = None,
         dataset_name: Optional[str] = None,
+        input_names: InputNamesLike = None,
+        output_names: OutputNamesLike = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
@@ -152,13 +159,79 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         """Construct a FDataGrid object."""
         from ..misc.validation import validate_domain_range
 
-        if sample_points is not None:
-            warnings.warn(
-                "Parameter sample_points is deprecated. Use the "
-                "parameter grid_points instead.",
-                DeprecationWarning,
+        # Exactly one of these must be not None.
+        assert (grid_values is None) == (not (data_matrix is None))
+        if grid_values is None:
+            grid_values = data_matrix
+
+        # Grid values are floating, for backwards compatibility.
+        grid_values = np.asarray(grid_values, dtype=np.float64)
+
+        if input_names is None:
+            input_names = argument_names
+
+        if output_names is None:
+            output_names = coordinate_names
+
+        if not is_array_api_obj(grid_values):
+            grid_values = np.asarray(grid_values)
+
+        # Add for backwards compatibility:
+        #     - Shape dim, if not present.
+        #     - Input dim in grid points, if not present.
+        #     - Output dim, if not present.
+        if grid_values.ndim == 1:
+            grid_values = np.reshape(
+                grid_values,
+                shape=(1, *grid_values.shape),
             )
-            grid_points = sample_points
+
+        if grid_points is not None:
+            grid_points = check_grid_points(grid_points)
+            if grid_points.shape == ():
+                grid_points = np.reshape(grid_points, (1,))
+
+        add_output_dim = (
+            grid_points is None
+            or len(grid_values.shape) == grid_points.size + 1
+        )
+        if add_output_dim:
+            grid_values = np.reshape(
+                grid_values,
+                shape=(*grid_values.shape, 1),
+            )
+
+        domain = (
+            None
+            if domain_range is None
+            else tuple(np.asarray(validate_domain_range(domain_range)).T)
+        )
+
+        GridDiscretizedFunction.__init__(
+            self,
+            grid_values=grid_values,
+            grid_points=grid_points,
+            domain=domain,
+            input_names=input_names,
+            output_names=output_names,
+            extrapolation=extrapolation,
+            interpolation=interpolation,
+            shape=grid_values.shape[:1],
+            output_shape=grid_values.shape[-1:],
+        )
+
+        FData.__init__(
+            self,
+            extrapolation=extrapolation,
+            dataset_name=dataset_name,
+            argument_names=argument_names,
+            coordinate_names=coordinate_names,
+            sample_names=sample_names,
+        )
+
+        return
+
+        from ..misc.validation import validate_domain_range
 
         self.data_matrix = _int_to_real(np.atleast_2d(data_matrix))
 
@@ -224,6 +297,19 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
             sample_names=sample_names,
         )
 
+    @override
+    @property
+    def domain(self) -> Region[A]:
+        return self._domain
+
+    @property
+    def data_matrix(self):
+        return self.grid_values
+    
+    @data_matrix.setter
+    def data_matrix(self, value):
+        self.grid_values = value
+
     def round(  # noqa: WPS125
         self,
         decimals: int = 0,
@@ -267,15 +353,6 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         )
 
         return self.copy(data_matrix=data_matrix) if out is None else out
-
-    @property
-    def sample_points(self) -> GridPoints:
-        warnings.warn(
-            "Parameter sample_points is deprecated. Use the "
-            "parameter grid_points instead.",
-            DeprecationWarning,
-        )
-        return self.grid_points
 
     @property
     def dim_domain(self) -> int:
@@ -372,7 +449,10 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
 
         It does not have to be equal to the `domain_range`.
         """
-        return self._sample_range
+        min_array = np.vectorize(np.min)(self.grid_points)
+        max_array = np.vectorize(np.max)(self.grid_points)
+
+        return tuple(zip(min_array.ravel(), max_array.ravel(), strict=True))
 
     @property
     def domain_range(self) -> DomainRange:
@@ -382,7 +462,10 @@ class FDataGrid(FData, GridDiscretizedFunction):  # noqa: WPS214
         It does not have to be equal to the `sample_range`.
 
         """
-        return self._domain_range
+        return tuple(
+            (float(d[0]), float(d[1]))
+            for d in np.stack(self.domain.bounding_box).T
+        )
 
     @property
     def interpolation(self) -> Evaluator:

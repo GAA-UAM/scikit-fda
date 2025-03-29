@@ -834,7 +834,45 @@ def _mean_squared_error_fdatabasis(
         return error[0]  # type: ignore [no-any-return]
 
     return _multioutput_score_basis(y_true, multioutput, _mse_func)
+@overload
+def root_mean_squared_error(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    sample_weight: np.ndarray | None = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    pass  # noqa: WPS428
 
+@overload
+def root_mean_squared_error(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    sample_weight: np.ndarray | None = None,
+    multioutput: Literal['raw_values'],
+) -> np.ndarray:
+    pass  # noqa: WPS428
+
+@overload
+def root_mean_squared_error(
+    y_true: FData,
+    y_pred: FData,
+    *,
+    sample_weight: np.ndarray | None = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    pass  # noqa: WPS428
+
+@overload
+def root_mean_squared_error(
+    y_true: FData,
+    y_pred: FData,
+    *,
+    sample_weight: np.ndarray | None = None,
+    multioutput: Literal['raw_values'],
+) -> FData:
+    pass  # noqa: WPS428
 @singledispatch
 def root_mean_squared_error(
     y_true: DataType,
@@ -843,15 +881,58 @@ def root_mean_squared_error(
     sample_weight: NDArrayFloat | None = None,
     multioutput: MultiOutputType = "uniform_average",
 ) -> float | DataType:
-    """Root Mean Squared Error for functional data."""
+    r"""Root Mean Squared Error for :class:`~skfda.representation.FData`.
+    With :math:`y\_true = (X_1, X_2, ..., X_n)` being the real values,
+    :math:`t\_pred = (\hat{X}_1, \hat{X}_2, ..., \hat{X}_n)` being the
+    estimated and :math:`sample\_weight = (w_1, w_2, ..., w_n)`, the error is
+    calculated as
+    
+    .. math::
+        RMSE(y\_true, y\_pred)(t) = \sqrt{\frac{1}{\sum w_i}
+        \sum_{i=1}^n w_i(X_i(t) - \hat{X}_i(t))^2}
+    
+    This is the square root of MSE (Mean Squared Error).
 
+    Args:
+        y_true: Correct target values.
+        y_pred: Estimated values.
+        sample_weight: Sample weights. By default, uniform weights
+            are taken.
+        multioutput: Defines format of the return.
+    
+    Returns:
+        Root mean squared error.
+    """
+    # Call sklearn's implementation for numpy arrays
+    if isinstance(y_true, np.ndarray) and isinstance(y_pred, np.ndarray):
+        return sklearn.metrics.root_mean_squared_error(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+        )
+    
+    # For FData objects, I use our own implementation without any warnings
     return mean_squared_error(
         y_true,
         y_pred,
         sample_weight=sample_weight,
         multioutput=multioutput,
-        squared=False,  # Apply the square root directly
+        squared=False,
     )
+
+@root_mean_squared_error.register
+def _(y_true: np.ndarray, y_pred: np.ndarray, *, sample_weight=None, multioutput: MultiOutputType = "uniform_average"):
+    """For the NumPy array."""
+    return sklearn.metrics.root_mean_squared_error(
+        y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput
+    )
+
+@root_mean_squared_error.register
+def _(y_true: FData, y_pred: FData, *, sample_weight=None, multioutput="uniform_average"):
+    """For FData."""
+    mse = mean_squared_error(y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput)
+    return mse ** 0.5
 
 
 @overload

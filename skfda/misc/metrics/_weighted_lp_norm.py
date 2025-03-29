@@ -1,14 +1,9 @@
 """Implementation of Weighted Lp norms."""
 
-import math
-from builtins import isinstance
-from typing import Union
+from typing import Callable, Union
 
 import numpy as np
-import scipy.integrate # type: ignore[import-untyped]
-from typing_extensions import Final
-from typing import Callable
-
+import scipy.integrate  # type: ignore[import-untyped]
 
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
@@ -19,26 +14,23 @@ class WeightedLpNorm:
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
-        lp_weight: Union[
-            Callable[[NDArrayFloat], NDArrayFloat],
-            float,
-            None,
-        ] = None,
+        vector_norm: Norm[NDArrayFloat] | float | None = None,
+        lp_weight: Callable[[NDArrayFloat], NDArrayFloat] | float | None = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
         if not np.isinf(p) and p < 1:
-            raise ValueError(f"p (={p}) must be equal or greater than 1.")
+            msg = f"p (={p}) must be equal or greater than 1."
+            raise ValueError(msg)
 
         self.p = p
         self.vector_norm = vector_norm
         self.lp_weight = lp_weight
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(" f"p={self.p}, vector_norm={self.vector_norm})"
+        return f"{type(self).__name__}(p={self.p}, vector_norm={self.vector_norm})"
 
-    def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:
+    def __call__(self, vector: NDArrayFloat | FData) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
         from .. import inner_product
 
@@ -115,9 +107,8 @@ class WeightedLpNorm:
                 # rule.
                 res = integrand.integrate().ravel() ** (1 / self.p)
         else:
-            raise NotImplementedError(
-                f"LpNorm not implemented for type {type(vector)}",
-            )
+            msg = f"LpNorm not implemented for type {type(vector)}"
+            raise NotImplementedError(msg)
 
         if len(res) == 1:
             return res[0]  # type: ignore[no-any-return]
@@ -126,14 +117,10 @@ class WeightedLpNorm:
 
 
 def weighted_lp_norm(
-    vector: Union[NDArrayFloat, FData],
+    vector: NDArrayFloat | FData,
     *,
     p: float,
-    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
-    lp_weight: Union[
-        Callable[[NDArrayFloat], NDArrayFloat],
-        float,
-        None,
-    ] = None,
+    vector_norm: Norm[NDArrayFloat] | float | None = None,
+    lp_weight: Callable[[NDArrayFloat], NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
     return WeightedLpNorm(p=p, vector_norm=vector_norm, lp_weight=lp_weight)(vector)

@@ -22,6 +22,7 @@ The following functions are used to retrieve specific functional datasets:
    skfda.datasets.fetch_phoneme
    skfda.datasets.fetch_tecator
    skfda.datasets.fetch_weather
+   skfda.datasets.fetch_bone_density
 
 Those functions return a dictionary with at least a "data" field containing the
 instance data, and a "target" field containing the class labels or regression values,

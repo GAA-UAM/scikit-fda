@@ -217,7 +217,7 @@ def _cmp_estimation_with_original(
         fdatairregular, **fit_kwargs,
     )
 
-    assert converter.result.success, "Optimization failed"
+    assert converter.result_.success, "Optimization failed"
     if check in ("r2_score", "both"):
         assert r2_score(fdatabasis_estimated, fdatabasis_original) > 0.9
     if check in ("r2_score", "both"):

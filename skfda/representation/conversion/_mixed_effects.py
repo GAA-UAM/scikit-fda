@@ -552,7 +552,7 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
         basis: Basis to convert to.
 
     Parameters:
-        result: Bunch containing the result of the fitting of the model.
+        result_: Bunch containing the result of the fitting of the model.
             Contains the parameters:
 
             - model: Fitted mixed effects model.
@@ -564,13 +564,13 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
             - nit: Number of iterations of the fitting.
     """
 
-    result: Bunch | None  # not None after fitting
+    result_: Bunch | None  # not None after fitting
 
     def __init__(
         self,
         basis: Basis,
     ) -> None:
-        self.result = None
+        self.result_ = None
         super().__init__(basis)
 
     def transform(
@@ -578,13 +578,13 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
         X: FDataIrregular,
     ) -> FDataBasis:
         """Transform X to FDataBasis using the fitted converter."""
-        if self.result is None:
+        if self.result_ is None:
             raise ValueError("The converter has not been fitted.")
 
         model = _MixedEffectsModel(X, self.basis)
-        mean = self.result.fitted_params.mean
+        mean = self.result_.fitted_params.mean
         gamma_estimates = model.random_effects_estimate(
-            self.result.fitted_params,
+            self.result_.fitted_params,
         )
 
         coefficients = mean[np.newaxis, :] + gamma_estimates
@@ -785,7 +785,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             covariance=params.covariance,
             sigmasq=params.sigmasq,
         )
-        self.result = Bunch(
+        self.result_ = Bunch(
             model=model,
             fitted_params=fitted_params,
             minimize_result=minimize_result,
@@ -1044,7 +1044,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             sigmasq=final_params.sigmasq,
         )
 
-        self.result = Bunch(
+        self.result_ = Bunch(
             model=model,
             fitted_params=fitted_params,
             success=converged,

@@ -387,7 +387,10 @@
       "contributions": [
         "code",
         "ideas",
-        "research"
+        "research",
+        "doc",
+        "example",
+        "test"
       ]
     },
     {

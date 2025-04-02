@@ -29,10 +29,10 @@ def test_loglikelihood() -> None:
 
     Below is the code used to get the values with statsmodels:
 
-    >>> from statsmodels.regression.mixed_linear_model import (
+    ... from statsmodels.regression.mixed_linear_model import (
     ...     MixedLM, MixedLMParams
     ... )
-    >>> def _mixedlm_from_me_model(
+    ... def _mixedlm_from_me_model(
     ...     me_model: _MixedEffectsModel,
     ...     fdatairregular: FDataIrregular = None,
     ... ) -> MixedLM:
@@ -60,7 +60,7 @@ def test_loglikelihood() -> None:
     ...     mixedlm.cov_pen = None
     ...     mixedlm.reml = False
     ...     return mixedlm
-    >>> if __name__ == "__main__":
+    ... if __name__ == "__main__":
     ...     n_measurements = 200
     ...     n_measurements_per_function = 5
     ...     fdatairregular = FDataIrregular(
@@ -80,7 +80,7 @@ def test_loglikelihood() -> None:
     ...     np.random.seed(100)
     ...     params_list = np.random.rand(n_tests, params_len) * 400
     ...     params_loglike_list = []
-    ... 
+    ...
     ...     # assert the loglikelihood is the same for mixedlm and model for
     ...     # n_tests random params
     ...     for params_vec in params_list:

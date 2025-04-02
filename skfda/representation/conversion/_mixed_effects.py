@@ -168,14 +168,14 @@ def _get_values_list(
         ...     points=list(range(9)),
         ... )
         >>> _get_values_list(fdata)
-        [array([1]), array([2, 3, 4, 5]), array([6, 7, 8, 9])]
+        [array([ 1]), array([ 2, 3, 4, 5]), array([ 6, 7, 8, 9])]
         >>> fdata_multidim = FDataIrregular(
         ...     start_indices=[0, 1, 3],
         ...     values=np.array([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]),
         ...     points=list(zip(range(5), range(5))),
         ... )
         >>> _get_values_list(fdata_multidim)
-        [array([1, 2]), array([3, 4, 5, 6]), array([ 7,  8,  9, 10])]
+        [array([ 1, 2]), array([ 3, 4, 5, 6]), array([ 7,  8,  9, 10])]
     """
     return np.split(
         fdatairregular.values.reshape(-1),
@@ -220,11 +220,13 @@ def _get_basis_evaluations_list(
         ...     points=list(range(7)),
         ... )
         >>> _get_basis_evaluations_list(fdata, basis)
-         [array([[1, 0]]), array([[1, 1],
-                [1, 2],
-                [1, 3],
-                [1, 4]]), array([[1, 5],
-                [1, 6]])]
+        [array([[ 1, 0]]),
+         array([[ 1, 1],
+                [ 1, 2],
+                [ 1, 3],
+                [ 1, 4]]),
+         array([[ 1, 5],
+                [ 1, 6]])]
         >>> monomial_2 = MonomialBasis(n_basis=2, domain_range=(0, 10))
         >>> monomial_3 = MonomialBasis(n_basis=3, domain_range=(0, 10))
         >>> vector_basis = VectorValuedBasis([monomial_2, monomial_3])

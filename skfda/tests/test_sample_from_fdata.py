@@ -127,6 +127,13 @@ def fdatairregular_multidimensional() -> FDataIrregular:
 def test_irregular_sample(
     fdata_fixture: str, request: Any
 ) -> None:
+    """Test the irregular sample function.
+
+    The test checks that the number of points per curve after irregular
+    sampling is as expected. The test is done for different dimensions in
+    domain and codomain, as well as for FDataBasis, FDataGrid and
+    FDataIrregular.
+    """
     fdata: FDataBasis | FDataGrid | FDataIrregular = (
         request.getfixturevalue(fdata_fixture)
     )

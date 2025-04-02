@@ -102,7 +102,7 @@ def _create_irregular_samples_with_noise(
     n_points_range: Tuple[int],
     random_state: np.random.RandomState,
 ) -> FDataIrregular:
-    """Generate samples of functions at random points with gaussian noise.
+    """Generate samples of functions at random points with Gaussian noise.
 
     Args:
         fdatabasis_original: Functions to sample.

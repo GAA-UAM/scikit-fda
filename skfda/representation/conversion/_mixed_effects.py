@@ -287,7 +287,10 @@ def _minimize(
 
 
 def _linalg_solve(
-    a: NDArrayFloat, b: NDArrayFloat, *, assume_a: str = 'gen'
+    a: NDArrayFloat,
+    b: NDArrayFloat,
+    *,
+    assume_a: str = 'gen',
 ) -> NDArrayFloat:
     """Solve a linear system of equations: a @ x = b (returns x)."""
     try:
@@ -759,7 +762,10 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
         def objective_function(params_vec: NDArrayFloat) -> float:
             return - model.profile_loglikelihood(
                 params=MinimizeMixedEffectsConverter.Params.from_vec(
-                    params_vec, dim_effects, model=self, has_mean=has_mean,
+                    params_vec,
+                    dim_effects,
+                    model=self,
+                    has_mean=has_mean,
                 )
             ) / n_samples
 
@@ -893,7 +899,9 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
                 )
             )
             for basis_eval, Sigma, random_effect in zip(
-                model.basis_evaluations, values_cov, random_effects,
+                model.basis_evaluations,
+                values_cov,
+                random_effects,
             )
         ) / model.n_samples
 

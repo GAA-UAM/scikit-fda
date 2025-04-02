@@ -66,7 +66,7 @@ plt.show()
 # %%
 # We subsample the original data by measuring a random number of
 # points per curve generating an irregular dataset.
-# Moreover, we add some gaussian noise to the data.
+# Moreover, we add some Gaussian noise to the data.
 fd_irregular_without_noise = irregular_sample(
     fdata=fdatabasis_original,
     n_points_per_curve=random_state.randint(2, 6, n_curves),

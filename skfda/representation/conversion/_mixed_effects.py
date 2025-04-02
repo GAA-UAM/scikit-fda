@@ -117,6 +117,7 @@ from sklearn.utils import Bunch
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Self
 
+from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...representation import FDataBasis, FDataIrregular
 from ...representation.basis import Basis
 from ...typing._numpy import NDArrayFloat
@@ -288,22 +289,6 @@ def _minimize(
     )
     return result  # even if it failed
 
-
-def _linalg_solve(
-    a: NDArrayFloat,
-    b: NDArrayFloat,
-    *,
-    assume_a: str = 'gen',
-) -> NDArrayFloat:
-    """Solve a linear system of equations: a @ x = b (returns x)."""
-    try:
-        return scipy.linalg.solve(a=a, b=b, assume_a=assume_a)  # type: ignore
-    except scipy.linalg.LinAlgError:
-        # TODO: is the best way to handle this?
-        # print("Warning: scipy.linalg.solve failed, using scipy.linalg.lstsq")
-        return scipy.linalg.lstsq(a=a, b=b)[0]  # type: ignore
-
-
 def _sum_mahalanobis(
     r_list: List[NDArrayFloat],
     cov_mat_list: List[NDArrayFloat],
@@ -322,7 +307,11 @@ def _sum_mahalanobis(
     if r_list2 is None:
         r_list2 = r_list
     return sum(
-        r1.T @ _linalg_solve(cov_mat, r2, assume_a="pos")
+        r1.T @ solve_regularized_weighted_lstsq(
+            cov_mat,
+            r2,
+            lstsq_method="cholesky",
+        )
         for r1, cov_mat, r2 in zip(r_list, cov_mat_list, r_list2)
     )  # type: ignore
 
@@ -487,8 +476,10 @@ class _MixedEffectsModel:
             partial_residuals: List of: value - basis_evaluation @ mean.
         """
         return np.array([
-            random_effects_covariance @ basis_eval.T @ _linalg_solve(
-                value_cov, r, assume_a="pos",
+            random_effects_covariance @ basis_eval.T @ solve_regularized_weighted_lstsq(
+                value_cov,
+                r,
+                lstsq_method="cholesky",
             )
             for basis_eval, value_cov, r in zip(
                 self.basis_evaluations,
@@ -650,18 +641,18 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             values_covariances = self._model.values_covariances_div_sigmasq(
                 self.covariance_div_sigmasq,
             )
-            return _linalg_solve(
-                a=_sum_mahalanobis(
+            return solve_regularized_weighted_lstsq(
+                coefs=_sum_mahalanobis(
                     self._model.basis_evaluations,
                     values_covariances,
                     self._model.basis_evaluations,
                 ),
-                b=_sum_mahalanobis(
+                result=_sum_mahalanobis(
                     self._model.basis_evaluations,
                     values_covariances,
                     self._model.values,
                 ),
-                assume_a="pos",
+                lstsq_method="cholesky",
             )
 
         @property
@@ -850,18 +841,18 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         values_covariances_list: List[NDArrayFloat],
     ) -> NDArrayFloat:
         """Return the mean estimate."""
-        return _linalg_solve(
-            a=_sum_mahalanobis(
+        return solve_regularized_weighted_lstsq(
+            coefs=_sum_mahalanobis(
                 model.basis_evaluations,
                 values_covariances_list,
                 model.basis_evaluations,
             ),
-            b=_sum_mahalanobis(
+            result=_sum_mahalanobis(
                 model.basis_evaluations,
                 values_covariances_list,
                 model.values,
             ),
-            assume_a="pos",
+            lstsq_method="cholesky",
         )
 
     def _next_params(
@@ -895,8 +886,10 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             np.outer(random_effect, random_effect)
             + curr_params.covariance @ (
                 np.eye(curr_params.covariance.shape[1])
-                - basis_eval.T @ _linalg_solve(
-                    Sigma, basis_eval @ curr_params.covariance, assume_a="pos",
+                - basis_eval.T @ solve_regularized_weighted_lstsq(
+                    Sigma,
+                    basis_eval @ curr_params.covariance,
+                    lstsq_method="cholesky",
                 )
             )
             for basis_eval, Sigma, random_effect in zip(

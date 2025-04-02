@@ -25,7 +25,79 @@ from skfda.representation.conversion._mixed_effects import (
 
 
 def test_loglikelihood() -> None:
-    """Test loglikelihood function comparing it with Statsmodels' MixedLM."""
+    """Test loglikelihood function comparing it with Statsmodels' MixedLM.
+
+    Below is the code used to get the values with statsmodels:
+
+    >>> from statsmodels.regression.mixed_linear_model import (
+    ...     MixedLM, MixedLMParams
+    ... )
+    >>> def _mixedlm_from_me_model(
+    ...     me_model: _MixedEffectsModel,
+    ...     fdatairregular: FDataIrregular = None,
+    ... ) -> MixedLM:
+    ...     # Convert MEModel to statsmodels MixedLM.
+    ...     # endog = exog @ beta + exog_re @ gamma + epsilon
+    ...     endog = np.concatenate(me_model.values)
+    ...     exog = exog_re = np.vstack(me_model.basis_evaluations)
+    ...     groups = np.repeat(
+    ...         np.arange(me_model.n_samples),
+    ...         np.ediff1d(
+    ...             np.append(
+    ...                 fdatairregular.start_indices,
+    ...                 len(fdatairregular.points),
+    ...             ),
+    ...         ),
+    ...     )
+    ...     mixedlm = MixedLM(
+    ...         endog=endog,
+    ...         exog=exog,
+    ...         exog_re=exog_re,
+    ...         groups=groups,
+    ...         use_sqrt=True,  # use cholesky decomposition
+    ...     )
+    ...     # to avoid calling mixedlm.fit:
+    ...     mixedlm.cov_pen = None
+    ...     mixedlm.reml = False
+    ...     return mixedlm
+    >>> if __name__ == "__main__":
+    ...     n_measurements = 200
+    ...     n_measurements_per_function = 5
+    ...     fdatairregular = FDataIrregular(
+    ...         start_indices=list(
+    ...             range(0, n_measurements, n_measurements_per_function)
+    ...         ),
+    ...         values=list(range(n_measurements)),
+    ...         points=list(range(n_measurements)),
+    ...     )
+    ...     basis = FourierBasis(n_basis=5, domain_range=(0, 10))
+    ...     model = _MixedEffectsModel(fdatairregular, basis)
+    ...     mixedlm = _mixedlm_from_me_model(model, fdatairregular)
+    ...     params_len = (
+    ...         basis.n_basis + basis.n_basis * (basis.n_basis + 1) // 2
+    ...     )
+    ...     n_tests = 6
+    ...     np.random.seed(100)
+    ...     params_list = np.random.rand(n_tests, params_len) * 400
+    ...     params_loglike_list = []
+    ... 
+    ...     # assert the loglikelihood is the same for mixedlm and model for
+    ...     # n_tests random params
+    ...     for params_vec in params_list:
+    ...         params = MinimizeMixedEffectsConverter.Params.from_vec(
+    ...             params_vec, basis.n_basis, model,
+    ...         )
+    ...         mixedlmparams = MixedLMParams.from_components(
+    ...             fe_params=params.mean,
+    ...             cov_re_sqrt=params.sqrt_cov_div_sigmasq,
+    ...         )
+    ...         mixedlm_loglikelihood = mixedlm.loglike(
+    ...             mixedlmparams,
+    ...             profile_fe=False,
+    ...         )
+    ...         params_loglike_list.append((params_vec, mixedlm_loglikelihood))
+    ...     print(repr(params_loglike_list))
+    """
     n_measurements = 200
     n_measurements_per_function = 5
     fdatairregular = FDataIrregular(

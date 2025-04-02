@@ -114,6 +114,7 @@ from typing import Callable, List, Literal, Protocol
 import numpy as np
 import scipy
 from sklearn.utils import Bunch
+from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Self
 
 from ...representation import FDataBasis, FDataIrregular
@@ -566,13 +567,12 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
             - nit: Number of iterations of the fitting.
     """
 
-    result_: Bunch | None  # not None after fitting
+    result_: Bunch  # not None after fitting
 
     def __init__(
         self,
         basis: Basis,
     ) -> None:
-        self.result_ = None
         super().__init__(basis)
 
     def transform(
@@ -580,8 +580,7 @@ class MixedEffectsConverter(_ToBasisConverter[FDataIrregular], ABC):
         X: FDataIrregular,
     ) -> FDataBasis:
         """Transform X to FDataBasis using the fitted converter."""
-        if self.result_ is None:
-            raise ValueError("The converter has not been fitted.")
+        check_is_fitted(self)
 
         model = _MixedEffectsModel(X, self.basis)
         mean = self.result_.fitted_params.mean

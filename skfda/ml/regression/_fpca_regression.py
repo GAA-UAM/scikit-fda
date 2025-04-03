@@ -16,8 +16,8 @@ FPCARegressionSelf = TypeVar("FPCARegressionSelf", bound="FPCARegression")
 
 
 class FPCARegression(
-    BaseEstimator,
     RegressorMixin,
+    BaseEstimator,
 ):
     r"""Regression using Functional Principal Components Analysis.
 

@@ -55,7 +55,7 @@ class FDataBasis(FData):  # noqa: WPS214
             functional datum.
         domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
-            is considered to exist for each one of the axies.
+            is considered to exist for each one of the axes.
         dataset_name: name of the dataset.
         argument_names: tuple containing the names of the different
             arguments.
@@ -435,7 +435,7 @@ class FDataBasis(FData):  # noqa: WPS214
         if min_count > 0:
             valid = ~np.isnan(self.coefficients)
             n_valid = np.sum(valid, axis=0)
-            coefs[n_valid < min_count] = np.NaN
+            coefs[n_valid < min_count] = np.nan
 
         return self.copy(
             coefficients=coefs,
@@ -687,8 +687,8 @@ class FDataBasis(FData):  # noqa: WPS214
         coefficients: NDArrayFloat,
         transpose: bool = False,
     ) -> str:
-        if len(coefficients.shape) == 1:
-            coefficients = coefficients.reshape((1, coefficients.shape[0]))
+        if coefficients.ndim == 1:
+            coefficients = coefficients[None]
 
         if transpose is True:
             coefficients = np.transpose(coefficients)
@@ -1026,7 +1026,7 @@ class FDataBasisDType(
     def _na_repr(self) -> FDataBasis:
         return FDataBasis(
             basis=self.basis,
-            coefficients=((np.NaN,) * self.basis.n_basis,),
+            coefficients=((np.nan,) * self.basis.n_basis,),
         )
 
     def __eq__(self, other: Any) -> bool:

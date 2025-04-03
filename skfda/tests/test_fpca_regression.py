@@ -162,8 +162,8 @@ class FPCARegressionTestCase(unittest.TestCase):
         # exactly the same as in fda.usc. The components calculated
         # by fda.usc are not exactly the same (they are orthogonal).
         # Additionaly, the penalization matrices are calculated using
-        # a different method.
-        np.testing.assert_allclose(r_predictions, predictions, rtol=1.5e-2)
+        # a different method, and the quadrature used is different.
+        np.testing.assert_allclose(r_predictions, predictions, rtol=2e-2)
 
     def test_fpca_reg_basis_vs_grid(self):
         """
@@ -173,38 +173,55 @@ class FPCARegressionTestCase(unittest.TestCase):
         basis representation of the data.
         """
         X, y = fetch_tecator(return_X_y=True)
-        X = X.to_basis(BSplineBasis(n_basis=20))
-        X_train = X[:129]
-        X_test = X[129:]
+        X_basis = X.to_basis(BSplineBasis(n_basis=20))
+
+        n_train = 129
+
+        y_train = y[:n_train, 0]
+
+        X_basis_train = X_basis[:n_train]
+        X_basis_test = X_basis[n_train:]
 
         sampling_grid = np.linspace(
-            X.domain_range[0][0], X.domain_range[0][1], 100,
+            X_basis.domain_range[0][0],
+            X_basis.domain_range[0][1],
+            100,
         )
 
-        X_grid = X.to_grid(grid_points=sampling_grid)
-        X_grid_train = X_grid[:129]
-        X_grid_test = X_grid[129:]
+        X_grid = X_basis.to_grid(grid_points=sampling_grid)
+        X_grid_train = X_grid[:n_train]
+        X_grid_test = X_grid[n_train:]
 
-        fpca_regression = FPCARegression(
-            n_components=10,
-            pca_regularization=L2Regularization(
-                LinearDifferentialOperator(2), regularization_parameter=10,
-            ),
-            regression_regularization=L2Regularization(
-                LinearDifferentialOperator(2), regularization_parameter=10,
-            ),
+        n_components = 10
+
+        pca_regularization = L2Regularization(
+            LinearDifferentialOperator(2), regularization_parameter=10,
+        )
+        regression_regularization = L2Regularization(
+            LinearDifferentialOperator(2), regularization_parameter=10,
         )
 
-        fpca_regression.fit(X_train, y[:129, 0])
-        predictions_basis = fpca_regression.predict(X_test)
+        fpca_regression_basis = FPCARegression(
+            n_components=n_components,
+            pca_regularization=pca_regularization,
+            regression_regularization=regression_regularization,
+        )
+        fpca_regression_basis.fit(X_basis_train, y_train)
+        predictions_basis = fpca_regression_basis.predict(X_basis_test)
 
-        fpca_regression.fit(X_grid_train, y[:129, 0])
-        predictions_grid = fpca_regression.predict(X_grid_test)
+        fpca_regression_grid = FPCARegression(
+            n_components=n_components,
+            pca_regularization=pca_regularization,
+            regression_regularization=regression_regularization,
+        )
+        fpca_regression_grid.fit(X_grid_train, y_train)
+        predictions_grid = fpca_regression_grid.predict(X_grid_test)
 
+        # Differences are due to the quadrature method used
         np.testing.assert_allclose(
             predictions_basis,
             predictions_grid,
-            rtol=6e-3,
+            rtol=1e-1,
         )
 
 

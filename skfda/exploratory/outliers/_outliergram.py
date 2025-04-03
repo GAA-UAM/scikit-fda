@@ -10,8 +10,8 @@ from ..stats import modified_epigraph_index
 
 
 class OutliergramOutlierDetector(
-    BaseEstimator,
     OutlierMixin[FDataGrid],
+    BaseEstimator,
 ):
     r"""
     Outlier detector using the relation between MEI and MBD.

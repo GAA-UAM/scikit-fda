@@ -44,9 +44,9 @@ if TYPE_CHECKING:
 
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
-    t = np.asfarray(t)
+    t = np.asarray(t, dtype=np.float64)
 
-    dim = len(t.shape)
+    dim = t.ndim
     assert dim <= 2
 
     if dim < 2:
@@ -778,12 +778,12 @@ def _get_influence_mask(
 
 
 class RecursiveMaximaHunting(
-    BaseEstimator,
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
         Union[NDArrayInt, NDArrayFloat],
     ],
+    BaseEstimator,
 ):
     """
     Recursive Maxima Hunting variable selection.
@@ -907,7 +907,7 @@ class RecursiveMaximaHunting(
         """Recursive maxima hunting algorithm."""
         self.features_shape_ = X.data_matrix.shape[1:]
 
-        y = np.asfarray(y)
+        y = np.asarray(y, dtype=np.float64)
 
         self.correction_ = (
             UniformCorrection()

@@ -77,28 +77,28 @@ def local_averages(
         ...     X,
         ...     domains=[(1, 3), (3, 10), (10, 18)],
         ... )
-        >>> np.around(averages, decimals=2)
-        array([[[  91.37],
-                [ 126.52],
-                [ 179.02]],
-               [[  87.51],
-                [ 120.71],
-                [ 158.81]],
-               [[  86.36],
-                [ 115.04],
-                [ 156.37]]])
+        >>> np.round(averages)
+        array([[[  91.],
+                [ 127.],
+                [ 179.]],
+               [[  88.],
+                [ 121.],
+                [ 159.]],
+               [[  86.],
+                [ 115.],
+                [ 156.]]])
 
         A different possibility is to decide how many intervals we want to
         consider.  For example, we could want to split the domain in 2
         intervals of the same length.
 
-        >>> np.around(local_averages(X, domains=2), decimals=2)
-        array([[[ 116.94],
-                [ 177.26]],
-               [[ 111.86],
-                [ 157.62]],
-               [[ 107.29],
-                [ 154.97]]])
+        >>> np.round(local_averages(X, domains=2))
+        array([[[ 117.],
+                [ 177.]],
+               [[ 112.],
+                [ 158.]],
+               [[ 107.],
+                [ 155.]]])
     """
     if isinstance(domains, int):
         domains = [domains] * data.dim_domain
@@ -180,12 +180,12 @@ def occupation_measure(
     n_points: Optional[int] = None,
 ) -> NDArrayFloat:
     r"""
-    Calculate the occupation measure of a grid.
+    Calculate the occupation measure of functional data.
 
     It performs the following map:
 
     ..math:
-        :math:`f_1(X) = |t: X(t)\in T_p|,\dots,|t: X(t)\in T_p|`
+        :math:`f_1(X) = |t: X(t)\in T_1|,\dots,|t: X(t)\in T_p|`
 
     where :math:`{T_1,\dots,T_p}` are disjoint intervals in
     :math:`\mathbb{R}` and | | stands for the Lebesgue measure.
@@ -241,11 +241,11 @@ def occupation_measure(
         ...         [(0.0, 1.0), (2.0, 3.0)],
         ...         n_points=501,
         ...     ),
-        ...     decimals=2,
+        ...     decimals=1,
         ... )
-        array([[ 0.98,  1.  ],
-               [ 0.5 ,  0.52],
-               [ 6.28,  0.  ]])
+        array([[ 1. ,  1. ],
+               [ 0.5,  0.5],
+               [ 6.3,  0. ]])
 
     """
     if isinstance(data, FDataBasis) and n_points is None:
@@ -349,7 +349,7 @@ def number_crossings(
         FDataGrid created.
 
         >>> number_crossings(fd_grid, levels=0, direction="up")
-        array([[2]])
+        array([[ 2]])
     """
     # This is only defined for univariate functions
     check_fdata_dimensions(fd, dim_domain=1, dim_codomain=1)

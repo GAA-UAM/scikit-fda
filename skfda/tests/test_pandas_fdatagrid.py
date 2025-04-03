@@ -66,9 +66,9 @@ def data_missing() -> ExtensionArray:
     """Return a length-2 array with [NA, Valid]."""
     data_matrix = np.arange(
         2 * 10 * 10 * 3,
-        dtype=np.float_,
+        dtype=np.float64,
     ).reshape(2, 10, 10, 3)
-    data_matrix[0, ...] = np.NaN
+    data_matrix[0, ...] = np.nan
     grid_points = [
         np.arange(10),
         np.arange(10) / 10,

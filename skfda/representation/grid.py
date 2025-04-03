@@ -16,6 +16,7 @@ from typing import (
     Callable,
     Optional,
     Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -30,7 +31,13 @@ import scipy.integrate
 import scipy.stats.mstats
 from matplotlib.figure import Figure
 
-from .._utils import _check_array_key, _int_to_real, _to_grid_points, constants
+from .._utils import (
+    _cartesian_product,
+    _check_array_key,
+    _int_to_real,
+    _to_grid_points,
+    constants,
+)
 from ..typing._base import (
     DomainRange,
     DomainRangeLike,
@@ -64,7 +71,7 @@ class FDataGrid(FData):  # noqa: WPS214
             contains the points of dicretisation for each axis of data_matrix.
         domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
-            is considered to exist for each one of the axies.
+            is considered to exist for each one of the axes.
         dataset_name: name of the dataset.
         argument_names: tuple containing the names of the different
             arguments.
@@ -529,6 +536,15 @@ class FDataGrid(FData):  # noqa: WPS214
         if not np.array_equal(self.grid_points, other.grid_points):
             raise ValueError("Grid points for both objects must be equal")
 
+    def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:
+        return (
+            _cartesian_product(_to_grid_points(self.grid_points)),
+            self.data_matrix.reshape((self.n_samples, -1)).T,
+        )
+
+    def _get_input_points(self: T) -> GridPoints:
+        return self.grid_points
+
     def sum(  # noqa: WPS125
         self: T,
         *,
@@ -575,7 +591,7 @@ class FDataGrid(FData):  # noqa: WPS214
         if min_count > 0:
             valid = ~np.isnan(self.data_matrix)
             n_valid = np.sum(valid, axis=0)
-            data[n_valid < min_count] = np.NaN
+            data[n_valid < min_count] = np.nan
 
         return self.copy(
             data_matrix=data,
@@ -1502,7 +1518,7 @@ class FDataGridDType(
             + (self.dim_codomain,)
         )
 
-        data_matrix = np.full(shape=shape, fill_value=np.NaN)
+        data_matrix = np.full(shape=shape, fill_value=np.nan)
 
         return FDataGrid(
             grid_points=self.grid_points,

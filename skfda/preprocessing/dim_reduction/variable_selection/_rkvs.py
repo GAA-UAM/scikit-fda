@@ -75,7 +75,7 @@ def _rkhs_vs(
     indexes = np.delete(indexes, selected_features[0])
 
     for i in range(1, n_features_to_select):
-        aux = np.zeros_like(indexes, dtype=np.float_)
+        aux = np.zeros_like(indexes, dtype=np.float64)
 
         for j in range(0, indexes.shape[0]):
             new_selection = np.concatenate([
@@ -102,8 +102,8 @@ def _rkhs_vs(
 
 
 class RKHSVariableSelection(
-    BaseEstimator,
     InductiveTransformerMixin[FDataGrid, NDArrayFloat, NDArrayInt],
+    BaseEstimator,
 ):
     r"""
     Reproducing kernel variable selection.

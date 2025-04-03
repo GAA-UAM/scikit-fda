@@ -20,6 +20,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "fetch_tecator",
             "fetch_ucr",
             "fetch_weather",
+            "fetch_bone_density",
         ],
         "_samples_generators": [
             "make_gaussian",
@@ -28,6 +29,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "make_multimodal_samples",
             "make_random_warping",
             "make_sinusoidal_process",
+            "make_sde_trajectories",
+        ],
+        "_sample_from_fdata": [
+            "irregular_sample",
         ],
     },
 )
@@ -56,4 +61,8 @@ if TYPE_CHECKING:
         make_multimodal_samples as make_multimodal_samples,
         make_random_warping as make_random_warping,
         make_sinusoidal_process as make_sinusoidal_process,
+        make_sde_trajectories as make_sde_trajectories,
+    )
+    from ._sample_from_fdata import (
+        irregular_sample
     )

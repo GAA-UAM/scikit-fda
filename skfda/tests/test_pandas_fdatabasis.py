@@ -60,9 +60,9 @@ def data_missing(basis: Basis) -> FDataBasis:
     """Length-2 array with [NA, Valid]."""
     coef_matrix = np.arange(
         2 * basis.n_basis,
-        dtype=np.float_,
+        dtype=np.float64,
     ).reshape(2, basis.n_basis)
-    coef_matrix[0, :] = np.NaN
+    coef_matrix[0, :] = np.nan
 
     return FDataBasis(basis=basis, coefficients=coef_matrix)
 

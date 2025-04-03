@@ -6,7 +6,7 @@ from typing import Sequence
 
 import numpy as np
 import pandas as pd
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
 from sklearn.preprocessing import OneHotEncoder
 
 from skfda.datasets import fetch_weather, make_gaussian, make_gaussian_process
@@ -318,7 +318,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         ])
 
         X: Sequence[
-            np.typing.NDArray[np.float_] | FDataBasis,
+            np.typing.NDArray[np.float64] | FDataBasis,
         ] = [multivariate, x_fd]
 
         # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E800
@@ -1008,7 +1008,7 @@ class TestHistoricalLinearRegression(unittest.TestCase):
             X.data_matrix[..., 0, np.newaxis]
             * coefficients.data_matrix[..., 0]
         )
-        integral_matrix = cumtrapz(
+        integral_matrix = cumulative_trapezoid(
             integral_body,
             x=X.grid_points[0],
             initial=0,

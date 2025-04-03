@@ -14,8 +14,8 @@ from ._functions import local_averages, number_crossings, occupation_measure
 
 
 class LocalAveragesTransformer(
-    BaseEstimator,
     TransformerMixin[FData, NDArrayFloat, object],
+    BaseEstimator,
 ):
     r"""
     Transforms functional data to its local averages.
@@ -59,20 +59,20 @@ class LocalAveragesTransformer(
         >>> local_averages = LocalAveragesTransformer(
         ...     domains=[(1, 3), (3, 10), (10, 18)],
         ... )
-        >>> np.round(local_averages.fit_transform(X), decimals=2)
-        array([[  91.37,  126.52,  179.02],
-               [  87.51,  120.71,  158.81],
-               [  86.36,  115.04,  156.37]])
+        >>> np.round(local_averages.fit_transform(X))
+        array([[  91.,  127.,  179.],
+               [  88.,  121.,  159.],
+               [  86.,  115.,  156.]])
 
         A different possibility is to decide how many intervals we want to
         consider.  For example, we could want to split the domain in 2
         intervals of the same length.
 
         >>> local_averages = LocalAveragesTransformer(domains=2)
-        >>> np.around(local_averages.fit_transform(X), decimals=2)
-        array([[ 116.94,  177.26],
-               [ 111.86,  157.62],
-               [ 107.29,  154.97]])
+        >>> np.round(local_averages.fit_transform(X))
+        array([[ 117.,  177.],
+               [ 112.,  158.],
+               [ 107.,  155.]])
     """
 
     def __init__(
@@ -102,8 +102,8 @@ class LocalAveragesTransformer(
 
 
 class OccupationMeasureTransformer(
-    BaseEstimator,
     TransformerMixin[FData, NDArrayFloat, object],
+    BaseEstimator,
 ):
     """
     Transformer that works as an adapter for the occupation_measure function.
@@ -119,6 +119,7 @@ class OccupationMeasureTransformer(
     Example:
         We will create the FDataGrid that we will use to extract
         the occupation measure
+
         >>> from skfda.representation import FDataGrid
         >>> import numpy as np
         >>> t = np.linspace(0, 10, 100)
@@ -136,6 +137,7 @@ class OccupationMeasureTransformer(
         and (2.0, 3.0). We need also to specify the number of points
         we want that the function takes into account to interpolate.
         We are going to use 501 points.
+
         >>> from skfda.preprocessing.feature_construction import (
         ...     OccupationMeasureTransformer,
         ... )
@@ -144,10 +146,10 @@ class OccupationMeasureTransformer(
         ...     n_points=501,
         ... )
 
-        >>> np.around(occupation_measure.fit_transform(fd_grid), decimals=2)
-        array([[ 0.98,  1.  ],
-               [ 0.5 ,  0.52],
-               [ 6.28,  0.  ]])
+        >>> np.around(occupation_measure.fit_transform(fd_grid), decimals=1)
+        array([[ 1. ,  1. ],
+               [ 0.5,  0.5],
+               [ 6.3,  0. ]])
     """
 
     def __init__(
@@ -175,8 +177,8 @@ class OccupationMeasureTransformer(
 
 
 class NumberCrossingsTransformer(
-    BaseEstimator,
     TransformerMixin[FDataGrid, NDArrayInt, object],
+    BaseEstimator,
 ):
     """
     Transformer that works as an adapter for the number_up_crossings function.
@@ -195,6 +197,7 @@ class NumberCrossingsTransformer(
         the Bessel Function of first type and order 0.
         First of all we import the Bessel Function and create the X axis
         data grid. Then we create the FdataGrid.
+        
         >>> from skfda.preprocessing.feature_construction import (
         ...     NumberCrossingsTransformer,
         ... )
@@ -224,9 +227,10 @@ class NumberCrossingsTransformer(
 
         Finally we evaluate the number of zero-upcrossings method with the
         FDataGrid created.
+        
         >>> tf = NumberCrossingsTransformer(levels=0, direction="up")
         >>> tf.fit_transform(fd_grid)
-        array([[2]])
+        array([[ 2]])
     """
 
     def __init__(

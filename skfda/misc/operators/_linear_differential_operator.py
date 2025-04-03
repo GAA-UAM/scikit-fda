@@ -616,14 +616,14 @@ def _optimized_operator_evaluation_in_grid(
         [ 0.,  0.,  0.,  0.,  1., -2.,  1.,  4.],
         [ 0.,  0.,  0.,  0.,  0.,  1., -2., -5.],
         [ 0.,  0.,  0.,  0.,  0.,  0.,  1.,  2.]]),
-        array([[0, 1],
-                [0, 2],
-                [0, 3],
-                [0, 4],
-                [3, 7],
-                [4, 7],
-                [5, 7],
-                [6, 7]]))
+        array([[ 0, 1],
+               [ 0, 2],
+               [ 0, 3],
+               [ 0, 4],
+               [ 3, 7],
+               [ 4, 7],
+               [ 5, 7],
+               [ 6, 7]]))
 
     Explanation:
         Each row of the first array contains the values of the linear operator
@@ -736,7 +736,7 @@ def gridbasis_penalty_matrix_optimized(
     # This is done to avoid computing it for each subinterval of integration.
     quadrature = scipy.integrate.simpson(
         np.identity(n_points),
-        basis.grid_points[0],
+        x=basis.grid_points[0],
     )
 
     product_matrix = np.zeros((basis.n_basis, basis.n_basis))

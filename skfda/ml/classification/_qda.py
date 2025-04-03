@@ -17,8 +17,8 @@ Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
 
 
 class QuadraticDiscriminantAnalysis(
-    BaseEstimator,
     ClassifierMixin[FDataGrid, Target],
+    BaseEstimator,
 ):
     """
     Functional quadratic discriminant analysis.
@@ -95,9 +95,9 @@ class QuadraticDiscriminantAnalysis(
 
         We can predict the class of new samples.
 
-        >>> list(qda.predict(X_test))
-        [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
-         1, 0, 1, 0, 1, 0, 1, 1]
+        >>> qda.predict(X_test)
+        array([ 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
+         1, 0, 1, 0, 1, 0, 1, 1], dtype=int8)
 
         Finally, we calculate the mean accuracy for the test data.
 

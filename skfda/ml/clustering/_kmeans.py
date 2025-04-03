@@ -32,9 +32,9 @@ Input = TypeVar("Input", bound=FDataGrid)
 
 
 class BaseKMeans(
-    BaseEstimator,
     ClusterMixin[Input],
     TransformerMixin[Input, NDArrayFloat, object],
+    BaseEstimator,
     Generic[Input, MembershipType],
 ):
     """Base class to implement K-Means clustering algorithms.

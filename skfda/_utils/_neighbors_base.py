@@ -227,30 +227,29 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
                 Indices of the nearest points in the population matrix.
 
         Examples:
-            Firstly, we will create a toy dataset.
+            Firstly, we will create a toy dataset
 
-            >>> from skfda.datasets import make_sinusoidal_process
-            >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
-            >>> fd2 = make_sinusoidal_process(phase_mean=1.8, error_std=0.,
-            ...                               phase_std=.25, random_state=0)
-            >>> fd = fd1.concatenate(fd2)
+            >>> from skfda.datasets import make_gaussian_process
+            >>> X = make_gaussian_process(
+            ...    n_samples=30,
+            ...    random_state=0,
+            ... )
 
             We will fit a Nearest Neighbors estimator
 
             >>> from skfda.ml.clustering import NearestNeighbors
-            >>> neigh = NearestNeighbors()
-            >>> neigh.fit(fd)
+            >>> neigh = NearestNeighbors(n_neighbors=3)
+            >>> neigh.fit(X)
             NearestNeighbors(...)
 
             Now we can query the k-nearest neighbors.
 
-            >>> distances, index = neigh.kneighbors(fd[:2])
-            >>> index # Index of k-neighbors of samples 0 and 1
-            array([[ 0,  7,  6, 11,  2],...)
+            >>> distances, index = neigh.kneighbors(X)
+            >>> index
+            array([[ 0, 8, 1], ...)
 
-            >>> distances.round(2) # Distances to k-neighbors
-            array([[ 0.  ,  0.28,  0.29,  0.29,  0.3 ],
-                   [ 0.  ,  0.27,  0.28,  0.29,  0.3 ]])
+            >>> distances.round(2)
+            array([[ 0.  ,  0.41,  0.58], ...])
 
         Notes:
             This method wraps the corresponding sklearn routine in the
@@ -295,30 +294,31 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
             A[i, j] is assigned the weight of edge that connects i to j.
 
         Examples:
-            Firstly, we will create a toy dataset.
+            Firstly, we will create a toy dataset
 
-            >>> from skfda.datasets import make_sinusoidal_process
-            >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
-            >>> fd2 = make_sinusoidal_process(phase_mean=1.8, error_std=0.,
-            ...                               phase_std=.25, random_state=0)
-            >>> fd = fd1.concatenate(fd2)
+            >>> from skfda.datasets import make_gaussian_process
+            >>> X = make_gaussian_process(
+            ...    n_samples=30,
+            ...    random_state=0,
+            ... )
 
             We will fit a Nearest Neighbors estimator.
 
             >>> from skfda.ml.clustering import NearestNeighbors
-            >>> neigh = NearestNeighbors()
-            >>> neigh.fit(fd)
+            >>> neigh = NearestNeighbors(n_neighbors=3)
+            >>> neigh.fit(X)
             NearestNeighbors(...)
 
             Now we can obtain the graph of k-neighbors of a sample.
 
-            >>> graph = neigh.kneighbors_graph(fd[0])
+            >>> graph = neigh.kneighbors_graph(X[0])
             >>> print(graph)
-              (0, 0)	1.0
-              (0, 7)	1.0
-              (0, 6)	1.0
-              (0, 11)	1.0
-              (0, 2)	1.0
+            <Compressed Sparse Row sparse matrix of dtype 'float64'
+               with 3 stored elements and shape (1, 30)>
+              Coords    Values
+              (0, 0)    1.0
+              (0, 8)    1.0
+              (0, 1)    1.0
 
         Notes:
             This method wraps the corresponding sklearn routine in the
@@ -392,29 +392,29 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
                 within a ball of size ``radius`` around the query points.
 
         Examples:
-            Firstly, we will create a toy dataset.
+            Firstly, we will create a toy dataset
 
-            >>> from skfda.datasets import make_sinusoidal_process
-            >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
-            >>> fd2 = make_sinusoidal_process(phase_mean=1.8, error_std=0.,
-            ...                               phase_std=.25, random_state=0)
-            >>> fd = fd1.concatenate(fd2)
+            >>> from skfda.datasets import make_gaussian_process
+            >>> X = make_gaussian_process(
+            ...    n_samples=30,
+            ...    random_state=0,
+            ... )
 
             We will fit a Nearest Neighbors estimator.
 
             >>> from skfda.ml.clustering import NearestNeighbors
-            >>> neigh = NearestNeighbors(radius=.3)
-            >>> neigh.fit(fd)
-            NearestNeighbors(...radius=0.3...)
+            >>> neigh = NearestNeighbors(radius=0.7)
+            >>> neigh.fit(X)
+            NearestNeighbors(...)
 
-            Now we can query the neighbors in the radius.
+            Now we can query the neighbors in a given radius.
 
-            >>> distances, index = neigh.radius_neighbors(fd[:2])
-            >>> index[0] # Neighbors of sample 0
-            array([ 0,  2,  6,  7, 11]...)
+            >>> distances, index = neigh.radius_neighbors(X)
+            >>> index[0]
+            array([ 0,  1,  8, 18]...)
 
-            >>> distances[0].round(2) # Distances to neighbors of the sample 0
-            array([ 0.  ,  0.3 ,  0.29,  0.28,  0.29])
+            >>> distances[0].round(2)
+            array([ 0.  ,  0.58,  0.41,  0.68])
 
 
         See also:
@@ -490,8 +490,8 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
 
 
 class NeighborsClassifierMixin(
-    NeighborsBase[Input, TargetClassification],
     ClassifierMixin[Input, TargetClassification],
+    NeighborsBase[Input, TargetClassification],
 ):
     """Mixin class for classifiers based in nearest neighbors."""
 
@@ -572,8 +572,8 @@ class NeighborsClassifierMixin(
 
 
 class NeighborsRegressorMixin(
-    NeighborsBase[Input, TargetRegression],
     RegressorMixin[Input, TargetRegression],
+    NeighborsBase[Input, TargetRegression],
 ):
     """Mixin class for the regressors based on neighbors."""
 

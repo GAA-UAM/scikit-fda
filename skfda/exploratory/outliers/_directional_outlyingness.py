@@ -107,50 +107,27 @@ def directional_outlyingness_stats(  # noqa: WPS218
 
     Example:
 
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
-        ...                [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5],
-        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, grid_points)
-        >>> stats = directional_outlyingness_stats(fd)
-        >>> stats.directional_outlyingness
-        array([[[ 1.33333333],
-                [ 1.33333333],
-                [ 2.33333333],
-                [ 1.5       ],
-                [ 1.66666667],
-                [ 1.66666667]],
-               [[ 0.        ],
-                [ 0.        ],
-                [ 0.        ],
-                [ 0.        ],
-                [ 0.        ],
-                [ 0.        ]],
-               [[-1.33333333],
-                [-1.33333333],
-                [-1.        ],
-                [-0.5       ],
-                [-0.33333333],
-                [-0.33333333]],
-               [[-0.66666667],
-                [-0.66666667],
-                [-1.        ],
-                [-2.5       ],
-                [-3.        ],
-                [-2.33333333]]])
+        >>> import skfda
+        >>> X = skfda.datasets.make_gaussian_process(
+        ...     n_samples=4,
+        ...     n_features=1000,
+        ...     random_state=1,
+        ... )
+        >>> stats = directional_outlyingness_stats(X)
+        >>> stats.directional_outlyingness.shape
+        (4, 1000, 1)
 
-    >>> stats.functional_directional_outlyingness
-    array([ 6.58864198,  6.4608642 ,  6.63753086,  7.40481481])
+    >>> stats.functional_directional_outlyingness.round()
+    array([ 11.,   8.,   6.,   9.])
 
-    >>> stats.mean_directional_outlyingness
-    array([[ 1.66666667],
-           [ 0.        ],
-           [-0.8       ],
-           [-1.74444444]])
+    >>> stats.mean_directional_outlyingness.round()
+    array([[-2.],
+           [ 1.],
+           [-0.],
+           [ 0.]])
 
-    >>> stats.variation_directional_outlyingness
-    array([ 0.12777778,  0.        ,  0.17666667,  0.94395062])
+    >>> stats.variation_directional_outlyingness.round()
+    array([ 5.,  2.,  0.,  3.])
 
     References:
         Dai, Wenlin, and Genton, Marc G. "Directional outlyingness for
@@ -261,8 +238,8 @@ def directional_outlyingness_stats(  # noqa: WPS218
 
 
 class MSPlotOutlierDetector(  # noqa: WPS230
-    BaseEstimator,
     OutlierMixin[FDataGrid],
+    BaseEstimator,
 ):
     r"""Outlier detector using directional outlyingness.
 
@@ -339,7 +316,7 @@ class MSPlotOutlierDetector(  # noqa: WPS230
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> out_detector = MSPlotOutlierDetector()
         >>> out_detector.fit_predict(fd)
-        array([1, 1, 1, 1])
+        array([ 1, 1, 1, 1])
 
     References:
         Dai, Wenlin, and Genton, Marc G. "Multivariate functional data

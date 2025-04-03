@@ -38,6 +38,18 @@ authors:
     given-names: "Diego"
   - family-names: "Hidalgo"
     given-names: "Rafael"
+  - family-names: "del Val"
+    given-names: "David"
+  - family-names: "Sánchez Signorini"
+    given-names: "Martín"
+  - family-names: "Pinto"
+    given-names: "Óscar"
+  - family-names: "Cuesta Sierra"
+    given-names: "Pablo"
+  - family-names: "Soto Martín"
+    given-names: "Pablo"
+  - family-names: "Terres Caballero"
+    given-names: "Eduardo"
 title: "GAA-UAM/scikit-fda: Functional Data Analysis in Python"
 doi: 10.5281/zenodo.3468127
 date-released: 2019-10-01
@@ -67,3 +79,50 @@ identifiers:
   - description: "This is the archived snapshot of version 0.7.1 of scikit-fda"
     type: doi
     value: 10.5281/zenodo.5903557
+preferred-citation:
+  type: article
+  title: "scikit-fda: A Python Package for Functional Data Analysis"
+  authors:
+    - family-names: "Ramos-Carreño"
+      given-names: "Carlos"
+      orcid: "https://orcid.org/0000-0003-2566-7058"
+      affiliation: "Universidad Autónoma de Madrid"
+      email: vnmabus@gmail.com
+    - family-names: "Torrecilla"
+      given-names: "José L."
+      orcid: "https://orcid.org/0000-0003-3719-5190"
+      affiliation: "Universidad Autónoma de Madrid"
+      email: joseluis.torrecilla@uam.es
+    - family-names: "Carbajo Berrocal"
+      given-names: "Miguel"
+    - family-names: "Marcos Manchón"
+      given-names: "Pablo"
+    - family-names: "Suárez"
+      given-names: "Alberto"
+      orcid: "https://orcid.org/0000-0003-4534-0909"
+      affiliation: "Universidad Autónoma de Madrid"
+  date-published: 2024-05-08
+  abstract: "The library scikit-fda is a Python package for functional data analysis (FDA). It provides a comprehensive set of tools for representation, preprocessing, and exploratory analysis of functional data. The library is built upon and integrated in Python's scientific ecosystem. In particular, it conforms to the scikit-learn application programming interface so as to take advantage of the functionality for machine learning provided by this package: Pipelines, model selection, and hyperparameter tuning, among others. The scikit-fda package has been released as free and open-source software under a 3-clause BSD license and is open to contributions from the FDA community. The library's extensive documentation includes step-by-step tutorials and detailed examples of use."
+  doi: 10.18637/jss.v109.i02
+  institution:
+    name: "Universidad Autónoma de Madrid"
+  issn: "1548-7660"
+  issue-date: "2024-05-08"
+  journal: "Journal of Statistical Software"
+  keywords:
+    - "functional data analysis"
+    - "computational statistics"
+    - "interactive data visualization"
+    - "Python"
+    - "scikit-learn"
+  languages:
+    - en
+  license: CC-BY-3.0
+  publisher:
+    name: "Foundation for Open Access Statistics"
+  url: "https://www.jstatsoft.org/article/view/v109i02"
+  volume: 109
+  issue: 2
+  start: 1
+  end: 37
+  

@@ -17,7 +17,9 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "representation",
     ],
     submod_attrs={
-        'representation': ["FData", "FDataBasis", "FDataGrid"],
+        'representation': [
+            "FData", "FDataBasis", "FDataGrid", "FDataIrregular",
+        ],
         'representation._functional_data': ['concatenate'],
     },
 )
@@ -27,7 +29,8 @@ if TYPE_CHECKING:
         FData as FData,
         FDataBasis as FDataBasis,
         FDataGrid as FDataGrid,
+        FDataIrregular as FDataIrregular,
         concatenate as concatenate,
     )
 
-__version__ = "0.9.1"
+__version__ = "0.10.0"

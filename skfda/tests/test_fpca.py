@@ -166,8 +166,11 @@ class FPCATestCase(unittest.TestCase):
             [3.45371437e2, 9.58703622e1, 8.47570770e0],
         ])
 
+        # Sign may be inverted. We take that into account.
+        factor = np.sign(scores[0]) * np.sign(results[0])
+
         # Compare results
-        np.testing.assert_allclose(scores, results, atol=1e-7)
+        np.testing.assert_allclose(factor * scores, results, atol=1e-7)
 
     def test_basis_fpca_noregularization_fit_result(self) -> None:
         """
@@ -432,9 +435,12 @@ class FPCATestCase(unittest.TestCase):
             -136.37428322, -183.00666524, -180.64875116, -50.94411798,
             -136.95768454, 49.83695668, 150.67710532, 158.20189044,
             216.43002289, 233.53770292, 344.18479151,
-        ])
+        ])[:, np.newaxis]
 
-        np.testing.assert_allclose(scores.ravel(), results)
+        # Sign may be inverted. We take that into account.
+        factor = np.sign(scores[0]) * np.sign(results[0])
+
+        np.testing.assert_allclose(factor * scores, results)
 
     def test_grid_fpca_regularization_fit_result(self) -> None:
         """Compare the components in grid against the fda.usc package."""

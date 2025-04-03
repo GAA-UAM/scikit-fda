@@ -113,3 +113,6 @@ pip-wheel-metadata/
 .gitignore
 .vscode
 .ruff_cache
+
+# Docs time logs
+**/sg_execution_times.rst

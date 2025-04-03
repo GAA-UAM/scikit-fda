@@ -6,9 +6,8 @@ from typing import Callable
 import numpy as np
 import scipy.signal
 import sklearn.utils
-from sklearn.base import clone
-
 from dcor import u_distance_correlation_sqr
+from sklearn.base import clone
 
 from ...._utils._sklearn_adapter import (
     BaseEstimator,
@@ -101,7 +100,7 @@ class RelativeLocalMaximaSelector(BaseEstimator):
             values = X.data_matrix[:, indexes]
             partition_indexes = np.argpartition(
                 values,
-                -min(self.max_points, len(values)),
+                -min(self.max_points, len(values.ravel())),
                 axis=None,
             )
             indexes = indexes[np.sort(partition_indexes[-self.max_points:])]
@@ -110,12 +109,12 @@ class RelativeLocalMaximaSelector(BaseEstimator):
 
 
 class MaximaHunting(
-    BaseEstimator,
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
         NDArrayReal,
     ],
+    BaseEstimator,
 ):
     r"""
     Maxima Hunting variable selection.
@@ -232,7 +231,7 @@ class MaximaHunting(
         self.features_shape_ = X.data_matrix.shape[1:]
         self.dependence_ = _compute_dependence(
             X,
-            y.astype(np.float_),
+            y.astype(np.float64),
             dependence_measure=self.dependence_measure,
         )
 

@@ -4,17 +4,18 @@ from typing import Any, Union
 
 import numpy as np
 
-try:
-    from numpy.typing import ArrayLike as ArrayLike  # noqa: WPS113
+try:  # noqa: WPS113
+    from numpy.typing import ArrayLike as ArrayLike, DTypeLike as DTypeLike
 except ImportError:
     ArrayLike = np.ndarray  # type:ignore[misc] # noqa: WPS440
+    DTypeLike = np.dtype  # type:ignore[misc]
 
 try:  # noqa: WPS229
     from numpy.typing import NDArray
     NDArrayAny = NDArray[Any]
     NDArrayInt = NDArray[np.int_]
-    NDArrayFloat = NDArray[np.float_]
-    NDArrayReal = NDArray[Union[np.float_, np.int_]]
+    NDArrayFloat = NDArray[np.float64]
+    NDArrayReal = NDArray[Union[np.float64, np.int_]]
     NDArrayBool = NDArray[np.bool_]
     NDArrayStr = NDArray[np.str_]
     NDArrayObject = NDArray[np.object_]

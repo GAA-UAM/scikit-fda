@@ -23,8 +23,8 @@ OutputType = TypeVar(
 
 
 class FPLSRegression(
-    BaseEstimator,
     RegressorMixin[InputType, OutputType],
+    BaseEstimator,
 ):
     r"""
     Regression using Functional Partial Least Squares.

@@ -41,10 +41,10 @@ SelfType = TypeVar(
     bound="MinimumRedundancyMaximumRelevance[Any]",
 )
 
-dtype_X_T = TypeVar("dtype_X_T", bound=np.float_, covariant=True)
+dtype_X_T = TypeVar("dtype_X_T", bound=np.float64, covariant=True)
 dtype_y_T = TypeVar(
     "dtype_y_T",
-    bound=Union[np.int_, np.float_],
+    bound=Union[np.int_, np.float64],
     covariant=True,
 )
 
@@ -108,7 +108,7 @@ MIQ: Final = Method(
 MethodName = Literal["MID", "MIQ"]
 
 
-def _parse_method(name: MethodName) -> Method[Union[np.int_, np.float_]]:
+def _parse_method(name: MethodName) -> Method[Union[np.int_, np.float64]]:
     if name == "MID":
         return MID
     elif name == "MIQ":
@@ -185,12 +185,12 @@ def _mrmr(
 
 
 class MinimumRedundancyMaximumRelevance(
-    BaseEstimator,
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
         Union[NDArrayInt, NDArrayFloat],
     ],
+    BaseEstimator,
     Generic[dtype_y_T],
 ):
     r"""
@@ -336,8 +336,8 @@ class MinimumRedundancyMaximumRelevance(
         *,
         n_features_to_select: int = 1,
         dependence_measure: _DependenceMeasure[
-            np.typing.NDArray[np.float_],
-            np.typing.NDArray[np.float_ | dtype_y_T],
+            np.typing.NDArray[np.float64],
+            np.typing.NDArray[np.float64 | dtype_y_T],
         ],
         criterion: _CriterionLike,
     ) -> None:
@@ -349,12 +349,12 @@ class MinimumRedundancyMaximumRelevance(
         *,
         n_features_to_select: int = 1,
         relevance_dependence_measure: _DependenceMeasure[
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
             np.typing.NDArray[dtype_y_T],
         ],
         redundancy_dependence_measure: _DependenceMeasure[
-            np.typing.NDArray[np.float_],
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
+            np.typing.NDArray[np.float64],
         ],
         criterion: _CriterionLike,
     ) -> None:
@@ -366,16 +366,16 @@ class MinimumRedundancyMaximumRelevance(
         n_features_to_select: int = 1,
         method: Method[dtype_y_T] | MethodName | None = None,
         dependence_measure: _DependenceMeasure[
-            np.typing.NDArray[np.float_],
-            np.typing.NDArray[np.float_ | dtype_y_T],
+            np.typing.NDArray[np.float64],
+            np.typing.NDArray[np.float64 | dtype_y_T],
         ] | None = None,
         relevance_dependence_measure: _DependenceMeasure[
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
             np.typing.NDArray[dtype_y_T],
         ] | None = None,
         redundancy_dependence_measure: _DependenceMeasure[
-            np.typing.NDArray[np.float_],
-            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float64],
+            np.typing.NDArray[np.float64],
         ] | None = None,
         criterion: _CriterionLike | None = None,
     ) -> None:
@@ -417,7 +417,7 @@ class MinimumRedundancyMaximumRelevance(
             )
 
             self.relevance_dependence_measure_: _DependenceMeasure[
-                np.typing.NDArray[np.float_],
+                np.typing.NDArray[np.float64],
                 np.typing.NDArray[dtype_y_T],
             ] = (
                 method.relevance_dependence_measure

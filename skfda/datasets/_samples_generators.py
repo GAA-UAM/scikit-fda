@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import itertools
-from typing import Callable, Sequence, Union
+from typing import Any, Callable, Literal, Sequence, Union
 
 import numpy as np
 import scipy.integrate
 from scipy.stats import multivariate_normal
+from typing_extensions import Protocol
 
 from .._utils import _cartesian_product, _to_grid_points, normalize_warping
 from ..misc.covariances import Brownian, CovarianceLike, _execute_covariance
@@ -13,12 +14,674 @@ from ..misc.validation import validate_random_state
 from ..representation import FDataGrid
 from ..representation.interpolation import SplineInterpolation
 from ..typing._base import DomainRangeLike, GridPointsLike, RandomStateLike
-from ..typing._numpy import NDArrayFloat
+from ..typing._numpy import ArrayLike, NDArrayFloat
 
 MeanCallable = Callable[[np.ndarray], np.ndarray]
 CovarianceCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
 MeanLike = Union[float, NDArrayFloat, MeanCallable]
+SDETerm = Callable[[float, NDArrayFloat], NDArrayFloat]
+EMTermCalculation = Callable[[float, NDArrayFloat, NDArrayFloat], NDArrayFloat]
+
+
+class InitialValueGenerator(Protocol):
+    """Class to represent SDE initial value generators.
+
+    This is intented to be an interface compatible with the rvs method of
+    SciPy distributions.
+    """
+
+    def __call__(
+        self,
+        size: int,
+        random_state: RandomStateLike,
+    ) -> NDArrayFloat:
+        """Interface of initial value generator."""
+
+
+def _sde_initial_condition_preprocessing(
+    initial_condition: ArrayLike | InitialValueGenerator,
+    random_state: np.random.RandomState,
+    n_samples: int | None = None,
+) -> tuple[NDArrayFloat, int, int]:
+
+    if n_samples is None:
+        if callable(initial_condition):
+            raise ValueError(
+                "Invalid initial conditions. If a function is given, the "
+                "n_samples argument must be included.",
+            )
+
+        initial_values = np.atleast_1d(initial_condition)
+        n_samples = len(initial_values)
+    else:
+        if callable(initial_condition):
+            initial_values = initial_condition(
+                size=n_samples,
+                random_state=random_state,
+            )
+        else:
+            initial_condition = np.atleast_1d(initial_condition)
+            dim_codomain = len(initial_condition)
+            initial_values = (
+                initial_condition
+                * np.ones((n_samples, dim_codomain))
+            )
+
+    if initial_values.ndim == 1:
+        initial_values = initial_values[:, np.newaxis]
+    elif initial_values.ndim > 2:
+        raise ValueError(
+            "Invalid initial conditions. Each of the starting points "
+            "must be a flat array.",
+        )
+    (n_samples, dim_codomain) = initial_values.shape
+
+    return (
+        initial_values,
+        n_samples,
+        dim_codomain,
+    )
+
+
+def _sde_drift_diffusion_preprocessing(
+    drift: SDETerm | ArrayLike | None,
+    diffusion: SDETerm | ArrayLike | None,
+    dim_codomain: int,
+    initial_values: NDArrayFloat,
+    start: float,
+) -> tuple[int, SDETerm, SDETerm, EMTermCalculation, bool]:
+
+    if drift is None:
+        drift = 0
+
+    if callable(drift):
+        formatted_drift = drift
+    else:
+        def constant_drift(  # noqa: WPS430 -- We need internal functions
+            t: float,
+            x: NDArrayFloat,
+        ) -> NDArrayFloat:
+            return np.atleast_1d(drift)
+
+        formatted_drift = constant_drift
+
+    if diffusion is None:
+        diffusion = 1.0
+
+    if callable(diffusion):
+        formatted_diffusion = diffusion
+    else:
+        def constant_diffusion(  # noqa: WPS430 -- We need internal functions
+            t: float,
+            x: NDArrayFloat,
+        ) -> NDArrayFloat:
+            return np.atleast_1d(diffusion)
+
+        formatted_diffusion = constant_diffusion
+
+    def vector_diffusion_times_noise(  # noqa: WPS430
+        t_n: float,
+        x_n: NDArrayFloat,
+        noise: NDArrayFloat,
+    ) -> NDArrayFloat:
+        return formatted_diffusion(t_n, x_n) * noise
+
+    def matrix_diffusion_times_noise(  # noqa: WPS430
+        t_n: float,
+        x_n: NDArrayFloat,
+        noise: NDArrayFloat,
+    ) -> Any:
+        return np.einsum(
+            '...dj, ...j -> ...d',
+            formatted_diffusion(t_n, x_n),
+            noise,
+        )
+
+    first_value = initial_values[0]
+    diffusion_test_values = np.tile(first_value, (dim_codomain + 1, 1))
+    diffusion_shape = np.atleast_1d(
+        formatted_diffusion(start, diffusion_test_values),
+    ).shape
+
+    if len(diffusion_shape) == 3:
+        diffusion_matricial_term = True
+    elif len(diffusion_shape) == 2:
+        diffusion_matricial_term = diffusion_shape[0] != dim_codomain + 1
+    else:
+        diffusion_matricial_term = False
+
+    dim_noise = dim_codomain
+
+    if diffusion_matricial_term:
+        diffusion_times_noise = matrix_diffusion_times_noise
+        dim_noise = diffusion_shape[-1]
+    else:
+        diffusion_times_noise = vector_diffusion_times_noise
+
+    return (
+        dim_noise,
+        formatted_drift,
+        formatted_diffusion,
+        diffusion_times_noise,
+        diffusion_matricial_term,
+    )
+
+
+def make_sde_trajectories(  # noqa: WPS211
+    *,
+    initial_condition: ArrayLike | InitialValueGenerator,
+    drift: SDETerm | ArrayLike | None = None,
+    diffusion: SDETerm | ArrayLike | None = None,
+    diffusion_derivative: SDETerm | None = None,
+    n_L0_discretization_points: int | None = None,
+    method: Literal["euler-maruyama", "milstein"] = "euler-maruyama",
+    n_grid_points: int = 100,
+    n_samples: int | None = None,
+    start: float = 0,
+    stop: float = 1.0,
+    random_state: RandomStateLike = None,
+) -> FDataGrid:
+    r"""Numerical integration of an Itô SDE.
+
+    An SDE can be expressed with the following formula
+
+    .. math::
+
+        d\mathbf{X}(t) = \mathbf{F}(t, \mathbf{X}(t))dt + \mathbf{G}(t,
+        \mathbf{X}(t))d\mathbf{W}(t).
+
+    In this equation, :math:`\mathbf{X} = (X^{(1)}, X^{(2)}, ... , X^{(n)})
+    \in \mathbb{R}^q` is a vector that represents the state of the stochastic
+    process. The function :math:`\mathbf{F}(t, \mathbf{X}) = (F^{(1)}(t,
+    \mathbf{X}), ..., F^{(q)}(t, \mathbf{X}))` is called drift and refers
+    to the deterministic component of the equation. The function
+    :math:`\mathbf{G} (t, \mathbf{X}) = (G^{i, j}(t, \mathbf{X}))_{i=1, j=1}
+    ^{q, m}` is denoted as the diffusion term and refers to the stochastic
+    component of the evolution. :math:`\mathbf{W}(t)` refers to a Wiener
+    process (Standard Brownian motion) of dimension :math:`m`. Finally,
+    :math:`q` refers to the dimension of the variable :math:`\mathbf{X}`
+    (dimension of the codomain) and :math:`m` to the dimension of the noise.
+
+    Two methods are implemented: Euler_Maruyama's method and Milstein's method.
+
+    Euler-Maruyama's method computes the approximated solution using the
+    Markov chain
+
+    .. math::
+
+        X_{n + 1}^{(i)} = X_n^{(i)} + F^{(i)}(t_n, \mathbf{X}_n)\Delta t_n +
+        \sum_{j=1}^m G^{i,j}(t_n, \mathbf{X}_n)\sqrt{\Delta t_n}\Delta Z_n^j,
+
+    where :math:`X_n^{(i)}` is the approximated value of :math:`X^{(i)}(t_n)`
+    and the :math:`\mathbf{Z}_m` are independent, identically distributed
+    :math:`m`-dimensional standard normal random variables.
+
+    Milstein's method computes the approximated solution using the
+    Markov chain
+
+    .. math::
+
+        X^{(i)}_{n + 1} = X_n^{(i)} + F^{(i)}(X_i, t_i)\Delta t_i +
+        \sum_{j=1}^m G^{i,j}(t_n, X_n)\sqrt{\Delta t_n}Z_n^j +
+        \sum_{j_1, j_2 = 1}^m L^{j_1} G^{i, j_2} (t_n, X_n)
+        I_{(j_1, j_2)} [t_n, t_{n+1}],
+
+    where :math:`X_n^{(i)}` is the approximated value of :math:`X^{(i)}(t_n)`
+    and the :math:`\mathbf{Z}_m` are independent, identically distributed
+    :math:`m`-dimensional standard normal random variables. :math:`L^j` stands
+    for the operator
+
+    .. math::
+
+        L^j = \sum_{k=1}^q G^{k, j}(t_n, X_n)\frac{\partial}{\partial x^k}
+
+
+    and :math:`I_{(j_1, j_2)} [t_n, t_{n+1}]` is the double stochastic integral
+
+    .. math::
+
+        I_{(j_1, j_2)} [t_n, t_{n+1}] = \int_{t_n}^{t_{n+1}} \int_{t}^{t_{n+1}}
+        dW_s^{j_1} dW_t^{j_2}.
+
+    In order to compute :math:`I_{(j_1, j_2)} [t_n, t_{n+1}]`, we use
+    Milstein L=0 method, described by Banerjee
+    :footcite:p:`banerjee++_2020_numerical`. This method approximates the
+    value of the double Itô integral by simulating solutions of another SDE.
+    The number of discretization points used to simulate the SDE which
+    approximates the double Itô integral is given by the parameter
+    ``n_L0_discretization_points``.
+
+    For unidimensional processes the value of the double Itô integral is closed
+    so it is not necessary to include the ``n_L0_discretization_points``
+    parameter. However, if the process is multidimensional it is mandatory
+    include it.
+
+    Args:
+        initial_condition: Initial condition of the SDE. It can have one of
+            three formats: An starting initial value from which to
+            calculate ``n_samples`` trajectories. An array of initial values.
+            For each starting point a trajectory will be calculated. A
+            function that generates random numbers or vectors. It should
+            have two parameters called ``size`` and ``random_state`` and it
+            should return an array.
+        drift: Drift term (:math:`F(t,\mathbf{X})` in the equation).
+        diffusion: Diffusion term (:math:`G(t,\mathbf{X})` in the
+            equation). The diffusion term should depend on the variable
+            :math:`\mathbf{X}`.
+        diffusion_derivative: Derivate of the diffusion term
+            (:math:`G_\mathbf{X}(t, \mathbf{X})`). Only needed for Milstein's
+            method. The return of this function should have one extra dimension
+            than the diffusion term, to account for the derivatives for each of
+            the coordinates.
+        n_L0_discretization_points: number of discretization points to
+            approximate the double Itô integral :math:`I_{(j_1,j_2)}`. Only
+            needed in Milstein's method. Only use when the process is
+            multidimensional.
+        method: Integration SDE method used. It can be either euler-maruyama or
+            milstein.
+        n_grid_points: The total number of points of evaluation.
+        n_samples: Number of trajectories integrated.
+        start: Starting time of the trajectories.
+        stop: Ending time of the trajectories.
+        random_state: Random state.
+
+    Returns:
+        :class:`FDataGrid` object comprising all the trajectories.
+
+    Examples:
+        Example of the use of Euler-Maruyama's method for an Ornstein-Uhlenbeck
+        process that has the equation:
+
+        ..  math:
+
+            dX(t) = -A(X(t) - \mu)dt + BdW(t)
+
+        >>> from scipy.stats import norm
+        >>> A = 1
+        >>> mu = 3
+        >>> B = 0.5
+        >>> def ou_drift(t: float, x: np.ndarray) -> np.ndarray:
+        ...     return -A * (x - mu)
+        >>> initial_condition = norm().rvs
+        >>>
+        >>> trajectories = make_sde_trajectories(
+        ...     initial_condition=initial_condition,
+        ...     n_samples=10,
+        ...     drift=ou_drift,
+        ...     diffusion=B,
+        ... )
+
+        Example of the use of Milstein's method for a 1-d Geometric Brownian
+        motion that has the equation:
+
+        ..  math:
+
+            dX(t) = \mu X(t) dt + \sigma X(t) dW(t)
+
+        >>> sigma = 1
+        >>> mu = 2
+        >>> def gbm_drift(t: float, x: np.ndarray) -> np.ndarray:
+        ...     return mu * x
+        >>> def gbm_diffusion(t: float, x: np.ndarray) -> np.ndarray:
+        ...     return sigma * x
+        >>> def gbm_diff_derivative(t: float, x: np.ndarray) -> np.ndarray:
+        ...     return sigma * np.ones_like(x)[: :, np.newaxis]
+        >>> X_0 = 1
+        >>> n_L0_discretization_points = 5,
+        >>>
+        >>> trajectories = make_sde_trajectories(
+        ...     initial_condition=X_0,
+        ...     drift=gbm_drift,
+        ...     diffusion=gbm_diffusion,
+        ...     diffusion_derivative=gbm_diff_derivative,
+        ...     n_L0_discretization_points=n_L0_discretization_points,
+        ...     method="milstein",
+        ...     n_samples=10,
+        ... )
+
+    References:
+         .. footbibliography::
+    """
+    random_state = validate_random_state(random_state)
+
+    (
+        initial_values,
+        n_samples,
+        dim_codomain,
+    ) = _sde_initial_condition_preprocessing(
+        initial_condition,
+        random_state,
+        n_samples,
+    )
+
+    (  # noqa: WPS236
+        dim_noise,
+        formatted_drift,
+        formatted_diffusion,
+        diffusion_times_noise,
+        diffusion_matricial_term,
+    ) = _sde_drift_diffusion_preprocessing(
+        drift,
+        diffusion,
+        dim_codomain,
+        initial_values,
+        start,
+    )
+
+    times = np.linspace(start, stop, n_grid_points)
+
+    if method == "euler-maruyama":
+        return _euler_maruyama(
+            initial_values,
+            n_samples,
+            n_grid_points,
+            dim_codomain,
+            dim_noise,
+            formatted_drift,
+            diffusion_times_noise,
+            times,
+            random_state,
+        )
+    elif method == "milstein":
+        if diffusion_derivative is None:
+            raise ValueError(
+                "The diffusion derivative must be included for the Milstein"
+                "method.",
+            )
+
+        return _milstein(
+            initial_values,
+            n_samples,
+            n_grid_points,
+            dim_codomain,
+            dim_noise,
+            formatted_drift,
+            formatted_diffusion,
+            diffusion_derivative,
+            n_L0_discretization_points,
+            diffusion_times_noise,
+            diffusion_matricial_term,
+            times,
+            random_state,
+        )
+
+    raise ValueError(f"Method \"{method}\" for computing SDEs not implemented")
+
+
+def _euler_maruyama(
+    initial_values: NDArrayFloat,
+    n_samples: int,
+    n_grid_points: int,
+    dim_codomain: int,
+    dim_noise: int,
+    drift_function: SDETerm,
+    diffusion_times_noise: EMTermCalculation,
+    times: NDArrayFloat,
+    random_state: np.random.RandomState,
+) -> FDataGrid:
+    r"""Numerical integration of an Itô SDE using the Euler-Maruyana scheme.
+
+    An SDE can be expressed with the following formula
+
+    .. math::
+
+        d\mathbf{X}(t) = \mathbf{F}(t, \mathbf{X}(t))dt + \mathbf{G}(t,
+        \mathbf{X}(t))d\mathbf{W}(t).
+
+    In this equation, :math:`\mathbf{X} = (X^{(1)}, X^{(2)}, ... , X^{(n)})
+    \in \mathbb{R}^q` is a vector that represents the state of the stochastic
+    process. The function :math:`\mathbf{F}(t, \mathbf{X}) = (F^{(1)}(t,
+    \mathbf{X}), ..., F^{(q)}(t, \mathbf{X}))` is called drift and refers
+    to the deterministic component of the equation. The function
+    :math:`\mathbf{G} (t, \mathbf{X}) = (G^{i, j}(t, \mathbf{X}))_{i=1, j=1}
+    ^{q, m}` is denoted as the diffusion term and refers to the stochastic
+    component of the evolution. :math:`\mathbf{W}(t)` refers to a Wiener
+    process (Standard Brownian motion) of dimension :math:`m`. Finally,
+    :math:`q` refers to the dimension of the variable :math:`\mathbf{X}`
+    (dimension of the codomain) and :math:`m` to the dimension of the noise.
+
+    Euler-Maruyama's method computes the approximated solution using the
+    Markov chain
+
+    .. math::
+
+        X_{n + 1}^{(i)} = X_n^{(i)} + F^{(i)}(t_n, \mathbf{X}_n)\Delta t_n +
+        \sum_{j=1}^m G^{i,j}(t_n, \mathbf{X}_n)\sqrt{\Delta t_n}\Delta Z_n^j,
+
+    where :math:`X_n^{(i)}` is the approximated value of :math:`X^{(i)}(t_n)`
+    and the :math:`\mathbf{Z}_m` are independent, identically distributed
+    :math:`m`-dimensional standard normal random variables.
+
+    Args:
+        initial_values: Array of initial values. For each starting point
+            a trajectory will be calculated.
+        n_samples: Number of trajectories generated.
+        n_grid_points: The total number of points of evaluation.
+        drift_function: Drift coefficient.
+        dim_codomain: dimension of the image of the stochatic process.
+        dim_noise: Added noise dimension.
+        diffusion_times_noise: Diffusion coefficient times the added noise.
+        times: distretization array for the numerical method.
+        random_state: Random state.
+
+    Returns:
+        :class:`FDataGrid` object comprising all the trajectories.
+
+    """
+    data_matrix = np.zeros((n_samples, n_grid_points, dim_codomain))
+    delta_t = times[1:] - times[:-1]
+    noise = random_state.standard_normal(
+        size=(n_samples, n_grid_points - 1, dim_noise),
+    )
+    data_matrix[:, 0] = initial_values
+
+    for n in range(n_grid_points - 1):
+        t_n = times[n]
+        x_n = data_matrix[:, n]
+
+        data_matrix[:, n + 1] = (
+            x_n
+            + delta_t[n] * drift_function(t_n, x_n)
+            + diffusion_times_noise(t_n, x_n, noise[:, n])
+            * np.sqrt(delta_t[n])
+        )
+
+    return FDataGrid(
+        grid_points=times,
+        data_matrix=data_matrix,
+    )
+
+
+def _milstein(  # noqa: WPS211
+    initial_values: NDArrayFloat,
+    n_samples: int,
+    n_grid_points: int,
+    dim_codomain: int,
+    dim_noise: int,
+    formatted_drift: SDETerm,
+    formatted_diffusion: SDETerm,
+    diffusion_derivative: SDETerm,
+    n_L0_discretization_points: int | None,
+    diffusion_times_noise: EMTermCalculation,
+    diffusion_matricial_term: bool,
+    times: NDArrayFloat,
+    random_state: np.random.RandomState,
+) -> FDataGrid:
+    r"""Numerical integration of an Itô SDE.
+
+    An SDE can be expressed with the following formula
+
+    .. math::
+
+        d\mathbf{X}(t) = \mathbf{F}(t, \mathbf{X}(t))dt + \mathbf{G}(t,
+        \mathbf{X}(t))d\mathbf{W}(t).
+
+    In this equation, :math:`\mathbf{X} = (X^{(1)}, X^{(2)}, ... , X^{(n)})
+    \in \mathbb{R}^q` is a vector that represents the state of the stochastic
+    process. The function :math:`\mathbf{F}(t, \mathbf{X}) = (F^{(1)}(t,
+    \mathbf{X}), ..., F^{(q)}(t, \mathbf{X}))` is called drift and refers
+    to the deterministic component of the equation. The function
+    :math:`\mathbf{G} (t, \mathbf{X}) = (G^{i, j}(t, \mathbf{X}))_{i=1, j=1}
+    ^{q, m}` is denoted as the diffusion term and refers to the stochastic
+    component of the evolution. :math:`\mathbf{W}(t)` refers to a Wiener
+    process (Standard Brownian motion) of dimension :math:`m`. Finally,
+    :math:`q` refers to the dimension of the variable :math:`\mathbf{X}`
+    (dimension of the codomain) and :math:`m` to the dimension of the noise.
+
+    Milstein's method computes the approximated solution using the
+    Markov chain
+
+    .. math::
+
+        X^{(i)}_{n + 1} = X_n^{(i)} + F^{(i)}(X_i, t_i)\Delta t_i +
+        \sum_{j=1}^m G^{i,j}(t_n, X_n)\sqrt{\Delta t_n}Z_n^j +
+        \sum_{j_1, j_2 = 1}^m L^{j_1} G^{i, j_2} (t_n, X_n)
+        I_{(j_1, j_2)} [t_n, t_{n+1}],
+
+    where :math:`X_n^{(i)}` is the approximated value of :math:`X^{(i)}(t_n)`
+    and the :math:`\mathbf{Z}_m` are independent, identically distributed
+    :math:`m`-dimensional standard normal random variables. :math:`L^j` stands
+    for the operator
+
+    .. math::
+
+        L^j = \sum_{k=1}^q G^{k, j}(t_n, X_n)\frac{\partial}{\partial x^k}
+
+
+    and :math:`I_{(j_1, j_2)} [t_n, t_{n+1}]` is the double stochastic integral
+
+    .. math::
+
+        I_{(j_1, j_2)} [t_n, t_{n+1}] = \int_{t_n}^{t_{n+1}} \int_{t}^{t_{n+1}}
+        dW_s^{j_1} dW_t^{j_2}.
+
+    In order to compute :math:`I_{(j_1, j_2)} [t_n, t_{n+1}]`, we use
+    Milstein L=0 method, described by Banerjee
+    :footcite:p:`banerjee++_2020_numerical`. This method approximates the
+    value of the double Itô integral by simulating solutions of another SDE.
+    The number of discretization points used to simulate the SDE which
+    approximates the double Itô integral is given by the parameter
+    ``n_L0_discretization_points``.
+
+    For unidimensional processes the value of the double Itô integral is closed
+    so it is not necessary to include the ``n_L0_discretization_points``
+    parameter. However, if the process is multidimensional it is mandatory
+    include it.
+
+    Args:
+        initial_values: Array of initial values. For each starting point
+            a trajectory will be calculated.
+        n_samples: Number of trajectories generated.
+        n_grid_points: The total number of points of evaluation.
+        dim_codomain: dimension of the image of the stochatic process.
+        dim_noise: Added noise dimension.
+        formatted_drift: Drift coefficient.
+        formatted_diffusion: Diffusion coefficient.
+        diffusion_derivative: Derivative of formatted_diffusion.
+        n_L0_discretization_points: Discretization points for the L0 method.
+        diffusion_times_noise: Diffusion coefficient times the added noise.
+        diffusion_matricial_term: True if diffusion is a matrix (changes
+            the way of multypling).
+        times: distretization array for the numerical method.
+        random_state: Random state.
+
+    Returns:
+        :class:`FDataGrid` object comprising all the trajectories.
+
+    References:
+         .. footbibliography::
+    """
+
+    def matrix_milstein_term(  # noqa: WPS430
+        t_n: float,
+        x_n: NDArrayFloat,
+        n: int,
+    ) -> NDArrayFloat:
+        L_j = np.einsum(
+            '...kj, ...ilk -> ...ijl',
+            formatted_diffusion(t_n, x_n),
+            diffusion_derivative(t_n, x_n),
+        )
+
+        return np.einsum(
+            '...ijl, ...jl -> ...i',
+            L_j,
+            double_ito_integral[:, n, :, :],
+        )
+
+    def vector_milstein_term(  # noqa: WPS430
+        t_n: float,
+        x_n: NDArrayFloat,
+        n: int,
+    ) -> NDArrayFloat:
+        return np.einsum(
+            '...j, ...ij, ...ji -> ...i',
+            formatted_diffusion(t_n, x_n),
+            diffusion_derivative(t_n, x_n),
+            double_ito_integral[:, n, :, :],
+        )
+
+    if diffusion_matricial_term:
+        milstein_term = matrix_milstein_term
+    else:
+        milstein_term = vector_milstein_term
+
+    if initial_values.shape[1] == 1:
+        n_L0_discretization_points = 1
+    elif n_L0_discretization_points is None:
+        raise ValueError(
+            "Invalid n_L0_discretization_points. When the process is "
+            "multidimensional it must have an integer value.",
+        )
+
+    data_matrix = np.zeros((n_samples, n_grid_points, dim_codomain))
+    delta_t = times[1:] - times[:-1]
+    noise = random_state.standard_normal(
+        size=(
+            n_samples,
+            n_grid_points - 1,
+            dim_noise,
+            n_L0_discretization_points,
+        ),
+    ) * np.sqrt(delta_t[0] / n_L0_discretization_points)
+    wiener_process_differences = np.cumsum(noise, axis=3)
+
+    # Computation of double ito integral using Milstein L=0 method
+    # The method simulates SDEs for each step to estimate this
+    # quantity. These simulations are equivalent to computing the
+    # dot product of two vectors.
+    double_ito_integral = np.einsum(
+        '...ik, ...jk -> ...ij',
+        wiener_process_differences - noise / 2,
+        noise,
+    )
+    double_ito_integral = (
+        double_ito_integral
+        - delta_t[0] * np.eye(dim_noise) / 2
+    )
+
+    data_matrix[:, 0] = initial_values
+
+    for n in range(n_grid_points - 1):
+        t_n = times[n]
+        x_n = data_matrix[:, n]
+
+        data_matrix[:, n + 1] = (
+            x_n
+            + delta_t[n] * formatted_drift(t_n, x_n)
+            + diffusion_times_noise(
+                t_n,
+                x_n,
+                wiener_process_differences[:, n, :, -1],
+            )
+            + milstein_term(t_n, x_n, n)
+        )
+
+    return FDataGrid(
+        grid_points=times,
+        data_matrix=data_matrix,
+    )
 
 
 def make_gaussian(
@@ -148,7 +811,7 @@ def make_gaussian_process(
     )
 
 
-def make_sinusoidal_process(
+def make_sinusoidal_process(  # noqa: WPS211
     n_samples: int = 15,
     n_features: int = 100,
     *,
@@ -273,7 +936,7 @@ def make_multimodal_landmarks(
     return modes_location + variation
 
 
-def make_multimodal_samples(
+def make_multimodal_samples(  # noqa: WPS211
     n_samples: int = 15,
     *,
     n_modes: int = 1,
@@ -371,7 +1034,7 @@ def make_multimodal_samples(
     # Covariance matrix of the samples
     cov = mode_std * np.eye(dim_domain)
 
-    for i, j, k in itertools.product(
+    for i, j, k in itertools.product(  # noqa: WPS440
         range(n_samples),
         range(dim_codomain),
         range(n_modes),
@@ -481,7 +1144,7 @@ def make_random_warping(
     np.square(v, out=v)
 
     # Creation of FDataGrid in the corresponding domain
-    data_matrix = scipy.integrate.cumtrapz(
+    data_matrix = scipy.integrate.cumulative_trapezoid(
         v,
         dx=1 / n_features,
         initial=0,

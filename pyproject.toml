@@ -2,7 +2,7 @@
 name = "scikit-fda"
 description = "Functional Data Analysis Python package."
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {file = "LICENSE.txt"}
 keywords = [
 	"functional data",

@@ -147,12 +147,10 @@ license_ can be found along with the code.
 
 .. |build-status| image:: https://github.com/GAA-UAM/scikit-fda/actions/workflows/tests.yml/badge.svg?event=push
     :alt: build status
-    :scale: 100%
     :target: https://github.com/GAA-UAM/scikit-fda/actions/workflows/tests.yml
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status
-    :scale: 100%
     :target: http://fda.readthedocs.io/en/latest/?badge=latest
 
 .. |Codecov| image:: https://codecov.io/gh/GAA-UAM/scikit-fda/branch/develop/graph/badge.svg
@@ -164,14 +162,12 @@ license_ can be found along with the code.
    
 .. |versions| image:: https://img.shields.io/pypi/pyversions/scikit-fda
    :alt: PyPI - Python Version
-   :scale: 100%
 
 .. |PyPIBadge| image:: https://badge.fury.io/py/scikit-fda.svg
 .. _PyPIBadge: https://badge.fury.io/py/scikit-fda
 
 .. |conda| image:: https://img.shields.io/conda/vn/conda-forge/scikit-fda
     :alt: Available in Conda
-    :scale: 100%
     :target: https://anaconda.org/conda-forge/scikit-fda
 
 .. |license| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg

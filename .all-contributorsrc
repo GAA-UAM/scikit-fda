@@ -596,7 +596,9 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/24703335?v=4",
       "profile": "https://github.com/luisheb",
       "contributions": [
-        "doc"
+        "doc",
+        "code",
+        "test"
       ]
     },
     {

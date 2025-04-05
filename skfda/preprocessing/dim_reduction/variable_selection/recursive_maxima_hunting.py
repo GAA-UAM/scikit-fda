@@ -778,12 +778,12 @@ def _get_influence_mask(
 
 
 class RecursiveMaximaHunting(
-    BaseEstimator,
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
         Union[NDArrayInt, NDArrayFloat],
     ],
+    BaseEstimator,
 ):
     """
     Recursive Maxima Hunting variable selection.

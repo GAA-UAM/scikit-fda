@@ -387,7 +387,10 @@
       "contributions": [
         "code",
         "ideas",
-        "research"
+        "research",
+        "doc",
+        "example",
+        "test"
       ]
     },
     {
@@ -596,6 +599,28 @@
         "doc",
         "code",
         "test"
+      ]
+    },
+    {
+      "login": "E105D104U125",
+      "name": "E69D68U85",
+      "avatar_url": "https://avatars.githubusercontent.com/u/72515278?v=4",
+      "profile": "https://github.com/E105D104U125",
+      "contributions": [
+        "code",
+        "doc",
+        "test",
+        "example",
+        "research"
+      ]
+    },
+    {
+      "login": "aleexarias",
+      "name": "Alejandro Arias",
+      "avatar_url": "https://avatars.githubusercontent.com/u/79541307?v=4",
+      "profile": "https://github.com/aleexarias",
+      "contributions": [
+        "doc"
       ]
     }
   ],

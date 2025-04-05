@@ -22,8 +22,8 @@ Output = TypeVar("Output", bound=FData)
 
 
 class RegistrationTransformer(
-    BaseEstimator,
     TransformerMixin[Input, Output, object],
+    BaseEstimator,
 ):
     """Base class for the registration methods."""
 

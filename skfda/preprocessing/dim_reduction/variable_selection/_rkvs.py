@@ -102,8 +102,8 @@ def _rkhs_vs(
 
 
 class RKHSVariableSelection(
-    BaseEstimator,
     InductiveTransformerMixin[FDataGrid, NDArrayFloat, NDArrayInt],
+    BaseEstimator,
 ):
     r"""
     Reproducing kernel variable selection.

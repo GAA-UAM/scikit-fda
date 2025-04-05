@@ -214,8 +214,8 @@ def _create_fem_basis(
 
 
 class HistoricalLinearRegression(
-    BaseEstimator,
     RegressorMixin[FDataGrid, FDataGrid],
+    BaseEstimator,
 ):
     r"""
     Historical functional linear regression.

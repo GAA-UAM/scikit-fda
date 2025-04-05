@@ -21,8 +21,8 @@ SelfType = TypeVar(
 
 
 class EvaluationTransformer(
-    BaseEstimator,
     InductiveTransformerMixin[Input, NDArrayFloat, object],
+    BaseEstimator,
 ):
     r"""
     Transformer returning the evaluations of FData objects as a matrix.

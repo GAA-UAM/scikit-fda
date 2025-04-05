@@ -77,6 +77,40 @@ repository = "https://github.com/GAA-UAM/scikit-fda"
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.ruff.lint]
+select = [
+    "ALL",
+]
+ignore = [
+	"ANN101", # self does not need to be typed
+	"D212", # incompatible with D213, which is our preferred style for multiline docstrings
+	"Q003", # do not change quotation marks to avoid escaping
+	"PLC0414", # allow explicit re-exports
+	"S101", # assert is allowed
+	"TID252", # relative imports allowed
+]
+
+[tool.ruff.lint.per-file-ignores]
+"plot_*.py" = [
+	"ANN", # no type hints in examples
+	"ARG001", # Some unused args are needed
+	"B018", # single object expressions are not useless in examples (they display the object)
+	"D205", # examples do not have a blank line in docstring
+	"D415", # first line in examples does not end with period
+	"ERA001", # Commented code may be useful for the reader
+	"S310", # URLs in examples have been validated
+	"T201", # print allowed in examples
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+max-args = 7
+
 [tool.setuptools.packages.find]
 include = ["skfda*"]
 

@@ -21,16 +21,19 @@ WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
 class FPCA(  # noqa: WPS230 (too many public attributes)
-    BaseEstimator,
     InductiveTransformerMixin[FData, NDArrayFloat, object],
+    BaseEstimator,
 ):
     r"""
     Principal component analysis.
 
     Class that implements functional principal component analysis for both
     basis and grid representations of the data. The parameters are shared
-    when fitting a FDataBasis or FDataGrid, except for
-    ``components_basis``.
+    when fitting a FDataBasis or FDataGrid, except for ``components_basis``.
+
+    For more information about the implementation of the computation of the
+    first principal components see Ramsay and Silverman (chapter 8, section 
+    4)\ :footcite:`ramsay+silverman_2005`.
 
     Parameters:
         n_components: Number of principal components to keep from
@@ -88,6 +91,10 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         >>> fd = FDataGrid(data_matrix, grid_points)
         >>> fpca_grid = FPCA(2)
         >>> fpca_grid = fpca_grid.fit(fd)
+
+    References:
+        .. footbibliography::
+
     """
 
     def __init__(
@@ -135,21 +142,12 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         """
         Compute the first n_components principal components and saves them.
 
-        The eigenvalues associated with these principal components are also
-        saved. For more details about how it is implemented please view the
-        referenced book.
-
         Args:
             X: The functional data object to be analysed.
             y: Ignored.
 
         Returns:
             self
-
-        References:
-            .. [RS05-8-4-2] Ramsay, J., Silverman, B. W. (2005). Basis function
-                expansion of the functions. In *Functional Data Analysis*
-                (pp. 161-164). Springer.
 
         """
         # the maximum number of components is established by the target basis
@@ -308,11 +306,6 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         Returns:
             self.
-
-        References:
-            .. [RS05-8-4-1] Ramsay, J., Silverman, B. W. (2005). Discretizing
-                the functions. In *Functional Data Analysis* (p. 161).
-                Springer.
 
         """
         # check that the number of components is smaller than the sample size

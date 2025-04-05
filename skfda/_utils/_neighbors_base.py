@@ -490,8 +490,8 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
 
 
 class NeighborsClassifierMixin(
-    NeighborsBase[Input, TargetClassification],
     ClassifierMixin[Input, TargetClassification],
+    NeighborsBase[Input, TargetClassification],
 ):
     """Mixin class for classifiers based in nearest neighbors."""
 
@@ -572,8 +572,8 @@ class NeighborsClassifierMixin(
 
 
 class NeighborsRegressorMixin(
-    NeighborsBase[Input, TargetRegression],
     RegressorMixin[Input, TargetRegression],
+    NeighborsBase[Input, TargetRegression],
 ):
     """Mixin class for the regressors based on neighbors."""
 

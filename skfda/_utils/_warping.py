@@ -4,16 +4,462 @@ This module contains routines related to the registration procedure.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
+from scipy.integrate import simpson
 from scipy.interpolate import PchipInterpolator
-
-from ..typing._base import DomainRangeLike
-from ..typing._numpy import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
     from ..representation import FDataGrid
+    from ..typing._base import DomainRangeLike
+    from ..typing._numpy import ArrayLike, NDArrayFloat, NDArrayInt
+
+
+class LineEnergyFunction(Protocol):
+    """
+    Computes the energies of line segments.
+
+    Returns the matrix containing the partial energies of all line
+    segments between a candidate point and the target.
+
+    """
+
+    def __call__(
+        self,
+        /,
+        original: FDataGrid,
+        target: FDataGrid,
+        *,
+        grid_points: NDArrayFloat,
+        row: int,
+        column: int,
+    ) -> NDArrayFloat:
+        """Returns energies of all lines from each candidate point."""
+
+
+def _dp_recover_warpings(
+    row_indexes: NDArrayInt,
+    column_indexes: NDArrayInt,
+    grid_points: NDArrayFloat,
+) -> FDataGrid:
+    """
+    Recover the warpings from the dynamic programming algorithm.
+
+    It goes backwards, from the last point, using the row and column indexes
+    we stored for each point (containing the index of the best candidate
+    point).
+
+    This is iterative and cannot be vectorized, except over samples. Moreover,
+    the number of line segments for each warping may be different. In order to
+    solve that, we use masking for setting only the fixed values, leaving the
+    others as NaN, and then we do linear interpolation over the NaN values.
+
+    Args:
+        row_indexes: Array containing for each position the index of the
+            previous row in the path.
+        column_indexes: Array containing for each position the index of the
+            previous column in the path.
+        grid_points: Grid points of the functions.
+
+    Return:
+        Reconstructed paths.
+
+    Examples:
+        Consider a simple case with 4 discretization points:
+
+        >>> import numpy as np
+        >>> grid_points = np.array([0, 0.33, 0.66, 1])
+
+        We have two samples, and the following indexes matrices (we set to -1
+        the  unused entries for clarity):
+
+        >>> row_indexes = np.array(
+        ...     [
+        ...         [
+        ...             [-1, -1, -1, -1],
+        ...             [-1, -1,  0, -1],
+        ...             [-1, -1, -1, -1],
+        ...             [-1, -1, -1,  1],
+        ...         ],
+        ...         [
+        ...             [-1, -1, -1, -1],
+        ...             [ 0, -1, -1, -1],
+        ...             [-1, -1,  1, -1],
+        ...             [-1, -1, -1,  2],
+        ...         ],
+        ...     ]
+        ... )
+        >>> column_indexes = np.array(
+        ...     [
+        ...         [
+        ...             [-1, -1, -1, -1],
+        ...             [-1, -1,  0, -1],
+        ...             [-1, -1, -1, -1],
+        ...             [-1, -1, -1,  2],
+        ...         ],
+        ...         [
+        ...             [-1, -1, -1, -1],
+        ...             [ 0, -1, -1, -1],
+        ...             [-1, -1,  0, -1],
+        ...             [-1, -1, -1,  2],
+        ...         ],
+        ...     ]
+        ... )
+
+        >>> warpings = _dp_recover_warpings(
+        ...     row_indexes=row_indexes,
+        ...     column_indexes=column_indexes,
+        ...     grid_points=grid_points,
+        ... )
+        >>> warpings.data_matrix
+        array([[[ 0.        ],
+                [ 0.66      ],
+                [ 0.82746269],
+                [ 1.        ]],
+               [[ 0.        ],
+                [ 0.        ],
+                [ 0.66      ],
+                [ 1.        ]]])
+
+    """
+    from ..preprocessing.missing import MissingValuesInterpolation
+    from ..representation import FDataGrid
+
+    n_samples = row_indexes.shape[0]
+    n_points = grid_points.shape[0]
+
+    # Recover the warpings
+    times = np.zeros((n_samples, n_points))
+
+    previous_row_idx: NDArrayInt = np.full(
+        (n_samples,),
+        fill_value=n_points - 1,
+    )
+    previous_column_idx: NDArrayInt = np.full(
+        (n_samples,),
+        fill_value=n_points - 1,
+    )
+
+    arange_idx = np.arange(n_samples)
+
+    for time_idx in reversed(range(n_points)):
+
+        # 1 if we have to set a warping value in this time index, 0 if not
+        index_match = previous_row_idx == time_idx
+
+        warping_values = grid_points[previous_column_idx]
+
+        # We will left as NaN the times to be interpolated linearly.
+        times[:, time_idx] = np.where(index_match, warping_values, np.nan)
+
+        # Find new indexes.
+        previous_row_idx = np.where(
+            index_match,
+            row_indexes[arange_idx, time_idx, previous_column_idx],
+            previous_row_idx,
+        )
+        previous_column_idx = np.where(
+            index_match,
+            column_indexes[arange_idx, time_idx, previous_column_idx],
+            previous_column_idx,
+        )
+
+    warpings = FDataGrid(
+        data_matrix=times,
+        grid_points=grid_points,
+    )
+
+    na_interpolator = MissingValuesInterpolation[FDataGrid]()
+    return na_interpolator.transform(warpings)
+
+
+def l2_line_energy(
+    original: FDataGrid,
+    target: FDataGrid,
+    *,
+    grid_points: NDArrayFloat,
+    row: int,
+    column: int,
+) -> NDArrayFloat:
+    r"""
+    Compute the line energies for the :math:`L^2` distance.
+
+    This computes, for each row ``i`` and column ``j``, with ``i < row`` and
+    ```j < column`` the following distance:
+
+    .. math::
+        d(x, y) = \int_{t_i}^{t_{row}} (x(w(t)) - y(t))^2 dt
+
+    where :math:`w`, the warping, is a straight line, that is,
+    :math:`w(t) = (1 - l) t_j + l t_column` with
+    :math:`l = (t - t_i) / (t_{row} - t_i)`.
+
+    Examples:
+        Consider a simple case with 4 irregularly sampled discretization
+        points:
+
+        >>> import numpy as np
+        >>> grid_points = np.array([0, 0.5, 0.75, 1])
+
+        We use the identity function :math:`x(t) = t` and the piecewise linear
+        function :math:`y(t) = \max(0, 2t - 1)`:
+
+        >>> from skfda import FDataGrid
+        >>> original = FDataGrid(grid_points, grid_points=grid_points)
+        >>> target = FDataGrid(
+        ...     np.maximum(0, 2 * grid_points - 1),
+        ...     grid_points=grid_points,
+        ... )
+
+        We will consider the final case ``row = 3``, ``column=3``:
+        >>> l2_line_energy(
+        ...    original,
+        ...    target,
+        ...    grid_points=grid_points,
+        ...    row=3,
+        ...    column=3,
+        ... )
+        array([[[ 0.14583333,  0.375     ,  0.55208333],
+                [ 0.        ,  0.14583333,  0.328125  ],
+                [ 0.04166667,  0.        ,  0.01041667]]])
+
+        Note that the cells ``(1, 0)`` and ``(2, 1)`` have 0 energy.
+        This is because they correspond to linear warpings that align
+        perfectly :math:`x` in the intervals :math:`(0.5, 1)` and
+        :math:`(0.75, 1)`, respectively.
+
+        Now consider a possible intermediate case with ``row = 2`` and
+        ``column=1``:
+        >>> l2_line_energy(
+        ...    original,
+        ...    target,
+        ...    grid_points=grid_points,
+        ...    row=2,
+        ...    column=1,
+        ... )
+        array([[[ 0.0625],
+                [ 0.    ]]])
+
+        This has again 0 energy at ``(1, 0)``, because it is possible to
+        align perfectly :math:`x` in the interval :math:`(0.5, 0.75)`.
+
+    """
+    t_row = grid_points[row]
+    t_column = grid_points[column]
+
+    t_i = grid_points[:row, None]
+    t_j = grid_points[:column, None]
+
+    t = grid_points[:row + 1]
+    l_vec = (t - t_i) / (t_row - t_i)
+    l_matrix = l_vec[:, None, :]
+    w = (1 - l_matrix) * t_j + l_matrix * t_column
+
+    # Shape: N x row x column x t
+    x_t = original(w.reshape(-1)).reshape((len(original), *w.shape))
+
+    # Shape: N x t
+    y_t = target.data_matrix[:, :row + 1, 0]
+
+    integrand = (x_t - y_t[:, None, None, :])**2
+
+    # Set to 0 the parts that do not contribute to the integral
+    integrand = np.swapaxes(np.triu(np.swapaxes(integrand, 1, 2)), 1, 2)
+
+    identity = np.eye(len(t))
+    quadrature_weights = simpson(
+        y=identity,
+        x=t,
+    )
+
+    integral = np.sum(integrand * quadrature_weights, axis=-1)
+
+    return integral  # type: ignore[no-any-return]
+
+def dynamic_programming_match(  # noqa: WPS210
+    original: FDataGrid,
+    target: FDataGrid,
+    *,
+    line_energy_function: LineEnergyFunction,
+) -> FDataGrid:
+    r"""
+    Find an optimal warping to transform a set of curves into another.
+
+    The following assumes that functions are curves in the [0, 1] interval.
+
+    The optimal warping would be one that minimizes the :math:`L^2` distance
+    between the warped function and the target function, called the cost
+    function:
+
+    .. math::
+        \hat{\gamma} = \arg \min_{\gamma \in \Gamma}
+        \int_0^1 (x_1(\gamma(t)) - x_2(t))^2 dt.
+
+    Ideally the optimal warping for the whole function would also be the
+    optimal warping to adjust any part of the function.
+    Thus, we can define a partial cost function
+
+    .. math::
+        E(s, t, \gamma) = \int_s^t (x_1(\gamma(\tau)) - x_2(\tau))^2 d\tau.
+
+    With that definition, the original cost function is
+    :math:`E(0, 1, \gamma)`.
+
+    We can then attempt to minimize the global cost function by discretizing
+    the warping and minimize the partial cost function at each segment.
+
+    As the warping has to be monotonic, the idea is to define a warping as a
+    piecewise function in a :math:`t \times t` grid, with the constraint that
+    the first line segment starts at (0, 0), the final one ends at (1, 1),
+    and each line segment goes from the end of the previous one (i, j), to
+    a point (i + Δi, j + Δj), with Δi and Δj non-negative.
+
+    Then we can, using dynamic programming, compute the minimum partial cost
+    at each point (i, j), considering the partial costs for each point
+    (i', j') with i'< i and j' < j and the partial cost of a line from (i', j')
+    to (i, j).
+
+    The algorithm as described is quadratic in t.
+
+    Args:
+        original: Functions to be aligned.
+        target: Target function(s) to align to.
+        line_energy_function: Function used to compute the energy for a line
+            segment of the warpings.
+
+    Returns:
+        The warpings that align the functions using the DP algorithm.
+
+    Examples:
+        Consider a simple case with 5 irregularly sampled discretization
+        points:
+
+        >>> import numpy as np
+        >>> grid_points = np.array([0, 0.25, 0.5, 0.75, 1])
+
+        We want to align the identity function :math:`x_1(t) = t` and the
+        function :math:`x_2(t) = \min(2t, 1)`
+        to the piecewise linear
+        function :math:`y(t) = \max(0, 2t - 1)`:
+
+        >>> from skfda import FDataGrid
+        >>> original = FDataGrid(
+        ...     [
+        ...         grid_points,
+        ...         np.minimum(2 * grid_points, 1),
+        ...     ],
+        ...     grid_points=grid_points,
+        ... )
+        >>> target = FDataGrid(
+        ...     np.maximum(0, 2 * grid_points - 1),
+        ...     grid_points=grid_points,
+        ... )
+
+        >>> warpings = dynamic_programming_match(
+        ...     original,
+        ...     target,
+        ...     line_energy_function=l2_line_energy,
+        ... )
+        >>> warpings
+        FDataGrid(
+            array([[[ 0.  ],
+                    [ 0.  ],
+                    [ 0.  ],
+                    [ 0.5 ],
+                    [ 1.  ]],
+                   [[ 0.  ],
+                    [ 0.  ],
+                    [ 0.  ],
+                    [ 0.25],
+                    [ 1.  ]]]),
+            grid_points=(array([ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]),),
+        ...)
+
+        >>> eval_target = target(grid_points[..., None])
+        >>> eval_target
+        array([[[ 0. ],
+                [ 0. ],
+                [ 0. ],
+                [ 0.5],
+                [ 1. ]]])
+        >>> eval_warped = original(
+        ...     warpings(grid_points[..., None]),
+        ...     aligned=False,
+        ... )
+        >>> eval_warped
+        array([[[ 0. ],
+                [ 0. ],
+                [ 0. ],
+                [ 0.5],
+                [ 1. ]],
+               [[ 0. ],
+                [ 0. ],
+                [ 0. ],
+                [ 0.5],
+                [ 1. ]]])
+        >>> np.allclose(eval_warped[0], eval_target)
+        True
+
+        >>> np.allclose(eval_warped[1], eval_target)
+        True
+
+    """
+    n_samples = original.n_samples
+    grid_points = original.grid_points[0]
+    n_points = len(grid_points)
+
+    arange_idx = np.arange(n_samples)
+
+    row_indexes = np.zeros((n_samples, n_points, n_points), dtype=np.int64)
+    column_indexes = np.zeros((n_samples, n_points, n_points), dtype=np.int64)
+    energy = np.zeros((n_samples, n_points, n_points))
+
+    # Discourage jumps from (0, 0) at the beginning
+    energy[:, 0, :] = np.inf
+    energy[:, :, 0] = np.inf
+    energy[:, 0, 0] = 0
+
+    for row in range(1, n_points):
+        for column in range(1, n_points):
+            candidate_points_partial_energy = energy[:, :row, :column]
+
+            # This can be further vectorized and extracted
+            # out of the loop, but not sure if it is worth it.
+            # In particular, the memory usage could be much higher for
+            # almost no performance gains.
+            candidate_points_line_energy = line_energy_function(
+                original,
+                target,
+                grid_points=grid_points,
+                row=row,
+                column=column,
+            )
+            partial_energies = (
+                candidate_points_partial_energy + candidate_points_line_energy
+            )
+
+            ravel_partial_energies = np.reshape(
+                partial_energies,
+                (n_samples, -1),
+            )
+            min_idx = np.argmin(ravel_partial_energies, axis=-1)
+            rows_idx, columns_idx = np.unravel_index(
+                min_idx,
+                partial_energies.shape[1:],
+            )
+            row_indexes[:, row, column] = rows_idx
+            column_indexes[:, row, column] = columns_idx
+            energy[:, row, column] = ravel_partial_energies[
+                arange_idx,
+                min_idx,
+            ]
+
+    return _dp_recover_warpings(
+        row_indexes=row_indexes,
+        column_indexes=column_indexes,
+        grid_points=grid_points,
+    )
 
 
 def invert_warping(

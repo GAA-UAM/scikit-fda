@@ -403,6 +403,17 @@ sphinx_gallery_conf = {
     },
     "backreferences_dir": "backreferences",
     "doc_module": "skfda",
+    "subsection_order": [
+        "../examples/representation",
+        "../examples/datasets",
+        "../examples/preprocessing",
+        "../examples/exploratory",
+        "../examples/inference",
+        "../examples/ml",
+        "*",
+        "../examples/expand_skfda",
+        "../tutorial",
+    ],
     "within_subsection_order": SkfdaExplicitSubOrder,
     "binder": {
         "org": "GAA-UAM",

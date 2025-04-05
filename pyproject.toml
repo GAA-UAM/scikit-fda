@@ -57,7 +57,7 @@ docs = [
   "pytest",
   "setuptools>=41.2",
   "sphinx>=3",
-  "sphinx-gallery",
+  "sphinx-gallery>=0.19",
   "sphinxcontrib-bibtex",
 ]
 test = [

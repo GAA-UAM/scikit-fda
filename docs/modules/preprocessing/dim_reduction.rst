@@ -42,6 +42,17 @@ of the covariance between the two data blocks.
 
 .. autosummary::
    :toctree: autosummary
-
+   
    skfda.preprocessing.dim_reduction.FPCA
    skfda.preprocessing.dim_reduction.FPLS
+
+Difussion methods
+-----------------
+Diffusion methods, such as functional difussion maps, try to find a natural
+less-dimensional manifold in which the data lives, trying to preserve the local
+neigborhood of the observations in the reduced space.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.preprocessing.dim_reduction.DiffusionMap

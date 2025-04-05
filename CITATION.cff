@@ -38,6 +38,18 @@ authors:
     given-names: "Diego"
   - family-names: "Hidalgo"
     given-names: "Rafael"
+  - family-names: "del Val"
+    given-names: "David"
+  - family-names: "Sánchez Signorini"
+    given-names: "Martín"
+  - family-names: "Pinto"
+    given-names: "Óscar"
+  - family-names: "Cuesta Sierra"
+    given-names: "Pablo"
+  - family-names: "Soto Martín"
+    given-names: "Pablo"
+  - family-names: "Terres Caballero"
+    given-names: "Eduardo"
 title: "GAA-UAM/scikit-fda: Functional Data Analysis in Python"
 doi: 10.5281/zenodo.3468127
 date-released: 2019-10-01

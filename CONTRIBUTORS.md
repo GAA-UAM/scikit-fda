@@ -75,7 +75,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/psotom"><img src="https://avatars.githubusercontent.com/u/166627986?v=4?s=100" width="100px;" alt="psotom"/><br /><sub><b>psotom</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Code">💻</a> <a href="#example-psotom" title="Examples">💡</a> <a href="#ideas-psotom" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Tests">⚠️</a> <a href="#research-psotom" title="Research">🔬</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=psotom" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/luisheb"><img src="https://avatars.githubusercontent.com/u/24703335?v=4?s=100" width="100px;" alt="Luis Hebrero"/><br /><sub><b>Luis Hebrero</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=luisheb" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/luisheb"><img src="https://avatars.githubusercontent.com/u/24703335?v=4?s=100" width="100px;" alt="Luis Hebrero"/><br /><sub><b>Luis Hebrero</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=luisheb" title="Documentation">📖</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=luisheb" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=luisheb" title="Tests">⚠️</a></td>
     </tr>
   </tbody>
   <tfoot>

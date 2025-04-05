@@ -4,16 +4,220 @@ This module contains routines related to the registration procedure.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Protocol
 
 import numpy as np
 from scipy.interpolate import PchipInterpolator
 
+from ..preprocessing.missing import MissingValuesInterpolation
 from ..typing._base import DomainRangeLike
 from ..typing._numpy import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
     from ..representation import FDataGrid
+
+
+class LineEnergyFunction(Protocol):
+    """
+    Computes the energies of line segments.
+
+    Returns the matrix containing the partial energies of all line
+    segments between a candidate point and the target.
+
+    """
+
+    def __call__(
+        self,
+        /,
+        original: FDataGrid,
+        target: FDataGrid,
+        *,
+        grid_points: NDArrayFloat,
+        row: int,
+        column: int,
+    ) -> NDArrayFloat:
+        """Returns energies of all lines from each candidate point."""
+
+
+def _dp_recover_warpings(
+    row_indexes: NDArrayFloat,
+    column_indexes: NDArrayFloat,
+    grid_points: NDArrayFloat,
+) -> FDataGrid:
+    """
+    Recover the warpings from the dynamic programming algorithm.
+
+    It goes backwards, from the last point, using the row and column indexes
+    we stored for each point (containing the index of the best candidate
+    point).
+
+    This is iterative and cannot be vectorized, except over samples. Moreover,
+    the number of line segments for each warping may be different. In order to
+    solve that, we use masking for setting only the fixed values, leaving the
+    others as NaN, and then we do linear interpolation over the NaN values.
+
+    """
+    n_samples = row_indexes.shape[0]
+    n_points = grid_points.shape[0]
+
+    # Recover the warpings
+    times = np.zeros((n_samples, n_points))
+
+    previous_row_idx = np.full((n_samples, 1), fill_value=n_points - 1)
+    previous_column_idx = np.full((n_samples, 1), fill_value=n_points - 1)
+
+    for time_idx in range(n_points - 1, 0, -1):
+
+        # 1 if we have to set a warping value in this time index, 0 if not
+        index_match = previous_row_idx == time_idx
+
+        warping_values = grid_points[previous_column_idx]
+
+        # We will left as NaN the times to be interpolated linearly.
+        times[:, time_idx] = np.where(index_match, warping_values, np.nan)
+
+        # Find new indexes.
+        previous_row_idx = np.where(
+            index_match,
+            row_indexes[:, time_idx, previous_column_idx],
+            previous_row_idx,
+        )
+        previous_column_idx = np.where(
+            index_match,
+            column_indexes[:, time_idx, previous_column_idx],
+            previous_column_idx,
+        )
+
+    warpings = FDataGrid(
+        data_matrix=times,
+        grid_points=grid_points,
+    )
+
+    return MissingValuesInterpolation().transform(warpings)
+
+
+def dynamic_programming_match(
+    original: FDataGrid,
+    target: FDataGrid,
+    line_energy_function: LineEnergyFunction,
+) -> FDataGrid:
+    r"""
+    Find an optimal warping to transform a set of curves into another.
+
+    The following assumes that functions are curves in the [0, 1] interval.
+
+    The optimal warping would be one that minimizes the :math:`L^2` distance
+    between the warped function and the target function, called the cost
+    function:
+
+    .. math::
+        \hat{\gamma} = \arg \min_{\gamma \in \Gamma}
+        \int_0^1 (x_1(\gamma(t)) - x_2(t))^2 dt.
+
+    Ideally the optimal warping for the whole function would also be the
+    optimal warping to adjust any part of the function.
+    Thus, we can define a partial cost function
+
+    .. math::
+        E(s, t, \gamma) = \int_s^t (x_1(\gamma(\tau)) - x_2(\tau))^2 d\tau.
+
+    With that definition, the original cost function is
+    :math:`E(0, 1, \gamma)`.
+
+    We can then attempt to minimize the global cost function by discretizing
+    the warping and minimize the partial cost function at each segment.
+
+    As the warping has to be monotonic, the idea is to define a warping as a
+    piecewise function in a :math:`t \times t` grid, with the constraint that
+    the first line segment starts at (0, 0), the final one ends at (1, 1),
+    and each line segment goes from the end of the previous one (i, j), to
+    a point (i + Δi, j + Δj), with Δi and Δj non-negative.
+
+    Then we can, using dynamic programming, compute the minimum partial cost
+    at each point (i, j), considering the partial costs for each point
+    (i', j') with i'< i and j' < j and the partial cost of a line from (i', j')
+    to (i, j).
+
+    The algorithm as described is quadratic in t.
+
+    """
+    n_samples = original.n_samples
+    grid_points = original.grid_points[0]
+    n_points = len(grid_points)
+
+    row_indexes = np.zeros((n_samples, n_points, n_points), dtype=np.int64)
+    column_indexes = np.zeros((n_samples, n_points, n_points), dtype=np.int64)
+    energy = np.zeros((n_samples, n_points, n_points))
+
+    # Discourage jumps to (1, 1) at the end
+    energy[-1, :] = np.inf
+    energy[:, -1] = np.inf
+    energy[-1, -1] = 0
+
+    for row in range(1, n_points):
+        for column in range(1, n_points):
+            candidate_points_partial_energy = energy[:, :row, :column]
+
+            # TODO: this can be further vectorized and extracted
+            # out of the loop
+            candidate_points_line_energy = line_energy_function(
+                original,
+                target,
+                grid_points=grid_points,
+                row=row,
+                column=column,
+            )
+            partial_energies = (
+                candidate_points_partial_energy + candidate_points_line_energy
+            )
+
+            ravel_partial_energies = np.reshape(
+                partial_energies,
+                (n_samples, -1),
+            )
+            min_idx = np.argmin(ravel_partial_energies, axis=-1)
+            rows_idx, columns_idx = np.unravel_index(
+                min_idx,
+                partial_energies.shape[1:],
+            )
+            row_indexes[:, row, column] = rows_idx
+            column_indexes[:, row, column] = columns_idx
+            energy[:, row, column] = ravel_partial_energies[:, min_idx]
+
+    # Recover the warpings
+    times = np.zeros((n_samples, n_points))
+
+    previous_row_idx = np.full((n_samples, 1), fill_value=n_points - 1)
+    previous_column_idx = np.full((n_samples, 1), fill_value=n_points - 1)
+
+    for time_idx in range(n_points - 1, 0, -1):
+
+        # 1 if we have to set a warping value in this time index, 0 if not
+        index_match = previous_row_idx == time_idx
+
+        warping_values = grid_points[previous_column_idx]
+
+        # We will left as NaN the times to be interpolated linearly.
+        times[:, time_idx] = np.where(index_match, warping_values, np.nan)
+
+        # Find new indexes.
+        previous_row_idx = np.where(
+            index_match,
+            row_indexes[time_idx, previous_column_idx],
+            previous_row_idx,
+        )
+        previous_column_idx = np.where(
+            index_match,
+            column_indexes[time_idx, previous_column_idx],
+            previous_column_idx,
+        )
+
+    warpings = FDataGrid(
+        data_matrix=times,
+        grid_points=grid_points,
+    )
+
+    return MissingValuesInterpolation().transform(warpings)
 
 
 def invert_warping(

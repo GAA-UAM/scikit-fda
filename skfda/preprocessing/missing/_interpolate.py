@@ -11,35 +11,17 @@ from ...typing._numpy import NDArrayFloat, NDArrayInt
 T = TypeVar("T", bound=FDataGrid)
 
 
-def _left_non_nan_index(
-    array: NDArrayFloat,
-    axis: int = -1,
-) -> NDArrayInt:
-    """
-    Return the index of the first non-NaN on the left.
+def _interpolate_one(
+    y: NDArrayFloat,
+    x: NDArrayFloat,
+) -> NDArrayFloat:
+    not_nan = ~np.isnan(y)
+    n_valid = np.count_nonzero(not_nan)
 
-    Adapted from https://stackoverflow.com/a/41191127/2455333
-    """
-    mask = np.isnan(array)
-    shape = [1] * array.ndim
-    shape[axis] = -1
-    indexes = np.reshape(np.arange(mask.shape[axis]), shape)
-    idx = np.where(~mask, indexes, -1)
-    return np.maximum.accumulate(idx, axis=axis)
+    if n_valid == 0 or n_valid == len(y):
+        return y
 
-
-def _right_non_nan_index(
-    array: NDArrayFloat,
-    axis: int = -1,
-) -> NDArrayInt:
-    """Return the index of the first non-NaN on the right."""
-    return array.shape[axis] - 1 - np.flip(  # type: ignore[no-any-return]
-        _left_non_nan_index(
-            np.flip(array, axis=axis),
-            axis=axis,
-        ),
-        axis=axis,
-    )
+    return np.interp(x, x[not_nan], y[not_nan])
 
 
 def interpolate_nans_1d(
@@ -125,33 +107,12 @@ def interpolate_nans_1d(
                [ nan, nan, nan, nan, nan]])
 
     """
-    left_idx = _left_non_nan_index(y, axis=axis)
-    right_idx = _right_non_nan_index(y, axis=axis)
-
-    # Add constant extrapolation on the sides
-    invalid_left_idx = left_idx < 0
-    invalid_right_idx = right_idx >= len(x)
-
-    # The order of the following two lines is important: in case that
-    # all values are NaN, the final index is -1 for all.
-    right_idx[invalid_right_idx] = left_idx[invalid_right_idx]
-    left_idx[invalid_left_idx] = right_idx[invalid_left_idx]
-
-    point_left = x[left_idx]
-    point_right = x[right_idx]
-    value_left = np.take_along_axis(y, left_idx, axis=axis)
-    value_right = np.take_along_axis(y, right_idx, axis=axis)
-
-    shape = [1] * y.ndim
-    shape[axis] = len(x)
-    reshaped_x = np.reshape(x, shape)
-    denom = (point_right - point_left)
-    # If the denominator is 0, the numerator is also 0.
-    # Prevent the generation of NaN or Inf.
-    denom[denom == 0] = 1
-    delta_t = (reshaped_x - point_left) / denom
-
-    return (1 - delta_t) * value_left + delta_t * value_right
+    return np.apply_along_axis(
+        _interpolate_one,
+        axis,
+        y,
+        x=x,
+    )
 
 
 def _coords_from_indices(

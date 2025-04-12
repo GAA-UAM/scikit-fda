@@ -91,6 +91,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"asv_benchmarks/**.py" = [
+  "ARG001", # Some unused args are needed for parameterized tests
+]
 "plot_*.py" = [
 	"ANN", # no type hints in examples
 	"ARG001", # Some unused args are needed

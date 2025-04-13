@@ -77,6 +77,25 @@ repository = "https://github.com/GAA-UAM/scikit-fda"
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.mypy]
+strict = true
+strict_equality = true
+implicit_reexport = true
+enable_error_code = "ignore-without-code"
+
+[[tool.mypy.overrides]]
+module = [
+	"fdasrsf.*",
+  "findiff.*",
+  "joblib.*",
+  "lazy_loader.*",
+  "mpl_toolkits.*",
+  "scipy.*",
+  "skdatasets.*",
+  "sklearn.*",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 env = [
 	"EAGER_IMPORT=1",

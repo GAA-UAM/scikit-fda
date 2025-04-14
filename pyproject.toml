@@ -122,39 +122,51 @@ addopts = "--doctest-modules"
 doctest_optionflags = "NORMALIZE_WHITESPACE ELLIPSIS"
 norecursedirs = ".* build dist *.egg venv .svn _build asv_benchmarks docs/auto_examples examples docs/auto_tutorial tutorial"
 
+[tool.ruff]
+line-length = 79
+
 [tool.ruff.lint]
 select = [
     "ALL",
 ]
 ignore = [
-	"ANN101", # self does not need to be typed
-	"D212", # incompatible with D213, which is our preferred style for multiline docstrings
-	"Q003", # do not change quotation marks to avoid escaping
-	"PLC0414", # allow explicit re-exports
-	"S101", # assert is allowed
-	"TID252", # relative imports allowed
+	"ANN101", # Self does not need to be typed
+  "D105", # No docstring needed for magic methods
+  "D107", # No docstring needed in __init__
+	"D212", # Incompatible with D213, which is our preferred style for multiline docstrings
+	"Q003", # Do not change quotation marks to avoid escaping
+	"PLC0414", # Allow explicit re-exports
+	"S101", # Assert is allowed
+	"TID252", # Relative imports allowed
 ]
+# Style error codes not managed by Ruff
+external = ["WPS"]
 
 [tool.ruff.lint.per-file-ignores]
 "asv_benchmarks/**.py" = [
   "ARG001", # Some unused args are needed for parameterized tests
 ]
 "plot_*.py" = [
-	"ANN", # no type hints in examples
+	"ANN", # No type hints in examples
 	"ARG001", # Some unused args are needed
-	"B018", # single object expressions are not useless in examples (they display the object)
-	"D205", # examples do not have a blank line in docstring
-	"D415", # first line in examples does not end with period
+	"B018", # Single object expressions are not useless in examples (they display the object)
+	"D205", # Examples do not have a blank line in docstring
+	"D415", # First line in examples does not end with period
+  "E402", # Allow imports in the middle of the file
 	"ERA001", # Commented code may be useful for the reader
 	"S310", # URLs in examples have been validated
-	"T201", # print allowed in examples
+	"T201", # Print allowed in examples
 ]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
 
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["X", "y"]
+
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+ignore-decorators = ["typing.overload"]
 
 [tool.ruff.lint.pylint]
 max-args = 7

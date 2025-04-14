@@ -11,9 +11,9 @@ from skdatasets.repositories import cran, ucr
 from sklearn.utils import Bunch
 from typing_extensions import Literal
 
-from ..representation import FDataGrid
-from ..representation.irregular import FDataIrregular
-from ..typing._numpy import NDArrayFloat, NDArrayInt
+from skfda.representation import FDataGrid
+from skfda.representation.irregular import FDataIrregular
+from skfda.typing._numpy import NDArrayFloat, NDArrayInt
 
 
 def fdata_constructor(
@@ -1642,5 +1642,80 @@ def fetch_bone_density(
         categories={},
         feature_names=[argument_name],
         target_names=target_names,
+        DESCR=descr,
+    )
+
+
+_cd4_descr = """
+    CD4 cell counts for 366 subjects between months -18 and 42 since
+    seroconversion. Each subject's observations are contained in a single row.
+
+    Format: A data frame made up of a 366 x 61 matrix of CD4 cell counts.
+
+    The data is obtained from the R package 'refund' from CRAN.
+
+    Source:
+        https://cran.r-project.org/web/packages/refund/index.html
+        Goldsmith, J., Greven, S., and Crainiceanu, C. (2013). Corrected
+        confidence bands for functional data using principal components.
+        Biometrics, 69(1), 41-51.
+"""
+
+
+def fetch_cd4(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Bunch | Tuple[FDataIrregular, None] | Tuple[DataFrame, None]:
+    """
+    Load the CD4 cell counts dataset. This is an irregular dataset.
+
+    Rows contain one curve per subject.
+
+    The data is obtained from the R package 'refund'.
+    """
+    descr = _cd4_descr
+    raw_dataset = fetch_cran("cd4", "refund")
+    cd4_array = raw_dataset["cd4"]
+
+    grid_points = cd4_array.coords["dim_1"].to_numpy().astype(float)
+    data_matrix = cd4_array.to_numpy().astype(float)
+
+    cd4_grid = FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+    )
+
+    curves = FDataIrregular.from_fdatagrid(
+        cd4_grid,
+        dataset_name="cd4",
+        argument_names=["month"],
+        coordinate_names=["CD4 count"],
+    )
+
+    frame = None
+
+    if as_frame:
+        cd4_df = pd.DataFrame(cd4_array.values)
+        cd4_df.columns = list(cd4_array.coords["dim_1"].values)
+        cd4_df.insert(0, "id", range(len(cd4_df)))  # Add ID for each row
+
+        cd4_df_long = cd4_df.melt(id_vars="id", var_name="time", value_name="cd4_count")
+        cd4_df_long = cd4_df_long.dropna()
+
+        cd4_df_long["time"] = cd4_df_long["time"].astype(float)
+        cd4_df_long = cd4_df_long.sort_values(by=["id", "time"])
+        curves = cd4_df_long.reset_index(drop=True)
+        frame = curves
+
+    if return_X_y:
+        return curves, None
+
+    return Bunch(
+        data=curves,
+        target=None,
+        frame=frame,
+        categories={},
+        feature_names=["cd4"],
+        target_names=[],
         DESCR=descr,
     )

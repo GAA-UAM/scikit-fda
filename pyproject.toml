@@ -77,6 +77,16 @@ repository = "https://github.com/GAA-UAM/scikit-fda"
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.coverage.report]
+exclude_also = [
+    'raise AssertionError',
+    'raise NotImplementedError',
+    'if __name__ == .__main__.:',
+    'if TYPE_CHECKING:',
+    'class .*\bProtocol\):',
+    '@(abc\.)?abstractmethod',
+]
+
 [tool.mypy]
 strict = true
 strict_equality = true

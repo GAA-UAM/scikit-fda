@@ -35,7 +35,10 @@ fd = FDataIrregular(
 
 pace = PACE(
     n_components=2,
-    n_grid_points=61,
+    n_grid_points=51,
+    bandwidth_mean=4.061,
+    bandwidth_cov=7.2998,
+    assume_noisy=False,
     # boundary_effect_interval=(0.1, 0.9),
     variance_error_interval=(0.25, 0.75),
 )
@@ -43,6 +46,7 @@ pace = PACE(
 # print(cd4.data)
 
 # pace.fit(fd)
+# exit()
 cd4 = fetch_cd4()
 pace.fit(cd4.data)
 
@@ -64,16 +68,16 @@ mu_matlab = np.array([
     553.4378, 557.2745, 562.2011, 567.7152
 ])
 
-plt.figure(figsize=(10, 6))
-plt.plot(t_matlab, mu_matlab, label='PACE MATLAB', color='blue', linewidth=2)
-plt.plot(t_matlab, pace.mean_, label='PACE Python', color='red', linestyle='--', linewidth=2)
-plt.xlabel('Time (months)')
-plt.ylabel('Estimated Mean CD4 Count')
-plt.title('Comparison of Estimated Mean Function (MATLAB vs Python)')
-plt.grid(True)
-plt.legend()
-plt.tight_layout()
-plt.show()
+# plt.figure(figsize=(10, 6))
+# plt.plot(t_matlab, mu_matlab, label='PACE MATLAB', color='blue', linewidth=2)
+# plt.plot(t_matlab, pace.mean_, label='PACE Python', color='red', linestyle='--', linewidth=2)
+# plt.xlabel('Time (months)')
+# plt.ylabel('Estimated Mean CD4 Count')
+# plt.title('Comparison of Estimated Mean Function (MATLAB vs Python)')
+# plt.grid(True)
+# plt.legend()
+# plt.tight_layout()
+# plt.show()
 
 from sklearn.metrics import mean_squared_error
 from scipy.interpolate import interp1d
@@ -93,3 +97,39 @@ mu_python_interp = interp_python_mean(t_matlab)
 # Compute MSE between MATLAB and Python mean
 mse = mean_squared_error(mu_matlab, mu_python_interp)
 print(f"📐 Mean Squared Error (Python vs MATLAB): {mse:.4f}")
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+# Grid points used during the fit (used in _cov_lls)
+grid = np.linspace(cd4.data.domain_range[0][0], cd4.data.domain_range[0][1], pace.n_grid_points)
+
+# Extract the smoothed covariance matrix
+cov = pace.covariance_.squeeze()  # shape: (n_grid_points, n_grid_points)
+
+# Create meshgrid for r and s
+R_grid, S_grid = np.meshgrid(grid, grid, indexing='ij')
+
+# Optional: Simulate missing or noisy data to scatter on top
+# In this case we just visualize the smoothed covariance
+
+# Plotting the covariance surface
+fig = plt.figure(figsize=(12, 6))
+ax = fig.add_subplot(111, projection='3d')
+
+# Plot surface
+ax.plot_surface(R_grid, S_grid, cov, cmap='viridis', alpha=0.7)
+
+# If you had observed (r,s,G) points and wanted to scatter them:
+# for i in range(...):
+#     ax.scatter(r, s, G_val, color='red', label="Observed Covariance")
+
+ax.set_xlabel('r (Time)')
+ax.set_ylabel('s (Time)')
+ax.set_zlabel('Covariance G(r, s)')
+ax.set_title('Smoothed Covariance Surface via PACE')
+plt.tight_layout()
+plt.show()

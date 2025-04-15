@@ -21,6 +21,7 @@ from ...representation.grid import FDataGrid
 from ...representation.irregular import FDataIrregular
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import ArrayLike, NDArrayAny, NDArrayFloat
+from scipy.spatial import cKDTree
 
 KernelFunction = Callable[[NDArrayFloat, float], NDArrayFloat]
 
@@ -40,6 +41,7 @@ def gaussian_kernel(t: NDArrayFloat, h: float) -> NDArrayFloat:
         t = t[None, :]  # Ensure 2D shape
 
     d = t.shape[1]
+
     norm_sq = np.sum((t / h) ** 2, axis=1)  # ||t/h||^2 for each row
     coeff = 1 / ((2 * np.pi) ** (d / 2) * h**d)
     return np.array(coeff * np.exp(-0.5 * norm_sq), dtype=np.float64)
@@ -333,9 +335,7 @@ class PACE(
 
         # Approximate trace of smoother matrix
         domain_diff = np.max(pdist(t_obs))
-
         k0 = self.kernel_mean(np.zeros((1, t_obs.shape[1])), 1.0)[0]
-
         n_obs = t_obs.shape[0]
 
         denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
@@ -405,52 +405,155 @@ class PACE(
 
     def compute_raw_covariances(
         self,
-        data: FDataIrregular,
+        x_work: FDataIrregular,
         mean: NDArrayFloat,
         time_points: NDArrayFloat,
     ) -> tuple[NDArrayFloat, NDArrayFloat]:
         """
-        Compute raw covariance values.
-
-        Compute raw covariance values for all off-diagonal pairs (i,j) and
-        (i,k) from same subject.
+        Compute raw covariances for irregular data.
 
         Args:
-            data: FDataIrregular object.
-            mean: mean function.
-            time_points: time points where the mean is evaluated.
+            x_work: The FDataIrregular object to be analysed.
+            mean: The mean function evaluated at the grid points.
+            time_points: The grid points where the mean is evaluated.
 
         Returns:
-            coordinates: shape (n_covs, 2 * d) - concatenated (t_j, t_k)
-            values: shape (n_covs,) - raw covariance values
+            An array of coordinates and an array of covariance values.
         """
-        points = data.points
-        values = data.values
-        start_indices = data.start_indices
+        points = x_work.points
+        values = x_work.values
+        start_indices = x_work.start_indices
+
         end_indices = np.append(start_indices[1:], len(points))
+
+        tree = cKDTree(time_points)
+        _, indices = tree.query(points, k=1)
+        mean_proj = mean[indices]
 
         cov_coords = []
         cov_values = []
 
-        point_to_index = {tuple(pt): i for i, pt in enumerate(time_points)}
-
         for start, end in zip(start_indices, end_indices, strict=True):
-            t = points[start:end]
-            y = values[start:end]
-            m = np.array([mean[point_to_index[tuple(ti)]] for ti in t])
+            p_i = points[start:end]
+            v_i = values[start:end]
+            m_i = mean_proj[start:end]
+            r_i = v_i - m_i
 
-            if len(t) < 2:
-                continue
+            for j in range(len(p_i)):
+                for k in range(len(p_i)):
+                    if self.assume_noisy and j == k:
+                        continue
 
-            for i in range(len(t)):
-                for j in range(i + 1, len(t)):
-                    # Concatenate coordinates for the covariance location
-                    coord = np.concatenate([t[i], t[j]])
-                    value = (y[i] - m[i]) * (y[j] - m[j])
+                    coord = np.concatenate([[p_i[j]], [p_i[k]]])
+                    cov = np.outer(r_i[j], r_i[k])
+
                     cov_coords.append(coord)
-                    cov_values.append(value)
+                    cov_values.append(cov)
 
-        return np.array(cov_coords), np.array(cov_values)
+        return (np.array(cov_coords), np.array(cov_values))
+
+    def _cov_gcv_score(
+        self,
+        h: float,
+        t_pairs: NDArrayFloat,
+        cov_values: NDArrayFloat,
+    ) -> float:
+        """
+        Compute GCV score for bandwidth h for covariance smoothing.
+
+        Returns:
+            Scalar GCV score.
+        """
+        if h <= 0:
+            return np.inf
+
+        # Evaluate smoothed covariance at same locations
+        r_eval = t_pairs[:, : t_pairs.shape[1] // 2]
+        s_eval = t_pairs[:, t_pairs.shape[1] // 2:]
+        G_hat = self._cov_lls(h, r_eval, s_eval, t_pairs, cov_values)
+
+        rss = np.sum((cov_values - G_hat) ** 2)
+
+        domain_diff = np.max(pdist(t_pairs))
+        k0 = self.kernel_cov(np.zeros((1, t_pairs.shape[1])), 1.0)[0]
+        n_obs = len(cov_values)
+
+        denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
+        return float(rss / denom) if denom > 0 else np.inf
+
+    def _cov_lls(
+        self,
+        h: float,
+        r_eval: NDArrayFloat,
+        s_eval: NDArrayFloat,
+        cov_coords: NDArrayFloat,
+        cov_values: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """
+        Evaluate the smoothed covariance surface.
+
+        Uses 2D local linear smoothing and Gaussian kernel.
+        Assumes 1D time and scalar-valued covariance (q=1).
+        """
+        epsilon = 1e-8
+
+        t_im = cov_coords[:, 0, :]
+        t_il = cov_coords[:, 1, :]
+        g_vals = cov_values[:, 0, :]
+
+        n_eval, d = r_eval.shape
+        n_obs, q = g_vals.shape
+
+        diffs_r = r_eval[:, None, :] - t_im[None, :, :]
+        diffs_s = s_eval[:, None, :] - t_il[None, :, :]
+
+        flat_diffs_r = diffs_r.reshape(-1, d)
+        flat_diffs_s = diffs_s.reshape(-1, d)
+
+        flat_weights_r = self.kernel_cov(flat_diffs_r, h)
+        flat_weights_s = self.kernel_cov(flat_diffs_s, h)
+
+        weights_r = flat_weights_r.reshape(n_eval, n_obs)
+        weights_s = flat_weights_s.reshape(n_eval, n_obs)
+
+        cov_matrix = np.zeros((n_eval, n_eval))
+
+        for i in range(n_eval):
+            for j in range(n_eval):
+                # Combined kernel weights for (i, j)
+                w_ij = weights_r[i] * weights_s[j]
+                valid_mask = w_ij > 1e-8
+
+                if np.sum(valid_mask) < 3:
+                    cov_matrix[i, j] = 0.0
+                    continue
+
+                x1 = t_im[valid_mask, 0]
+                x2 = t_il[valid_mask, 0]
+                y = g_vals[valid_mask, 0]
+                w = w_ij[valid_mask]
+
+                X = np.stack([
+                    np.ones_like(x1),
+                    x1 - r_eval[i, 0],
+                    x2 - s_eval[j, 0],
+                ], axis=1)
+
+                try:
+                    W = np.diag(w)
+                    XtWX = X.T @ W @ X + epsilon * np.eye(3)
+                    XtWy = X.T @ W @ y
+                    beta = np.linalg.solve(XtWX, XtWy)
+                    cov_matrix[i, j] = beta[0]
+                except np.linalg.LinAlgError:
+                    cov_matrix[i, j] = 0.0
+
+        # Enforce symmetry
+        cov_matrix = (cov_matrix + cov_matrix.T) / 2
+
+        return cov_matrix[..., None, None]
+
+
 
     def fit(
         self,
@@ -531,7 +634,7 @@ class PACE(
             x_work.values,
         )
 
-        print(f"Mean: {self.mean_}")
+        # print(f"Mean: {self.mean_}")
 
         raw_cov_coords, raw_cov_values = self.compute_raw_covariances(
             x_work,
@@ -539,53 +642,45 @@ class PACE(
             time_points,
         )
 
-        # plt.figure(figsize=(8, 6))
-        # plt.scatter(
-        #     raw_cov_coords[:, 0],  # t_i
-        #     raw_cov_coords[:, 1],  # t_j
-        #     c=raw_cov_values,
-        #     cmap='coolwarm',
-        #     s=50,
-        #     edgecolors='k'
-        # )
-        # plt.colorbar(label='Raw Covariance')
-        # plt.xlabel('t_i')
-        # plt.ylabel('t_j')
-        # plt.title('Raw Covariance Values at (t_i, t_j)')
-        # plt.grid(True)
-        # plt.tight_layout()
-        # plt.show()
-
         # print(f"Raw covariance coordinates: {raw_cov_coords}")
         # print(f"Raw covariance values: {raw_cov_values}")
 
-        # plt.scatter(
-        #     x_work.points[:, 0],
-        #     x_work.values[:, 0],
-        #     color="red",
-        #     label="Observed Data",
-        # )
-        # plt.plot(
-        #     time_points[:, 0],
-        #     self.mean_[:, 0],
-        #     label="Smoothed Mean",
-        #     color="blue",
-        # )
-        # plt.xlabel("Time")
-        # plt.ylabel("Mean Estimate")
-        # plt.legend()
-        # plt.title("Local Linear Smoother for Irregular Data (Vectorized)")
-        # plt.show()
+        # return
 
-        # Generate 1D grids per dimension
-        # axes = [
-        #     np.linspace(start, end, self.n_grid_points)
-        #     for start, end in x_work.domain_range
-        # ]
+        if self.bandwidth_cov_ is None:
+            self.bandwidth_cov_ = minimize_scalar(
+                self._cov_gcv_score,
+                args=(raw_cov_coords, raw_cov_values),
+                bounds=self.bandwidth_cov_interval_,
+                method="bounded",
+            ).x
 
-        # # Create full meshgrid and flatten to shape (n_points, n_dimensions)
-        # mesh = np.meshgrid(*axes, indexing="ij")
-        # work_grid = np.stack([m.flatten() for m in mesh], axis=-1)
+        print(f"Selected bandwidth for covariance: {self.bandwidth_cov_}. ")
+
+        # Create n-dimensional work grid to calculate covariance surface in
+        # Create grid of domain points for covariance evaluation
+        axes = [
+            np.linspace(start, end, self.n_grid_points)
+            for start, end in x_work.domain_range
+        ]
+        mesh = np.meshgrid(*axes, indexing="ij")
+        t_eval = np.stack([m.ravel() for m in mesh], axis=-1)  # (n_eval, d)
+
+        # print(f"Shape of t_eval: {t_eval.shape}")
+
+        self.covariance_ = self._cov_lls(
+            self.bandwidth_cov_,
+            t_eval,
+            t_eval,
+            raw_cov_coords,
+            raw_cov_values,
+        )
+
+        print(f"Covariance: {self.covariance_.shape}")
+
+
+
+
 
         return self
 
@@ -605,7 +700,7 @@ class PACE(
             Principal component scores. Data matrix of shape
             ``(n_samples, n_components)``.
         """
-        pass
+        return [1.]
 
     def fit_transform(
         self,
@@ -642,4 +737,4 @@ class PACE(
         Returns:
             A FData object.
         """
-        pass
+        return [1.]

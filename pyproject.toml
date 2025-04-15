@@ -130,7 +130,6 @@ select = [
     "ALL",
 ]
 ignore = [
-	"ANN101", # Self does not need to be typed
   "D105", # No docstring needed for magic methods
   "D107", # No docstring needed in __init__
 	"D212", # Incompatible with D213, which is our preferred style for multiline docstrings
@@ -145,6 +144,7 @@ external = ["WPS"]
 [tool.ruff.lint.per-file-ignores]
 "asv_benchmarks/**.py" = [
   "ARG001", # Some unused args are needed for parameterized tests
+  "ARG002", # Some unused args are needed for parameterized tests
 ]
 "plot_*.py" = [
 	"ANN", # No type hints in examples

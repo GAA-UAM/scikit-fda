@@ -15,7 +15,7 @@ them to the :term:`functional data analysis` field.
 # Author: Carlos Ramos Carreño
 # License: MIT
 
-##############################################################################
+# %%
 # A brief summary of scikit-learn architecture
 # --------------------------------------------
 #
@@ -42,7 +42,7 @@ them to the :term:`functional data analysis` field.
 # <https://scikit-learn.org/stable/tutorial/index.html>`_ in order to achieve
 # a deeper understanding of it.
 
-##############################################################################
+# %%
 # The Estimator object
 # ^^^^^^^^^^^^^^^^^^^^
 #
@@ -60,7 +60,7 @@ them to the :term:`functional data analysis` field.
 # are part of the user-facing API, then by convention they are attributes of
 # the estimator ending in with the ``_`` character.
 
-##############################################################################
+# %%
 # As a concrete example of this, consider a nearest centroid classifier
 # for functional data. The object
 # :class:`~skfda.ml.classification.NearestCentroid` is a classifier, and
@@ -73,9 +73,10 @@ them to the :term:`functional data analysis` field.
 #     one of the functions originally from scikit-learn that can be
 #     directly reused in scikit-fda.
 
-import skfda
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+import skfda
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
@@ -86,7 +87,7 @@ classifier.fit(X_train, y_train)
 classifier.centroids_.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Transformers
 # ^^^^^^^^^^^^
 #
@@ -100,7 +101,7 @@ plt.show()
 # transformation is reversible, they usually also implement
 # ``ìnverse_transform``.
 
-##############################################################################
+# %%
 # As an example consider the smoothing method
 # :class:`skfda.preprocessing.smoothing.NadarayaWatsonHatMatrix`. Smoothing
 # methods attempt to remove noise from the data leveraging its continuous
@@ -110,6 +111,7 @@ plt.show()
 
 import skfda.preprocessing.smoothing as ks
 from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
+
 X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
 
 # Keep the first 5 functions
@@ -123,7 +125,7 @@ X_smooth = smoother.fit_transform(X)
 X_smooth.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Predictors (classifiers, regressors, clusterers...)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
@@ -145,7 +147,7 @@ plt.show()
 # ``predict-proba`` for obtaining the probability of a particular prediction
 # or ``score`` for evaluating the results of the prediction.
 
-##############################################################################
+# %%
 # As an example, we can look at the :class:`~skfda.ml.clustering.KMeans`
 # clustering method for functional data. This method will try to separate
 # the data into different clusters according to the distance between
@@ -162,7 +164,7 @@ y_pred = clusterer.fit_predict(X)
 X.plot(group=y_pred)
 plt.show()
 
-##############################################################################
+# %%
 # Metaestimators
 # ^^^^^^^^^^^^^^
 #
@@ -170,7 +172,7 @@ plt.show()
 # that takes other estimators as parameters. There are several reasons for
 # doing that, which will be explained now.
 
-##############################################################################
+# %%
 # Composition metaestimators
 # ++++++++++++++++++++++++++
 #
@@ -194,16 +196,17 @@ plt.show()
 #     (:class:`~sklearn.compose.ColumnTransformer`). These transformers
 #     are not yet usable with functional data.
 
-##############################################################################
+# %%
 # As an example, we can construct a pipeline that registers the data using
 # shift registation, then applies a variable selection method to
 # transform each observation to a 3D vector and then uses a SVM classifier
 # to classify the data.
 
-from skfda.preprocessing.dim_reduction import variable_selection as vs
-from skfda.preprocessing.registration import LeastSquaresShiftRegistration
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
+
+from skfda.preprocessing.dim_reduction import variable_selection as vs
+from skfda.preprocessing.registration import LeastSquaresShiftRegistration
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
@@ -218,7 +221,7 @@ pipeline = Pipeline([
 pipeline.fit(X_train, y_train)
 pipeline.score(X_test, y_test)
 
-##############################################################################
+# %%
 # Hyperparameter optimizers
 # +++++++++++++++++++++++++
 #
@@ -236,7 +239,7 @@ pipeline.score(X_test, y_test)
 #     API such as those in `scikit-optimize
 #     <https://scikit-optimize.github.io>`_.
 
-##############################################################################
+# %%
 # As an example, we will use :class:`~sklearn.model_selection.GridSearchCV`
 # to select the number of neighbors used in a
 # :class:`~skfda.ml.classification.KNeighborsClassifier`.
@@ -260,7 +263,7 @@ score = grid_search.score(X_test, y_test)
 
 print(n_neighbors, score)
 
-##############################################################################
+# %%
 # Ensemble methods
 # ++++++++++++++++
 #
@@ -277,7 +280,7 @@ print(n_neighbors, score)
 #     be used with functional data unless it has been
 #     transformed to a multivariate dataset.
 
-##############################################################################
+# %%
 # As an example we will use a voting classifier to classify data using as
 # classifiers a knn-classifier, a nearest centroid classifier and a
 # maximum depth classifier.
@@ -301,7 +304,7 @@ voting = VotingClassifier([
 voting.fit(X_train, y_train)
 voting.score(X_test, y_test)
 
-##############################################################################
+# %%
 # Multiclass and multioutput classification utilities
 # +++++++++++++++++++++++++++++++++++++++++++++++++++
 #
@@ -311,10 +314,11 @@ voting.score(X_test, y_test)
 # output classifier or regressor to accept also multioutput (vector-valued)
 # targets.
 
-##############################################################################
+# %%
 # In this example we want to use as a classifier the combination of a
 # dimensionality reduction method (
-# :class:`~skfda.preprocessing.dim_reduction.variable_selection.RKHSVariableSelection`)
+# :class:`~skfda.preprocessing.dim_reduction.variable_selection.\
+# RKHSVariableSelection`)
 # and a SVM classifier (:class:`~sklearn.svm.SVC`). As that particular
 # dimensionality reduction method is only suitable for binary data, we use
 # :class:`~sklearn.multiclass.OneVsRestClassifier` to classify in a
@@ -336,7 +340,7 @@ multiclass = OneVsRestClassifier(pipeline)
 multiclass.fit(X_train, y_train)
 multiclass.score(X_test, y_test)
 
-##############################################################################
+# %%
 # Other scikit-learn utilities
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #

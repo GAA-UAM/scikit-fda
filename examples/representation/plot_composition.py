@@ -10,12 +10,7 @@ This example shows the composition of multidimensional FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import numpy as np
-from mpl_toolkits.mplot3d import axes3d
-
-import skfda
-
-##############################################################################
+# %%
 # Function composition can be applied to our data once is in functional
 # form using the method :func:`~skfda.representation.FData.compose`.
 #
@@ -34,6 +29,11 @@ import skfda
 # :math:`g: \mathbb{R}^2 \rightarrow \mathbb{R}`.
 #
 # Constructs example surface
+import numpy as np
+from mpl_toolkits.mplot3d import axes3d
+
+import skfda
+
 X, Y, Z = axes3d.get_test_data(1.2)
 data_matrix = [Z.T]
 grid_points = [X[0, :], Y[:, 0]]
@@ -43,7 +43,7 @@ g = skfda.FDataGrid(data_matrix, grid_points)
 # Plots the surface
 g.plot()
 
-##############################################################################
+# %%
 # We will create a parametric curve
 # :math:`f(t)=(10 \, \cos(t), 10 \, sin(t))`. The result of the composition,
 # :math:`g \circ f:\mathbb{R} \rightarrow \mathbb{R}` will be another
@@ -62,7 +62,7 @@ gof = g.compose(f)
 
 gof.plot()
 
-##############################################################################
+# %%
 # In the following chart it is plotted the curve
 # :math:`(10 \, \cos(t), 10 \, sin(t), g \circ f (t))` and the surface.
 
@@ -75,6 +75,6 @@ fig.axes[0].plot(path[:, 0], path[:, 1], gof(t)[0, ..., 0], color="orange")
 
 fig
 
-##############################################################################
+# %%
 # [1] Function composition `https://en.wikipedia.org/wiki/Function_composition
 # <https://en.wikipedia.org/wiki/Function_composition>`_.

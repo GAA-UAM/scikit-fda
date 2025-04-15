@@ -158,6 +158,22 @@ external = ["WPS"]
 	"T201", # Print allowed in examples
 ]
 
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"matplotlib.pyplot.axes".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.gca".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.gcf".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.legend".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.plot".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.scatter".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.subplot".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.suptitle".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.tight_layout".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.title".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.xaxis".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.xlim".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.yaxis".msg = "Use Matplotlib object-oriented API instead."
+"matplotlib.pyplot.ylim".msg = "Use Matplotlib object-oriented API instead."
+
 [tool.ruff.lint.isort]
 combine-as-imports = true
 

@@ -10,12 +10,7 @@ Shows the usage of the different types of extrapolation.
 
 # sphinx_gallery_thumbnail_number = 2
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-import skfda
-
-##############################################################################
+# %%
 #
 # The extrapolation defines how to evaluate points that are
 # outside the domain range of a
@@ -31,11 +26,16 @@ import skfda
 #
 # The extrapolation could be specified by a string with the short name of an
 # extrapolator or with an
-# :class:´~skfda.representation.extrapolation.Extrapolator´.
+# :class:`~skfda.representation.extrapolation.Extrapolator`.
 #
 # To show how it works we will create a dataset with two unidimensional curves
 # defined in (0,1), and we will represent it using a grid and different types
 # of basis.
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+import skfda
 
 fdgrid = skfda.datasets.make_sinusoidal_process(
     n_samples=2,
@@ -73,7 +73,7 @@ ax[0][1].set_xticks([])
 fdgrid.dataset_name = ""
 
 
-##############################################################################
+# %%
 #
 # If the extrapolation is not specified when a list of points is evaluated and
 # the default extrapolation of the objects has not been specified it is used
@@ -112,8 +112,9 @@ fd_fourier.plot(ax[0][1])
 fd_monomial.plot(ax[1][0])
 fd_bspline.plot(ax[1][1])
 
+plt.show()
 
-##############################################################################
+# %%
 #
 # Periodic extrapolation will extend the domain range periodically.
 # The following example shows the periodical extension of an FDataGrid.
@@ -124,27 +125,27 @@ fd_bspline.plot(ax[1][1])
 
 t = np.linspace(*domain_extended)
 
-fig = plt.figure()
+fig, ax = plt.subplots()
 fdgrid.dataset_name = "Periodic extrapolation"
 
 # Evaluation of the grid
 # Extrapolation supplied in the evaluation
 values = fdgrid(t, extrapolation="periodic")[..., 0]
 
-plt.plot(t, values.T, linestyle="--")
+ax.plot(t, values.T, linestyle="--")
 
-plt.gca().set_prop_cycle(None)  # Reset color cycle
+ax.set_prop_cycle(None)  # Reset color cycle
 
-fdgrid.plot(fig=fig)  # Plot dataset
+fdgrid.plot(axes=ax)  # Plot dataset
 
+plt.show()
 
-##############################################################################
+# %%
 #
 # Another possible extrapolation, ``"bounds"``, will use the values of the
 # interval bounds for points outside the domain range.
 
-
-fig = plt.figure()
+fig, ax = plt.subplots()
 fdgrid.dataset_name = "Boundary extrapolation"
 
 # Other way to call the extrapolation, changing the default value
@@ -152,14 +153,15 @@ fdgrid.extrapolation = "bounds"
 
 # Evaluation of the grid
 values = fdgrid(t)[..., 0]
-plt.plot(t, values.T, linestyle="--")
+ax.plot(t, values.T, linestyle="--")
 
-plt.gca().set_prop_cycle(None)  # Reset color cycle
+ax.set_prop_cycle(None)  # Reset color cycle
 
-fdgrid.plot(fig=fig)  # Plot dataset
+fdgrid.plot(axes=ax)  # Plot dataset
 
+plt.show()
 
-##############################################################################
+# %%
 #
 # The :class:`~skfda.representation.extrapolation.FillExtrapolation` will fill
 # the points extrapolated with the same value. The case of filling with zeros
@@ -175,12 +177,13 @@ fdgrid.extrapolation = "zeros"
 # Plot in domain extended
 fig = fdgrid.plot(domain_range=domain_extended, linestyle="--")
 
-plt.gca().set_prop_cycle(None)  # Reset color cycle
+fig.axes[0].set_prop_cycle(None)  # Reset color cycle
 
 fdgrid.plot(fig=fig)  # Plot dataset
 
+plt.show()
 
-##############################################################################
+# %%
 #
 # The string ``"nan"`` is equivalent to ``FillExtrapolation(np.nan)``.
 
@@ -188,7 +191,7 @@ fdgrid.plot(fig=fig)  # Plot dataset
 values = fdgrid([-1, 0, 0.5, 1, 2], extrapolation="nan")
 print(values)
 
-##############################################################################
+# %%
 #
 # It is possible to configure the extrapolation to raise an exception in case
 # of evaluating a point outside the domain.
@@ -199,7 +202,7 @@ try:
 except ValueError as e:
     print(e)
 
-##############################################################################
+# %%
 #
 # All the extrapolators shown will work with multidimensional objects.
 # In the following example it is constructed a 2d-surface and it is extended
@@ -226,7 +229,9 @@ T, S = np.meshgrid(t, t)
 ax.plot_wireframe(T, S, values[0, ..., 0], alpha=0.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")
 
-###############################################################################
+plt.show()
+
+# %%#
 #
 # The previous extension can be compared with the extrapolation using the
 # values of the bounds.
@@ -239,7 +244,9 @@ ax = fig.add_subplot(111, projection="3d")
 ax.plot_wireframe(T, S, values[0, ..., 0], alpha=0.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")
 
-###############################################################################
+plt.show()
+
+# %%#
 #
 # Or filling the surface with zeros outside the domain.
 
@@ -250,3 +257,5 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")
 ax.plot_wireframe(T, S, values[0, ..., 0], alpha=0.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")
+
+plt.show()

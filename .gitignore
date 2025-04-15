@@ -116,3 +116,6 @@ pip-wheel-metadata/
 
 # Docs time logs
 **/sg_execution_times.rst
+
+# Generated file
+tutorial/data.csv

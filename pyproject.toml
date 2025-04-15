@@ -144,6 +144,7 @@ external = ["WPS"]
 [tool.ruff.lint.per-file-ignores]
 "asv_benchmarks/**.py" = [
   "ARG001", # Some unused args are needed for parameterized tests
+  "ARG002", # Some unused args are needed for parameterized tests
 ]
 "plot_*.py" = [
 	"ANN", # No type hints in examples

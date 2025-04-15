@@ -68,24 +68,32 @@ class PACE(
         assume_noisy: Set to ``False`` when the data is assumed to be
             noiseless. Otherwise, when smoothing the covariance surface, the
             diagonal will be treated separately. Defaults to ``True``.
-        kernel_mean: callable univariate smoothing kernel function for the
-            mean, of the form :math:`K(t, h)`, where `t` are the n-dimensional
-            time point, with n being the dimension of the domain, and `h` is
-            the bandiwdth. Defaults to a Gaussian kernel.
+        kernel_mean: callable vectorized univariate smoothing kernel function
+            for the mean, of the form :math:`K(t, h)`, where `t` are the
+            n-dimensional time point, with n being the dimension of the domain,
+            and `h` is the bandiwdth. Defaults to a Gaussian kernel.
         bandwidth_mean: bandwidth to use in the smoothing kernel for the mean.
             If no parameter is given, the bandwidth is calculated using the GCV
-            method. Defaluts to ``None``.
-        kernel_cov: callable univariate smoothing kernel function for the
-            covariance and calculations regarding its diagonal. It should have
-            the form :math:`K(t, h)`, where `t` are the n-dimensional time
-            point, with n being the dimension of the domain, and `h` is the
-            bandiwdth. To smooth the covariance, each value in the two
-            directions will be calculated with the function and the two values
-            will be multiplied, acting as an isotropic kernel. Defaults to a
-            Gaussian kernel.
+            method. If a float is given, it is used as the bandwidth. If a
+            tuple is given, it is used as the bandwidth search range. This last
+            option is useful in some kernel functions, where the search result
+            is a boundary of the default search range (0.1, 10.0). Defaluts to
+            ``None``.
+        kernel_cov: callable vectorized univariate smoothing kernel function
+            for the covariance and calculations regarding its diagonal. It
+            should have the form :math:`K(t, h)`, where `t` are the
+            n-dimensional time point, with n being the dimension of the domain,
+            and `h` is the bandiwdth. To smooth the covariance, each value in
+            the two directions will be calculated with the function and the two
+            values will be multiplied, acting as an isotropic kernel. Defaults
+            to a Gaussian kernel.
         bandwidth_cov: bandwidth to use in the smoothing kernel for the
             covariance. If no parameter is given, the bandwidth is calculated
-            using the GCV method. Defaluts to ``None``.
+            using the GCV method. If a float is given, it is used as the
+            bandwidth. If a tuple is given, it is used as the bandwidth search
+            range. This last option is useful in some kernel functions, where
+            the search result is a boundary of the default search range (0.1,
+            10.0). Defaluts to ``None``.
         n_grid_points: number of grid points to calculate the covariance and,
             subsequently, the eigenfunctions for better approximations. The
             final FPC scores will be given in the original grid points.
@@ -109,8 +117,12 @@ class PACE(
             selected components.
         mean\_: mean of the data.
         bandwidth_mean\_: calculated or user-given bandwidth used for the mean.
+        bandwidth_mean_interval\_: Interval of the bandwidth search for the
+            mean.
         covariance\_: covariance of the data.
         bandwidth_cov\_: calculated or user-given bandwidth used for the
+            covariance.
+        bandwidth_cov_interval\_: Interval of the bandwidth search for the
             covariance.
 
     Examples:
@@ -119,15 +131,57 @@ class PACE(
         .. footbibliography::
     """
 
+    def _check_bandwidth(
+        self,
+        bandwidth: float | NDArrayFloat | None,
+    ) -> tuple[float | None, tuple[float, float] | None]:
+        """
+        Check if the bandwidth has the correct form.
+
+        Args:
+            bandwidth: Bandwidth to check.
+
+        Returns:
+            A 2-element tuple with the value if the bandwidth is a float, or
+            None otherwise, and the search range if the bandwidth is a tuple,
+            or None otherwise. In the case that the bandwidth is None, the
+            function returns None, (0.1, 10.0) as the default search range.
+        """
+        if bandwidth is None:
+            return None, (0.1, 10.0)
+
+        if isinstance(bandwidth, float) and bandwidth <= 0:
+            error_msg = "Given bandwidth values must be positive."
+            raise ValueError(error_msg)
+
+        tuple_length = 2
+
+        if isinstance(bandwidth, Sequence) and (
+            len(bandwidth) != tuple_length
+            or not all(isinstance(b, (float, int)) for b in bandwidth)
+            or bandwidth[0] <= 0
+            or bandwidth[1] <= bandwidth[0]
+        ):
+            error_msg = (
+                "Bandwidth search ranges must be a non-decreasing 2-sequence "
+                "of floats."
+            )
+            raise ValueError(error_msg)
+
+        if isinstance(bandwidth, float):
+            return bandwidth, None
+
+        return None, (bandwidth[0], bandwidth[1])
+
     def __init__(
         self,
         n_components: float = 1.0,
         *,
         assume_noisy: bool = True,
         kernel_mean: KernelFunction = gaussian_kernel,
-        bandwidth_mean: float | None = None,
+        bandwidth_mean: float | NDArrayFloat | None = None,
         kernel_cov: KernelFunction = gaussian_kernel,
-        bandwidth_cov: float | None = None,
+        bandwidth_cov: float | NDArrayFloat | None = None,
         n_grid_points: int = 51,
         boundary_effect_interval: Sequence[float] = (0.0, 1.0),
         variance_error_interval: Sequence[float] = (0.25, 0.75),
@@ -141,21 +195,25 @@ class PACE(
             )
             raise ValueError(error_msg)
 
-        if (
-            (bandwidth_mean is not None and bandwidth_mean <= 0)
-            or (bandwidth_cov is not None and bandwidth_cov <= 0)
-            or (n_grid_points <= 0)
-        ):
-            error_msg = "Bandwidth and grid point values must be positive."
+        self.bandwidth_mean_, self.bandwidth_mean_interval_ = (
+            self._check_bandwidth(bandwidth_mean)
+        )
+
+        self.bandwidth_cov_, self.bandwidth_cov_interval_ = (
+            self._check_bandwidth(bandwidth_cov)
+        )
+
+        if n_grid_points <= 0:
+            error_msg = "n_grid_points must be positive or None."
             raise ValueError(error_msg)
 
-        interval_length = 2
+        tuple_length = 2
         if (
-            len(boundary_effect_interval) != interval_length
+            len(boundary_effect_interval) != tuple_length
             or boundary_effect_interval[0] < 0
             or boundary_effect_interval[1] > 1
             or boundary_effect_interval[0] >= boundary_effect_interval[1]
-            or len(variance_error_interval) != interval_length
+            or len(variance_error_interval) != tuple_length
             or variance_error_interval[0] < 0
             or variance_error_interval[1] > 1
             or variance_error_interval[0] >= variance_error_interval[1]
@@ -169,9 +227,7 @@ class PACE(
         self.n_components = n_components
         self.assume_noisy = assume_noisy
         self.kernel_mean = kernel_mean
-        self.bandwidth_mean = bandwidth_mean
         self.kernel_cov = kernel_cov
-        self.bandwidth_cov = bandwidth_cov
         self.n_grid_points = n_grid_points
         self.boundary_effect_interval = boundary_effect_interval
         self.variance_error_interval = variance_error_interval
@@ -248,70 +304,6 @@ class PACE(
             dataset_name=data.dataset_name,
         )
 
-    def _mean_lls(
-        self,
-        h: float,
-        t_eval: NDArrayFloat,
-        t_obs: NDArrayFloat,
-        y_obs: NDArrayFloat,
-    ) -> NDArrayFloat:
-        """
-        Local linear smoothing to estimate the mean function at given points.
-
-        Args:
-            h: Bandwidth for the kernel function.
-            t_eval: Points to evaluate, shape (n_eval, d).
-            t_obs: Observed time points, shape (n_obs, d).
-            y_obs: Observed values, shape (n_obs, n_outputs).
-
-        Returns:
-            Smoothed values at t_eval points, shape (n_eval, n_outputs).
-        """
-        epsilon = 1e-8
-
-        # Ensure all are 2D
-        t_eval = np.atleast_2d(t_eval)
-        t_obs = np.atleast_2d(t_obs)
-        y_obs = np.atleast_2d(y_obs)
-
-        n_eval, d = t_eval.shape
-        n_obs, _ = t_obs.shape
-
-        # Compute pairwise differences (n_eval, n_obs, d)
-        diffs = t_eval[:, None, :] - t_obs[None, :, :]
-
-        # Evaluate kernel per (n_eval, n_obs)
-        flat_diffs = diffs.reshape(-1, d)
-        flat_weights = self.kernel_mean(flat_diffs, h)
-
-        # Reshape back to (n_eval, n_obs)
-        weights = flat_weights.reshape(n_eval, n_obs)
-
-        # Reshape weights for broadcasting over outputs
-        weights_exp = weights[:, :, None]
-        scalar_diffs = diffs[..., 0]
-        scalar_diffs_exp = scalar_diffs[:, :, None]
-
-        y_obs_exp = y_obs[None, :, :]
-
-        # Compute smoother components
-        k0 = np.sum(weights, axis=1)[:, None]
-        k1 = np.sum(weights_exp * scalar_diffs_exp, axis=1)
-        k2 = np.sum(weights_exp * scalar_diffs_exp**2, axis=1)
-
-        s0 = np.sum(weights_exp * y_obs_exp, axis=1)
-        s1 = np.sum(
-            weights_exp * scalar_diffs_exp * y_obs_exp, axis=1
-        )
-
-        det = k0 * k2 - k1**2 + epsilon
-
-        return np.where(
-            det != 0,
-            (s0 * k2 - s1 * k1) / det,
-            np.mean(y_obs, axis=0, keepdims=True),
-        )
-
     def _mean_gcv_score(
         self,
         h: float,
@@ -328,7 +320,7 @@ class PACE(
             t_eval: Query points where smoother is evaluated.
 
         Returns:
-            GCV score
+            GCV score for the given bandwidth.
         """
         if h <= 0:  # Bandwidth must be positive
             return np.inf
@@ -340,7 +332,7 @@ class PACE(
         rss = np.sum((y_obs - y_hat) ** 2)
 
         # Approximate trace of smoother matrix
-        domain_diff = r = np.max(pdist(t_obs))
+        domain_diff = np.max(pdist(t_obs))
 
         k0 = self.kernel_mean(np.zeros((1, t_obs.shape[1])), 1.0)[0]
 
@@ -348,6 +340,117 @@ class PACE(
 
         denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
         return float(rss / denom) if denom > 0 else np.inf
+
+    def _mean_lls(
+        self,
+        h: float,
+        t_eval: NDArrayFloat,
+        t_obs: NDArrayFloat,
+        y_obs: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """
+        Local linear smoother for mean estimation.
+
+        Args:
+            h: Bandwidth for the kernel.
+            t_eval: Query points where smoother is evaluated.
+            t_obs: Observed time points.
+            y_obs: Observed function values.
+
+        Returns:
+            Smoothed estimates for each query point.
+        """
+        epsilon = 1e-8
+
+        t_eval = np.atleast_2d(t_eval)
+        t_obs = np.atleast_2d(t_obs)
+        y_obs = np.atleast_2d(y_obs)
+
+        n_eval, d = t_eval.shape
+        n_obs, q = y_obs.shape
+
+        # (n_eval, n_obs, d): differences for each eval-obs pair
+        diffs = t_eval[:, None, :] - t_obs[None, :, :]
+
+        # Compute kernel weights
+        flat_diffs = diffs.reshape(-1, d)
+        flat_weights = self.kernel_mean(flat_diffs, h)
+        weights = flat_weights.reshape(n_eval, n_obs)
+
+        estimates = np.empty((n_eval, q))
+
+        for i in range(n_eval):
+            wi = weights[i]
+            xi = diffs[i]
+            yi = y_obs
+
+            k0 = np.sum(wi)
+            k1 = np.sum(wi[:, None] * xi, axis=0)
+            k2 = np.einsum("ni,nj->ij", wi[:, None] * xi, xi)
+
+            s0 = np.sum(wi[:, None] * yi, axis=0)
+            s1 = np.einsum("ni,nj->ij", wi[:, None] * xi, yi)
+
+            # Solve linear system for beta0 (intercept)
+            # Build left-hand matrix and right-hand side
+            xtwx = np.block(
+                [[np.array([[k0]]), k1[None, :]], [k1[:, None], k2]]
+            ) + epsilon * np.eye(d + 1)
+            xtwy = np.vstack([s0[None, :], s1])
+
+            beta = np.linalg.solve(xtwx, xtwy)
+            estimates[i] = beta[0]  # intercept term
+
+        return estimates
+
+    def compute_raw_covariances(
+        self,
+        data: FDataIrregular,
+        mean: NDArrayFloat,
+        time_points: NDArrayFloat,
+    ) -> tuple[NDArrayFloat, NDArrayFloat]:
+        """
+        Compute raw covariance values.
+
+        Compute raw covariance values for all off-diagonal pairs (i,j) and
+        (i,k) from same subject.
+
+        Args:
+            data: FDataIrregular object.
+            mean: mean function.
+            time_points: time points where the mean is evaluated.
+
+        Returns:
+            coordinates: shape (n_covs, 2 * d) - concatenated (t_j, t_k)
+            values: shape (n_covs,) - raw covariance values
+        """
+        points = data.points
+        values = data.values
+        start_indices = data.start_indices
+        end_indices = np.append(start_indices[1:], len(points))
+
+        cov_coords = []
+        cov_values = []
+
+        point_to_index = {tuple(pt): i for i, pt in enumerate(time_points)}
+
+        for start, end in zip(start_indices, end_indices, strict=True):
+            t = points[start:end]
+            y = values[start:end]
+            m = np.array([mean[point_to_index[tuple(ti)]] for ti in t])
+
+            if len(t) < 2:
+                continue
+
+            for i in range(len(t)):
+                for j in range(i + 1, len(t)):
+                    # Concatenate coordinates for the covariance location
+                    coord = np.concatenate([t[i], t[j]])
+                    value = (y[i] - m[i]) * (y[j] - m[j])
+                    cov_coords.append(coord)
+                    cov_values.append(value)
+
+        return np.array(cov_coords), np.array(cov_values)
 
     def fit(
         self,
@@ -379,23 +482,82 @@ class PACE(
 
         time_points = np.sort(np.unique(x_work.points, axis=0), axis=0)
 
-        optimal_bandwidth = minimize_scalar(
-            self._mean_gcv_score,
-            args=(x_work.points, x_work.values),
-            bounds=(0.1, 10.0),
-            method="bounded",
-        ).x
+        # === MATLAB-style candidate search ===
+        # domain_diff = np.max(x_work.points, axis=0) - np.min(x_work.points, axis=0)
+        # r = float(np.max(domain_diff))
 
-        print(f"Optimal bandwidth for mean: {optimal_bandwidth}")
+        # dists = np.sort(np.diff(np.unique(x_work.points[:, 0])))
+        # if len(dists) >= 3:
+        #     dstar = np.min([np.sum(dists[:i+1]) for i in range(2, len(dists))])
+        # else:
+        #     dstar = r / 10  # fallback
+
+        # h0 = 2.5 * dstar
+
+        # # Create q and the 10 candidate bandwidths
+        # q = (r / (4 * h0)) ** (1 / 9)
+        # candidates = np.array([h0 * q**i for i in range(10)])
+
+        # # Evaluate GCV at each candidate
+        # gcv_scores = np.array([
+        #     self._mean_gcv_score(h, x_work.points, x_work.values)
+        #     for h in candidates
+        # ])
+        # optimal_bandwidth = candidates[np.argmin(gcv_scores)]
+
+        if self.bandwidth_mean_ is None:
+            self.bandwidth_mean_ = minimize_scalar(
+                self._mean_gcv_score,
+                args=(x_work.points, x_work.values),
+                bounds=self.bandwidth_mean_interval_,
+                method="bounded",
+            ).x
+
+            # The following correction is a practical empirical correction. This is
+            # inspired by the fact that, although the Gaussian kernel gives good
+            # results for irregular data, the fact that it has infinite support
+            # (nonzero weights for all points) can lead to over-smoothing. The
+            # following term has the objective of slightly correcting this effect.
+            # This can also be seen in the PACE package in Matlab.
+            if self.kernel_mean == gaussian_kernel:
+                self.bandwidth_mean_ *= 1.1
+
+        print(f"Selected bandwidth for mean: {self.bandwidth_mean_}. ")
 
         self.mean_ = self._mean_lls(
-            optimal_bandwidth,
+            self.bandwidth_mean_,
             time_points,
             x_work.points,
             x_work.values,
         )
 
-        # print(f"Mean: {self.mean_}")
+        print(f"Mean: {self.mean_}")
+
+        raw_cov_coords, raw_cov_values = self.compute_raw_covariances(
+            x_work,
+            self.mean_,
+            time_points,
+        )
+
+        # plt.figure(figsize=(8, 6))
+        # plt.scatter(
+        #     raw_cov_coords[:, 0],  # t_i
+        #     raw_cov_coords[:, 1],  # t_j
+        #     c=raw_cov_values,
+        #     cmap='coolwarm',
+        #     s=50,
+        #     edgecolors='k'
+        # )
+        # plt.colorbar(label='Raw Covariance')
+        # plt.xlabel('t_i')
+        # plt.ylabel('t_j')
+        # plt.title('Raw Covariance Values at (t_i, t_j)')
+        # plt.grid(True)
+        # plt.tight_layout()
+        # plt.show()
+
+        # print(f"Raw covariance coordinates: {raw_cov_coords}")
+        # print(f"Raw covariance values: {raw_cov_values}")
 
         # plt.scatter(
         #     x_work.points[:, 0],

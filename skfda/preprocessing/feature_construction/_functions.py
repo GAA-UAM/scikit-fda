@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import itertools
-from typing import Optional, Sequence, Tuple, TypeVar, Union, cast
+from collections.abc import Sequence
+from typing import Literal, Optional, TypeGuard, TypeVar, Union, cast
 
 import numpy as np
-from typing_extensions import Literal, TypeGuard
 
 from ..._utils.ndfunction._functions import (
     _average_function_ufunc,
@@ -17,7 +17,7 @@ from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 
-T = TypeVar("T", bound=Union[NDArrayFloat, FDataGrid])
+T = TypeVar("T", bound=NDArrayFloat | FDataGrid)
 
 
 def _sequence_of_ints(data: Sequence[object]) -> TypeGuard[Sequence[int]]:
@@ -137,7 +137,7 @@ def local_averages(
 def _calculate_curves_occupation(
     curve_y_coordinates: NDArrayFloat,
     curve_x_coordinates: NDArrayFloat,
-    intervals: Sequence[Tuple[float, float]],
+    intervals: Sequence[tuple[float, float]],
 ) -> NDArrayFloat:
 
     y1, y2 = np.asarray(intervals).T
@@ -175,7 +175,7 @@ def _calculate_curves_occupation(
 
 def occupation_measure(
     data: FData,
-    intervals: Sequence[Tuple[float, float]],
+    intervals: Sequence[tuple[float, float]],
     *,
     n_points: Optional[int] = None,
 ) -> NDArrayFloat:
@@ -285,31 +285,31 @@ def number_crossings(
     direction: Literal["up", "down", "all"] = "all",
 ) -> NDArrayInt:
     r"""
-    Calculate the number of crossings to a level of a FDataGrid.
+    Calculate the number of crossings to a level of an FDataGrid.
 
-    Let f_1(X) = N_i, where N_i is the number of up crossings of X
-    to a level c_i \in \mathbb{R}, i = 1,\dots,p.
+    Let :math:`f_i(X) = N_i`, where :math:`N_i` is the number of up crossings of
+    :math:`X` to a level :math:`c_i \in \mathbb{R}`, for :math:`i = 1,\dots,p`.
 
-    Recall that the process X(t) is said to have an up crossing of c
-    at :math:`t_0 > 0` if for some :math:`\epsilon >0`, X(t) $\leq$
-    c if t :math:'\in (t_0 - \epsilon, t_0) and X(t) $\geq$ c if
-    :math:`t\in (t_0, t_0+\epsilon)`.
+    Recall that the process :math:`X(t)` is said to have an up crossing of a level
+    :math:`c` at :math:`t_0 > 0` if for some :math:`\epsilon > 0`,
+    :math:`X(t) \leq c` for :math:`t\in (t_0 - \epsilon, t_0)` and
+    :math:`X(t) \geq c` for :math:`t\in (t_0, t_0+\epsilon)`.
 
     If the trajectories are differentiable, then
     :math:`N_i = card\{t \in[a,b]: X(t) = c_i, X' (t) > 0\}.`
 
-        Args:
-            fd: FDataGrid where we want to calculate
-                the number of up crossings.
-            levels: Sequence of numbers including the levels
-                we want to consider for the crossings. By
-                default it calculates zero-crossings.
-            direction: Whether to consider only up-crossings,
-                down-crossings or both.
+    Args:
+        fd: FDataGrid where we want to calculate
+            the number of up crossings.
+        levels: Sequence of numbers including the levels
+            we want to consider for the crossings. By
+            default it calculates zero-crossings.
+        direction: Whether to consider only up-crossings,
+            down-crossings or both.
 
-        Returns:
-            ndarray of shape (n_samples, len(levels))\
-            with the values of the counters.
+    Returns:
+        ndarray of shape (n_samples, len(levels))\
+        with the values of the counters.
 
     Examples:
         For this example we will use a well known function so the correct

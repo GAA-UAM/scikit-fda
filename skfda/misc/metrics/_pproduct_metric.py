@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Dict, List, NoReturn, TypeVar, Union
+from typing import TYPE_CHECKING, NoReturn, TypeVar
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
@@ -11,6 +11,9 @@ import pandas as pd  # type: ignore[import-untyped]
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 V = TypeVar("V", bound=FData | pd.DataFrame | NDArrayFloat)
 
@@ -126,7 +129,7 @@ class PProductMetric(Norm):
     def __init__(
         self,
         p: float,
-        norms: list[Norm] | Norm | dict[str, Norm] | None = None,
+        norms: Sequence[Norm] | Norm | dict[str, Norm] | None = None,
         weights: NDArrayFloat | float | None = None,
     ) -> None:
         if not np.isinf(p) and p < 1:

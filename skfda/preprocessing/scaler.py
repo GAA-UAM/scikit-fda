@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from .._utils import function_to_fdatabasis, nquad_vec
-from .._utils._sklearn_adapter import BaseEstimator, TransformerMixin
-from skfda.representation import FData, FDataGrid, FDataBasis
+from collections.abc import Callable
+from typing import Any, Optional
+
 import numpy as np
 
+from skfda.representation import FData, FDataBasis, FDataGrid
+
+from .._utils import function_to_fdatabasis, nquad_vec
+from .._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ..exploratory import stats
-from typing import Any, Optional, Callable
 from ..typing._numpy import NDArrayFloat
 
 
@@ -27,20 +30,17 @@ def compute_uniform_center(X: FData) -> NDArrayFloat:
     return mean
 
 
-def compute_uniform_scale(X: FData, correction: int) -> NDArrayFloat:
+def compute_uniform_scale(X: FData, correction: int = 0) -> NDArrayFloat:
     """Compute the uniform scale of the functional data."""
     if isinstance(X, FDataGrid):
-        mean = X.data_matrix.mean(axis=0).mean()
         integrand = X.copy(
-            data_matrix=(X.data_matrix - mean) ** 2,
+            data_matrix=(X.data_matrix) ** 2,
             coordinate_names=(None,),
         ).mean()
         scale = np.sqrt(
-            integrand.integrate().ravel()
-            * X.n_samples
-            / (X.n_samples - correction)
+            np.sum(integrand.integrate().ravel(), axis=0)
             * 1
-            / (X.grid_points[1] - X.grid_points[0])
+            / (X.n_samples - correction)
         )
 
     elif isinstance(X, FDataBasis):
@@ -60,8 +60,8 @@ def compute_uniform_scale(X: FData, correction: int) -> NDArrayFloat:
 
 def center_scale(
     X: FData,
-    center: Optional[Callable[[NDArrayFloat], NDArrayFloat]],
-    scale: Optional[Callable[[NDArrayFloat], NDArrayFloat]],
+    center: Callable[[NDArrayFloat], NDArrayFloat] | None,
+    scale: Callable[[NDArrayFloat], NDArrayFloat] | None,
 ) -> FData:
     pass
 

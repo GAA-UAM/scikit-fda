@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import functools
-from builtins import isinstance
-from typing import Callable, TypeVar, Union
+from collections.abc import Callable
+from typing import TypeVar
 
 import numpy as np
 from scipy.stats import rankdata
@@ -16,8 +16,8 @@ from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
 
-F = TypeVar('F', bound=FData)
-T = TypeVar('T', bound=Union[NDArrayFloat, FData])
+F = TypeVar("F", bound=FData)
+T = TypeVar("T", bound=NDArrayFloat | FData)
 
 
 def mean(
@@ -361,3 +361,54 @@ def trim_mean(
     trimmed_curves = X[indices_descending_depth[:n_samples_to_keep]]
 
     return trimmed_curves.mean()
+
+
+def duoble_mean(X: FData) -> FData:
+    """Compute the double mean of a FData object.
+
+    Args:
+        X: Object containing all the samples whose double mean is wanted.
+
+    Returns:
+        Double mean of all the samples in the original object, as a
+        :term:`functional data object` with just one sample.
+
+    """
+    # Crate a FData object with one observation per observation in the original where this observation is X.mean() + one of each of the average values
+    individual_observation_means = average_function_value(X)
+    mean_function = X.mean().to_grid()
+
+    double_fdata = X.copy(
+        data_matrix=mean_function.data_matrix
+        + individual_observation_means.data_matrix,
+        sample_names=(None,),
+    )
+    return double_fdata
+
+def individual_observation_mean(X: FData) -> NDArrayFloat:
+    """Compute the grand mean of a FData object.
+
+    Args:
+        X: Object containing all the samples whose grand mean is wanted.
+
+    Returns:
+        Grand mean of all the samples in the original object, as a
+        :term:`functional data object` with just one sample.
+
+    """
+    return average_function_value(X)
+
+def grand_mean(X: FData) -> float:
+    """Compute the grand mean of a FData object.
+
+    Args:
+        X: Object containing all the samples whose grand mean is wanted.
+
+    Returns:
+        Grand mean of all the samples in the original object, as a
+        :term:`functional data object` with just one sample.
+
+    """
+    individual_mean = average_function_value(X)
+
+    return individual_mean.mean()

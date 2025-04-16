@@ -22,28 +22,29 @@ from ...representation.irregular import FDataIrregular
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import ArrayLike, NDArrayAny, NDArrayFloat
 from scipy.spatial import cKDTree
+from scipy.sparse import diags
+from scipy.linalg import pinv
+import warnings
 
-KernelFunction = Callable[[NDArrayFloat, float], NDArrayFloat]
 
 
-def gaussian_kernel(t: NDArrayFloat, h: float) -> NDArrayFloat:
+KernelFunction = Callable[[NDArrayFloat], NDArrayFloat]
+
+
+def gaussian_kernel(t: NDArrayFloat) -> NDArrayFloat:
     """
     Vectorized Gaussian kernel function.
 
     Args:
         t: Array of shape (n_samples, n_dims), where each row is a difference vector.
-        h: Bandwidth (scalar)
 
     Returns:
         Kernel weights of shape (n_samples,)
     """
-    if t.ndim == 1:
-        t = t[None, :]  # Ensure 2D shape
-
     d = t.shape[1]
 
-    norm_sq = np.sum((t / h) ** 2, axis=1)  # ||t/h||^2 for each row
-    coeff = 1 / ((2 * np.pi) ** (d / 2) * h**d)
+    norm_sq = np.sum((t) ** 2, axis=1)  # ||t/h||^2 for each row
+    coeff = 1 / ((2 * np.pi) ** (d / 2))
     return np.array(coeff * np.exp(-0.5 * norm_sq), dtype=np.float64)
 
 
@@ -335,7 +336,7 @@ class PACE(
 
         # Approximate trace of smoother matrix
         domain_diff = np.max(pdist(t_obs))
-        k0 = self.kernel_mean(np.zeros((1, t_obs.shape[1])), 1.0)[0]
+        k0 = self.kernel_mean(np.zeros((1, t_obs.shape[1])))[0]
         n_obs = t_obs.shape[0]
 
         denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
@@ -374,7 +375,7 @@ class PACE(
 
         # Compute kernel weights
         flat_diffs = diffs.reshape(-1, d)
-        flat_weights = self.kernel_mean(flat_diffs, h)
+        flat_weights = self.kernel_mean(flat_diffs/h)
         weights = flat_weights.reshape(n_eval, n_obs)
 
         estimates = np.empty((n_eval, q))
@@ -403,59 +404,81 @@ class PACE(
 
         return estimates
 
-    def compute_raw_covariances(
+    def _compute_raw_covariances(
         self,
         x_work: FDataIrregular,
         mean: NDArrayFloat,
         time_points: NDArrayFloat,
-    ) -> tuple[NDArrayFloat, NDArrayFloat]:
+    ) -> tuple[
+        NDArrayFloat, NDArrayFloat, NDArrayFloat, NDArrayFloat, NDArrayFloat,
+    ]:
         """
         Compute raw covariances for irregular data.
 
+        Compute raw covariances for irregular data, filtering duplicates based
+        on the ``assume_noisy`` parameter.
+
         Args:
-            x_work: The FDataIrregular object to be analysed.
-            mean: The mean function evaluated at the grid points.
-            time_points: The grid points where the mean is evaluated.
+            x_work: FDataIrregular object containing the data.
+            mean: Mean function values.
+            time_points: Time points for the mean.
 
         Returns:
-            An array of coordinates and an array of covariance values.
+            Array of time point pairs.
+            Array of raw covariance values.
+            Array of indices for the data points.
+            Array of weights for the covariance.
+            Array of raw covariance values without removing duplicates.
         """
         points = x_work.points
         values = x_work.values
         start_indices = x_work.start_indices
-
         end_indices = np.append(start_indices[1:], len(points))
 
-        tree = cKDTree(time_points)
-        _, indices = tree.query(points, k=1)
-        mean_proj = mean[indices]
+        # Create lists to store the results
+        t_1, t_2, x_1, x_2, subj_idx, raw_cov = [], [], [], [], [], []
 
-        cov_coords = []
-        cov_values = []
+        # Vectorize the time points and corresponding values
+        for i in range(len(start_indices)):
+            p_i = points[start_indices[i] : end_indices[i]]
+            v_i = values[start_indices[i] : end_indices[i]]
 
-        for start, end in zip(start_indices, end_indices, strict=True):
-            p_i = points[start:end]
-            v_i = values[start:end]
-            m_i = mean_proj[start:end]
-            r_i = v_i - m_i
+            # Find the mean projection for each point
+            tree = cKDTree(time_points)
+            _, indices = tree.query(p_i)
+            mean_proj = mean[indices]
+
+            # Center the values by subtracting the mean
+            r_i = v_i - mean_proj
 
             for j in range(len(p_i)):
                 for k in range(len(p_i)):
-                    if self.assume_noisy and j == k:
-                        continue
+                    # Store all pairs of time points (including duplicates)
+                    t_1.append([p_i[j]])
+                    t_2.append([p_i[k]])
+                    x_1.append(r_i[j])
+                    x_2.append(r_i[k])
+                    subj_idx.append(i)  # Subject index
+                    raw_cov.append(r_i[j] * r_i[k])  # Raw covariance
 
-                    coord = np.concatenate([[p_i[j]], [p_i[k]]])
-                    cov = np.outer(r_i[j], r_i[k])
+        # Convert lists to numpy arrays
+        t_pairs = np.array([t_1, t_2]).squeeze().T
+        t_pairs = t_pairs.reshape(t_pairs.shape[0], 2, -1)
+        f_raw_cov = np.array(raw_cov)
 
-                    cov_coords.append(coord)
-                    cov_values.append(cov)
+        if self.assume_noisy:
+            t_neq = np.where(t_pairs[:, 0] != t_pairs[:, 1])[0]
+            t_pairs = t_pairs[t_neq]
+            f_raw_cov = f_raw_cov[t_neq]
 
-        return (np.array(cov_coords), np.array(cov_values))
+        win = np.ones(len(f_raw_cov))
+
+        return t_pairs, f_raw_cov, np.array(subj_idx), win, np.array(raw_cov)
 
     def _cov_gcv_score(
         self,
         h: float,
-        t_pairs: NDArrayFloat,
+        cov_coords: NDArrayFloat,
         cov_values: NDArrayFloat,
     ) -> float:
         """
@@ -464,18 +487,24 @@ class PACE(
         Returns:
             Scalar GCV score.
         """
+        print(f"Evaluating GCV for h={h:.4f}")
         if h <= 0:
             return np.inf
 
         # Evaluate smoothed covariance at same locations
-        r_eval = t_pairs[:, : t_pairs.shape[1] // 2]
-        s_eval = t_pairs[:, t_pairs.shape[1] // 2:]
-        G_hat = self._cov_lls(h, r_eval, s_eval, t_pairs, cov_values)
+        r_eval = cov_coords[:, 0, :]
+        s_eval = cov_coords[:, 1, :]
+        print(f"r_eval: {r_eval}")
+        print(f"s_eval: {s_eval}")
+        print(f"cov_values: {cov_values}")
+        print(r_eval.shape, s_eval.shape, cov_values.shape)
+        G_hat = self._cov_lls(h, r_eval, s_eval, cov_coords, cov_values)
 
         rss = np.sum((cov_values - G_hat) ** 2)
 
         domain_diff = np.max(pdist(t_pairs))
         k0 = self.kernel_cov(np.zeros((1, t_pairs.shape[1])), 1.0)[0]
+        k0 *= k0
         n_obs = len(cov_values)
 
         denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
@@ -488,72 +517,90 @@ class PACE(
         s_eval: NDArrayFloat,
         cov_coords: NDArrayFloat,
         cov_values: NDArrayFloat,
+        win: NDArrayFloat,
     ) -> NDArrayFloat:
         """
-        Evaluate the smoothed covariance surface.
+        Local linear smoother for covariance estimation.
 
-        Uses 2D local linear smoothing and Gaussian kernel.
-        Assumes 1D time and scalar-valued covariance (q=1).
+        Args:
+            h: Bandwidth for the kernel.
+            r_eval: First array of query points where smoother is evaluated.
+            s_eval: Second array of query points where smoother is evaluated.
+            cov_coords: Coordinates of the covariance.
+            cov_values: Values of the covariance.
+            win: Weights for the covariance.
+
+        Returns:
+            n_grid_points x n_grid_points array of smoothed covariance values.
         """
-        epsilon = 1e-8
+        # Active indices based on non-zero weights
+        active = np.nonzero(win)[0]
+        t_pairs = cov_coords[active, :]
+        cov_values = cov_values[active]
+        win = win[active]
 
-        t_im = cov_coords[:, 0, :]
-        t_il = cov_coords[:, 1, :]
-        g_vals = cov_values[:, 0, :]
+        # Initialize the mu matrix (output)
+        mu = np.zeros((len(s_eval), len(r_eval)))
 
-        n_eval, d = r_eval.shape
-        n_obs, q = g_vals.shape
+        # Loop through the grid points (r_eval, s_eval)
+        for i in range(len(s_eval)):
+            for j in range(i, len(r_eval)):  # Only upper triangle
+                # Locate the local window based on the kernel type
+                if self.kernel_cov is not gaussian_kernel:
+                    # Get the indices where the conditions are true
+                    ind_r = np.where(np.abs(t_pairs[:, 0] - r_eval[j]) <= h + 1e-6)[0]
+                    ind_s = np.where(np.abs(t_pairs[:, 1] - s_eval[i]) <= h + 1e-6)[0]
 
-        diffs_r = r_eval[:, None, :] - t_im[None, :, :]
-        diffs_s = s_eval[:, None, :] - t_il[None, :, :]
+                    # Combine the indices by checking both conditions
+                    ind = np.intersect1d(ind_r, ind_s)
 
-        flat_diffs_r = diffs_r.reshape(-1, d)
-        flat_diffs_s = diffs_s.reshape(-1, d)
+                else:  # Gaussian kernel, use all points
+                    ind = np.arange(len(t_pairs))
 
-        flat_weights_r = self.kernel_cov(flat_diffs_r, h)
-        flat_weights_s = self.kernel_cov(flat_diffs_s, h)
+                # Local points
+                l_t = t_pairs[ind, :]
+                l_x = cov_values[ind]
+                l_w = win[ind]
 
-        weights_r = flat_weights_r.reshape(n_eval, n_obs)
-        weights_s = flat_weights_s.reshape(n_eval, n_obs)
+                min_unique = 6
+                min_unique_pairs = 3
+                # Compute the weight matrix based on the kernel, checking that
+                # there are sufficient distinct points and time point pairs.
+                if len(np.unique(l_t[:])) >= min_unique or len(np.unique(l_t, axis=0)) >= min_unique_pairs:
+                    l_diff_t = (l_t[:, 0] - r_eval[j]) / h
+                    l_diff_s = (l_t[:, 1] - s_eval[i]) / h
 
-        cov_matrix = np.zeros((n_eval, n_eval))
+                    kernel_r = self.kernel_cov(l_diff_t)
+                    kernel_s = self.kernel_cov(l_diff_s)
 
-        for i in range(n_eval):
-            for j in range(n_eval):
-                # Combined kernel weights for (i, j)
-                w_ij = weights_r[i] * weights_s[j]
-                valid_mask = w_ij > 1e-8
+                    w = kernel_r * kernel_s
+                    w *= l_w
 
-                if np.sum(valid_mask) < 3:
-                    cov_matrix[i, j] = 0.0
-                    continue
+                    x = np.ones((len(l_x), 3))
+                    x[:, 1] = (l_t[:, 0] - r_eval[j]).flatten()
+                    x[:, 2] = (l_t[:, 1] - s_eval[i]).flatten()
 
-                x1 = t_im[valid_mask, 0]
-                x2 = t_il[valid_mask, 0]
-                y = g_vals[valid_mask, 0]
-                w = w_ij[valid_mask]
+                    # Weighted least squares: Solve for beta
+                    w_diag = np.diag(w)  # Create a diagonal weight matrix
+                    xtwx = x.T @ w_diag @ x  # X^T W X
+                    xtxy = x.T @ w_diag @ l_x  # X^T W y
+                    beta = np.linalg.pinv(xtwx) @ xtxy  # Solving for beta
 
-                X = np.stack([
-                    np.ones_like(x1),
-                    x1 - r_eval[i, 0],
-                    x2 - s_eval[j, 0],
-                ], axis=1)
+                    mu[i, j] = beta[0]  # Intercept term
 
-                try:
-                    W = np.diag(w)
-                    XtWX = X.T @ W @ X + epsilon * np.eye(3)
-                    XtWy = X.T @ W @ y
-                    beta = np.linalg.solve(XtWX, XtWy)
-                    cov_matrix[i, j] = beta[0]
-                except np.linalg.LinAlgError:
-                    cov_matrix[i, j] = 0.0
+                    print(f"mu[{i}, {j}] = {mu[i, j]}")
 
-        # Enforce symmetry
-        cov_matrix = (cov_matrix + cov_matrix.T) / 2
+                else:
+                    warnings.warn(
+                        "Not enough points in local window for "
+                        f"({r_eval[j]}, {s_eval[i]}), increase bandwidth."
+                        "This may lead to inaccurate results.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    return np.array([])
 
-        return cov_matrix[..., None, None]
-
-
+        return mu
 
     def fit(
         self,
@@ -636,24 +683,35 @@ class PACE(
 
         # print(f"Mean: {self.mean_}")
 
-        raw_cov_coords, raw_cov_values = self.compute_raw_covariances(
-            x_work,
-            self.mean_,
-            time_points,
+        raw_cov_coords, raw_cov_values, cov_subj_idx, win, unf_cov_values = (
+            self._compute_raw_covariances(
+                x_work,
+                self.mean_,
+                time_points,
+            )
         )
 
-        # print(f"Raw covariance coordinates: {raw_cov_coords}")
-        # print(f"Raw covariance values: {raw_cov_values}")
-
-        # return
-
         if self.bandwidth_cov_ is None:
-            self.bandwidth_cov_ = minimize_scalar(
-                self._cov_gcv_score,
-                args=(raw_cov_coords, raw_cov_values),
-                bounds=self.bandwidth_cov_interval_,
-                method="bounded",
-            ).x
+            # self.bandwidth_cov_ = minimize_scalar(
+            #     self._cov_gcv_score,
+            #     args=(raw_cov_coords, raw_cov_values),
+            #     bounds=self.bandwidth_cov_interval_,
+            #     method="bounded",
+            # ).x
+            bandwidth_candidates = np.linspace(0.1, 10, 3)
+
+            # Now you can evaluate GCV for each candidate
+            gcv_scores = np.array(
+                [
+                    self._cov_gcv_score(h, raw_cov_coords, raw_cov_values)
+                    for h in bandwidth_candidates
+                ]
+            )
+            print(f"Bandwidth candidates: {bandwidth_candidates}")
+
+            # Select the bandwidth with the minimum GCV score
+            self.bandwidth_cov_ = bandwidth_candidates[np.argmin(gcv_scores)]
+            print(f"Selected bandwidth for covariance: {self.bandwidth_cov_}.")
 
         print(f"Selected bandwidth for covariance: {self.bandwidth_cov_}. ")
 
@@ -674,13 +732,10 @@ class PACE(
             t_eval,
             raw_cov_coords,
             raw_cov_values,
+            win,
         )
 
         print(f"Covariance: {self.covariance_.shape}")
-
-
-
-
 
         return self
 
@@ -700,7 +755,7 @@ class PACE(
             Principal component scores. Data matrix of shape
             ``(n_samples, n_components)``.
         """
-        return [1.]
+        return [1.0]
 
     def fit_transform(
         self,
@@ -737,4 +792,4 @@ class PACE(
         Returns:
             A FData object.
         """
-        return [1.]
+        return [1.0]

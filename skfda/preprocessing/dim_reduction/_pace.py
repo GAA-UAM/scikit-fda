@@ -41,12 +41,13 @@ def gaussian_kernel(t: NDArrayFloat) -> NDArrayFloat:
     Returns:
         Kernel weights of shape (n_samples,)
     """
-    d = t.shape[1]
+    n_obs, n_eval, n_dims = t.shape
 
-    norm_sq = np.sum((t) ** 2, axis=1)  # ||t/h||^2 for each row
-    coeff = 1 / ((2 * np.pi) ** (d / 2))
-    return np.array(coeff * np.exp(-0.5 * norm_sq), dtype=np.float64)
+    norm_sq = np.sum(t ** 2, axis=2)  # Shape: (n_obs, n_eval)
 
+    # Apply the Gaussian kernel formula
+    coeff = 1 / ((2 * np.pi) ** (n_dims / 2))
+    return np.array(coeff * np.exp(-0.5 * norm_sq))
 
 class PACE(
     InductiveTransformerMixin[FData, NDArrayFloat, object],
@@ -374,9 +375,7 @@ class PACE(
         diffs = t_eval[:, None, :] - t_obs[None, :, :]
 
         # Compute kernel weights
-        flat_diffs = diffs.reshape(-1, d)
-        flat_weights = self.kernel_mean(flat_diffs/h)
-        weights = flat_weights.reshape(n_eval, n_obs)
+        weights = self.kernel_mean(diffs / h)
 
         estimates = np.empty((n_eval, q))
 
@@ -520,7 +519,7 @@ class PACE(
         win: NDArrayFloat,
     ) -> NDArrayFloat:
         """
-        Local linear smoother for covariance estimation.
+        Local linear smoother for covariance estimation (vectorized).
 
         Args:
             h: Bandwidth for the kernel.
@@ -539,68 +538,37 @@ class PACE(
         cov_values = cov_values[active]
         win = win[active]
 
-        # Initialize the mu matrix (output)
-        mu = np.zeros((len(s_eval), len(r_eval)))
+        n_eval, d = r_eval.shape
+        n_obs, q = cov_values.shape
 
-        # Loop through the grid points (r_eval, s_eval)
-        for i in range(len(s_eval)):
-            for j in range(i, len(r_eval)):  # Only upper triangle
-                # Locate the local window based on the kernel type
-                if self.kernel_cov is not gaussian_kernel:
-                    # Get the indices where the conditions are true
-                    ind_r = np.where(np.abs(t_pairs[:, 0] - r_eval[j]) <= h + 1e-6)[0]
-                    ind_s = np.where(np.abs(t_pairs[:, 1] - s_eval[i]) <= h + 1e-6)[0]
+        # Correct the broadcasting shape of r_eval and s_eval
+        diff_r = (t_pairs[:, 0, None] - r_eval[None, :]) / h
+        diff_s = (t_pairs[:, 1, None] - s_eval[None, :]) / h
 
-                    # Combine the indices by checking both conditions
-                    ind = np.intersect1d(ind_r, ind_s)
+        kernel_r = self.kernel_mean(diff_r).T
+        kernel_s = self.kernel_mean(diff_s).T
 
-                else:  # Gaussian kernel, use all points
-                    ind = np.arange(len(t_pairs))
+        weights = np.einsum('ik,jk->ijk', kernel_r, kernel_s)
+        w_diag = weights * win
 
-                # Local points
-                l_t = t_pairs[ind, :]
-                l_x = cov_values[ind]
-                l_w = win[ind]
+        # Build the design matrix for weighted least squares
+        x = np.ones((n_eval, n_eval, n_obs, 3))
+        for i in range(n_eval):
+            for j in range(n_eval):
+                x[:,j,:,1,None] = (t_pairs[None,:,0] - r_eval[:,None])
+                x[i,:,:,2,None] = (t_pairs[None,:,1] - s_eval[:,None])
 
-                min_unique = 6
-                min_unique_pairs = 3
-                # Compute the weight matrix based on the kernel, checking that
-                # there are sufficient distinct points and time point pairs.
-                if len(np.unique(l_t[:])) >= min_unique or len(np.unique(l_t, axis=0)) >= min_unique_pairs:
-                    l_diff_t = (l_t[:, 0] - r_eval[j]) / h
-                    l_diff_s = (l_t[:, 1] - s_eval[i]) / h
+        x_t = np.transpose(x, (0, 1, 3, 2))
+        xtw = x_t * w_diag[:,:,None,:]
+        xtwx = xtw @ x
+        xtwy = xtw @ cov_values
 
-                    kernel_r = self.kernel_cov(l_diff_t)
-                    kernel_s = self.kernel_cov(l_diff_s)
+        beta = np.linalg.pinv(xtwx) @ xtwy
 
-                    w = kernel_r * kernel_s
-                    w *= l_w
+        cov = beta[:,:,0]
+        cov_t = np.transpose(cov, (1, 0, 2))
 
-                    x = np.ones((len(l_x), 3))
-                    x[:, 1] = (l_t[:, 0] - r_eval[j]).flatten()
-                    x[:, 2] = (l_t[:, 1] - s_eval[i]).flatten()
-
-                    # Weighted least squares: Solve for beta
-                    w_diag = np.diag(w)  # Create a diagonal weight matrix
-                    xtwx = x.T @ w_diag @ x  # X^T W X
-                    xtxy = x.T @ w_diag @ l_x  # X^T W y
-                    beta = np.linalg.pinv(xtwx) @ xtxy  # Solving for beta
-
-                    mu[i, j] = beta[0]  # Intercept term
-
-                    print(f"mu[{i}, {j}] = {mu[i, j]}")
-
-                else:
-                    warnings.warn(
-                        "Not enough points in local window for "
-                        f"({r_eval[j]}, {s_eval[i]}), increase bandwidth."
-                        "This may lead to inaccurate results.",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                    return np.array([])
-
-        return mu
+        return np.array((cov + cov_t) / 2.0)
 
     def fit(
         self,
@@ -735,7 +703,7 @@ class PACE(
             win,
         )
 
-        print(f"Covariance: {self.covariance_.shape}")
+        # print(f"Covariance: {self.covariance_[0, :10]}")
 
         return self
 

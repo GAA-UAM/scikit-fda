@@ -834,6 +834,7 @@ def _mean_squared_error_fdatabasis(
         return error[0]  # type: ignore [no-any-return]
 
     return _multioutput_score_basis(y_true, multioutput, _mse_func)
+
 @overload
 def root_mean_squared_error(
     y_true: np.ndarray,
@@ -940,7 +941,7 @@ def _(y_true: FData, y_pred: FData, *, sample_weight=None, multioutput="uniform_
     """For FData."""
     mse = mean_squared_error(y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput,squared=False)
     return mse #** 0.5 jsp pourquoi ça renvoie Manual RMSE calculation: 0.5361902647381803
-#skfda RMSE result: 0.6390096504226938 TODO
+#skfda RMSE result: 0.6390096504226938
 
 
 @overload

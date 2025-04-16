@@ -874,6 +874,7 @@ def root_mean_squared_error(
     multioutput: Literal['raw_values'],
 ) -> FData:
     pass  # noqa: WPS428
+
 @singledispatch
 def root_mean_squared_error(
     y_true: DataType,

@@ -74,8 +74,16 @@ literature.
 # :math:`\{x_i: \mathbb{R} \to \mathbb{R}\}, i=1,2` measured at the same
 # (non-equispaced) points.
 
-import skfda
 import matplotlib.pyplot as plt
+
+import skfda
+
+# sphinx_gallery_start_ignore
+from skfda.typing._base import ArrayLike, GridPointsLike
+
+grid_points: GridPointsLike
+data_matrix: ArrayLike
+# sphinx_gallery_end_ignore
 
 grid_points = [0, 0.2, 0.5, 0.9, 1]  # Grid points of the curves
 data_matrix = [
@@ -205,9 +213,9 @@ print(text)
 # Thus, we need to convert it to float before we can pass it to the
 # :class:`~skfda.representation.grid.FDataGrid` constructor.
 
-import pandas
+import pandas as pd
 
-data = pandas.read_csv("data.csv")
+data = pd.read_csv("data.csv")
 
 grid_points = data.columns.astype(float)
 data_matrix = data

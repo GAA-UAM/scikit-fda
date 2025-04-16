@@ -37,8 +37,8 @@ from skfda.preprocessing.smoothing import KernelSmoother
 # %%
 # We will first load the (binary) Phoneme dataset and plot the first 20
 # functions.
-# We restrict the data to the first 150 variables, as done in
-# :footcite:t:`ferraty+vieu_2006_computational`, because most of the
+# We restrict the data to the first 150 variables, as done in Ferraty and 
+# Vieu (chapter 7)\ :footcite:ps:`ferraty+vieu_2006`, because most of the
 # useful information is in the lower frequencies.
 X, y = fetch_phoneme(return_X_y=True)
 

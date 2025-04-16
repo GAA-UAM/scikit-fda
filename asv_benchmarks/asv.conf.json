@@ -1,0 +1,14 @@
+{
+    "version": 1,
+
+    "project": "scikit-fda",
+    "project_url": "https://fda.readthedocs.io/",
+    "repo": "..",
+    "branches": ["develop"],
+    "environment_type": "conda",
+    "show_commit_url": "http://github.com/GAA-UAM/scikit-fda/commit/",
+    "build_command": [
+        "python -m build",
+        "python -mpip wheel --no-deps -w {build_cache_dir} {build_dir}"
+    ]
+}

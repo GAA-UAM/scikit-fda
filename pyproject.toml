@@ -57,11 +57,11 @@ docs = [
   "pytest",
   "setuptools>=41.2",
   "sphinx>=3",
-  "sphinx-gallery",
+  "sphinx-gallery>=0.19",
   "sphinxcontrib-bibtex",
 ]
 test = [
-  "numpy>=2", # Changes in array representation.
+  "numpy>=2.2", # Changes in array representation.
   "pytest",
   "pytest-env",
   "pytest-subtests",
@@ -76,6 +76,100 @@ repository = "https://github.com/GAA-UAM/scikit-fda"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.coverage.report]
+exclude_also = [
+    'raise AssertionError',
+    'raise NotImplementedError',
+    'if __name__ == .__main__.:',
+    'if TYPE_CHECKING:',
+    'class .*\bProtocol\):',
+    '@(abc\.)?abstractmethod',
+]
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+use_parentheses = true
+combine_as_imports = true
+skip_glob = "**/plot_*.py plot_*.py"
+
+[tool.mypy]
+strict = true
+strict_equality = true
+implicit_reexport = true
+enable_error_code = "ignore-without-code"
+
+[[tool.mypy.overrides]]
+module = [
+	"fdasrsf.*",
+  "findiff.*",
+  "joblib.*",
+  "lazy_loader.*",
+  "mpl_toolkits.*",
+  "scipy.*",
+  "skdatasets.*",
+  "sklearn.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+env = [
+	"EAGER_IMPORT=1",
+	"SCIPY_ARRAY_API=1",
+]
+addopts = "--doctest-modules"
+doctest_optionflags = "NORMALIZE_WHITESPACE ELLIPSIS"
+norecursedirs = ".* build dist *.egg venv .svn _build asv_benchmarks docs/auto_examples examples docs/auto_tutorial tutorial"
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+select = [
+    "ALL",
+]
+ignore = [
+  "D105", # No docstring needed for magic methods
+  "D107", # No docstring needed in __init__
+	"D212", # Incompatible with D213, which is our preferred style for multiline docstrings
+	"Q003", # Do not change quotation marks to avoid escaping
+	"PLC0414", # Allow explicit re-exports
+	"S101", # Assert is allowed
+	"TID252", # Relative imports allowed
+]
+# Style error codes not managed by Ruff
+external = ["WPS"]
+
+[tool.ruff.lint.per-file-ignores]
+"asv_benchmarks/**.py" = [
+  "ARG001", # Some unused args are needed for parameterized tests
+  "ARG002", # Some unused args are needed for parameterized tests
+]
+"plot_*.py" = [
+	"ANN", # No type hints in examples
+	"ARG001", # Some unused args are needed
+	"B018", # Single object expressions are not useless in examples (they display the object)
+	"D205", # Examples do not have a blank line in docstring
+	"D415", # First line in examples does not end with period
+  "E402", # Allow imports in the middle of the file
+	"ERA001", # Commented code may be useful for the reader
+	"S310", # URLs in examples have been validated
+	"T201", # Print allowed in examples
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["X", "y"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+ignore-decorators = ["typing.overload"]
+
+[tool.ruff.lint.pylint]
+max-args = 7
 
 [tool.setuptools.packages.find]
 include = ["skfda*"]

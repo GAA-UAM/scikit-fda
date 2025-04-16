@@ -17,7 +17,7 @@ of basis functions.
 #
 # sphinx_gallery_thumbnail_number = 7
 
-##############################################################################
+# %%
 # Functions and vector spaces
 # ---------------------------
 #
@@ -29,16 +29,17 @@ of basis functions.
 # represent functional observations in scikit-fda also support these
 # operations.
 
-##############################################################################
+# %%
 # In order to show the vector operations, we create two FDatagrids with
 # two functions each,
 # :math:`\mathbf{X}_1 = \{x_{1i}: \mathbb{R} \to \mathbb{R}\}, i=1,2` and
 # :math:`\mathbf{X}_2 = \{x_{2i}: \mathbb{R} \to \mathbb{R}\}, i=1,2`,
 # and plot them.
 
-import numpy as np
-import skfda
 import matplotlib.pyplot as plt
+import numpy as np
+
+import skfda
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 3))
 
@@ -68,7 +69,7 @@ axes[1].set_title(r"$\mathbf{X}_2$")
 
 plt.show()
 
-##############################################################################
+# %%
 # Functions can be multiplied by an scalar. This only changes the scale of
 # the functions, but not their shape. Note that all the functions in the
 # dataset are affected.
@@ -91,7 +92,7 @@ axes[1].set_title(r"$\mathbf{X}_1 + \mathbf{X}_2$")
 
 plt.show()
 
-##############################################################################
+# %%
 # Infinite (Schauder) basis
 # -------------------------
 #
@@ -125,13 +126,16 @@ plt.show()
 # basis family of functions, and ``coefficients``, a matrix with the scalar
 # coefficients of the functions in the basis.
 
-##############################################################################
+# %%
 # As an example, we can create the following function, which is expressed in
 # a truncated monomial basis (and thus it is a polynomial):
 #
 # .. math::
 #     x(t) = 3 + 2t - 4t^2 + t^3
 
+# sphinx_gallery_start_ignore
+basis: skfda.representation.basis.Basis
+# sphinx_gallery_end_ignore
 basis = skfda.representation.basis.MonomialBasis(
     n_basis=4,
     domain_range=(-10, 10),
@@ -147,7 +151,7 @@ fd_basis = skfda.FDataBasis(
 fd_basis.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Conversion between FDataGrid and FDataBasis
 # -------------------------------------------
 #
@@ -164,7 +168,7 @@ plt.show()
 # the functions in a grid that can be supplied as an argument in order to
 # obtain the values of the discretized representation.
 
-##############################################################################
+# %%
 # We now can see how the number of basis functions affect the basis expansion
 # representation of a few observations taken from a real-world dataset. You
 # can see that as more basis functions are used, the basis representation
@@ -192,7 +196,7 @@ for n_basis in range(1, max_basis + 1):
 fig.tight_layout()
 plt.show()
 
-##############################################################################
+# %%
 # List of available basis functions
 # ---------------------------------
 #
@@ -202,7 +206,7 @@ plt.show()
 # Thus, it is recommended to take a look at the available basis in order to
 # pick one that provides the best representation of the original data.
 
-##############################################################################
+# %%
 # First we will load a dataset to test the basis representations.
 
 X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
@@ -213,7 +217,7 @@ X = X[:5]
 X.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Monomial basis
 # ^^^^^^^^^^^^^^
 #
@@ -240,14 +244,14 @@ plt.show()
 # expansion are not good approximations of the derivatives of the original
 # data, as high order polynomials tend to have very large oscillations.
 
-##############################################################################
+# %%
 # Here we show the first five elements of the monomial basis.
 
 basis = skfda.representation.basis.MonomialBasis(n_basis=5)
 basis.plot()
 plt.show()
 
-##############################################################################
+# %%
 # We now show how the previous observations are represented using the first
 # five elements of this basis.
 
@@ -255,7 +259,7 @@ X_basis = X.to_basis(basis)
 X_basis.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Fourier basis
 # ^^^^^^^^^^^^^^
 #
@@ -275,14 +279,14 @@ plt.show()
 # otherwise the expansion require again a large number of basis to represent
 # those details.
 
-##############################################################################
+# %%
 # Here we show the first five elements of a Fourier basis.
 
 basis = skfda.representation.basis.FourierBasis(n_basis=5)
 basis.plot()
 plt.show()
 
-##############################################################################
+# %%
 # We now show how the previous observations are represented using the first
 # five elements of this basis.
 
@@ -290,7 +294,7 @@ X_basis = X.to_basis(basis)
 X_basis.plot()
 plt.show()
 
-##############################################################################
+# %%
 # B-spline basis
 # ^^^^^^^^^^^^^^
 #
@@ -311,14 +315,14 @@ plt.show()
 # indicated for non-periodic functions or functions with local features or with
 # different orders of curvature along their domain.
 
-##############################################################################
+# %%
 # Here we show the first five elements of a B-spline basis.
 
 basis = skfda.representation.basis.BSplineBasis(n_basis=5)
 basis.plot()
 plt.show()
 
-##############################################################################
+# %%
 # We now show how the previous observations are represented using the first
 # five elements of this basis.
 
@@ -326,7 +330,7 @@ X_basis = X.to_basis(basis)
 X_basis.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Constant basis
 # ^^^^^^^^^^^^^^
 #
@@ -335,7 +339,7 @@ plt.show()
 # as functional observations, which can be used to combine multivariate
 # and functional data in the same model.
 
-##############################################################################
+# %%
 # Tensor product basis
 # ^^^^^^^^^^^^^^^^^^^^
 #
@@ -351,7 +355,7 @@ plt.show()
 # allows the construction of basis for these higher dimensional functions as
 # tensor products of :math:`\mathbb{R} \to \mathbb{R}` basis.
 
-##############################################################################
+# %%
 # As an example, we can import the digits datasets of scikit-learn, which are
 # surfaces, and convert it to a basis expansion. Note that we use different
 # basis for the different continuous parameters of the function in order to
@@ -382,7 +386,7 @@ fd_basis = fd.to_basis(basis)
 fd_basis[0].plot()
 plt.show()
 
-##############################################################################
+# %%
 # Finite element basis
 # ^^^^^^^^^^^^^^^^^^^^
 #
@@ -397,7 +401,7 @@ plt.show()
 # have more control of the basis, placing more vertices in regions with
 # interesting behaviour, such as local features and less elsewhere.
 
-##############################################################################
+# %%
 # Here we show an example where the digits dataset of scikit-learn is
 # expressed in the finite element basis. First we create the vertices and
 # simplices that we will use and we plot them.
@@ -432,7 +436,7 @@ cells = np.array([
 plt.triplot(vertices[:, 0], vertices[:, 1], cells)
 plt.show()
 
-##############################################################################
+# %%
 # We now represent the digits dataset in this basis.
 
 basis = skfda.representation.basis.FiniteElementBasis(
@@ -446,7 +450,7 @@ fd_basis = fd.to_basis(basis)
 fd_basis[0].plot()
 plt.show()
 
-##############################################################################
+# %%
 # Vector-valued basis
 # ^^^^^^^^^^^^^^^^^^^
 #
@@ -460,7 +464,7 @@ plt.show()
 # The vector-valued basis (:class:`~skfda.representation.basis.VectorValued`)
 # allows the representation of vector-valued functions doing just that.
 
-##############################################################################
+# %%
 # As an example, consider the Canadian Weather dataset, including both
 # temperature and precipitation data as coordinate functions, and plotted
 # below.
@@ -470,7 +474,7 @@ X, y = skfda.datasets.fetch_weather(return_X_y=True)
 X.plot()
 plt.show()
 
-##############################################################################
+# %%
 # We will express this dataset as a basis expansion. Temperatures
 # are now expressed in a Fourier basis, while we express precipitations as
 # B-splines.

@@ -33,8 +33,9 @@ class InitialValueGenerator(Protocol):
 
     def __call__(
         self,
+        *,
         size: int,
-        random_state: RandomStateLike,
+        random_state: np.random.RandomState,
     ) -> NDArrayFloat:
         """Interface of initial value generator."""
 

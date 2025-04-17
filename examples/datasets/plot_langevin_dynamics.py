@@ -91,6 +91,10 @@ from skfda.datasets import make_sde_trajectories
 # We start by defining functions that compute the pdf, log_pdf and score of the
 # distribution.
 
+from typing import Any
+
+NDArrayFloat = np.typing.NDArray[np.floating[Any]]
+
 means = np.array([[-1, -1], [3, 2], [0, 2]])
 cov_matrices = np.array(
     [
@@ -104,27 +108,32 @@ probabilities = np.array([0.3, 0.6, 0.1])
 
 
 def pdf_gaussian_mixture(
-    x: np.ndarray,
-    weight: np.ndarray,
-    mean: np.ndarray,
-    cov: np.ndarray,
-) -> np.ndarray:
+    x: NDArrayFloat,
+    weight: NDArrayFloat,
+    mean: NDArrayFloat,
+    cov: NDArrayFloat,
+) -> NDArrayFloat:
     """Pdf of a 2-d Gaussian distribution of N Gaussians."""
-    n_gaussians, dim = np.shape(means)
+    n_gaussians, dim = mean.shape
+    # sphinx_gallery_start_ignore
+    gaussians_pdfs: np.typing.NDArray[np.floating[Any]]
+    # sphinx_gallery_end_ignore
+    gaussians_pdfs = np.array([
+        weight[n] * multivariate_normal.pdf(x, mean[n], cov[n])
+        for n in range(n_gaussians)
+    ])
     return np.sum(
-        [weight[n] * multivariate_normal.pdf(x, mean[n], cov[n])
-         for n in range(n_gaussians)
-         ],
+        gaussians_pdfs,
         axis=0,
     )
 
 
 def log_pdf_gaussian_mixture(
-    x: np.ndarray,
-    weight: np.ndarray,
-    mean: np.ndarray,
-    cov: np.ndarray,
-) -> np.ndarray:
+    x: NDArrayFloat,
+    weight: NDArrayFloat,
+    mean: NDArrayFloat,
+    cov: NDArrayFloat,
+) -> NDArrayFloat:
     """Log-pdf of a 2-d Gaussian distribution of N Gaussians."""
     return np.log(pdf_gaussian_mixture(x, weight, mean, cov))
 
@@ -136,7 +145,7 @@ def score_gaussian_mixture(
     cov: np.ndarray,
 ) -> np.ndarray:
     """Score of a 2-d Gaussian distribution of N Gaussians."""
-    n_gaussians, dim = np.shape(means)
+    n_gaussians, dim = np.shape(mean)
     score = np.zeros_like(x)
     pdf = pdf_gaussian_mixture(x, weight, mean, cov)
 
@@ -179,7 +188,7 @@ score = score.reshape(X_score.shape + (2,))
 score_x_coord = score[:, :, 0]
 score_y_coord = score[:, :, 1]
 
-plt.contour(X, Y, Z, levels=25, cmap='autumn')
+plt.contour(X, Y, Z, levels=25, cmap="autumn")
 plt.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
 plt.xticks([])
 plt.yticks([])
@@ -260,9 +269,9 @@ fd = make_sde_trajectories(
 points = fd.data_matrix
 fig, ax = plt.subplots()
 
-plt.contour(X, Y, Z, levels=25, cmap='autumn')
+plt.contour(X, Y, Z, levels=25, cmap="autumn")
 plt.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
-rc('animation', html='jshtml')
+rc("animation", html="jshtml")
 scatter = None
 
 
@@ -279,7 +288,7 @@ def update(frame: int) -> None:
     ax.set_yticks([])
     x = points[:, grid_points_per_frame * frame, 0]
     y = points[:, grid_points_per_frame * frame, 1]
-    scatter = ax.scatter(x, y, s=5, c='dodgerblue')
+    scatter = ax.scatter(x, y, s=5, c="dodgerblue")
 
 
 animation = FuncAnimation(fig, update, frames=frames, interval=500)

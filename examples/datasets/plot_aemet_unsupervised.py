@@ -10,26 +10,6 @@ principal component analysis (FPCA).
 
 # sphinx_gallery_thumbnail_number = 4
 
-from __future__ import annotations
-
-from typing import Any, Mapping, Tuple
-
-import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
-import numpy as np
-import sklearn.cluster
-from cartopy.io.img_tiles import GoogleTiles
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-
-from skfda.datasets import fetch_aemet
-from skfda.exploratory.depth import ModifiedBandDepth
-from skfda.exploratory.visualization import Boxplot, MagnitudeShapePlot
-from skfda.exploratory.visualization.fpca import FPCAPlot
-from skfda.misc.metrics import l2_distance
-from skfda.ml.clustering import KMeans
-from skfda.preprocessing.dim_reduction import FPCA
-
 # %%
 # In this example we explore the curves of daily temperatures at
 # different weather stations from Spain, included in the AEMET dataset\
@@ -52,6 +32,11 @@ from skfda.preprocessing.dim_reduction import FPCA
 
 # %%
 # We first load the AEMET dataset and plot it.
+
+import matplotlib.pyplot as plt
+
+from skfda.datasets import fetch_aemet
+
 X, _ = fetch_aemet(return_X_y=True)
 X = X.coordinates[0]
 
@@ -62,6 +47,10 @@ plt.show()
 # A boxplot can show magnitude outliers, in this case Navacerrada.
 # Here the temperatures are lower than in the other curves, as this
 # weather station is at a high altitude, near a ski resort.
+
+from skfda.exploratory.depth import ModifiedBandDepth
+from skfda.exploratory.visualization import Boxplot
+
 Boxplot(
     X,
     depth_method=ModifiedBandDepth(),
@@ -74,13 +63,18 @@ plt.show()
 # The Canary islands are at a lower latitude, closer to the equator.
 # Thus, they have a subtropical climate which presents less temperature
 # variation during the year.
-MagnitudeShapePlot(
-    X,
-).plot()
+
+from skfda.exploratory.visualization import MagnitudeShapePlot
+
+MagnitudeShapePlot(X).plot()
 plt.show()
 
 # %%
 # We now attempt to cluster the curves using functional k-means.
+
+from skfda.misc.metrics import l2_distance
+from skfda.ml.clustering import KMeans
+
 n_clusters = 5
 n_init = 10
 
@@ -90,11 +84,29 @@ fda_kmeans = KMeans(
     metric=l2_distance,
     random_state=0,
 )
+# sphinx_gallery_start_ignore
+from typing import cast
+
+from skfda import FDataGrid
+
+fda_kmeans = cast("KMeans[FDataGrid]", fda_kmeans)
+# sphinx_gallery_end_ignore
+
 fda_clusters = fda_kmeans.fit_predict(X)
 
 # %%
 # We want to plot the cluster of each station in the map of Spain. We need to
 # define first auxiliary variables and functions for plotting.
+
+from collections.abc import Mapping
+from typing import Any
+
+import cartopy.crs as ccrs
+import numpy as np
+from cartopy.io.img_tiles import GoogleTiles
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+
 coords_spain = (-10, 5, 34.98, 44.8)
 coords_canary = (-18.5, -13, 27.5, 29.5)
 
@@ -102,24 +114,30 @@ coords_canary = (-18.5, -13, 27.5, 29.5)
 # a Pandas dataframe.
 aemet, _ = fetch_aemet(return_X_y=True, as_frame=True)
 
-station_longitudes = aemet.loc[:, "longitude"].values
-station_latitudes = aemet.loc[:, "latitude"].values
+station_longitudes = aemet.loc[:, "longitude"].to_numpy()
+station_latitudes = aemet.loc[:, "latitude"].to_numpy()
 
 
 def create_map(
-    coords: Tuple[float, float, float, float],
-    figsize: Tuple[float, float],
+    coords: tuple[float, float, float, float],
+    figsize: tuple[float, float],
 ) -> Figure:
     """Create a map for a region of the world."""
     tiler = GoogleTiles(style="satellite")
     mercator = tiler.crs
 
+    # sphinx_gallery_start_ignore
+    from cartopy.mpl.geoaxes import GeoAxes
+
+    ax: GeoAxes
+    # sphinx_gallery_end_ignore
+
     fig = plt.figure(figsize=figsize)
-    ax = fig.add_axes([0, 0, 1, 1], projection=mercator)
+    ax = fig.add_axes((0, 0, 1, 1), projection=mercator)
     ax.set_extent(coords, crs=ccrs.PlateCarree())
 
     ax.add_image(tiler, 8)
-    ax.set_adjustable('datalim')
+    ax.set_adjustable("datalim")
 
     return fig
 
@@ -139,7 +157,7 @@ def plot_cluster_points(
             latitudes[selection],
             s=64,
             color=color_map[cluster],
-            edgecolors='white',
+            edgecolors="white",
             transform=ccrs.Geodetic(),
         )
 
@@ -210,6 +228,9 @@ plt.show()
 # %%
 # We now can compute the first two principal components for interpretability,
 # and project the data over these directions.
+
+from skfda.preprocessing.dim_reduction import FPCA
+
 fpca = FPCA(n_components=2)
 fpca.fit(X)
 
@@ -230,6 +251,9 @@ X_red = fpca.transform(X)
 # increase/decrease in temperature.
 # The second component instead has the effect of increasing/decreasing
 # the variability of the temperatures during the year.
+
+from skfda.exploratory.visualization.fpca import FPCAPlot
+
 fig = plt.figure(figsize=(8, 4))
 FPCAPlot(
     fpca.mean_,
@@ -258,13 +282,16 @@ for cluster in range(n_clusters):
         label=climate_names[cluster],
     )
 
-ax.set_xlabel('First principal component')
-ax.set_ylabel('Second principal component')
+ax.set_xlabel("First principal component")
+ax.set_ylabel("Second principal component")
 ax.legend()
 plt.show()
 
 # %%
 # We now attempt a multivariate clustering using only these projections.
+
+import sklearn.cluster
+
 mv_kmeans = sklearn.cluster.KMeans(
     n_clusters=n_clusters,
     n_init=n_init,

@@ -102,6 +102,7 @@ enable_error_code = "ignore-without-code"
 
 [[tool.mypy.overrides]]
 module = [
+  "cartopy.*",
 	"fdasrsf.*",
   "findiff.*",
   "joblib.*",
@@ -112,6 +113,14 @@ module = [
   "sklearn.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+  "examples.*",
+  "tutorial.*",
+]
+disallow_untyped_defs = false
+warn_return_any = false
 
 [tool.pytest.ini_options]
 env = [
@@ -156,6 +165,8 @@ external = ["WPS"]
 	"ERA001", # Commented code may be useful for the reader
 	"S310", # URLs in examples have been validated
 	"T201", # Print allowed in examples
+  "TC001", # We do not need to use TYPE_CHECKING blocks in example, for clarity
+  "TC002", # We do not need to use TYPE_CHECKING blocks in example, for clarity
 ]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]

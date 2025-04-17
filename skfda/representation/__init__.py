@@ -13,10 +13,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "irregular",
     ],
     submod_attrs={
-        '_functional_data': ["FData", "concatenate"],
-        'basis': ["FDataBasis"],
-        'grid': ["FDataGrid"],
-        'irregular': ["FDataIrregular"],
+        "_functional_data": ["FData", "concatenate"],
+        "basis": ["FDataBasis"],
+        "grid": ["FDataGrid"],
+        "irregular": ["FDataIrregular"],
     },
 )
 

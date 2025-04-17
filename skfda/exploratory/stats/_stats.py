@@ -2,22 +2,26 @@
 from __future__ import annotations
 
 import functools
-from builtins import isinstance
-from typing import Callable, TypeVar, Union
+from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
 from scipy.stats import rankdata
 
 from skfda._utils.ndfunction import average_function_value
 
+from ..._utils import nquad_vec
 from ...misc.metrics._lp_distances import l2_distance
 from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
-from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
 
-F = TypeVar('F', bound=FData)
-T = TypeVar('T', bound=Union[NDArrayFloat, FData])
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ...typing._metric import Metric
+
+F = TypeVar("F", bound=FData)
+T = TypeVar("T", bound=NDArrayFloat | FData)
 
 
 def mean(
@@ -122,7 +126,8 @@ def std(X: F, correction: int = 0) -> F:
         :term:`functional data object` with just one sample.
 
     """
-    raise NotImplementedError("Not implemented for this type")
+    msg = "Not implemented for this type"
+    raise NotImplementedError(msg)
 
 
 @std.register
@@ -290,7 +295,7 @@ def geometric_median(
         >>> median.data_matrix[0, ..., 0]
         array([ 1. ,  1. ,  3. ,  0.5])
 
-    See also:
+    See Also:
         :func:`depth_based_median`
 
     References:
@@ -361,3 +366,91 @@ def trim_mean(
     trimmed_curves = X[indices_descending_depth[:n_samples_to_keep]]
 
     return trimmed_curves.mean()
+
+
+def duoble_mean(X: FData) -> FData:
+    """Compute the double mean of a FData object.
+
+    Args:
+        X: Object containing all the samples whose double mean is wanted.
+
+    Returns:
+        Double mean of all the samples in the original object, as a
+        :term:`functional data object` with just one sample.
+
+    """
+    # Crate a FData object with one observation per observation in the original 
+    # where this observation is X.mean() + one of each of the average values
+    individual_observation_means = average_function_value(X)
+    if isinstance(X, FDataBasis):
+        mean_function = X.mean()
+
+
+    elif isinstance(X, FDataGrid):
+        mean_function = X.mean().to_grid()
+        double_fdata = X.copy(
+            data_matrix=mean_function.data_matrix
+            + individual_observation_means - grand_mean(X),
+            sample_names=(None,),
+        )
+
+
+    return double_fdata
+
+def individual_observation_mean(X: FData) -> NDArrayFloat:
+    """Compute the grand mean of a FData object.
+
+    Args:
+        X: Object containing all the samples whose grand mean is wanted.
+
+    Returns:
+        Grand mean of all the samples in the original object, as a
+        :term:`functional data object` with just one sample.
+
+    """
+    return average_function_value(X)
+
+def grand_mean(X: FData) -> NDArrayFloat:
+    """Compute the grand mean of a FData object.
+
+    Args:
+        X: Object containing all the samples whose grand mean is wanted.
+
+    Returns:
+        Grand mean of all the samples in the original object, as a
+        :term:`functional data object` with just one sample.
+
+    """
+    individual_mean = average_function_value(X)
+
+    return np.array(individual_mean.mean())
+
+def root_integrated_sample_variance(X: FData, correction: int = 0)-> NDArrayFloat:
+    """Compute the uniform scale of the functional data."""
+    if isinstance(X, FDataGrid):
+        integrand = X.copy(
+            data_matrix=(X.data_matrix) ** 2,
+            coordinate_names=(None,),
+        ).mean()
+        scale = np.sqrt(
+            np.sum(integrand.integrate().ravel(), axis=0)
+            / (X.n_samples - correction),
+        )
+        return np.atleast_1d(np.array(scale, dtype=np.float64))
+
+    if isinstance(X, FDataBasis):
+        mean = grand_mean(X)
+
+        arr = np.array(X.domain_range) 
+        diff = arr[:, 1] - arr[:, 0]
+
+        integral = nquad_vec(
+            lambda x: (X(x) - mean) ** 2,
+            X.domain_range,
+        )
+        scale = np.sqrt(integral * 1 / (diff) * 1 / (X.n_samples - correction))
+        return np.atleast_1d(np.array(scale, dtype=np.float64))
+
+    msg = "Unsupported FData type."
+    raise TypeError(msg)
+

@@ -3,31 +3,32 @@
 from __future__ import annotations
 
 import math
-from typing import Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Final, TypeVar
 
 import numpy as np
-from typing_extensions import Final
 
 from ...representation import FData
-from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
 from ._lp_norms import LpNorm
 from ._utils import NormInducedMetric, pairwise_metric_optimization
 
+if TYPE_CHECKING:
+    from ...typing._metric import Norm
+
 T = TypeVar("T", NDArrayFloat, FData)
 
 
-class LpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):
+class LpDistance(NormInducedMetric[NDArrayFloat|FData]):
     r"""
     Lp distance for functional data objects.
 
     Calculates the distance between two functional objects.
 
-    For each pair of observations f and g the distance between them is defined
-    as:
+    For each pair of observations :math:`\mathbf{X}_1` and :math:`\mathbf{X}_2` 
+    the distance between them is defined as:
 
     .. math::
-        d(x, y) = \| x - y \|_p
+        d(\mathbf{X}_1, \mathbf{X}_2) = \| \mathbf{X}_1 - \mathbf{X}_2 \|_p
 
     where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 
@@ -72,12 +73,12 @@ class LpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):
             ...
         ValueError: ...
 
-    """  # noqa: P102
+    """
 
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+        vector_norm: Norm[NDArrayFloat] | float | None = None,
     ) -> None:
 
         self.p = p
@@ -106,7 +107,7 @@ linf_distance: Final = LpDistance(p=math.inf)
 def _pairwise_metric_optimization_lp_fdata(
     metric: LpDistance,
     elem1: FData,
-    elem2: Optional[FData],
+    elem2: FData | None,
 ) -> NDArrayFloat:
     from ...misc import inner_product, inner_product_matrix
 
@@ -148,18 +149,19 @@ def lp_distance(
     fdata2: T,
     *,
     p: float,
-    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+    vector_norm: Norm[NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
     r"""
     Lp distance for FDataGrid objects.
 
     Calculates the distance between two functional objects.
 
-    For each pair of observations f and g the distance between them is defined
-    as:
+    For each pair of observations :math:`\mathbf{X}_1` and :math:`\mathbf{X}_2` 
+    the distance between them is defined as:
 
     .. math::
-        d(f, g) = d(g, f) = \| f - g \|_p
+        d(\mathbf{X}_1, \mathbf{X}_2) = d(\mathbf{X}_2, \mathbf{X}_1) = \| 
+        \mathbf{X}_1 - \mathbf{X}_2 \|_p
 
     where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 
@@ -211,8 +213,8 @@ def lp_distance(
             ...
         ValueError: ...
 
-    See also:
+    See Also:
         :class:`~skfda.misc.metrics.LpDistance`
 
-    """  # noqa: P102
+    """
     return LpDistance(p=p, vector_norm=vector_norm)(fdata1, fdata2)

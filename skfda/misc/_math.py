@@ -4,6 +4,7 @@ Defines the basic mathematical operations for classes defined in this
 package. FDataBasis and FDataGrid.
 
 """
+
 import warnings
 from builtins import isinstance
 from typing import Any, Callable, Optional, TypeVar, Union, cast
@@ -209,23 +210,23 @@ def cumsum(fdatagrid: FDataGrid) -> FDataGrid:
         data_matrix=np.cumsum(fdatagrid.data_matrix, axis=0),
     )
 
+
 @multimethod.multidispatch
 def weighted_inner_product(
     arg1: Vector,
     arg2: Vector,
-    weight: Union[float, Callable[[NDArrayFloat], NDArrayFloat], None]= None,
+    weight: float | Callable[[NDArrayFloat], NDArrayFloat] | None = None,
     *,
     _matrix: bool = False,
-    _domain_range: Optional[DomainRange] = None,
+    _domain_range: DomainRange | None = None,
     **kwargs: Any,
 ) -> NDArrayFloat:
-    
+
     if weight is None:
         weight = 1.0
 
-    
     if callable(arg1) and callable(arg2):
-        
+
         if callable(weight):
             integrand = lambda x: arg1(x) * weight(x)
         else:
@@ -237,18 +238,20 @@ def weighted_inner_product(
             _matrix=_matrix,
             _domain_range=_domain_range,
         )
-    
+
     elif isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
         if not callable(weight):
             return (  # type: ignore[no-any-return]
-                np.einsum('n...,m...->nm...', weight*arg1, arg2).sum(axis=-1)
-                if _matrix else (weight* arg1 * arg2).sum(axis=-1)
+                np.einsum("n...,m...->nm...", weight * arg1, arg2).sum(axis=-1)
+                if _matrix
+                else (weight * arg1 * arg2).sum(axis=-1)
             )
 
     raise ValueError(
         "Cannot compute inner product between "
         f"{type(arg1)} and {type(arg2)} with weights {type(weight)}",
     )
+
 
 @multimethod.multidispatch
 def inner_product(
@@ -368,8 +371,9 @@ def inner_product(
         )
     elif isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
         return (  # type: ignore[no-any-return]
-            np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
-            if _matrix else (arg1 * arg2).sum(axis=-1)
+            np.einsum("n...,m...->nm...", arg1, arg2).sum(axis=-1)
+            if _matrix
+            else (arg1 * arg2).sum(axis=-1)
         )
 
     raise ValueError(
@@ -460,10 +464,13 @@ def _inner_product_fdatabasis(
     same_basis = arg1.basis == arg2.basis
 
     # The number of operations is less using the matrix
-    n_ops_best_with_matrix = max(
-        arg1.n_samples,
-        arg2.n_samples,
-    ) > arg1.n_basis * arg2.n_basis
+    n_ops_best_with_matrix = (
+        max(
+            arg1.n_samples,
+            arg2.n_samples,
+        )
+        > arg1.n_basis * arg2.n_basis
+    )
 
     if not force_numerical and (
         inner_product_matrix is not None
@@ -479,16 +486,14 @@ def _inner_product_fdatabasis(
 
         if _matrix:
             return np.einsum(  # type: ignore[no-any-return]
-                'nb,bc,mc->nm',
+                "nb,bc,mc->nm",
                 coef1,
                 inner_product_matrix,
                 coef2,
             )
 
         return (  # type: ignore[no-any-return]
-            coef1
-            @ inner_product_matrix
-            * coef2
+            coef1 @ inner_product_matrix * coef2
         ).sum(axis=-1)
 
     return _inner_product_integrate(arg1, arg2, _matrix=_matrix)
@@ -538,7 +543,7 @@ def _inner_product_integrate(
             f2 = arg2(f_args)
 
         if _matrix:
-            ret = np.einsum('n...,m...->nm...', f1, f2)
+            ret = np.einsum("n...,m...->nm...", f1, f2)
             return ret.reshape(  # type: ignore[no-any-return]
                 (-1,) + ret.shape[2:],
             )
@@ -703,7 +708,7 @@ def cosine_similarity(
 
 def cosine_similarity_matrix(
     arg1: Vector,
-    arg2: Optional[Vector] = None,
+    arg2: Vector | None = None,
 ) -> NDArrayFloat:
     """
     Return the cosine similarity matrix between is arguments.

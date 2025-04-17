@@ -8,24 +8,34 @@ like depth measures.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Sized, Tuple, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+)
 
 import matplotlib
 import matplotlib.patches
 import numpy as np
 from matplotlib.artist import Artist
-from matplotlib.axes import Axes
-from matplotlib.colors import Colormap
-from matplotlib.figure import Figure
 from typing_extensions import Protocol
 
 from ..._utils import _to_grid_points, constants
 from ...misc.validation import validate_domain_range
 from ...representation._functional_data import FData
-from ...representation.irregular import FDataIrregular
-from ...typing._base import DomainRangeLike, GridPointsLike
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _set_labels
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence, Sized
+
+    import pandas as pd
+    from matplotlib.axes import Axes
+    from matplotlib.colors import Colormap
+    from matplotlib.figure import Figure
+
+    from ...representation.irregular import FDataIrregular
+    from ...typing._base import DomainRangeLike, GridPointsLike
 
 K = TypeVar('K', contravariant=True)
 V = TypeVar('V', covariant=True)
@@ -47,8 +57,8 @@ def _get_color_info(
     group_names: Indexable[K, str] | None = None,
     group_colors: Indexable[K, ColorLike] | None = None,
     legend: bool = False,
-    kwargs: Dict[str, Any] | None = None,
-) -> Tuple[
+    kwargs: dict[str, Any] | None = None,
+) -> tuple[
     Sequence[ColorLike] | None,
     Sequence[matplotlib.patches.Patch] | None,
 ]:
@@ -73,11 +83,11 @@ def _get_color_info(
                 [group_colors[g] for g in group_unique],
             )
         else:
-            prop_cycle = matplotlib.rcParams['axes.prop_cycle']
-            cycle_colors = prop_cycle.by_key()['color']
+            prop_cycle = matplotlib.rcParams["axes.prop_cycle"]
+            cycle_colors = prop_cycle.by_key()["color"]
 
             group_colors_array = np.take(
-                cycle_colors, np.arange(n_labels), mode='wrap',
+                cycle_colors, np.arange(n_labels), mode="wrap",
             )
 
         sample_colors = list(group_colors_array[group_indexes])
@@ -94,23 +104,22 @@ def _get_color_info(
         if group_names_array is not None:
             patches = [
                 matplotlib.patches.Patch(color=c, label=l)
-                for c, l in zip(group_colors_array, group_names_array)
+                for c, l in zip(group_colors_array, group_names_array, strict=False)
             ]
 
+    # In this case, each curve has a different color unless specified
+    # otherwise
+
+    elif "color" in kwargs:
+        sample_colors = len(fdata) * [kwargs.get("color")]
+        kwargs.pop("color")
+
+    elif "c" in kwargs:
+        sample_colors = len(fdata) * [kwargs.get("c")]
+        kwargs.pop("c")
+
     else:
-        # In this case, each curve has a different color unless specified
-        # otherwise
-
-        if 'color' in kwargs:
-            sample_colors = len(fdata) * [kwargs.get("color")]
-            kwargs.pop('color')
-
-        elif 'c' in kwargs:
-            sample_colors = len(fdata) * [kwargs.get("c")]
-            kwargs.pop('c')
-
-        else:
-            sample_colors = None
+        sample_colors = None
 
     return sample_colors, patches
 
@@ -187,13 +196,14 @@ class GraphPlot(BasePlot):
             the matplotlib.pyplot.plot function; if dim_domain is 2,
             keyword arguments to be passed to the
             matplotlib.pyplot.plot_surface function.
+
     Attributes:
         gradient_list: normalization of the values from gradient color_list
             that will be used to determine the intensity of the color
             each function will have.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0912, PLR0913
         self,
         fdata: FData,
         chart: Figure | Axes | None = None,
@@ -202,7 +212,7 @@ class GraphPlot(BasePlot):
         axes: Axes | None = None,
         n_rows: int | None = None,
         n_cols: int | None = None,
-        n_points: int | Tuple[int, int] | None = None,
+        n_points: int | tuple[int, int] | None = None,
         domain_range: DomainRangeLike | None = None,
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
@@ -225,13 +235,14 @@ class GraphPlot(BasePlot):
         self.gradient_criteria = gradient_criteria
         if self.gradient_criteria is not None:
             if len(self.gradient_criteria) != fdata.n_samples:
-                raise ValueError(
+                msg = (
                     f"The length of the gradient color list "
                     f"({len(self.gradient_criteria)}) "
                     f"should be the same as the number "
                     f"of samples in fdata "
-                    f"({fdata.n_samples})",
+                    f"({fdata.n_samples})"
                 )
+                raise ValueError(msg)
 
             if min_grad is None:
                 self.min_grad = min(self.gradient_criteria)
@@ -294,14 +305,29 @@ class GraphPlot(BasePlot):
 
     @property
     def dim(self) -> int:
+        """
+        Return the dimensionality of the plot.
+
+        This is calculated as the domain dimension plus one.
+        """
         return self.fdata.dim_domain + 1
 
     @property
     def n_subplots(self) -> int:
+        """
+        Return the number of subplots required.
+
+        This corresponds to the codomain dimensionality of the functional data.
+        """
         return self.fdata.dim_codomain
 
     @property
     def n_samples(self) -> int:
+        """
+        Return the number of samples in the functional data.
+
+        This corresponds to the number of observations or curves in the dataset.
+        """
         return self.fdata.n_samples
 
     def _plot(
@@ -315,7 +341,7 @@ class GraphPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -348,11 +374,12 @@ class GraphPlot(BasePlot):
             elif isinstance(self.n_points, int):
                 n_points_tuple = (self.n_points, self.n_points)
             elif len(self.n_points) != 2:
-                raise ValueError(
+                msg = (
                     "n_points should be a number or a tuple of "
                     "length 2, and has "
-                    "length {0}.".format(len(self.n_points)),
+                    f"length {len(self.n_points)}."
                 )
+                raise ValueError(msg)
 
             # Axes where will be evaluated
             x = np.linspace(*self.domain_range[0], n_points_tuple[0])
@@ -443,7 +470,7 @@ class ScatterPlot(BasePlot):
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,
         legend: bool = False,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         super().__init__(
             chart,
@@ -514,7 +541,7 @@ class ScatterPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -611,7 +638,7 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         axes: Axes | None = None,
         n_rows: int | None = None,
         n_cols: int | None = None,
-        domain_range: Tuple[int, int] | DomainRangeLike | None = None,
+        domain_range: tuple[int, int] | DomainRangeLike | None = None,
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,
@@ -661,14 +688,30 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
 
     @property
     def dim(self) -> int:
+        """
+        Return the dimensionality of the plot.
+
+        This is calculated as the domain dimension plus one.
+        """
         return self.fdata.dim_domain + 1
 
     @property
     def n_subplots(self) -> int:
+        """
+        Return the number of subplots required.
+
+        This corresponds to the codomain dimensionality of the functional data.
+        """
         return self.fdata.dim_codomain
 
     @property
     def n_samples(self) -> int:
+        """
+        Return the number of samples in the functional data.
+
+        This corresponds to the number of observations or curves
+        in the dataset.
+        """
         return self.fdata.n_samples
 
     def _plot(
@@ -701,7 +744,7 @@ class LinearPlotIrregular(PlotIrregular):
         artists_shape = (self.n_samples, self.fdata.dim_codomain)
         self.artists = np.zeros(artists_shape, dtype=Artist)
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
             for j in range(self.fdata.n_samples):
@@ -740,7 +783,7 @@ class ScatterPlotIrregular(PlotIrregular):
         artists_shape = (self.n_samples, self.fdata.dim_codomain)
         self.artists = np.zeros(artists_shape, dtype=Artist)
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -768,7 +811,7 @@ class ScatterPlotIrregular(PlotIrregular):
 def set_color_dict(
     sample_colors: Any,
     ind: int,
-    color_dict: Dict[str, ColorLike | None],
+    color_dict: dict[str, ColorLike | None],
 ) -> None:
     """
     Auxiliary method used to update color_dict.
@@ -778,3 +821,113 @@ def set_color_dict(
     """
     if sample_colors is not None:
         color_dict["color"] = sample_colors[ind]
+
+class DataFramePlot(BasePlot):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        chart: Figure | Axes | None = None,
+        *,
+        fig: Figure | None = None,
+        axes: Axes | Sequence[Axes] | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
+    ) -> None:
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.df = df
+
+    @property
+    def n_subplots(self) -> int:
+        return self.count_total_plots(self.df)
+
+    def count_total_plots(self, df: pd.DataFrame) -> int:
+        total_plots = 0
+        for col in df.columns:
+            val = df[col].iloc[0]
+            if isinstance(val, FData):
+                total_plots += val.dim_codomain
+            else:
+                total_plots += 1
+        return total_plots
+
+    def _plot(self, fig: Figure, axes: Sequence[Axes]) -> None:
+        axes_array = np.array(axes).flatten()
+        i = 0
+
+        for col in self.df.columns:
+            ax = axes_array[i]
+            data = self.df[col]
+            val = data.iloc[0]
+
+            if isinstance(val, FData):
+                fd_codim = val.dim_codomain
+
+                if fd_codim > 1:
+                    col_axes = axes_array[i:i+fd_codim]
+                    for fd in data:
+                        fd.plot(axes=col_axes)
+                    for j, ax_sub in enumerate(col_axes):
+                        ax_sub.set_title(f"{col} - {j+1}")
+                    i += fd_codim
+                else:
+                    for fd in data:
+                        fd.plot(axes=ax)
+                    ax.set_title(col)
+                    i += 1
+
+            elif isinstance(val, np.ndarray) or np.isscalar(val):
+                ax.scatter(range(len(data)), data)
+                ax.set_title(col)
+                i += 1
+
+            else:
+                ax.axis("off")
+                i += 1
+
+        # Hide extra axes
+        for j in range(i, len(axes)):
+            axes[j].axis("off")
+
+
+def plot_dataframe(
+    df: pd.DataFrame,
+    *,
+    n_rows: int | None = None,
+    n_cols: int | None = None,
+    figsize: float = 5.0,
+) -> Figure:
+    """
+    Plot a DataFrame containing numerical and functional (FData) data.
+
+    Creates a grid of subplots based on the structure of the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to be plotted.
+        n_rows (int, optional): Number of subplot rows.
+            Inferred if not provided.
+        n_cols (int, optional): Number of subplot columns.
+            Inferred if not provided.
+        figsize (float, optional): Size (in inches) of each subplot.
+
+    Returns:
+        matplotlib.figure.Figure: The resulting figure object.
+    """
+    plotter = DataFramePlot(
+        df,
+        n_rows=n_rows,
+        n_cols=n_cols,
+    )
+    nrows, ncols = plotter.axes_.shape
+
+    print(plotter.axes_)
+
+    fig = plotter.plot()
+    fig.set_size_inches(figsize * nrows, figsize * ncols)
+
+    return fig

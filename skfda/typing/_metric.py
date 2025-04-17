@@ -18,7 +18,7 @@ class Norm(Protocol[VectorType]):
     def __call__(self, __vector: VectorType) -> NDArrayFloat:  # noqa: WPS112
         """Compute the norm of a vector."""
 
-
+@runtime_checkable
 class Metric(Protocol[MetricElementType]):
     """Protocol for a metric between two elements of a metric space."""
 

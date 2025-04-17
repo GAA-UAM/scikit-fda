@@ -1,11 +1,14 @@
 """Implementation of Weighted Lp norms."""
 
-from typing import Callable, Union
+from collections.abc import Callable
 
 import numpy as np
-import scipy.integrate  # type: ignore[import-untyped]
 
+from ..._utils import nquad_vec
 from ...representation import FData, FDataBasis, FDataGrid
+from ...typing._base import (
+    GridPointsLike,
+)
 from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
 
@@ -15,7 +18,9 @@ class WeightedLpNorm:
         self,
         p: float,
         vector_norm: Norm[NDArrayFloat] | float | None = None,
-        lp_weight: Callable[[NDArrayFloat], NDArrayFloat] | float | None = None,
+        lp_weight: (
+            Callable[[GridPointsLike], NDArrayFloat] | float | None
+        ) = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
@@ -32,7 +37,7 @@ class WeightedLpNorm:
 
     def __call__(self, vector: NDArrayFloat | FData) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
-        from .. import inner_product
+        from .. import weighted_inner_product
 
         if isinstance(vector, np.ndarray):
             if isinstance(self.lp_weight, (float, int)):
@@ -44,31 +49,44 @@ class WeightedLpNorm:
             )
 
         vector_norm = self.vector_norm
+        lp_weight = self.lp_weight
 
         if vector_norm is None:
             vector_norm = self.p
-        if self.lp_weight is None:
-            self.lp_weight = 1.0
+        if lp_weight is None:
+            lp_weight = 1.0
 
-        # Special case, the inner product is heavily optimized
-        if self.p == vector_norm == 2:
-            return np.sqrt(inner_product(vector, vector))
+        # Special case, the inner product is heavily optimized  TODO
+        """ if self.p == vector_norm == 2:
+            return np.sqrt(weighted_inner_product(vector, vector)) """
 
         if isinstance(vector, FDataBasis):
-            if self.p != 2:
-                raise NotImplementedError
+            domain = vector.basis.domain_range
+            call = vector
 
-            start, end = vector.domain_range[0]
-            integral = scipy.integrate.quad_vec(
-                lambda x: (
-                    self.lp_weight * np.power(np.abs(vector(x)), self.p)
-                    if isinstance(self.lp_weight, (float, int))
-                    else self.lp_weight(x) * np.power(np.abs(vector(x)), self.p)
-                ),
-                start,
-                end,
+            def integrand(*args: NDArrayFloat) -> NDArrayFloat:
+                f_args = np.asarray(args)
+
+                try:
+                    f1 = call(f_args)[:, 0, :]
+                except Exception:  # noqa: BLE001
+                    f1 = call(f_args)
+                weight = (
+                    lp_weight
+                    if isinstance(lp_weight, (float, int))
+                    else lp_weight(f_args)
+                )
+                return np.asarray(
+                    np.power(np.abs(f1), self.p) * weight,
+                    dtype=np.float64,
+                )
+
+            integral = nquad_vec(
+                integrand,
+                domain,
             )
-            res = np.sqrt(integral[0]).flatten()
+
+            res = (np.sum(integral, axis=-1)) ** (1 / self.p)
 
         elif isinstance(vector, FDataGrid):
             data_matrix = vector.data_matrix
@@ -87,9 +105,9 @@ class WeightedLpNorm:
                 data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
 
             data_matrix = (
-                data_matrix * self.lp_weight
-                if isinstance(self.lp_weight, (float, int))
-                else self.lp_weight(vector.grid_points[0]) * data_matrix
+                data_matrix * lp_weight
+                if isinstance(lp_weight, (float, int))
+                else lp_weight(vector.grid_points) * data_matrix
             )
 
             if np.isinf(self.p):
@@ -121,6 +139,8 @@ def weighted_lp_norm(
     *,
     p: float,
     vector_norm: Norm[NDArrayFloat] | float | None = None,
-    lp_weight: Callable[[NDArrayFloat], NDArrayFloat] | float | None = None,
+    lp_weight: Callable[[GridPointsLike], NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
-    return WeightedLpNorm(p=p, vector_norm=vector_norm, lp_weight=lp_weight)(vector)
+    return WeightedLpNorm(p=p, vector_norm=vector_norm, lp_weight=lp_weight)(
+        vector,
+    )

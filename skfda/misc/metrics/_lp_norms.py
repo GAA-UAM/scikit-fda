@@ -1,51 +1,49 @@
 """Implementation of Lp norms."""
 
 import math
-from builtins import isinstance
-from typing import Union
+from typing import Final
 
 import numpy as np
-import scipy.integrate
-from typing_extensions import Final
 
+from ..._utils import nquad_vec
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
-from ..._utils import nquad_vec
 
 
-class LpNorm(Norm):
+class LpNorm(Norm[FData]):
     r"""
     Norm of all the observations in a FDataGrid object.
 
     For each observation :math:`\mathbf{X}` the Lp norm is defined as:
 
     .. math::
-        \| \mathbf{X} \| = \left( \int_D \| \mathbf{X} \|^p dt \right)^{
+        \| \mathbf{X} \| = \left( \int_\Omega \| \mathbf{X} \|^p dt \right)^{
         \frac{1}{p}}
 
-    Where :math:`\Omega` is the :term:`domain` over which the functions are defined.
+    Where :math:`\Omega` is the :term:`domain` over which the functions are
+    defined.
 
     The integral is approximated using Simpson's rule.
 
-    In general, if :math:`\mathbf{X}` is a multivariate function :math:`(X^{(1)}, ..., X^{(D)})`, and
-    :math:`\Omega \subset \mathbb{R}^n`, it is applied the following generalization
-    of the Lp norm.
+    In general, if :math:`\mathbf{X}` is a multivariate function
+    :math:`(X^{(1)}, ..., X^{(D)})`, and :math:`\Omega \subset \mathbb{R}^n`,
+    it is applied the following generalization of the Lp norm.
 
     .. math::
-        \| \mathbf{X} \| = \left( \int_\Omega \| \mathbf{X} \|_{*}^p dt \right)^{
-        \frac{1}{p}}
+        \| \mathbf{X} \| = \left( \int_\Omega \| \mathbf{X} \|_{*}^p dt
+        \right)^{\frac{1}{p}}
 
     Where :math:`\| \cdot \|_*` denotes a vectorial norm. See
     :func:`vectorial_norm` to more information.
 
-    For example, if :math:`\mathbf{X}: \mathbb{R}^2 \rightarrow \mathbb{R}^2`, and
-    :math:`\| \cdot \|_*` is the euclidean norm
+    For example, if :math:`\mathbf{X}: \mathbb{R}^2 \rightarrow \mathbb{R}^2`,
+    and :math:`\| \cdot \|_*` is the euclidean norm
     :math:`\| (t,s) \|_* = \sqrt{t^2 + s^2}`, the lp norm applied is
 
     .. math::
-        \| \mathbf{X} \| = \left( \int \int_\Omega \left ( \sqrt{ \| X^{(1)}(t,s)
-        \|^2 + \| X^{(2)}(t,s) \|^2 } \right )^p dtds \right)^{
+        \| \mathbf{X} \| = \left( \int \int_\Omega \left ( \sqrt{ \| 
+        X^{(1)}(t,s)\|^2 + \| X^{(2)}(t,s) \|^2 } \right )^p dtds \right)^{
         \frac{1}{p}}
 
     The objects ``l1_norm``, ``l2_norm`` and ``linf_norm`` are instances of
@@ -89,20 +87,21 @@ class LpNorm(Norm):
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+        vector_norm: Norm[NDArrayFloat] | float | None = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
         if not np.isinf(p) and p < 1:
-            raise ValueError(f"p (={p}) must be equal or greater than 1.")
+            msg = f"p (={p}) must be equal or greater than 1."
+            raise ValueError(msg)
 
         self.p = p
         self.vector_norm = vector_norm
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(" f"p={self.p}, vector_norm={self.vector_norm})"
+        return f"{type(self).__name__}(p={self.p}, vector_norm={self.vector_norm})"
 
-    def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:
+    def __call__(self, vector: NDArrayFloat | FData) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
         from .. import inner_product
 
@@ -134,7 +133,9 @@ class LpNorm(Norm):
                 except Exception:
                     f1 = call(f_args)
 
-                return np.power(np.abs(f1), self.p)
+                return np.asarray(
+                    np.power(np.abs(f1), self.p), dtype=np.float64,
+                )
 
             integral = nquad_vec(
                 integrand,
@@ -176,8 +177,9 @@ class LpNorm(Norm):
                 # rule.
                 res = integrand.integrate().ravel() ** (1 / self.p)
         else:
+            msg = f"LpNorm not implemented for type {type(vector)}"
             raise NotImplementedError(
-                f"LpNorm not implemented for type {type(vector)}",
+                msg,
             )
 
         if len(res) == 1:
@@ -192,10 +194,10 @@ linf_norm: Final = LpNorm(math.inf)
 
 
 def lp_norm(
-    vector: Union[NDArrayFloat, FData],
+    vector: NDArrayFloat | FData,
     *,
     p: float,
-    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+    vector_norm: Norm[NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
     r"""Calculate the norm of all the observations in a FDataGrid object.
 
@@ -205,27 +207,29 @@ def lp_norm(
         \|`\mathbf{X}` \| = \left( \int_\Omega \|`\mathbf{X}` \|^p dt \right)^{
         \frac{1}{p}}
 
-    Where :math:`\Omega` is the :term:`domain` over which the functions are defined.
+    Where :math:`\Omega` is the :term:`domain` over which the functions are
+    defined.
 
     The integral is approximated using Simpson's rule.
 
-    In general, if :math:`\mathbf{X}` is a multivariate function :math:`(X^{(1)}, ..., X^{(D)})`, and
-    :math:`\Omega \subset \mathbb{R}^n`, it is applied the following generalization
-    of the Lp norm.
+    In general, if :math:`\mathbf{X}` is a multivariate function
+    :math:`(X^{(1)}, ..., X^{(D)})`, and :math:`\Omega \subset \mathbb{R}^n`,
+    it is applied the following generalization of the Lp norm.
 
     .. math::
-        \| \mathbf{X} \| = \left( \int_\Omega \| \mathbf{X} \|_{*}^p dt \right)^{
-        \frac{1}{p}}
+        \| \mathbf{X} \| = \left( \int_\Omega \| \mathbf{X} \|_{*}^p dt
+        \right)^{\frac{1}{p}}
 
     Where :math:`\| \cdot \|_*` denotes a vectorial norm. See
     :func:`vectorial_norm` to more information.
 
-    For example, if :math:`\mathbf{X}: \mathbb{R}^2 \rightarrow \mathbb{R}^2`, and
-    :math:`\| \cdot \|_*` is the euclidean norm
+    For example, if :math:`\mathbf{X}: \mathbb{R}^2 \rightarrow \mathbb{R}^2`,
+    and :math:`\| \cdot \|_*` is the euclidean norm
     :math:`\| (t,s) \|_* = \sqrt{t^2 + s^2}`, the lp norm applied is
 
     .. math::
-        \| \mathbf{X} \| = \left( \int \int_\Omega \left ( \sqrt{ \| X^{(1)}(t,s)
+        \| \mathbf{X} \| = \left( \int \int_\Omega \left ( \sqrt{ \|
+        X^{(1)}(t,s)
         \|^2 + \| X^{(2)}(t,s) \|^2 } \right )^p dtds \right)^{
         \frac{1}{p}}
 
@@ -275,7 +279,7 @@ def lp_norm(
             ....
         ValueError: p (=0.5) must be equal or greater than 1.
 
-    See also:
+    See Also:
         :class:`LpNorm`
 
     """

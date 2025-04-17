@@ -13,11 +13,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "irregular",
     ],
     submod_attrs={
-        '_functional_data': ["FData", "concatenate"],
-        'basis': ["FDataBasis"],
-        'grid': ["FDataGrid"],
-        'irregular': ["FDataIrregular"],
-        "_mixed_mfdata_extension": ["MFdataAccessor"],
+        "_functional_data": ["FData", "concatenate"],
+        "basis": ["FDataBasis"],
+        "grid": ["FDataGrid"],
+        "irregular": ["FDataIrregular"],
     },
 )
 
@@ -26,4 +25,3 @@ if TYPE_CHECKING:
     from .basis import FDataBasis as FDataBasis
     from .grid import FDataGrid as FDataGrid
     from .irregular import FDataIrregular as FDataIrregular
-    from ._mixed_mfdata_extension import MFdataAccessor as MFdataAccessor

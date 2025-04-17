@@ -184,8 +184,8 @@ class PACE(
         boundary_effect_interval: Sequence[float] = (0.0, 1.0),
         variance_error_interval: Sequence[float] = (0.25, 0.75),
     ) -> None:
-        if (isinstance(n_components, int) and n_components <= 0) or not (
-            isinstance(n_components, int)
+        if (isinstance(n_components, int) and n_components <= 0) or (
+            not isinstance(n_components, int)
             and (n_components <= 0.0 or n_components > 1.0)
         ):
             error_msg = (
@@ -193,11 +193,11 @@ class PACE(
             )
             raise ValueError(error_msg)
 
-        self.bandwidth_mean_, self.bandwidth_mean_interval_ = (
+        bandwidth_mean_, bandwidth_mean_interval_ = (
             self._check_bandwidth(bandwidth_mean)
         )
 
-        self.bandwidth_cov_, self.bandwidth_cov_interval_ = (
+        bandwidth_cov_, bandwidth_cov_interval_ = (
             self._check_bandwidth(bandwidth_cov)
         )
 
@@ -225,7 +225,11 @@ class PACE(
         self.n_components = n_components
         self.assume_noisy = assume_noisy
         self.kernel_mean = kernel_mean
+        self.bandwidth_mean_ = bandwidth_mean_
+        self.bandwidth_mean_interval_ = bandwidth_mean_interval_
         self.kernel_cov = kernel_cov
+        self.bandwidth_cov_ = bandwidth_cov_
+        self.bandwidth_cov_interval_ = bandwidth_cov_interval_
         self.bw_cov_n_grid_points = bw_cov_n_grid_points
         self.n_grid_points = n_grid_points
         self.boundary_effect_interval = boundary_effect_interval
@@ -327,7 +331,7 @@ class PACE(
             return np.inf
 
         # Compute smoothed estimates for each observed point
-        y_hat = self._mean_lls(h, t_obs, t_obs, y_obs)
+        y_hat = self._mean_lls(h, t_obs, t_obs, y_obs, self.kernel_mean)
 
         # Compute residual sum of squares (RSS)
         rss = np.sum((y_obs - y_hat) ** 2)
@@ -346,6 +350,7 @@ class PACE(
         t_eval: NDArrayFloat,
         t_obs: NDArrayFloat,
         y_obs: NDArrayFloat,
+        kernel: KernelFunction,
     ) -> NDArrayFloat:
         """
         Local linear smoother for mean estimation.
@@ -355,6 +360,7 @@ class PACE(
             t_eval: Query points where smoother is evaluated.
             t_obs: Observed time points.
             y_obs: Observed function values.
+            kernel: Kernel function to use for smoothing.
 
         Returns:
             Smoothed estimates for each query point.
@@ -372,7 +378,7 @@ class PACE(
         diffs = t_eval[:, None, :] - t_obs[None, :, :]
 
         # Compute kernel weights
-        weights = self.kernel_mean(diffs / h)
+        weights = kernel(diffs / h)
 
         estimates = np.empty((n_eval, q))
 
@@ -412,6 +418,7 @@ class PACE(
         NDArrayFloat,
         NDArrayFloat,
         NDArrayFloat,
+        NDArrayFloat,
     ]:
         """
         Compute raw covariances for irregular data.
@@ -429,7 +436,8 @@ class PACE(
             Array of raw covariance values.
             Array of indices for the data points.
             Array of weights for the covariance.
-            Array of raw covariance values without removing duplicates.
+            Array of time point pairs for equal time points.
+            Array of diagonal of raw covariance values.
         """
         points = x_work.points
         values = x_work.values
@@ -470,12 +478,15 @@ class PACE(
 
         if self.assume_noisy:
             t_neq = np.where(t_pairs[:, 0] != t_pairs[:, 1])[0]
-            t_pairs = t_pairs[t_neq]
-            f_raw_cov = f_raw_cov[t_neq]
+            t_eq = np.where(t_pairs[:, 0] == t_pairs[:, 1])[0]
+            t_pairs_neq = t_pairs[t_neq]
+            f_raw_cov_neq = f_raw_cov[t_neq]
+            t_pairs_eq = t_pairs[t_eq][:, 0]
+            f_raw_cov_eq = f_raw_cov[t_eq]
 
-        win = np.ones(len(f_raw_cov))
+        win = np.ones(len(f_raw_cov_neq))
 
-        return t_pairs, f_raw_cov, np.array(subj_idx), win, np.array(raw_cov)
+        return t_pairs_neq, f_raw_cov_neq, np.array(subj_idx), win, t_pairs_eq, f_raw_cov_eq
 
     def _cov_gcv_score(
         self,
@@ -555,7 +566,7 @@ class PACE(
         win: NDArrayFloat,
     ) -> NDArrayFloat:
         """
-        Local linear smoother for covariance estimation (vectorized).
+        Local linear smoother for covariance estimation.
 
         Args:
             h: Bandwidth for the kernel.
@@ -581,8 +592,8 @@ class PACE(
         diff_r = (t_pairs[:, 0, None] - r_eval[None, :]) / h
         diff_s = (t_pairs[:, 1, None] - s_eval[None, :]) / h
 
-        kernel_r = self.kernel_mean(diff_r).T
-        kernel_s = self.kernel_mean(diff_s).T
+        kernel_r = self.kernel_cov(diff_r).T
+        kernel_s = self.kernel_cov(diff_s).T
 
         weights = np.einsum("ik,jk->ijk", kernel_r, kernel_s)
         w_diag = weights * win
@@ -605,6 +616,167 @@ class PACE(
         cov_t = np.transpose(cov, (1, 0, 2))
 
         return np.array((cov + cov_t) / 2.0)
+
+    def _get_pc(
+        self,
+        cov_matrix: NDArrayFloat,
+        n_components: float,
+    ) -> tuple[int, NDArrayFloat, NDArrayFloat]:
+        """
+        Select the number of principal components.
+
+        Select the best number of principal components based on fraction of
+        variance explained or number of components.
+
+        Args:
+            cov_matrix: The smoothed covariance matrix.
+            n_components: The threshold for the fraction of variance explained,
+                or the number of components to keep.
+
+        Returns:
+            The chosen number of principal components.
+            Cumulative fraction of variance explained.
+            Eigenvalues.
+        """
+        cov = cov_matrix.squeeze()
+        eigenvalues, eigenvectors = np.linalg.eigh(cov)
+
+        # Remove negative or complex eigenvalues and sort in decreasing order
+        eigenvalues = np.maximum(eigenvalues, 0)
+        eigenvalues = np.sort(eigenvalues)[::-1]
+
+        fve = np.cumsum(eigenvalues) / np.sum(eigenvalues)
+
+        if isinstance(n_components, int):
+            if n_components > len(eigenvalues):
+                error_msg = (
+                    "The number of components must be smaller than the sample size",
+                )
+                raise AttributeError(error_msg)
+            n_selected_components = n_components
+        else:
+            # Find the optimal number of components
+            n_selected_components = np.where(fve >= n_components)[0][0]+1
+
+        return n_selected_components, fve, eigenvalues
+
+    def _get_sigma2(
+        self,
+        h: float,
+        t_eval: NDArrayFloat,
+        cov_coords: NDArrayFloat,
+        cov_values: NDArrayFloat,
+        t_diag: NDArrayFloat,
+        cov_diag: NDArrayFloat,
+        win: NDArrayFloat,
+    ) -> None:
+        """
+        Estimate the variance of the covariance matrix.
+
+        Args:
+            cov_matrix: The smoothed covariance matrix.
+
+        Returns:
+            The estimated variance.
+            The estimated covariance.
+        """
+        smooth_diag = self._mean_lls(
+            h,
+            t_eval,
+            t_diag,
+            cov_diag,
+            self.kernel_cov,
+        )
+
+        rotated_cov = self._rotated_cov_lls(
+            h,
+            t_eval,
+            t_eval,
+            cov_coords,
+            cov_values,
+            win,
+        )
+
+        # print(f"Rotated covariance: {rotated_cov}")
+
+    def _rotated_cov_lls(
+        self,
+        h: float,
+        r_eval: NDArrayFloat,
+        s_eval: NDArrayFloat,
+        cov_coords: NDArrayFloat,
+        cov_values: NDArrayFloat,
+        win: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """
+        Local linear smoother for rotated covariance estimation.
+
+        Args:
+            h: Bandwidth for the kernel.
+            r_eval: First array of query points where smoother is evaluated.
+            s_eval: Second array of query points where smoother is evaluated.
+            cov_coords: Coordinates of the covariance.
+            cov_values: Values of the covariance.
+            win: Weights for the covariance.
+
+        Returns:
+            n_grid_points x n_grid_points array of smoothed covariance values.
+        """
+        r_mat = np.sqrt(2)/2 * np.array([[1, 1],[-1, 1]])
+
+        # Rotate coordinates of covariance points and evaluation points
+        r_cov_coords = np.einsum("ijk,jk->ik", cov_coords, r_mat)
+        r_cov_coords = r_cov_coords[:, :, np.newaxis]
+
+        t_eval = np.stack((r_eval, s_eval), axis=1).squeeze()
+        r_t_eval = t_eval @ r_mat
+        r_t_eval = r_t_eval[:, :, np.newaxis]
+
+        active = np.nonzero(win)[0]
+        t_pairs = r_cov_coords[active, :]
+        cov_values = cov_values[active]
+        win = win[active]
+
+        n_eval, d = r_eval.shape
+        n_obs, q = cov_values.shape
+
+        # Correct the broadcasting shape of r_eval and s_eval
+        diff_r = (t_pairs[:, 0, None] - r_t_eval[None,:,0]) / h
+        diff_s = (t_pairs[:, 1, None] - r_t_eval[None,:,1]) / h
+
+        kernel_r = self.kernel_cov(diff_r).T
+        kernel_s = self.kernel_cov(diff_s).T
+
+        weights = np.einsum("ik,jk->ijk", kernel_r, kernel_s)
+        w_diag = weights * win
+
+        # Code correct up to here
+
+        x = np.ones((n_eval, n_eval, n_obs, 3))
+        for i in range(n_eval):
+            for j in range(n_eval):
+                x[:, j, :, 1, None] = (t_pairs[None, :, 0] - r_t_eval[None,:,0])**2
+                x[i, :, :, 2, None] = t_pairs[None, :, 1] - r_t_eval[None,:,0]
+
+        print(f"Shape of x: {x[0,0]}")
+
+        x_t = np.transpose(x, (0, 1, 3, 2))
+        xtw = x_t * w_diag[:, :, None, :]
+        xtwx = xtw @ x
+        xtwy = xtw @ cov_values
+
+        beta = np.linalg.pinv(xtwx) @ xtwy
+
+        cov = beta[:, :, 0]
+        cov_t = np.transpose(cov, (1, 0, 2))
+
+        return np.array((cov + cov_t) / 2.0)
+
+
+
+
+
+
 
     def fit(
         self,
@@ -684,11 +856,12 @@ class PACE(
             time_points,
             x_work.points,
             x_work.values,
+            self.kernel_mean,
         )
 
         # print(f"Mean: {self.mean_}")
 
-        raw_cov_coords, raw_cov_values, cov_subj_idx, win, unf_cov_values = (
+        raw_cov_coords, raw_cov_values, cov_subj_idx, win, raw_diag_coords, raw_diag_values = (
             self._compute_raw_covariances(
                 x_work,
                 self.mean_,
@@ -770,6 +943,30 @@ class PACE(
             raw_cov_values,
             win,
         )
+
+        no_opt, fve, eigenvalues = self._get_pc(self.covariance_, self.n_components)
+        self.n_components = no_opt
+        self.explained_variance_ration = fve
+        self.explained_variance_ = eigenvalues
+
+        print(f"Optimal number of components: {no_opt}")
+
+        if self.assume_noisy:
+            self._get_sigma2(
+                self.bandwidth_cov_,
+                t_eval,
+                raw_cov_coords,
+                raw_cov_values,
+                raw_diag_coords,
+                raw_diag_values,
+                win,
+            )
+
+
+
+
+
+
 
         return self
 

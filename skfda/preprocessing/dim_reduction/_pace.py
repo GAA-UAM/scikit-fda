@@ -2,31 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Callable, Sequence
+import warnings
+from collections.abc import Callable, Sequence
 
-import matplotlib.pyplot as plt
 import numpy as np
-import scipy.integrate
-from scipy.linalg import solve_triangular
+from scipy.interpolate import CloughTocher2DInterpolator, griddata
 from scipy.optimize import minimize_scalar
-from scipy.stats import norm
+from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist
-from sklearn.decomposition import PCA
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
-from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
-from ...representation.basis import Basis, FDataBasis, _GridBasis
-from ...representation.grid import FDataGrid
 from ...representation.irregular import FDataIrregular
-from ...typing._base import DomainRangeLike
-from ...typing._numpy import ArrayLike, NDArrayAny, NDArrayFloat
-from scipy.spatial import cKDTree
-from scipy.sparse import diags
-from scipy.linalg import pinv
-import warnings
-
-
+from ...typing._numpy import NDArrayFloat
 
 KernelFunction = Callable[[NDArrayFloat], NDArrayFloat]
 
@@ -36,18 +24,20 @@ def gaussian_kernel(t: NDArrayFloat) -> NDArrayFloat:
     Vectorized Gaussian kernel function.
 
     Args:
-        t: Array of shape (n_samples, n_dims), where each row is a difference vector.
+        t: Array of shape (n_samples, n_dims), where each row is a different
+        vector.
 
     Returns:
         Kernel weights of shape (n_samples,)
     """
     n_obs, n_eval, n_dims = t.shape
 
-    norm_sq = np.sum(t ** 2, axis=2)  # Shape: (n_obs, n_eval)
+    norm_sq = np.sum(t**2, axis=2)  # Shape: (n_obs, n_eval)
 
     # Apply the Gaussian kernel formula
     coeff = 1 / ((2 * np.pi) ** (n_dims / 2))
     return np.array(coeff * np.exp(-0.5 * norm_sq))
+
 
 class PACE(
     InductiveTransformerMixin[FData, NDArrayFloat, object],
@@ -98,6 +88,9 @@ class PACE(
             range. This last option is useful in some kernel functions, where
             the search result is a boundary of the default search range (0.1,
             10.0). Defaluts to ``None``.
+        bw_cov_n_grid_points: number of grid points to calculate the bandwidth
+            for the covariance. This parameter's main purpose is to reduce the
+            computational cost of the GCV method. Defaults to 30.
         n_grid_points: number of grid points to calculate the covariance and,
             subsequently, the eigenfunctions for better approximations. The
             final FPC scores will be given in the original grid points.
@@ -186,6 +179,7 @@ class PACE(
         bandwidth_mean: float | NDArrayFloat | None = None,
         kernel_cov: KernelFunction = gaussian_kernel,
         bandwidth_cov: float | NDArrayFloat | None = None,
+        bw_cov_n_grid_points: int = 30,
         n_grid_points: int = 51,
         boundary_effect_interval: Sequence[float] = (0.0, 1.0),
         variance_error_interval: Sequence[float] = (0.25, 0.75),
@@ -207,8 +201,8 @@ class PACE(
             self._check_bandwidth(bandwidth_cov)
         )
 
-        if n_grid_points <= 0:
-            error_msg = "n_grid_points must be positive or None."
+        if n_grid_points <= 0 or bw_cov_n_grid_points <= 0:
+            error_msg = "Grid points must be positive or None."
             raise ValueError(error_msg)
 
         tuple_length = 2
@@ -232,6 +226,7 @@ class PACE(
         self.assume_noisy = assume_noisy
         self.kernel_mean = kernel_mean
         self.kernel_cov = kernel_cov
+        self.bw_cov_n_grid_points = bw_cov_n_grid_points
         self.n_grid_points = n_grid_points
         self.boundary_effect_interval = boundary_effect_interval
         self.variance_error_interval = variance_error_interval
@@ -294,7 +289,7 @@ class PACE(
         filtered_points = np.concatenate(new_points, axis=0)
         filtered_values = np.concatenate(new_values, axis=0)
         filtered_start_indices = np.array(
-            new_start_indices[:-1], dtype=np.uint32
+            new_start_indices[:-1], dtype=np.uint32,
         )
 
         return FDataIrregular(
@@ -315,13 +310,15 @@ class PACE(
         y_obs: NDArrayFloat,
     ) -> float:
         """
-        Compute the Generalized Cross-Validation (GCV) score for a given bandwidth.
+        Compute the Generalized Cross-Validation (GCV) score.
+
+        Compute the Generalized Cross-Validation (GCV) score for a given
+        bandwidth.
 
         Args:
             h: Bandwidth to evaluate
             t_obs: Observed time points
             y_obs: Observed function values
-            t_eval: Query points where smoother is evaluated.
 
         Returns:
             GCV score for the given bandwidth.
@@ -337,7 +334,7 @@ class PACE(
 
         # Approximate trace of smoother matrix
         domain_diff = np.max(pdist(t_obs))
-        k0 = self.kernel_mean(np.zeros((1, t_obs.shape[1])))[0]
+        k0 = self.kernel_mean(np.zeros((1, 1, t_obs.shape[1])))[0]
         n_obs = t_obs.shape[0]
 
         denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
@@ -383,18 +380,19 @@ class PACE(
             wi = weights[i]
             xi = diffs[i]
             yi = y_obs
+            win = wi[:, None]
 
             k0 = np.sum(wi)
-            k1 = np.sum(wi[:, None] * xi, axis=0)
-            k2 = np.einsum("ni,nj->ij", wi[:, None] * xi, xi)
+            k1 = np.sum(win * xi, axis=0)
+            k2 = np.einsum("ni,nj->ij", win * xi, xi)
 
-            s0 = np.sum(wi[:, None] * yi, axis=0)
-            s1 = np.einsum("ni,nj->ij", wi[:, None] * xi, yi)
+            s0 = np.sum(win * yi, axis=0)
+            s1 = np.einsum("ni,nj->ij", win * xi, yi)
 
             # Solve linear system for beta0 (intercept)
             # Build left-hand matrix and right-hand side
             xtwx = np.block(
-                [[np.array([[k0]]), k1[None, :]], [k1[:, None], k2]]
+                [[np.array([[k0]]), k1[None, :]], [k1[:, None], k2]],
             ) + epsilon * np.eye(d + 1)
             xtwy = np.vstack([s0[None, :], s1])
 
@@ -409,7 +407,11 @@ class PACE(
         mean: NDArrayFloat,
         time_points: NDArrayFloat,
     ) -> tuple[
-        NDArrayFloat, NDArrayFloat, NDArrayFloat, NDArrayFloat, NDArrayFloat,
+        NDArrayFloat,
+        NDArrayFloat,
+        NDArrayFloat,
+        NDArrayFloat,
+        NDArrayFloat,
     ]:
         """
         Compute raw covariances for irregular data.
@@ -435,12 +437,13 @@ class PACE(
         end_indices = np.append(start_indices[1:], len(points))
 
         # Create lists to store the results
-        t_1, t_2, x_1, x_2, subj_idx, raw_cov = [], [], [], [], [], []
+        t_1, t_2, x_1, x_2 = [], [], [], []
+        subj_idx, raw_cov = [], []
 
         # Vectorize the time points and corresponding values
         for i in range(len(start_indices)):
-            p_i = points[start_indices[i] : end_indices[i]]
-            v_i = values[start_indices[i] : end_indices[i]]
+            p_i = points[start_indices[i]:end_indices[i]]
+            v_i = values[start_indices[i]:end_indices[i]]
 
             # Find the mean projection for each point
             tree = cKDTree(time_points)
@@ -450,11 +453,11 @@ class PACE(
             # Center the values by subtracting the mean
             r_i = v_i - mean_proj
 
-            for j in range(len(p_i)):
-                for k in range(len(p_i)):
+            for j, p_ij in enumerate(p_i):
+                for k, p_ik in enumerate(p_i):
                     # Store all pairs of time points (including duplicates)
-                    t_1.append([p_i[j]])
-                    t_2.append([p_i[k]])
+                    t_1.append([p_ij])
+                    t_2.append([p_ik])
                     x_1.append(r_i[j])
                     x_2.append(r_i[k])
                     subj_idx.append(i)  # Subject index
@@ -477,11 +480,22 @@ class PACE(
     def _cov_gcv_score(
         self,
         h: float,
+        t_eval: NDArrayFloat,
         cov_coords: NDArrayFloat,
         cov_values: NDArrayFloat,
+        win: NDArrayFloat,
+        time_points: NDArrayFloat,
     ) -> float:
         """
         Compute GCV score for bandwidth h for covariance smoothing.
+
+        Args:
+            h: Bandwidth to evaluate
+            t_eval: Query points where smoother is evaluated.
+            cov_coords: Coordinates of the covariance.
+            cov_values: Values of the covariance.
+            win: Weights for the covariance.
+            time_points: Time points for the mean (used to obtain range).
 
         Returns:
             Scalar GCV score.
@@ -491,23 +505,45 @@ class PACE(
             return np.inf
 
         # Evaluate smoothed covariance at same locations
-        r_eval = cov_coords[:, 0, :]
-        s_eval = cov_coords[:, 1, :]
-        print(f"r_eval: {r_eval}")
-        print(f"s_eval: {s_eval}")
-        print(f"cov_values: {cov_values}")
-        print(r_eval.shape, s_eval.shape, cov_values.shape)
-        G_hat = self._cov_lls(h, r_eval, s_eval, cov_coords, cov_values)
+        g_hat = self._cov_lls(
+            h,
+            t_eval,
+            t_eval,
+            cov_coords,
+            cov_values,
+            win,
+        ).squeeze()
 
-        rss = np.sum((cov_values - G_hat) ** 2)
+        # Interpolation grid points
+        x, y = np.meshgrid(t_eval, t_eval)
+        grid_points = np.c_[x.ravel(), y.ravel()]
 
-        domain_diff = np.max(pdist(t_pairs))
-        k0 = self.kernel_cov(np.zeros((1, t_pairs.shape[1])), 1.0)[0]
-        k0 *= k0
+        # Interpolate
+        # g_hat_int = griddata(
+        #     grid_points,
+        #     g_hat.ravel(),
+        #     cov_coords.squeeze(),
+        #     method="cubic",
+        # )
+
+        # Interpolate at the grid points
+        interpolator = CloughTocher2DInterpolator(grid_points, g_hat.ravel())
+        g_hat_int = interpolator(cov_coords.squeeze())
+
+        # Calculate residual sum of squares (RSS)
+        rss = np.sum(
+            (cov_values.squeeze() - g_hat_int)
+            * (cov_values.squeeze() - g_hat_int).T,
+        )
+
+        # Calculate pairwise distances between points in cov_coords
+        domain_diff = np.max(pdist(time_points))
+        k0 = self.kernel_cov(np.zeros((1, 1, cov_coords.shape[2])))[0]
         n_obs = len(cov_values)
+        # Normalize by number of observations and bandwidth
+        denom = 1 - (1 / n_obs) * ((domain_diff * k0) / h) ** 2
 
-        denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
-        return float(rss / denom) if denom > 0 else np.inf
+        return float(rss / denom**2) if denom > 0 else np.inf
 
     def _cov_lls(
         self,
@@ -548,24 +584,24 @@ class PACE(
         kernel_r = self.kernel_mean(diff_r).T
         kernel_s = self.kernel_mean(diff_s).T
 
-        weights = np.einsum('ik,jk->ijk', kernel_r, kernel_s)
+        weights = np.einsum("ik,jk->ijk", kernel_r, kernel_s)
         w_diag = weights * win
 
         # Build the design matrix for weighted least squares
         x = np.ones((n_eval, n_eval, n_obs, 3))
         for i in range(n_eval):
             for j in range(n_eval):
-                x[:,j,:,1,None] = (t_pairs[None,:,0] - r_eval[:,None])
-                x[i,:,:,2,None] = (t_pairs[None,:,1] - s_eval[:,None])
+                x[:, j, :, 1, None] = t_pairs[None, :, 0] - r_eval[:, None]
+                x[i, :, :, 2, None] = t_pairs[None, :, 1] - s_eval[:, None]
 
         x_t = np.transpose(x, (0, 1, 3, 2))
-        xtw = x_t * w_diag[:,:,None,:]
+        xtw = x_t * w_diag[:, :, None, :]
         xtwx = xtw @ x
         xtwy = xtw @ cov_values
 
         beta = np.linalg.pinv(xtwx) @ xtwy
 
-        cov = beta[:,:,0]
+        cov = beta[:, :, 0]
         cov_t = np.transpose(cov, (1, 0, 2))
 
         return np.array((cov + cov_t) / 2.0)
@@ -631,12 +667,13 @@ class PACE(
                 method="bounded",
             ).x
 
-            # The following correction is a practical empirical correction. This is
-            # inspired by the fact that, although the Gaussian kernel gives good
-            # results for irregular data, the fact that it has infinite support
-            # (nonzero weights for all points) can lead to over-smoothing. The
-            # following term has the objective of slightly correcting this effect.
-            # This can also be seen in the PACE package in Matlab.
+            # The following correction is a practical empirical correction.
+            # This is inspired by the fact that, although the Gaussian kernel
+            # gives good results for irregular data, the fact that it has
+            # infinite support (nonzero weights for all points) can lead to
+            # over-smoothing. The following term has the objective of slightly
+            # correcting this effect. This can also be seen in the PACE package
+            # in Matlab.
             if self.kernel_mean == gaussian_kernel:
                 self.bandwidth_mean_ *= 1.1
 
@@ -659,30 +696,6 @@ class PACE(
             )
         )
 
-        if self.bandwidth_cov_ is None:
-            # self.bandwidth_cov_ = minimize_scalar(
-            #     self._cov_gcv_score,
-            #     args=(raw_cov_coords, raw_cov_values),
-            #     bounds=self.bandwidth_cov_interval_,
-            #     method="bounded",
-            # ).x
-            bandwidth_candidates = np.linspace(0.1, 10, 3)
-
-            # Now you can evaluate GCV for each candidate
-            gcv_scores = np.array(
-                [
-                    self._cov_gcv_score(h, raw_cov_coords, raw_cov_values)
-                    for h in bandwidth_candidates
-                ]
-            )
-            print(f"Bandwidth candidates: {bandwidth_candidates}")
-
-            # Select the bandwidth with the minimum GCV score
-            self.bandwidth_cov_ = bandwidth_candidates[np.argmin(gcv_scores)]
-            print(f"Selected bandwidth for covariance: {self.bandwidth_cov_}.")
-
-        print(f"Selected bandwidth for covariance: {self.bandwidth_cov_}. ")
-
         # Create n-dimensional work grid to calculate covariance surface in
         # Create grid of domain points for covariance evaluation
         axes = [
@@ -690,9 +703,64 @@ class PACE(
             for start, end in x_work.domain_range
         ]
         mesh = np.meshgrid(*axes, indexing="ij")
-        t_eval = np.stack([m.ravel() for m in mesh], axis=-1)  # (n_eval, d)
+        t_eval = np.stack([m.ravel() for m in mesh], axis=-1)
 
-        # print(f"Shape of t_eval: {t_eval.shape}")
+        if self.bandwidth_cov_ is None:
+            cov_grid = np.linspace(
+                t_eval[0],
+                t_eval[-1],
+                self.bw_cov_n_grid_points,
+            )
+
+            # bw_candidates = np.array([
+            #     1.7000,2.1653,2.7580,3.5129,4.4744,
+            #     5.6991,7.2590,9.2459,11.7766,15.000,
+            # ])
+            # print(f"Bandwidth candidates: {bw_candidates}")
+
+            # gcv_scores = []
+            # for bw in bw_candidates:
+            #     gcv_score = self._cov_gcv_score(
+            #         bw,
+            #         t_eval,
+            #         raw_cov_coords,
+            #         raw_cov_values,
+            #         win,
+            #         time_points,
+            #     )
+            #     gcv_scores.append(gcv_score)
+            # print(f"Bandwidth candidates: {bw_candidates}")
+            # print(f"GCV scores: {gcv_scores}")
+
+            # self.bandwidth_cov_ = bw_candidates[np.argmin(gcv_scores)]
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                self.bandwidth_cov_ = minimize_scalar(
+                    self._cov_gcv_score,
+                    args=(
+                        cov_grid,
+                        raw_cov_coords,
+                        raw_cov_values,
+                        win,
+                        time_points,
+                    ),
+                    bounds=self.bandwidth_cov_interval_,
+                    method="bounded",
+                    tol=1e-1,
+                ).x
+
+            # The following correction is a practical empirical correction.
+            # This is inspired by the fact that, although the Gaussian kernel
+            # gives good results for irregular data, the fact that it has
+            # infinite support (nonzero weights for all points) can lead to
+            # over-smoothing. The following term has the objective of slightly
+            # correcting this effect. This can also be seen in the PACE package
+            # in Matlab.
+            if self.kernel_cov == gaussian_kernel:
+                self.bandwidth_cov_ *= 1.1
+
+        print(f"Selected bandwidth for covariance: {self.bandwidth_cov_}. ")
 
         self.covariance_ = self._cov_lls(
             self.bandwidth_cov_,
@@ -702,8 +770,6 @@ class PACE(
             raw_cov_values,
             win,
         )
-
-        # print(f"Covariance: {self.covariance_[0, :10]}")
 
         return self
 

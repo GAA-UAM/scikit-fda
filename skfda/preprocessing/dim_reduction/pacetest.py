@@ -1,11 +1,9 @@
-from skfda.preprocessing.dim_reduction._pace import PACE
-from skfda.datasets._real_datasets import fetch_cd4
-import numpy as np
-from skfda.representation import FDataIrregular
 import matplotlib.pyplot as plt
+import numpy as np
 
-
-
+from skfda.datasets._real_datasets import fetch_cd4
+from skfda.preprocessing.dim_reduction._pace import PACE
+from skfda.representation import FDataIrregular
 
 n_samples = 10  # Number of samples
 n_points = 2    # Points per observation
@@ -37,7 +35,8 @@ pace = PACE(
     n_components=2,
     n_grid_points=51,
     bandwidth_mean=8.25,
-    bandwidth_cov=7.2998,
+    # bandwidth_cov=7.2998,
+    # bandwidth_cov=np.array([5.0, 30.0]),
     # assume_noisy=False,
     # boundary_effect_interval=(0.1, 0.9),
     variance_error_interval=(0.25, 0.75),
@@ -80,8 +79,8 @@ mu_matlab = np.array([
 # plt.tight_layout()
 # plt.show()
 
-from sklearn.metrics import mean_squared_error
 from scipy.interpolate import interp1d
+from sklearn.metrics import mean_squared_error
 
 # Interpolate Python PACE mean (assumes domain is 1D)
 interp_python_mean = interp1d(
@@ -100,8 +99,8 @@ mse = mean_squared_error(mu_matlab, mu_python_interp)
 print(f"📐 Mean Squared Error (Python vs MATLAB): {mse:.4f}")
 
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
 # Grid points used during the fit (used in _cov_lls)
@@ -117,19 +116,19 @@ R_grid, S_grid = np.meshgrid(grid, grid, indexing='ij')
 # In this case we just visualize the smoothed covariance
 
 # Plotting the covariance surface
-fig = plt.figure(figsize=(12, 6))
-ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(R_grid, S_grid, cov, cmap='viridis', alpha=0.7)
-ax.set_xlabel('r (Time)')
-ax.set_ylabel('s (Time)')
-ax.set_zlabel('Covariance G(r, s)')
-ax.set_title('Smoothed Covariance Surface via PACE')
-plt.tight_layout()
-plt.show()
+# fig = plt.figure(figsize=(12, 6))
+# ax = fig.add_subplot(111, projection='3d')
+# ax.plot_surface(R_grid, S_grid, cov, cmap='viridis', alpha=0.7)
+# ax.set_xlabel('r (Time)')
+# ax.set_ylabel('s (Time)')
+# ax.set_zlabel('Covariance G(r, s)')
+# ax.set_title('Smoothed Covariance Surface via PACE')
+# plt.tight_layout()
+# plt.show()
 
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.metrics import mean_squared_error
 
 # Load expected covariance matrix from MATLAB (comma-separated)

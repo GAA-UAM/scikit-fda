@@ -822,7 +822,7 @@ def set_color_dict(
     if sample_colors is not None:
         color_dict["color"] = sample_colors[ind]
 
-class DataFramePlot(BasePlot):
+class MixedDataPlot(BasePlot):
     def __init__(
         self,
         df: pd.DataFrame,
@@ -857,11 +857,10 @@ class DataFramePlot(BasePlot):
         return total_plots
 
     def _plot(self, fig: Figure, axes: Sequence[Axes]) -> None:
-        axes_array = np.array(axes).flatten()
         i = 0
 
         for col in self.df.columns:
-            ax = axes_array[i]
+            ax = axes[i]
             data = self.df[col]
             val = data.iloc[0]
 
@@ -869,7 +868,7 @@ class DataFramePlot(BasePlot):
                 fd_codim = val.dim_codomain
 
                 if fd_codim > 1:
-                    col_axes = axes_array[i:i+fd_codim]
+                    col_axes = axes[i:i+fd_codim]
                     for fd in data:
                         fd.plot(axes=col_axes)
                     for j, ax_sub in enumerate(col_axes):
@@ -895,12 +894,11 @@ class DataFramePlot(BasePlot):
             axes[j].axis("off")
 
 
-def plot_dataframe(
+def plot_mixed_data(
     df: pd.DataFrame,
     *,
     n_rows: int | None = None,
     n_cols: int | None = None,
-    figsize: float = 5.0,
 ) -> Figure:
     """
     Plot a DataFrame containing numerical and functional (FData) data.
@@ -918,16 +916,10 @@ def plot_dataframe(
     Returns:
         matplotlib.figure.Figure: The resulting figure object.
     """
-    plotter = DataFramePlot(
+    plotter = MixedDataPlot(
         df,
         n_rows=n_rows,
         n_cols=n_cols,
     )
-    nrows, ncols = plotter.axes_.shape
+    return plotter.plot()
 
-    print(plotter.axes_)
-
-    fig = plotter.plot()
-    fig.set_size_inches(figsize * nrows, figsize * ncols)
-
-    return fig

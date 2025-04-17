@@ -4,7 +4,7 @@
 scikit-fda: Functional Data Analysis in Python
 ===================================================
 
-|python|_ |build-status| |docs| |Codecov| |repostatus| |versions| |PyPIBadge| |conda| |license| |doi|
+|build-status| |docs| |Codecov| |repostatus| |versions| |PyPIBadge| |conda| |license| |doi|
 
 Functional Data Analysis, or FDA, is the field of Statistics that analyses
 data that depend on a continuous parameter.
@@ -22,7 +22,7 @@ Documentation
 The documentation is available at
 `fda.readthedocs.io/en/stable/ <https://fda.readthedocs.io/en/stable/>`_, which
 includes detailed information of the different modules, classes and methods of
-the package, along with several examples showing different functionalities.
+the package, along with several examples_ showing different functionalities.
 
 The documentation of the latest version, corresponding with the develop
 version of the package, can be found at
@@ -38,7 +38,7 @@ The stable version can be installed via PyPI_:
 
     pip install scikit-fda
 
-It is also available from conda-forge:
+It is also available from conda-forge_:
 .. code::
 
     conda install -c conda-forge scikit-fda
@@ -142,40 +142,37 @@ license_ can be found along with the code.
 .. _PyPI: https://pypi.org/project/scikit-fda/
 .. _conda-forge: https://anaconda.org/conda-forge/scikit-fda/
 
-.. |python| image:: https://img.shields.io/pypi/pyversions/scikit-fda.svg
-.. _python: https://badge.fury.io/py/scikit-fda
-
 .. |build-status| image:: https://github.com/GAA-UAM/scikit-fda/actions/workflows/tests.yml/badge.svg?event=push
-    :alt: build status
-    :scale: 100%
+    :alt: Build status
     :target: https://github.com/GAA-UAM/scikit-fda/actions/workflows/tests.yml
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status
-    :scale: 100%
     :target: http://fda.readthedocs.io/en/latest/?badge=latest
 
 .. |Codecov| image:: https://codecov.io/gh/GAA-UAM/scikit-fda/branch/develop/graph/badge.svg
-.. _Codecov: https://app.codecov.io/gh/GAA-UAM/scikit-fda
+    :alt: Code coverage through Codecov
+    :target: https://app.codecov.io/gh/GAA-UAM/scikit-fda
 
 .. |repostatus| image:: https://www.repostatus.org/badges/latest/active.svg
-   :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
+   :alt: Project Status: Active - The project has reached a stable, usable state and is being actively developed.
    :target: https://www.repostatus.org/#active
    
 .. |versions| image:: https://img.shields.io/pypi/pyversions/scikit-fda
-   :alt: PyPI - Python Version
-   :scale: 100%
+   :alt: PyPI - Python versions supported
 
 .. |PyPIBadge| image:: https://badge.fury.io/py/scikit-fda.svg
-.. _PyPIBadge: https://badge.fury.io/py/scikit-fda
+   :alt: Available in Pypi
+   :target: https://pypi.org/project/scikit-fda
 
 .. |conda| image:: https://img.shields.io/conda/vn/conda-forge/scikit-fda
     :alt: Available in Conda
-    :scale: 100%
     :target: https://anaconda.org/conda-forge/scikit-fda
 
 .. |license| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
-.. _license: https://github.com/GAA-UAM/scikit-fda/blob/master/LICENSE.txt
+    :alt: BSD 3-Clause license
+    :target: https://github.com/GAA-UAM/scikit-fda/blob/develop/LICENSE.txt
 
 .. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3468127.svg
+    :alt: Available in Zenodo
     :target: https://doi.org/10.5281/zenodo.3468127

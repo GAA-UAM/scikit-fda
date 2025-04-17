@@ -96,7 +96,7 @@ class SRSF(
 
         >>> zero = fd - fd_pull_back
         >>> zero.data_matrix.flatten().round(3)
-        array([ 0.,  0.,  0., ..., -0., -0., -0.])
+        array([ 0.,  0.,  0., ..., -0., -0., -0.], shape=(1500,))
 
     """
 

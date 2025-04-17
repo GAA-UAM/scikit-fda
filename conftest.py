@@ -22,6 +22,6 @@ if (
 ):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-collect_ignore = ['setup.py', 'docs/conf.py']
+collect_ignore = ['setup.py', 'docs/conf.py', 'asv_benchmarks']
 
 pytest.register_assert_rewrite("skfda")

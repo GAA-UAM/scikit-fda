@@ -731,6 +731,8 @@ def mean_squared_error(
             are taken.
         multioutput: Defines format of the return.
         squared: If True returns MSE value, if False returns RMSE value.
+            Deprecated since version 1.X: The 'squared' parameter will be removed in a future version.
+            Use `root_mean_squared_error` instead if `squared=False` was used.
 
     Returns:
         Mean squared error.
@@ -750,6 +752,13 @@ def mean_squared_error(
         multioutput = 'raw_values', ndarray.
 
     """
+    if not squared:
+        warnings.warn(
+            "The 'squared' parameter is deprecated and will be removed in a future version. "
+            "Use `root_mean_squared_error` instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
     function = (
         sklearn.metrics.mean_squared_error
         if squared
@@ -825,6 +834,115 @@ def _mean_squared_error_fdatabasis(
         return error[0]  # type: ignore [no-any-return]
 
     return _multioutput_score_basis(y_true, multioutput, _mse_func)
+
+@overload
+def root_mean_squared_error(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    sample_weight: np.ndarray | None = ...,
+    multioutput: Literal['uniform_average'] = ...,
+) -> float:
+    pass  # noqa: WPS428
+
+@overload
+def root_mean_squared_error(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    sample_weight: np.ndarray | None = None,
+    multioutput: Literal['raw_values'],
+) -> np.ndarray:
+    pass  # noqa: WPS428
+
+@overload
+def root_mean_squared_error(
+    y_true: FData,
+    y_pred: FData,
+    *,
+    sample_weight: np.ndarray | None = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    pass  # noqa: WPS428
+
+@overload
+def root_mean_squared_error(
+    y_true: FData,
+    y_pred: FData,
+    *,
+    sample_weight: np.ndarray | None = None,
+    multioutput: Literal['raw_values'],
+) -> FData:
+    pass  # noqa: WPS428
+
+@singledispatch
+def root_mean_squared_error(
+    y_true: DataType,
+    y_pred: DataType,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = "uniform_average",
+) -> float | DataType:
+    r"""Root Mean Squared Error for :class:`~skfda.representation.FData`.
+    With :math:`y\_true = (X_1, X_2, ..., X_n)` being the real values,
+    :math:`t\_pred = (\hat{X}_1, \hat{X}_2, ..., \hat{X}_n)` being the
+    estimated and :math:`sample\_weight = (w_1, w_2, ..., w_n)`, the error is
+    calculated as
+    
+    .. math::
+        RMSE(y\_true, y\_pred)(t) = \sqrt{\frac{1}{\sum w_i}
+        \sum_{i=1}^n w_i(X_i(t) - \hat{X}_i(t))^2}
+    
+    This is the square root of MSE (Mean Squared Error).
+
+    Args:
+        y_true: Correct target values.
+        y_pred: Estimated values.
+        sample_weight: Sample weights. By default, uniform weights
+            are taken.
+        multioutput: Defines format of the return.
+    
+    Returns:
+        Root mean squared error.
+    """
+    # Call sklearn's implementation for numpy arrays
+    if isinstance(y_true, np.ndarray) and isinstance(y_pred, np.ndarray):
+        return sklearn.metrics.root_mean_squared_error(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+        )
+    
+    # For FData objects, I use our own implementation without any warnings
+    return mean_squared_error(
+        y_true,
+        y_pred,
+        sample_weight=sample_weight,
+        multioutput=multioutput,
+        squared=False,
+    )
+
+@root_mean_squared_error.register
+def _(y_true: np.ndarray, y_pred: np.ndarray, *, sample_weight=None, multioutput: MultiOutputType = "uniform_average"):
+    """For the NumPy array."""
+    try:
+        #We try to use the function if available in scikit-learn
+        return sklearn.metrics.root_mean_squared_error(
+            y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput
+        )
+    except AttributeError:
+        # Fallback for older scikit-learn versions
+        return np.sqrt(sklearn.metrics.mean_squared_error(
+            y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput
+        ))
+
+@root_mean_squared_error.register
+def _(y_true: FData, y_pred: FData, *, sample_weight=None, multioutput="uniform_average"):
+    """For FData."""
+    mse = mean_squared_error(y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput,squared=False)
+    return mse #** 0.5 jsp pourquoi ça renvoie Manual RMSE calculation: 0.5361902647381803
+#skfda RMSE result: 0.6390096504226938
 
 
 @overload
@@ -924,6 +1042,13 @@ def mean_squared_log_error(
         multioutput = 'raw_values', ndarray.
 
     """
+    if not squared:
+        warnings.warn(
+            "The 'squared' parameter is deprecated and will be removed in a future version. "
+            "Use `root_mean_squared_log_error` instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
     function = (
         sklearn.metrics.mean_squared_log_error
         if squared
@@ -1024,6 +1149,142 @@ def _mean_squared_log_error_fdatabasis(
         return error[0]  # type: ignore [no-any-return]
 
     return _multioutput_score_basis(y_true, multioutput, _msle_func)
+
+@overload
+def root_mean_squared_log_error(
+    y_true: DataType,
+    y_pred: DataType,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    pass  # noqa: WPS428
+
+
+@overload
+def root_mean_squared_log_error(
+    y_true: DataType,
+    y_pred: DataType,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: Literal['raw_values'],
+) -> DataType:
+    pass  # noqa: WPS428
+
+
+@singledispatch
+def root_mean_squared_log_error(
+    y_true: DataType,
+    y_pred: DataType,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float | DataType:
+    r"""Root Mean Squared Log Error for :class:`~skfda.representation.FData`.
+
+    This function applies the same logic as `mean_squared_log_error`, but
+    directly takes the square root of the result.
+
+    Args:
+        y_true: True target values.
+        y_pred: Predicted values.
+        sample_weight: Sample weights.
+        multioutput: Return format (raw values or uniform average).
+
+    Returns:
+        Root mean squared logarithmic error.
+    """
+    try:
+        #We try to use the function if available in scikit-learn
+        return sklearn.metrics.root_mean_squared_log_error(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+        )
+    except AttributeError:
+        # Fallback for older sklearn versions that don't have root_mean_squared_log_error
+        return np.sqrt(sklearn.metrics.mean_squared_log_error(
+            y_true,
+            y_pred,
+            sample_weight=sample_weight,
+            multioutput=multioutput,
+        ))
+
+@root_mean_squared_log_error.register  # type: ignore[attr-defined, misc]
+def _root_mean_squared_log_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float | FDataGrid:
+    
+    if np.any(y_true.data_matrix < 0) or np.any(y_pred.data_matrix < 0):
+        raise ValueError(
+            "Root Mean Squared Logarithmic Error cannot be used when "
+            "targets functions have negative values.",
+        )
+
+    return root_mean_squared_error(
+        np.log1p(y_true),
+        np.log1p(y_pred),
+        sample_weight=sample_weight,
+        multioutput=multioutput,
+    )
+
+@root_mean_squared_log_error.register  # type: ignore[attr-defined, misc]
+def _root_mean_squared_log_error_fdatairregular(
+    y_true: FDataIrregular,
+    y_pred: FDataIrregular,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float:
+    
+    if np.any(y_true.values < 0) or np.any(y_pred.values < 0):
+        raise ValueError(
+            "Root Mean Squared Logarithmic Error cannot be used when "
+            "targets functions have negative values.",
+        )
+
+    return root_mean_squared_error(
+        np.log1p(y_true),
+        np.log1p(y_pred),
+        sample_weight=sample_weight,
+        multioutput=multioutput,
+    )
+
+@root_mean_squared_log_error.register  # type: ignore[attr-defined, misc]
+def _root_mean_squared_log_error_fdatabasis(
+    y_true: FDataBasis,
+    y_pred: FDataBasis,
+    *,
+    sample_weight: NDArrayFloat | None = None,
+    multioutput: MultiOutputType = 'uniform_average',
+) -> float:
+
+    def _rmsle_func(x: EvalPointsType) -> NDArrayFloat:
+        y_true_eval = y_true(x)
+        y_pred_eval = y_pred(x)
+
+        if np.any(y_true_eval < 0) or np.any(y_pred_eval < 0):
+            raise ValueError(
+                "Root Mean Squared Logarithmic Error cannot be used when "
+                "targets functions have negative values.",
+            )
+
+        error: NDArrayFloat = np.sqrt(np.average(
+            (np.log1p(y_true_eval) - np.log1p(y_pred_eval)) ** 2,
+            weights=sample_weight,
+            axis=0,
+        ))
+
+        # Verify that the error only contains 1 input point
+        assert error.shape[0] == 1
+        return error[0]  # type: ignore [no-any-return]
+
+    return _multioutput_score_basis(y_true, multioutput, _rmsle_func)
 
 
 @overload

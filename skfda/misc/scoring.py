@@ -840,8 +840,8 @@ def root_mean_squared_error(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     *,
-    sample_weight: np.ndarray | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    sample_weight: np.ndarray | None = ...,
+    multioutput: Literal['uniform_average'] = ...,
 ) -> float:
     pass  # noqa: WPS428
 

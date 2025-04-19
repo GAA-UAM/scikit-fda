@@ -6,7 +6,8 @@ import warnings
 from collections.abc import Callable, Sequence
 
 import numpy as np
-from scipy.interpolate import CloughTocher2DInterpolator, griddata
+from numpy import trapezoid
+from scipy.interpolate import CloughTocher2DInterpolator, griddata, interp1d
 from scipy.optimize import minimize_scalar
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist
@@ -110,17 +111,12 @@ class PACE(
             each of the selected components.
         explained_variance_ratio\_ : this contains the percentage
             of variance explained by each principal component.
-        singular_values\_: the singular values corresponding to each of the
-            selected components.
         mean\_: mean of the data.
         bandwidth_mean\_: calculated or user-given bandwidth used for the mean.
-        bandwidth_mean_interval\_: Interval of the bandwidth search for the
-            mean.
         covariance\_: covariance of the data.
         bandwidth_cov\_: calculated or user-given bandwidth used for the
             covariance.
-        bandwidth_cov_interval\_: Interval of the bandwidth search for the
-            covariance.
+        sigma2\_: calculated error of the covariance.
 
     Examples:
 
@@ -193,12 +189,12 @@ class PACE(
             )
             raise ValueError(error_msg)
 
-        bandwidth_mean_, bandwidth_mean_interval_ = (
-            self._check_bandwidth(bandwidth_mean)
+        bandwidth_mean_, bandwidth_mean_interval_ = self._check_bandwidth(
+            bandwidth_mean
         )
 
-        bandwidth_cov_, bandwidth_cov_interval_ = (
-            self._check_bandwidth(bandwidth_cov)
+        bandwidth_cov_, bandwidth_cov_interval_ = self._check_bandwidth(
+            bandwidth_cov
         )
 
         if n_grid_points <= 0 or bw_cov_n_grid_points <= 0:
@@ -293,7 +289,8 @@ class PACE(
         filtered_points = np.concatenate(new_points, axis=0)
         filtered_values = np.concatenate(new_values, axis=0)
         filtered_start_indices = np.array(
-            new_start_indices[:-1], dtype=np.uint32,
+            new_start_indices[:-1],
+            dtype=np.uint32,
         )
 
         return FDataIrregular(
@@ -449,9 +446,9 @@ class PACE(
         subj_idx, raw_cov = [], []
 
         # Vectorize the time points and corresponding values
-        for i in range(len(start_indices)):
-            p_i = points[start_indices[i]:end_indices[i]]
-            v_i = values[start_indices[i]:end_indices[i]]
+        for i, start_i in enumerate(start_indices):
+            p_i = points[start_i : end_indices[i]]
+            v_i = values[start_i : end_indices[i]]
 
             # Find the mean projection for each point
             tree = cKDTree(time_points)
@@ -486,7 +483,14 @@ class PACE(
 
         win = np.ones(len(f_raw_cov_neq))
 
-        return t_pairs_neq, f_raw_cov_neq, np.array(subj_idx), win, t_pairs_eq, f_raw_cov_eq
+        return (
+            t_pairs_neq,
+            f_raw_cov_neq,
+            np.array(subj_idx),
+            win,
+            t_pairs_eq,
+            f_raw_cov_eq,
+        )
 
     def _cov_gcv_score(
         self,
@@ -621,7 +625,7 @@ class PACE(
         self,
         cov_matrix: NDArrayFloat,
         n_components: float,
-    ) -> tuple[int, NDArrayFloat, NDArrayFloat]:
+    ) -> tuple[int, NDArrayFloat, NDArrayFloat, NDArrayFloat]:
         """
         Select the number of principal components.
 
@@ -637,13 +641,17 @@ class PACE(
             The chosen number of principal components.
             Cumulative fraction of variance explained.
             Eigenvalues.
+            Eigenfunctions.
         """
         cov = cov_matrix.squeeze()
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
 
         # Remove negative or complex eigenvalues and sort in decreasing order
         eigenvalues = np.maximum(eigenvalues, 0)
-        eigenvalues = np.sort(eigenvalues)[::-1]
+
+        idx = np.argsort(eigenvalues)[::-1]
+        eigenvalues = eigenvalues[idx]
+        eigenvectors = eigenvectors[idx, :]
 
         fve = np.cumsum(eigenvalues) / np.sum(eigenvalues)
 
@@ -656,9 +664,12 @@ class PACE(
             n_selected_components = n_components
         else:
             # Find the optimal number of components
-            n_selected_components = np.where(fve >= n_components)[0][0]+1
+            n_selected_components = np.where(fve >= n_components)[0][0] + 1
 
-        return n_selected_components, fve, eigenvalues
+        eigenvalues = eigenvalues[:n_selected_components]
+        eigenvectors = eigenvectors[:n_selected_components]
+
+        return n_selected_components, fve, eigenvalues, eigenvectors
 
     def _get_sigma2(
         self,
@@ -669,16 +680,25 @@ class PACE(
         t_diag: NDArrayFloat,
         cov_diag: NDArrayFloat,
         win: NDArrayFloat,
-    ) -> None:
+        domain_range: NDArrayFloat,
+    ) -> float:
         """
         Estimate the variance of the covariance matrix.
 
         Args:
-            cov_matrix: The smoothed covariance matrix.
+            h: Bandwidth for the kernel. It is the same one used to smooth the
+                covariance.
+            t_eval: Query points where diagonal is evaluated, expected to be
+                (num eval points x 1)-dimensional.
+            cov_coords: Coordinates of the covariance.
+            cov_values: Values of the covariance.
+            t_diag: Coordinates of the raw covariance diagonal.
+            cov_diag: Values of the raw covariance diagonal.
+            win: Weights for the covariance.
+            domain_range: Domain range of the data.
 
         Returns:
             The estimated variance.
-            The estimated covariance.
         """
         smooth_diag = self._mean_lls(
             h,
@@ -688,7 +708,7 @@ class PACE(
             self.kernel_cov,
         )
 
-        rotated_cov = self._rotated_cov_lls(
+        rotated_cov_diag = self._rotated_cov_lls(
             h,
             t_eval,
             t_eval,
@@ -697,7 +717,28 @@ class PACE(
             win,
         )
 
-        # print(f"Rotated covariance: {rotated_cov}")
+        min_domain, max_domain = domain_range[0]
+        domain_range = max_domain - min_domain
+        a = min_domain + domain_range * self.variance_error_interval[0]
+        b = max_domain - domain_range * (1 - self.variance_error_interval[1])
+
+        x = t_eval.squeeze()
+        y = (smooth_diag - rotated_cov_diag).squeeze()
+
+        # Mask for integration interval [a, b]
+        mask = (x > a) & (x < b)
+
+        # Perform Simpson integration and scale
+        sigma2 = trapezoid(y[mask], x[mask]) * 2 / domain_range
+
+        if sigma2 < 0:
+            warnings.warn(
+                "The estimated variance is negative. Setting it to 0.",
+                UserWarning,
+                stacklevel=2,
+            )
+            sigma2 = 0
+        return float(sigma2)
 
     def _rotated_cov_lls(
         self,
@@ -722,7 +763,7 @@ class PACE(
         Returns:
             n_grid_points x n_grid_points array of smoothed covariance values.
         """
-        r_mat = np.sqrt(2)/2 * np.array([[1, 1],[-1, 1]])
+        r_mat = np.sqrt(2) / 2 * np.array([[1, 1], [-1, 1]])
 
         # Rotate coordinates of covariance points and evaluation points
         r_cov_coords = np.einsum("ijk,jk->ik", cov_coords, r_mat)
@@ -741,42 +782,32 @@ class PACE(
         n_obs, q = cov_values.shape
 
         # Correct the broadcasting shape of r_eval and s_eval
-        diff_r = (t_pairs[:, 0, None] - r_t_eval[None,:,0]) / h
-        diff_s = (t_pairs[:, 1, None] - r_t_eval[None,:,1]) / h
+        diff_r = (t_pairs[:, 0, None] - r_t_eval[None, :, 0]) / h
+        diff_s = (t_pairs[:, 1, None] - r_t_eval[None, :, 1]) / h
 
         kernel_r = self.kernel_cov(diff_r).T
         kernel_s = self.kernel_cov(diff_s).T
 
         weights = np.einsum("ik,jk->ijk", kernel_r, kernel_s)
-        w_diag = weights * win
+        w_diag = (weights * win)[np.arange(n_eval), np.arange(n_eval)]
 
-        # Code correct up to here
+        x = np.ones((n_eval, n_obs, 3))
 
-        x = np.ones((n_eval, n_eval, n_obs, 3))
         for i in range(n_eval):
-            for j in range(n_eval):
-                x[:, j, :, 1, None] = (t_pairs[None, :, 0] - r_t_eval[None,:,0])**2
-                x[i, :, :, 2, None] = t_pairs[None, :, 1] - r_t_eval[None,:,0]
+            delta_r0 = t_pairs[:, 0, 0][:, np.newaxis] - r_t_eval[i, 0]
+            delta_r1 = t_pairs[:, 1, 0][:, np.newaxis] - r_t_eval[i, 1]
 
-        print(f"Shape of x: {x[0,0]}")
+            x[i, :, 1] = delta_r0[:, 0] ** 2
+            x[i, :, 2] = delta_r1[:, 0]
 
-        x_t = np.transpose(x, (0, 1, 3, 2))
-        xtw = x_t * w_diag[:, :, None, :]
+        x_t = np.transpose(x, (0, 2, 1))
+        xtw = x_t * w_diag[:, None, :]
         xtwx = xtw @ x
         xtwy = xtw @ cov_values
 
         beta = np.linalg.pinv(xtwx) @ xtwy
 
-        cov = beta[:, :, 0]
-        cov_t = np.transpose(cov, (1, 0, 2))
-
-        return np.array((cov + cov_t) / 2.0)
-
-
-
-
-
-
+        return np.array(beta[:, 0])
 
     def fit(
         self,
@@ -847,7 +878,8 @@ class PACE(
             # correcting this effect. This can also be seen in the PACE package
             # in Matlab.
             if self.kernel_mean == gaussian_kernel:
-                self.bandwidth_mean_ *= 1.1
+                gaussian_correction_term = 1.1
+                self.bandwidth_mean_ *= gaussian_correction_term
 
         print(f"Selected bandwidth for mean: {self.bandwidth_mean_}. ")
 
@@ -859,15 +891,14 @@ class PACE(
             self.kernel_mean,
         )
 
-        # print(f"Mean: {self.mean_}")
-
-        raw_cov_coords, raw_cov_values, cov_subj_idx, win, raw_diag_coords, raw_diag_values = (
-            self._compute_raw_covariances(
-                x_work,
-                self.mean_,
-                time_points,
-            )
+        raw_cov_data = self._compute_raw_covariances(
+            x_work,
+            self.mean_,
+            time_points,
         )
+
+        raw_cov_coords, raw_cov_values = raw_cov_data[:2]
+        win, raw_diag_coords, raw_diag_values = raw_cov_data[3:]
 
         # Create n-dimensional work grid to calculate covariance surface in
         # Create grid of domain points for covariance evaluation
@@ -931,7 +962,8 @@ class PACE(
             # correcting this effect. This can also be seen in the PACE package
             # in Matlab.
             if self.kernel_cov == gaussian_kernel:
-                self.bandwidth_cov_ *= 1.1
+                gaussian_correction_term = 1.1
+                self.bandwidth_cov_ *= gaussian_correction_term
 
         print(f"Selected bandwidth for covariance: {self.bandwidth_cov_}. ")
 
@@ -944,15 +976,18 @@ class PACE(
             win,
         )
 
-        no_opt, fve, eigenvalues = self._get_pc(self.covariance_, self.n_components)
+        no_opt, fve, eigenvalues, eigenfunctions = self._get_pc(
+            self.covariance_, self.n_components
+        )
         self.n_components = no_opt
         self.explained_variance_ration = fve
         self.explained_variance_ = eigenvalues
+        self.components_ = eigenfunctions
 
         print(f"Optimal number of components: {no_opt}")
 
         if self.assume_noisy:
-            self._get_sigma2(
+            self.sigma2_ = self._get_sigma2(
                 self.bandwidth_cov_,
                 t_eval,
                 raw_cov_coords,
@@ -960,15 +995,82 @@ class PACE(
                 raw_diag_coords,
                 raw_diag_values,
                 win,
+                np.array(x_work.domain_range),
             )
+        else:
+            self.sigma2_ = 0
 
-
-
-
-
-
+        print(f"Estimated sigma2: {self.sigma2_}")
 
         return self
+
+    def _get_fpc_scores(
+        self,
+        fdata: FDataIrregular,
+    ) -> tuple[NDArrayFloat, list[NDArrayFloat]]:
+        """
+        Estimate FPC scores and their variances via conditional expectation.
+
+        Args:
+            fdata: FDataIrregular object containing the observations.
+
+        Returns:
+            xi_est: Array of shape (n_subjects, n_components) with FPC scores.
+            xi_var: List of length n_subjects with (n_components x n_components)
+                    covariance matrices of score estimates.
+        """
+        n_subjects = len(fdata)
+        no_opt = int(self.n_components)
+
+        mean_interp = interp1d(
+            fdata.points.squeeze(), self.mean_.squeeze(),
+            kind="linear", fill_value="extrapolate",
+        )
+
+        phi_interp = interp1d(
+            np.linspace(
+                fdata.domain_range[0][0],
+                fdata.domain_range[0][1],
+                self.n_grid_points,
+            ),
+            self.components_,
+            axis=0,
+            kind="linear",
+            fill_value="extrapolate",
+        )
+
+        xi_est = np.zeros((fdata.shape[0], no_opt))
+        xi_var = []
+
+        Lambda = np.diag(self.explained_variance_[:no_opt])
+
+        for i in range(n_subjects):
+            t_i = fdata[i].points  # shape: (n_i, 1)
+            y_i = fdata[i].values  # shape: (n_i, 1)
+
+            mu_i = mean_interp(t_i.squeeze()).reshape(-1, 1)
+            phi_i = phi_interp(t_i.squeeze())  # shape: (n_i, no_opt)
+
+            residual = y_i - mu_i
+            C_i = phi_i @ Lambda @ phi_i.T + self.sigma2_ * np.eye(len(t_i))
+
+            try:
+                C_inv_res = np.linalg.solve(C_i, residual)
+            except np.linalg.LinAlgError:
+                C_inv_res = np.linalg.pinv(C_i) @ residual
+
+            xi_i = Lambda @ phi_i.T @ C_inv_res
+            xi_est[i, :] = xi_i.ravel()
+
+            try:
+                C_inv_phi = np.linalg.solve(C_i, phi_i)
+            except np.linalg.LinAlgError:
+                C_inv_phi = np.linalg.pinv(C_i) @ phi_i
+
+            xi_var_i = Lambda - Lambda @ phi_i.T @ C_inv_phi @ Lambda
+            xi_var.append(xi_var_i)
+
+        return xi_est, xi_var
 
     def transform(
         self,
@@ -986,6 +1088,14 @@ class PACE(
             Principal component scores. Data matrix of shape
             ``(n_samples, n_components)``.
         """
+        # def _pc_estimation(
+        #     self,
+        xi_est, _ = self._get_fpc_scores(X)
+
+        print(
+            f"Principal component scores: {xi_est.shape} "
+            f"({xi_est})",
+        )
         return [1.0]
 
     def fit_transform(

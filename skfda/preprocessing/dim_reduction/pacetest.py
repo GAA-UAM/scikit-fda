@@ -47,7 +47,7 @@ pace = PACE(
 # pace.fit(fd)
 # exit()
 cd4 = fetch_cd4()
-pace.fit(cd4.data)
+scores = pace.fit_transform(cd4.data)
 
 t_matlab = np.array([
     -18, -17, -16, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3,
@@ -123,6 +123,14 @@ R_grid, S_grid = np.meshgrid(grid, grid, indexing='ij')
 # ax.set_ylabel('s (Time)')
 # ax.set_zlabel('Covariance G(r, s)')
 # ax.set_title('Smoothed Covariance Surface via PACE')
+# plt.tight_layout()
+# plt.show()
+
+# Plotting the covariance surface without axis
+# fig = plt.figure(figsize=(12, 6))
+# ax = fig.add_subplot(111, projection='3d')
+# ax.plot_surface(R_grid, S_grid, cov, cmap='viridis', alpha=0.7)
+# ax.set_axis_off()
 # plt.tight_layout()
 # plt.show()
 

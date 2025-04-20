@@ -5,9 +5,10 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable, Sequence
 
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import trapezoid
-from scipy.interpolate import CloughTocher2DInterpolator, griddata, interp1d
+from scipy.interpolate import CloughTocher2DInterpolator, griddata, make_interp_spline
 from scipy.optimize import minimize_scalar
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist
@@ -91,7 +92,9 @@ class PACE(
             10.0). Defaluts to ``None``.
         bw_cov_n_grid_points: number of grid points to calculate the bandwidth
             for the covariance. This parameter's main purpose is to reduce the
-            computational cost of the GCV method. Defaults to 30.
+            computational cost of the GCV method. If the parameter
+            ``bandwidth_cov`` is provided, this parameter is ignored. Defaults
+            to 30.
         n_grid_points: number of grid points to calculate the covariance and,
             subsequently, the eigenfunctions for better approximations. The
             final FPC scores will be given in the original grid points.
@@ -106,14 +109,19 @@ class PACE(
             footcite:t:`staniswalis+lee_1998_nonparametric_regression`
 
     Attributes:
-        components\_: this contains the principal components.
+        components\_: this contains the principal components evaluated over
+            ``t_covariance\_``.
+        phi\_: this contains the principal components evaluated over
+            ``t_mean\_``, used in the FPC score calculation.
         explained_variance\_ : the amount of variance explained by
             each of the selected components.
         explained_variance_ratio\_ : this contains the percentage
             of variance explained by each principal component.
         mean\_: mean of the data.
+        t_mean\_: time points of the mean.
         bandwidth_mean\_: calculated or user-given bandwidth used for the mean.
         covariance\_: covariance of the data.
+        t_covariance\_: time points of the covariance.
         bandwidth_cov\_: calculated or user-given bandwidth used for the
             covariance.
         sigma2\_: calculated error of the covariance.
@@ -168,8 +176,8 @@ class PACE(
 
     def __init__(
         self,
-        n_components: float = 1.0,
         *,
+        n_components: float = 1.0,
         assume_noisy: bool = True,
         kernel_mean: KernelFunction = gaussian_kernel,
         bandwidth_mean: float | NDArrayFloat | None = None,
@@ -409,6 +417,8 @@ class PACE(
         x_work: FDataIrregular,
         mean: NDArrayFloat,
         time_points: NDArrayFloat,
+        *,
+        assume_noisy: bool,
     ) -> tuple[
         NDArrayFloat,
         NDArrayFloat,
@@ -427,6 +437,7 @@ class PACE(
             x_work: FDataIrregular object containing the data.
             mean: Mean function values.
             time_points: Time points for the mean.
+            assume_noisy: If True, the covariance is computed assuming noise.
 
         Returns:
             Array of time point pairs.
@@ -473,13 +484,18 @@ class PACE(
         t_pairs = t_pairs.reshape(t_pairs.shape[0], 2, -1)
         f_raw_cov = np.array(raw_cov)
 
-        if self.assume_noisy:
+        if assume_noisy:
             t_neq = np.where(t_pairs[:, 0] != t_pairs[:, 1])[0]
             t_eq = np.where(t_pairs[:, 0] == t_pairs[:, 1])[0]
             t_pairs_neq = t_pairs[t_neq]
             f_raw_cov_neq = f_raw_cov[t_neq]
             t_pairs_eq = t_pairs[t_eq][:, 0]
             f_raw_cov_eq = f_raw_cov[t_eq]
+        else:
+            t_pairs_neq = t_pairs
+            f_raw_cov_neq = f_raw_cov
+            t_pairs_eq = np.array([])
+            f_raw_cov_eq = np.array([])
 
         win = np.ones(len(f_raw_cov_neq))
 
@@ -551,7 +567,7 @@ class PACE(
             * (cov_values.squeeze() - g_hat_int).T,
         )
 
-        # Calculate pairwise distances between points in cov_coords
+        # Calculate pairwise distances between points
         domain_diff = np.max(pdist(time_points))
         k0 = self.kernel_cov(np.zeros((1, 1, cov_coords.shape[2])))[0]
         n_obs = len(cov_values)
@@ -625,7 +641,7 @@ class PACE(
         self,
         cov_matrix: NDArrayFloat,
         n_components: float,
-    ) -> tuple[int, NDArrayFloat, NDArrayFloat, NDArrayFloat]:
+    ) -> tuple[int, NDArrayFloat, NDArrayFloat, NDArrayFloat, NDArrayFloat]:
         """
         Select the number of principal components.
 
@@ -641,8 +657,11 @@ class PACE(
             The chosen number of principal components.
             Cumulative fraction of variance explained.
             Eigenvalues.
-            Eigenfunctions.
+            Eigenfunctions evaluated over the covariance grid.
+            Eigenfunctions evaluated over the mean grid.
         """
+        t_eigen = self.t_covariance_.squeeze()
+        h = (t_eigen.max() - t_eigen.min()) / (len(t_eigen) - 1)
         cov = cov_matrix.squeeze()
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
 
@@ -651,14 +670,15 @@ class PACE(
 
         idx = np.argsort(eigenvalues)[::-1]
         eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors[idx, :]
+        eigenvectors = eigenvectors[:, idx]
 
         fve = np.cumsum(eigenvalues) / np.sum(eigenvalues)
 
         if isinstance(n_components, int):
             if n_components > len(eigenvalues):
                 error_msg = (
-                    "The number of components must be smaller than the sample size",
+                    "The number of components must be smaller than the sample"
+                    "size",
                 )
                 raise AttributeError(error_msg)
             n_selected_components = n_components
@@ -667,9 +687,49 @@ class PACE(
             n_selected_components = np.where(fve >= n_components)[0][0] + 1
 
         eigenvalues = eigenvalues[:n_selected_components]
-        eigenvectors = eigenvectors[:n_selected_components]
+        eigenvectors = eigenvectors[:, :n_selected_components]
 
-        return n_selected_components, fve, eigenvalues, eigenvectors
+        lambda_ = h * eigenvalues
+        eigenvectors *= 1 / np.sqrt(h)
+
+        for i in range(n_selected_components):
+            # Ensure each eigenfunction is normalized, forming an orthonormal
+            # basis
+            phi_i = eigenvectors[:, i]
+            norm = np.sqrt(trapezoid(phi_i**2, x=self.t_covariance_.squeeze()))
+            eigenvectors[:, i] = phi_i / norm
+
+            # Enforce a consistent basis orientation
+            if eigenvectors[1, i] < eigenvectors[0, i]:
+                eigenvectors[:, i] *= -1
+
+        phi = np.empty((len(self.t_mean_), n_selected_components))
+
+        for i in range(n_selected_components):
+            # Create cubic spline interpolator
+            spline = make_interp_spline(t_eigen, eigenvectors[:, i])
+            # Evaluate spline on new grid
+            phi[:, i] = spline(self.t_mean_.squeeze())
+            # Normalize in L2 over the grid of the mean
+            phi[:, i] /= np.sqrt(trapezoid(phi[:, i] ** 2, x=self.t_mean_.squeeze()))
+
+        # plt.figure(figsize=(10, 6))
+        # # Plot up to 3 eigenvectors
+        # for i in range(min(3, n_selected_components)):
+        #     plt.plot(
+        #         self.t_covariance_.squeeze(),                # time axis
+        #         eigenvectors[:, i],            # eigenvector values
+        #         label=f"Eigenvector {i + 1}",
+        #     )
+        # plt.title("First 3 Smoothed Eigenvectors")
+        # plt.xlabel("Time")
+        # plt.ylabel("Eigenfunction value")
+        # plt.grid(True)
+        # plt.legend()
+        # plt.tight_layout()
+        # plt.show()
+
+        return n_selected_components, fve, lambda_, eigenvectors.T, phi.T
 
     def _get_sigma2(
         self,
@@ -837,30 +897,7 @@ class PACE(
         else:
             x_work = X
 
-        time_points = np.sort(np.unique(x_work.points, axis=0), axis=0)
-
-        # === MATLAB-style candidate search ===
-        # domain_diff = np.max(x_work.points, axis=0) - np.min(x_work.points, axis=0)
-        # r = float(np.max(domain_diff))
-
-        # dists = np.sort(np.diff(np.unique(x_work.points[:, 0])))
-        # if len(dists) >= 3:
-        #     dstar = np.min([np.sum(dists[:i+1]) for i in range(2, len(dists))])
-        # else:
-        #     dstar = r / 10  # fallback
-
-        # h0 = 2.5 * dstar
-
-        # # Create q and the 10 candidate bandwidths
-        # q = (r / (4 * h0)) ** (1 / 9)
-        # candidates = np.array([h0 * q**i for i in range(10)])
-
-        # # Evaluate GCV at each candidate
-        # gcv_scores = np.array([
-        #     self._mean_gcv_score(h, x_work.points, x_work.values)
-        #     for h in candidates
-        # ])
-        # optimal_bandwidth = candidates[np.argmin(gcv_scores)]
+        self.t_mean_ = np.sort(np.unique(x_work.points, axis=0), axis=0)
 
         if self.bandwidth_mean_ is None:
             self.bandwidth_mean_ = minimize_scalar(
@@ -885,7 +922,7 @@ class PACE(
 
         self.mean_ = self._mean_lls(
             self.bandwidth_mean_,
-            time_points,
+            self.t_mean_,
             x_work.points,
             x_work.values,
             self.kernel_mean,
@@ -894,7 +931,8 @@ class PACE(
         raw_cov_data = self._compute_raw_covariances(
             x_work,
             self.mean_,
-            time_points,
+            self.t_mean_,
+            assume_noisy=self.assume_noisy,
         )
 
         raw_cov_coords, raw_cov_values = raw_cov_data[:2]
@@ -907,36 +945,14 @@ class PACE(
             for start, end in x_work.domain_range
         ]
         mesh = np.meshgrid(*axes, indexing="ij")
-        t_eval = np.stack([m.ravel() for m in mesh], axis=-1)
+        self.t_covariance_ = np.stack([m.ravel() for m in mesh], axis=-1)
 
         if self.bandwidth_cov_ is None:
             cov_grid = np.linspace(
-                t_eval[0],
-                t_eval[-1],
+                self.t_covariance_[0],
+                self.t_covariance_[-1],
                 self.bw_cov_n_grid_points,
             )
-
-            # bw_candidates = np.array([
-            #     1.7000,2.1653,2.7580,3.5129,4.4744,
-            #     5.6991,7.2590,9.2459,11.7766,15.000,
-            # ])
-            # print(f"Bandwidth candidates: {bw_candidates}")
-
-            # gcv_scores = []
-            # for bw in bw_candidates:
-            #     gcv_score = self._cov_gcv_score(
-            #         bw,
-            #         t_eval,
-            #         raw_cov_coords,
-            #         raw_cov_values,
-            #         win,
-            #         time_points,
-            #     )
-            #     gcv_scores.append(gcv_score)
-            # print(f"Bandwidth candidates: {bw_candidates}")
-            # print(f"GCV scores: {gcv_scores}")
-
-            # self.bandwidth_cov_ = bw_candidates[np.argmin(gcv_scores)]
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -947,7 +963,7 @@ class PACE(
                         raw_cov_coords,
                         raw_cov_values,
                         win,
-                        time_points,
+                        self.t_mean_,
                     ),
                     bounds=self.bandwidth_cov_interval_,
                     method="bounded",
@@ -969,27 +985,30 @@ class PACE(
 
         self.covariance_ = self._cov_lls(
             self.bandwidth_cov_,
-            t_eval,
-            t_eval,
+            self.t_covariance_,
+            self.t_covariance_,
             raw_cov_coords,
             raw_cov_values,
             win,
         )
 
-        no_opt, fve, eigenvalues, eigenfunctions = self._get_pc(
-            self.covariance_, self.n_components
+        pc_data = self._get_pc(
+            self.covariance_, self.n_components,
         )
-        self.n_components = no_opt
-        self.explained_variance_ration = fve
+
+        eigenvalues, eigenfunctions, phi = pc_data[2:]
+
+        self.n_components, self.explained_variance_ratio = pc_data[:2]
         self.explained_variance_ = eigenvalues
         self.components_ = eigenfunctions
+        self.phi_ = phi
 
-        print(f"Optimal number of components: {no_opt}")
+        print(f"Optimal number of components: {self.n_components}")
 
         if self.assume_noisy:
             self.sigma2_ = self._get_sigma2(
                 self.bandwidth_cov_,
-                t_eval,
+                self.t_covariance_,
                 raw_cov_coords,
                 raw_cov_values,
                 raw_diag_coords,
@@ -1003,74 +1022,6 @@ class PACE(
         print(f"Estimated sigma2: {self.sigma2_}")
 
         return self
-
-    def _get_fpc_scores(
-        self,
-        fdata: FDataIrregular,
-    ) -> tuple[NDArrayFloat, list[NDArrayFloat]]:
-        """
-        Estimate FPC scores and their variances via conditional expectation.
-
-        Args:
-            fdata: FDataIrregular object containing the observations.
-
-        Returns:
-            xi_est: Array of shape (n_subjects, n_components) with FPC scores.
-            xi_var: List of length n_subjects with (n_components x n_components)
-                    covariance matrices of score estimates.
-        """
-        n_subjects = len(fdata)
-        no_opt = int(self.n_components)
-
-        mean_interp = interp1d(
-            fdata.points.squeeze(), self.mean_.squeeze(),
-            kind="linear", fill_value="extrapolate",
-        )
-
-        phi_interp = interp1d(
-            np.linspace(
-                fdata.domain_range[0][0],
-                fdata.domain_range[0][1],
-                self.n_grid_points,
-            ),
-            self.components_,
-            axis=0,
-            kind="linear",
-            fill_value="extrapolate",
-        )
-
-        xi_est = np.zeros((fdata.shape[0], no_opt))
-        xi_var = []
-
-        Lambda = np.diag(self.explained_variance_[:no_opt])
-
-        for i in range(n_subjects):
-            t_i = fdata[i].points  # shape: (n_i, 1)
-            y_i = fdata[i].values  # shape: (n_i, 1)
-
-            mu_i = mean_interp(t_i.squeeze()).reshape(-1, 1)
-            phi_i = phi_interp(t_i.squeeze())  # shape: (n_i, no_opt)
-
-            residual = y_i - mu_i
-            C_i = phi_i @ Lambda @ phi_i.T + self.sigma2_ * np.eye(len(t_i))
-
-            try:
-                C_inv_res = np.linalg.solve(C_i, residual)
-            except np.linalg.LinAlgError:
-                C_inv_res = np.linalg.pinv(C_i) @ residual
-
-            xi_i = Lambda @ phi_i.T @ C_inv_res
-            xi_est[i, :] = xi_i.ravel()
-
-            try:
-                C_inv_phi = np.linalg.solve(C_i, phi_i)
-            except np.linalg.LinAlgError:
-                C_inv_phi = np.linalg.pinv(C_i) @ phi_i
-
-            xi_var_i = Lambda - Lambda @ phi_i.T @ C_inv_phi @ Lambda
-            xi_var.append(xi_var_i)
-
-        return xi_est, xi_var
 
     def transform(
         self,
@@ -1088,15 +1039,131 @@ class PACE(
             Principal component scores. Data matrix of shape
             ``(n_samples, n_components)``.
         """
-        # def _pc_estimation(
-        #     self,
-        xi_est, _ = self._get_fpc_scores(X)
+        end_indices = np.append(X.start_indices[1:], len(X.points))
+        t_mean = self.t_mean_.squeeze()
 
-        print(
-            f"Principal component scores: {xi_est.shape} "
-            f"({xi_est})",
-        )
-        return [1.0]
+        fpc_scores = np.zeros((len(X.start_indices), int(self.n_components)))
+        lambda_ = np.diag(self.explained_variance_)
+
+        # Difference is that they iteratively calculate sigma so they get minor differences
+        # self.sigma2_ = 26586
+
+        for i, idx in enumerate(X.start_indices):
+            points_i = X.points[idx:end_indices[i]].squeeze()
+            values_i = X.values[idx:end_indices[i]].squeeze()
+            if points_i.ndim == 0:
+                points_i = np.array([points_i])
+            m_i = len(points_i)
+
+            # Get indices in t_mean_ corresponding to points_i
+            indices = [np.argmin(np.abs(t_mean - pt)) for pt in points_i]
+            mu_i = self.mean_[indices].squeeze()
+            phi_i = self.phi_[:, indices].T
+
+            num = lambda_ @ phi_i.T
+            denom = phi_i @ lambda_ @ phi_i.T + self.sigma2_ * np.eye(m_i)
+            phi_sigma = num @ np.linalg.inv(denom)
+
+            # Residuals
+            residual_i = values_i - mu_i
+            if residual_i.ndim == 0:
+                residual_i = np.array([residual_i])
+
+            fpc_scores[i, :] = phi_sigma @ residual_i.T
+
+        print(f"fpc_scores shape: {fpc_scores}")
+
+        # r_coords = raw_cov_coords[:, 0]
+        # s_coords = raw_cov_coords[:, 1]
+        # fig = plt.figure(figsize=(10, 6))
+        # ax = fig.add_subplot(111, projection='3d')
+        # ax.scatter(r_coords, s_coords, g_hat_int, c=g_hat_int, cmap='viridis', s=15)
+        # ax.set_axis_off()
+        # plt.tight_layout()
+        # plt.show()
+
+
+        # When we have the interpolated covariance matrix, print it with and
+        # without the diagonal being taken care of
+
+        # need to inform of expected dimensions for each parameter
+        # and types of the class parameters
+
+        # Add doctests
+        # Add coverage
+
+
+
+
+        # t_mean = self.t_mean_.squeeze()
+        # mean_curve = self.mean_.squeeze()
+        # reconstructions = fpc_scores @ self.phi_ + mean_curve  # shape: (n_subjects, len(t_mean))
+
+        # plt.figure(figsize=(12, 6))
+
+        # # Plot original reconstructed trajectories
+        # for i in range(reconstructions.shape[0]):
+        #     plt.plot(t_mean, reconstructions[i], alpha=0.6, label=f"Subject {i + 1}")
+
+        # plt.plot(t_mean, mean_curve, color='black', linestyle='--', linewidth=2, label='Mean Curve')
+        # plt.xlabel("Time")
+        # plt.ylabel("Value")
+        # plt.title("Reconstructed Trajectories via PACE over Mean Grid")
+        # plt.legend(loc='upper right', fontsize='small', ncol=2)
+        # plt.grid(True)
+        # plt.tight_layout()
+        # plt.show()
+
+
+
+        subject_index = 0
+
+        for i in range(10):
+            subject_index = i
+            # Get their original observation points and values
+            idx = X.start_indices[subject_index]
+            end_idx = X.start_indices[subject_index + 1] if subject_index + 1 < len(X.start_indices) else len(X.points)
+            points_i = X.points[idx:end_idx].squeeze()
+            values_i = X.values[idx:end_idx].squeeze()
+
+            # Reconstruct the full trajectory over the mean grid
+            reconstructed_i = fpc_scores[subject_index] @ self.phi_ + self.mean_.squeeze()
+
+            print(reconstructed_i)
+
+            # Plotting
+            # plt.figure(figsize=(10, 6))
+            # plt.plot(self.t_mean_.squeeze(), reconstructed_i, label="Reconstructed Curve", linewidth=2)
+            # plt.scatter(points_i, values_i, color='red', label="Original Observations", zorder=5)
+            # plt.plot(self.t_mean_.squeeze(), self.mean_.squeeze(), linestyle='--', color='gray', label="Mean Curve")
+            # plt.xlabel("Time")
+            # plt.ylabel("Value")
+            # plt.title(f"Subject {subject_index + 1}: Reconstruction vs Observations")
+            # plt.legend()
+            # plt.grid(True)
+            # plt.tight_layout()
+            # plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        return fpc_scores
 
     def fit_transform(
         self,

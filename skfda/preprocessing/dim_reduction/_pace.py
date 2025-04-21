@@ -8,14 +8,17 @@ from collections.abc import Callable, Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import trapezoid
-from scipy.interpolate import CloughTocher2DInterpolator, griddata, make_interp_spline
+from scipy.interpolate import (
+    CloughTocher2DInterpolator,
+    make_interp_spline,
+)
 from scipy.optimize import minimize_scalar
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation import FData
-from ...representation.irregular import FDataIrregular
+from ...representation.irregular import FDataGrid, FDataIrregular
 from ...typing._numpy import NDArrayFloat
 
 KernelFunction = Callable[[NDArrayFloat], NDArrayFloat]
@@ -280,8 +283,8 @@ class PACE(
         new_start_indices = [0]
 
         for start, end in zip(start_indices, end_indices, strict=True):
-            pts = all_points[start:end, :]  # (m_i, n_dims)
-            vals = all_values[start:end, :]  # (m_i, output_dims)
+            pts = all_points[start:end, :]
+            vals = all_values[start:end, :]
 
             # Build boolean mask: keep rows where all coords are inside their
             # bounds
@@ -531,7 +534,6 @@ class PACE(
         Returns:
             Scalar GCV score.
         """
-        print(f"Evaluating GCV for h={h:.4f}")
         if h <= 0:
             return np.inf
 
@@ -548,14 +550,6 @@ class PACE(
         # Interpolation grid points
         x, y = np.meshgrid(t_eval, t_eval)
         grid_points = np.c_[x.ravel(), y.ravel()]
-
-        # Interpolate
-        # g_hat_int = griddata(
-        #     grid_points,
-        #     g_hat.ravel(),
-        #     cov_coords.squeeze(),
-        #     method="cubic",
-        # )
 
         # Interpolate at the grid points
         interpolator = CloughTocher2DInterpolator(grid_points, g_hat.ravel())
@@ -641,7 +635,7 @@ class PACE(
         self,
         cov_matrix: NDArrayFloat,
         n_components: float,
-    ) -> tuple[int, NDArrayFloat, NDArrayFloat, NDArrayFloat, NDArrayFloat]:
+    ) -> tuple[int, NDArrayFloat, NDArrayFloat, NDArrayFloat]:
         """
         Select the number of principal components.
 
@@ -657,7 +651,6 @@ class PACE(
             The chosen number of principal components.
             Cumulative fraction of variance explained.
             Eigenvalues.
-            Eigenfunctions evaluated over the covariance grid.
             Eigenfunctions evaluated over the mean grid.
         """
         t_eigen = self.t_covariance_.squeeze()
@@ -711,7 +704,9 @@ class PACE(
             # Evaluate spline on new grid
             phi[:, i] = spline(self.t_mean_.squeeze())
             # Normalize in L2 over the grid of the mean
-            phi[:, i] /= np.sqrt(trapezoid(phi[:, i] ** 2, x=self.t_mean_.squeeze()))
+            phi[:, i] /= np.sqrt(
+                trapezoid(phi[:, i] ** 2, x=self.t_mean_.squeeze()),
+            )
 
         # plt.figure(figsize=(10, 6))
         # # Plot up to 3 eigenvectors
@@ -729,7 +724,7 @@ class PACE(
         # plt.tight_layout()
         # plt.show()
 
-        return n_selected_components, fve, lambda_, eigenvectors.T, phi.T
+        return n_selected_components, fve, lambda_, phi.T
 
     def _get_sigma2(
         self,
@@ -897,7 +892,9 @@ class PACE(
         else:
             x_work = X
 
-        self.t_mean_ = np.sort(np.unique(x_work.points, axis=0), axis=0)
+        # The mean has to be calculated with the points within the boundary
+        # region, but over the whole domain
+        self.t_mean_ = np.sort(np.unique(X.points, axis=0), axis=0)
 
         if self.bandwidth_mean_ is None:
             self.bandwidth_mean_ = minimize_scalar(
@@ -993,14 +990,14 @@ class PACE(
         )
 
         pc_data = self._get_pc(
-            self.covariance_, self.n_components,
+            self.covariance_,
+            self.n_components,
         )
 
-        eigenvalues, eigenfunctions, phi = pc_data[2:]
+        eigenvalues, phi = pc_data[2:]
 
         self.n_components, self.explained_variance_ratio = pc_data[:2]
         self.explained_variance_ = eigenvalues
-        self.components_ = eigenfunctions
         self.phi_ = phi
 
         print(f"Optimal number of components: {self.n_components}")
@@ -1045,12 +1042,17 @@ class PACE(
         fpc_scores = np.zeros((len(X.start_indices), int(self.n_components)))
         lambda_ = np.diag(self.explained_variance_)
 
-        # Difference is that they iteratively calculate sigma so they get minor differences
+        # Difference is that they iteratively calculate sigma so they get minor
+        # differences
         # self.sigma2_ = 26586
 
+        if self.assume_noisy is False:
+            eps = 1e-10  # small regularization
+            self.sigma2_ = eps
+
         for i, idx in enumerate(X.start_indices):
-            points_i = X.points[idx:end_indices[i]].squeeze()
-            values_i = X.values[idx:end_indices[i]].squeeze()
+            points_i = X.points[idx : end_indices[i]].squeeze()
+            values_i = X.values[idx : end_indices[i]].squeeze()
             if points_i.ndim == 0:
                 points_i = np.array([points_i])
             m_i = len(points_i)
@@ -1071,8 +1073,6 @@ class PACE(
 
             fpc_scores[i, :] = phi_sigma @ residual_i.T
 
-        print(f"fpc_scores shape: {fpc_scores}")
-
         # r_coords = raw_cov_coords[:, 0]
         # s_coords = raw_cov_coords[:, 1]
         # fig = plt.figure(figsize=(10, 6))
@@ -1082,18 +1082,11 @@ class PACE(
         # plt.tight_layout()
         # plt.show()
 
-
-        # When we have the interpolated covariance matrix, print it with and
-        # without the diagonal being taken care of
-
         # need to inform of expected dimensions for each parameter
         # and types of the class parameters
 
         # Add doctests
         # Add coverage
-
-
-
 
         # t_mean = self.t_mean_.squeeze()
         # mean_curve = self.mean_.squeeze()
@@ -1114,54 +1107,56 @@ class PACE(
         # plt.tight_layout()
         # plt.show()
 
+        # for i in range(10):
+        #     subject_index = i
+        #     # Get their original observation points and values
+        #     idx = X.start_indices[subject_index]
+        #     end_idx = (
+        #         X.start_indices[subject_index + 1]
+        #         if subject_index + 1 < len(X.start_indices)
+        #         else len(X.points)
+        #     )
+        #     points_i = X.points[idx:end_idx].squeeze()
+        #     values_i = X.values[idx:end_idx].squeeze()
 
+        #     # Reconstruct the full trajectory over the mean grid
+        #     reconstructed_i = (
+        #         fpc_scores[subject_index] @ self.phi_ + self.mean_.squeeze()
+        #     )
 
-        subject_index = 0
+        #     # print(reconstructed_i)
 
-        for i in range(10):
-            subject_index = i
-            # Get their original observation points and values
-            idx = X.start_indices[subject_index]
-            end_idx = X.start_indices[subject_index + 1] if subject_index + 1 < len(X.start_indices) else len(X.points)
-            points_i = X.points[idx:end_idx].squeeze()
-            values_i = X.values[idx:end_idx].squeeze()
-
-            # Reconstruct the full trajectory over the mean grid
-            reconstructed_i = fpc_scores[subject_index] @ self.phi_ + self.mean_.squeeze()
-
-            print(reconstructed_i)
-
-            # Plotting
-            # plt.figure(figsize=(10, 6))
-            # plt.plot(self.t_mean_.squeeze(), reconstructed_i, label="Reconstructed Curve", linewidth=2)
-            # plt.scatter(points_i, values_i, color='red', label="Original Observations", zorder=5)
-            # plt.plot(self.t_mean_.squeeze(), self.mean_.squeeze(), linestyle='--', color='gray', label="Mean Curve")
-            # plt.xlabel("Time")
-            # plt.ylabel("Value")
-            # plt.title(f"Subject {subject_index + 1}: Reconstruction vs Observations")
-            # plt.legend()
-            # plt.grid(True)
-            # plt.tight_layout()
-            # plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        #     # Plotting
+        #     plt.figure(figsize=(10, 6))
+        #     plt.plot(
+        #         self.t_mean_.squeeze(),
+        #         reconstructed_i,
+        #         label="Reconstructed Curve",
+        #         linewidth=2,
+        #     )
+        #     plt.scatter(
+        #         points_i,
+        #         values_i,
+        #         color="red",
+        #         label="Original Observations",
+        #         zorder=5,
+        #     )
+        #     plt.plot(
+        #         self.t_mean_.squeeze(),
+        #         self.mean_.squeeze(),
+        #         linestyle="--",
+        #         color="gray",
+        #         label="Mean Curve",
+        #     )
+        #     plt.xlabel("Time")
+        #     plt.ylabel("Value")
+        #     plt.title(
+        #         f"Subject {subject_index + 1}: Reconstruction vs Observations"
+        #     )
+        #     plt.legend()
+        #     plt.grid(True)
+        #     plt.tight_layout()
+        #     plt.show()
 
         return fpc_scores
 
@@ -1200,4 +1195,9 @@ class PACE(
         Returns:
             A FData object.
         """
-        return [1.0]
+        reconstructed = pc_scores @ self.phi_ + self.mean_.squeeze()
+
+        return FDataGrid(
+            data_matrix=reconstructed,
+            grid_points=self.t_mean_.squeeze(),
+        )

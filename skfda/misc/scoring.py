@@ -850,7 +850,7 @@ def root_mean_squared_error(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     *,
-    sample_weight: np.ndarray | None = None,
+    sample_weight: np.ndarray | None = ...,
     multioutput: Literal['raw_values'],
 ) -> np.ndarray:
     pass  # noqa: WPS428
@@ -860,8 +860,8 @@ def root_mean_squared_error(
     y_true: FData,
     y_pred: FData,
     *,
-    sample_weight: np.ndarray | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    sample_weight: np.ndarray | None = ...,
+    multioutput: Literal['uniform_average'] = ...,
 ) -> float:
     pass  # noqa: WPS428
 
@@ -870,7 +870,7 @@ def root_mean_squared_error(
     y_true: FData,
     y_pred: FData,
     *,
-    sample_weight: np.ndarray | None = None,
+    sample_weight: np.ndarray | None = ...,
     multioutput: Literal['raw_values'],
 ) -> FData:
     pass  # noqa: WPS428
@@ -1155,8 +1155,8 @@ def root_mean_squared_log_error(
     y_true: DataType,
     y_pred: DataType,
     *,
-    sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    sample_weight: NDArrayFloat | None = ...,
+    multioutput: Literal['uniform_average'] = ...,
 ) -> float:
     pass  # noqa: WPS428
 
@@ -1166,7 +1166,7 @@ def root_mean_squared_log_error(
     y_true: DataType,
     y_pred: DataType,
     *,
-    sample_weight: NDArrayFloat | None = None,
+    sample_weight: NDArrayFloat | None = ...,
     multioutput: Literal['raw_values'],
 ) -> DataType:
     pass  # noqa: WPS428

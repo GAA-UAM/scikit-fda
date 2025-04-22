@@ -8,11 +8,12 @@ like depth measures.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Sized, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypeVar
 
 import matplotlib
 import matplotlib.patches
 import numpy as np
+import pandas as pd
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
@@ -26,6 +27,9 @@ from ...representation.irregular import FDataIrregular
 from ...typing._base import DomainRangeLike, GridPointsLike
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _set_labels
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence, Sized
 
 K = TypeVar('K', contravariant=True)
 V = TypeVar('V', covariant=True)
@@ -778,3 +782,106 @@ def set_color_dict(
     """
     if sample_colors is not None:
         color_dict["color"] = sample_colors[ind]
+
+
+
+class MixedDataPlot(BasePlot):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        chart: Figure | Axes | None = None,
+        *,
+        fig: Figure | None = None,
+        axes: Axes | Sequence[Axes] | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
+    ) -> None:
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.df = df
+
+    @property
+    def n_subplots(self) -> int:
+        return self.count_total_plots(self.df)
+
+    def count_total_plots(self, df: pd.DataFrame) -> int:
+        total_plots = 0
+        for col in df.columns:
+            val = df[col].iloc[0]
+            if isinstance(val, FData):
+                total_plots += val.dim_codomain
+            else:
+                total_plots += 1
+        return total_plots
+
+    def _plot(self, fig: Figure, axes: Sequence[Axes]) -> None:
+        i = 0
+
+        for col in self.df.columns:
+            ax = axes[i]
+            data = self.df[col]
+            val = data.iloc[0]
+
+            if isinstance(val, FData):
+                fd_codim = val.dim_codomain
+
+                if fd_codim > 1:
+                    col_axes = axes[i:i+fd_codim]
+                    for fd in data:
+                        fd.plot(axes=col_axes)
+                    for j, ax_sub in enumerate(col_axes):
+                        ax_sub.set_title(f"{col} - {j+1}")
+                    i += fd_codim
+                else:
+                    for fd in data:
+                        fd.plot(axes=ax)
+                    ax.set_title(col)
+                    i += 1
+
+            elif isinstance(val, np.ndarray) or np.isscalar(val):
+                ax.scatter(range(len(data)), data)
+                ax.set_title(col)
+                i += 1
+
+            else:
+                ax.axis("off")
+                i += 1
+
+        # Hide extra axes
+        for j in range(i, len(axes)):
+            axes[j].axis("off")
+
+
+def plot_mixed_data(
+    df: pd.DataFrame,
+    *,
+    n_rows: int | None = None,
+    n_cols: int | None = None,
+) -> Figure:
+    """
+    Plot a DataFrame containing numerical and functional (FData) data.
+
+    Creates a grid of subplots based on the structure of the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to be plotted.
+        n_rows (int, optional): Number of subplot rows.
+            Inferred if not provided.
+        n_cols (int, optional): Number of subplot columns.
+            Inferred if not provided.
+        figsize (float, optional): Size (in inches) of each subplot.
+
+    Returns:
+        matplotlib.figure.Figure: The resulting figure object.
+    """
+    plotter = MixedDataPlot(
+        df,
+        n_rows=n_rows,
+        n_cols=n_cols,
+    )
+    return plotter.plot()

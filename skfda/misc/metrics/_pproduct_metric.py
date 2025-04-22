@@ -127,7 +127,6 @@ def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
 def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
     if not df1.columns.equals(df2.columns):
         return False
-    
 
     for col in df1.columns:
         s1, s2 = df1[col], df2[col]
@@ -138,8 +137,8 @@ def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
                 return False
 
         elif isinstance(sample, FData):
-            #if not all(a.__eq__(b) for a, b in zip(s1, s2, strict=False)):
-            return True
+            if not all(a==b for a, b in zip(s1, s2, strict=False)):
+                return True
 
         else:
             return False  # unknown column type, reject for now
@@ -236,5 +235,4 @@ def pproduct_metric(
 ) -> NDArrayFloat:
     metric = PProductMetric(p, metrics=metrics, weights=weights)
     return metric(arg1, arg2)
-
 

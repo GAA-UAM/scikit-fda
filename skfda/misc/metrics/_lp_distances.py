@@ -3,21 +3,22 @@
 from __future__ import annotations
 
 import math
-from typing import Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Final, TypeVar
 
 import numpy as np
-from typing_extensions import Final
 
 from ...representation import FData
-from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
 from ._lp_norms import LpNorm
 from ._utils import NormInducedMetric, pairwise_metric_optimization
 
+if TYPE_CHECKING:
+    from ...typing._metric import Norm
+
 T = TypeVar("T", NDArrayFloat, FData)
 
 
-class LpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):
+class LpDistance(NormInducedMetric[NDArrayFloat| FData]):
     r"""
     Lp distance for functional data objects.
 
@@ -72,12 +73,12 @@ class LpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):
             ...
         ValueError: ...
 
-    """  # noqa: P102
+    """
 
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+        vector_norm: Norm[NDArrayFloat] | float | None = None,
     ) -> None:
 
         self.p = p
@@ -106,7 +107,7 @@ linf_distance: Final = LpDistance(p=math.inf)
 def _pairwise_metric_optimization_lp_fdata(
     metric: LpDistance,
     elem1: FData,
-    elem2: Optional[FData],
+    elem2: FData | None,
 ) -> NDArrayFloat:
     from ...misc import inner_product, inner_product_matrix
 
@@ -116,7 +117,7 @@ def _pairwise_metric_optimization_lp_fdata(
         vector_norm = metric.p
 
     # Special case, the inner product is heavily optimized
-    if metric.p == vector_norm == 2:
+    if metric.p == vector_norm == 2:  # noqa: PLR2004
         diag1 = inner_product(elem1, elem1)
         diag2 = diag1 if elem2 is None else inner_product(elem2, elem2)
 
@@ -148,7 +149,7 @@ def lp_distance(
     fdata2: T,
     *,
     p: float,
-    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+    vector_norm: Norm[NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
     r"""
     Lp distance for FDataGrid objects.
@@ -211,8 +212,8 @@ def lp_distance(
             ...
         ValueError: ...
 
-    See also:
+    See Also:
         :class:`~skfda.misc.metrics.LpDistance`
 
-    """  # noqa: P102
+    """
     return LpDistance(p=p, vector_norm=vector_norm)(fdata1, fdata2)

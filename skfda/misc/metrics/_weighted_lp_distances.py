@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, Union
+from typing import TYPE_CHECKING, TypeVar
 
 from ...representation import FData
 from ...typing._numpy import NDArrayFloat
@@ -20,17 +20,23 @@ if TYPE_CHECKING:
 T = TypeVar("T", NDArrayFloat, FData)
 
 
-class WeightedLpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):  # noqa: UP007
+class WeightedLpDistance(
+    NormInducedMetric[NDArrayFloat | FData],
+):
     def __init__(
         self,
         p: float,
         vector_norm: Norm[NDArrayFloat] | float | None = None,
-        lp_weight: Callable[[GridPointsLike], NDArrayFloat] | float | None = None,
+        lp_weight: (
+            Callable[[GridPointsLike], NDArrayFloat] | float | None
+        ) = None,
     ) -> None:
 
         self.p = p
         self.vector_norm = vector_norm
-        norm = WeightedLpNorm(p=p, vector_norm=vector_norm, lp_weight=lp_weight)
+        norm = WeightedLpNorm(
+            p=p, vector_norm=vector_norm, lp_weight=lp_weight,
+        )
 
         super().__init__(norm)
 
@@ -39,7 +45,10 @@ class WeightedLpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):  # noqa
         return super().__call__(elem1, elem2)
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(p={self.p}, vector_norm={self.vector_norm})"
+        return (
+            f"{type(self).__name__}(p={self.p},"
+            f" vector_norm={self.vector_norm})"
+        )
 
 
 def weighted_lp_distance(
@@ -50,7 +59,11 @@ def weighted_lp_distance(
     vector_norm: Norm[NDArrayFloat] | float | None = None,
     lp_weight: Callable[[GridPointsLike], NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
-    return WeightedLpDistance(p=p, vector_norm=vector_norm, lp_weight=lp_weight)(
+    return WeightedLpDistance(
+        p=p,
+        vector_norm=vector_norm,
+        lp_weight=lp_weight,
+    )(
         fdata1,
         fdata2,
     )

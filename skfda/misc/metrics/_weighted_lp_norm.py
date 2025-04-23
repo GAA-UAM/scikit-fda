@@ -18,7 +18,9 @@ class WeightedLpNorm:
         self,
         p: float,
         vector_norm: Norm[NDArrayFloat] | float | None = None,
-        lp_weight: Callable[[GridPointsLike], NDArrayFloat] | float | None = None,
+        lp_weight: (
+            Callable[[GridPointsLike], NDArrayFloat] | float | None
+        ) = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
@@ -31,9 +33,12 @@ class WeightedLpNorm:
         self.lp_weight = lp_weight
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(p={self.p}, vector_norm={self.vector_norm})"
+        return (
+            f"{type(self).__name__}(p={self.p},"
+            f" vector_norm={self.vector_norm})"
+        )
 
-    def __call__(self, vector: NDArrayFloat | FData) -> NDArrayFloat:
+    def __call__(self, vector: NDArrayFloat | FData) -> NDArrayFloat:  # noqa: C901
         """Compute the Lp norm of a functional data object."""
         if isinstance(vector, np.ndarray):
             if isinstance(self.lp_weight, (float, int)):
@@ -51,7 +56,7 @@ class WeightedLpNorm:
             vector_norm = self.p
         if lp_weight is None:
             lp_weight = 1.0
-        #TODO PENSAR SI HACER UN WEIGHTED LP NORM
+        # TODO PENSAR SI HACER UN WEIGHTED LP NORM
         if isinstance(vector, FDataBasis):
             domain = vector.basis.domain_range
             call = vector

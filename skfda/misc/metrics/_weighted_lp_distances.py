@@ -42,7 +42,7 @@ class WeightedLpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):  # noqa
         return f"{type(self).__name__}(p={self.p}, vector_norm={self.vector_norm})"
 
 
-def lp_distance(
+def weighted_lp_distance(
     fdata1: T,
     fdata2: T,
     *,

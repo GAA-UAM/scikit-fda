@@ -18,9 +18,7 @@ class WeightedLpNorm:
         self,
         p: float,
         vector_norm: Norm[NDArrayFloat] | float | None = None,
-        lp_weight: (
-            Callable[[GridPointsLike], NDArrayFloat] | float | None
-        ) = None,
+        lp_weight: Callable[[GridPointsLike], NDArrayFloat] | float | None = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
@@ -37,8 +35,6 @@ class WeightedLpNorm:
 
     def __call__(self, vector: NDArrayFloat | FData) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
-        from .. import weighted_inner_product
-
         if isinstance(vector, np.ndarray):
             if isinstance(self.lp_weight, (float, int)):
                 vector = vector * self.lp_weight
@@ -55,11 +51,7 @@ class WeightedLpNorm:
             vector_norm = self.p
         if lp_weight is None:
             lp_weight = 1.0
-
-        # Special case, the inner product is heavily optimized  TODO
-        """ if self.p == vector_norm == 2:
-            return np.sqrt(weighted_inner_product(vector, vector)) """
-
+        #TODO PENSAR SI HACER UN WEIGHTED LP NORM
         if isinstance(vector, FDataBasis):
             domain = vector.basis.domain_range
             call = vector

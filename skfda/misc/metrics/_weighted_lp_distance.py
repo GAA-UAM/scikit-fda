@@ -12,6 +12,9 @@ from ._weighted_lp_norm import WeightedLpNorm
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from ...typing._base import (
+        GridPointsLike,
+    )
     from ...typing._metric import Norm
 
 T = TypeVar("T", NDArrayFloat, FData)
@@ -22,7 +25,7 @@ class WeightedLpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):  # noqa
         self,
         p: float,
         vector_norm: Norm[NDArrayFloat] | float | None = None,
-        lp_weight: Callable[[NDArrayFloat], NDArrayFloat] | float | None = None,
+        lp_weight: Callable[[GridPointsLike], NDArrayFloat] | float | None = None,
     ) -> None:
 
         self.p = p
@@ -45,8 +48,9 @@ def lp_distance(
     *,
     p: float,
     vector_norm: Norm[NDArrayFloat] | float | None = None,
-    lp_weight: Callable[[NDArrayFloat], NDArrayFloat] | float | None = None,
+    lp_weight: Callable[[GridPointsLike], NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
     return WeightedLpDistance(p=p, vector_norm=vector_norm, lp_weight=lp_weight)(
-        fdata1, fdata2
+        fdata1,
+        fdata2,
     )

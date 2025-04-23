@@ -1,4 +1,5 @@
 """Functional data descriptive statistics."""
+
 from __future__ import annotations
 
 import functools
@@ -135,7 +136,9 @@ def std_fdatagrid(X: FDataGrid, correction: int = 0) -> FDataGrid:
     """Compute the standard deviation of a FDataGrid."""
     return X.copy(
         data_matrix=np.std(
-            X.data_matrix, axis=0, ddof=correction,
+            X.data_matrix,
+            axis=0,
+            ddof=correction,
         )[np.newaxis, ...],
         sample_names=(None,),
     )
@@ -143,12 +146,15 @@ def std_fdatagrid(X: FDataGrid, correction: int = 0) -> FDataGrid:
 
 @std.register
 def std_fdatairregular(
-    X: FDataIrregular, correction: int = 0,
+    X: FDataIrregular,
+    correction: int = 0,
 ) -> FDataIrregular:
     """Compute the standard deviation of a FDataIrregular."""
     common_points, common_values = X._get_common_points_and_values()
     std_values = np.std(
-        common_values, axis=0, ddof=correction,
+        common_values,
+        axis=0,
+        ddof=correction,
     )
 
     return FDataIrregular(
@@ -166,7 +172,9 @@ def std_fdatabasis(X: FDataBasis, correction: int = 0) -> FDataBasis:
 
     basis = X.basis
     coeff_cov_matrix = np.cov(
-        X.coefficients, rowvar=False, ddof=correction,
+        X.coefficients,
+        rowvar=False,
+        ddof=correction,
     ).reshape((basis.n_basis, basis.n_basis))
 
     def std_function(t_points: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
@@ -196,9 +204,10 @@ def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:
     num_functions_above = X.copy(
         data_matrix=rankdata(
             -X.data_matrix,
-            method='max',
+            method="max",
             axis=0,
-        ) - 1,
+        )
+        - 1,
     )
 
     return (
@@ -257,7 +266,7 @@ def _weighted_average(X: T, weights: NDArrayFloat) -> T:
 def geometric_median(
     X: T,
     *,
-    tol: float = 1.e-8,
+    tol: float = 1.0e-8,
     metric: Metric[T] = l2_distance,
 ) -> T:
     r"""
@@ -307,10 +316,11 @@ def geometric_median(
     distances = metric(X, median)
 
     while True:
-        zero_distances = (distances == 0)
+        zero_distances = distances == 0
         n_zeros = np.sum(zero_distances)
         weights_new = (
-            (1 / distances) / np.sum(1 / distances) if n_zeros == 0
+            (1 / distances) / np.sum(1 / distances)
+            if n_zeros == 0
             else (1 / n_zeros) * zero_distances
         )
 
@@ -357,7 +367,7 @@ def trim_mean(
     if depth_method is None:
         depth_method = ModifiedBandDepth()
 
-    n_samples_to_keep = (len(X) - int(len(X) * proportiontocut))
+    n_samples_to_keep = len(X) - int(len(X) * proportiontocut)
 
     # compute the depth of each curve and store the indexes in descending order
     depth = depth_method(X)
@@ -379,23 +389,23 @@ def duoble_mean(X: FData) -> FData:
         :term:`functional data object` with just one sample.
 
     """
-    # Crate a FData object with one observation per observation in the original 
+    # Crate a FData object with one observation per observation in the original
     # where this observation is X.mean() + one of each of the average values
     individual_observation_means = average_function_value(X)
     if isinstance(X, FDataBasis):
         mean_function = X.mean()
 
-
     elif isinstance(X, FDataGrid):
         mean_function = X.mean().to_grid()
         double_fdata = X.copy(
             data_matrix=mean_function.data_matrix
-            + individual_observation_means - grand_mean(X),
+            + individual_observation_means
+            - grand_mean(X),
             sample_names=(None,),
         )
 
-
     return double_fdata
+
 
 def individual_observation_mean(X: FData) -> NDArrayFloat:
     """Compute the grand mean of a FData object.
@@ -409,6 +419,7 @@ def individual_observation_mean(X: FData) -> NDArrayFloat:
 
     """
     return average_function_value(X)
+
 
 def grand_mean(X: FData) -> NDArrayFloat:
     """Compute the grand mean of a FData object.
@@ -425,7 +436,10 @@ def grand_mean(X: FData) -> NDArrayFloat:
 
     return np.array(individual_mean.mean())
 
-def root_integrated_sample_variance(X: FData, correction: int = 0)-> NDArrayFloat:
+
+def root_integrated_sample_variance(
+    X: FData, correction: int = 0,
+) -> NDArrayFloat:
     """Compute the uniform scale of the functional data."""
     if isinstance(X, FDataGrid):
         integrand = X.copy(
@@ -441,7 +455,7 @@ def root_integrated_sample_variance(X: FData, correction: int = 0)-> NDArrayFloa
     if isinstance(X, FDataBasis):
         mean = grand_mean(X)
 
-        arr = np.array(X.domain_range) 
+        arr = np.array(X.domain_range)
         diff = arr[:, 1] - arr[:, 0]
 
         integral = nquad_vec(
@@ -453,4 +467,3 @@ def root_integrated_sample_variance(X: FData, correction: int = 0)-> NDArrayFloa
 
     msg = "Unsupported FData type."
     raise TypeError(msg)
-

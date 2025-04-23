@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Callable, Generic, Tuple, TypeVar, Union, overload
+from collections.abc import Callable
+from typing import Any, Generic, Literal, Tuple, TypeVar, Union, overload
 
 import numpy as np
+import pandas as pd
 import sklearn.neighbors
 from scipy.sparse import csr_matrix
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
-from typing_extensions import Literal
 
 from skfda.misc.metrics._utils import PairwiseMetric
 
@@ -34,15 +35,15 @@ SelfTypeRegressor = TypeVar(
     "SelfTypeRegressor",
     bound="NeighborsRegressorMixin[Any, Any]",
 )
-Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
+Input = TypeVar("Input", contravariant=True, bound=NDArrayFloat | FData | pd.DataFrame)
 Target = TypeVar("Target")
 TargetClassification = TypeVar(
     "TargetClassification",
-    bound=Union[NDArrayInt, NDArrayStr],
+    bound=NDArrayInt | NDArrayStr,
 )
 TargetRegression = TypeVar(
     "TargetRegression",
-    bound=Union[NDArrayFloat, FData],
+    bound=NDArrayFloat | FData,
 )
 TargetRegressionMultivariate = TypeVar(
     "TargetRegressionMultivariate",
@@ -53,10 +54,8 @@ TargetRegressionFData = TypeVar(
     bound=FData,
 )
 
-WeightsType = Union[
-    Literal["uniform", "distance"],
-    Callable[[NDArrayFloat], NDArrayFloat],
-]
+WeightsType = Literal["uniform", "distance"]| Callable[[NDArrayFloat], NDArrayFloat]
+
 AlgorithmType = Literal["auto", "ball_tree", "kd_tree", "brute"]
 
 
@@ -363,7 +362,7 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
         radius: float | None = None,
         *,
         return_distance: bool = True,
-    ) -> NDArrayInt | Tuple[NDArrayFloat, NDArrayInt]:  # TODO: Fix return type
+    ) -> NDArrayInt | tuple[NDArrayFloat, NDArrayInt]:  # TODO: Fix return type
         """
         Find the neighbors within a given radius of a fdatagrid.
 

@@ -22,6 +22,7 @@ from typing import (
 )
 
 import numpy as np
+import pandas as pd
 import scipy.integrate
 from pandas.api.indexers import check_array_indexer
 from sklearn.preprocessing import LabelEncoder
@@ -466,7 +467,7 @@ def _map_in_batches(
         # 256MB is not too big
         memory_per_batch = 256 * 1024 * 1024  # noqa: WPS432
 
-    memory_per_element = sum(a.nbytes // len(a) for a in arguments)
+    memory_per_element = sum(_safe_nbytes(a) // len(a) for a in arguments)
     n_elements_per_batch_allowed = memory_per_batch // memory_per_element
     if n_elements_per_batch_allowed < 1:
         raise ValueError("Too few memory allowed for the operation")
@@ -479,13 +480,24 @@ def _map_in_batches(
 
     for pos in range(0, n_indexes, n_elements_per_batch_allowed):
         batch_args = tuple(
-            a[i[pos:pos + n_elements_per_batch_allowed]]
-            for a, i in zip(arguments, indexes)
+            a.iloc[i[pos:pos + n_elements_per_batch_allowed]] if isinstance(a, pd.DataFrame)
+            else a[i[pos:pos + n_elements_per_batch_allowed]]
+            for a, i in zip(arguments, indexes, strict=False)
         )
+
 
         batches.append(function(*batch_args, **kwargs))
 
     return np.concatenate(batches, axis=0)
+
+def _safe_nbytes(obj: _MapAcceptableT) -> int:
+    if hasattr(obj, "nbytes"):
+        return obj.nbytes
+    if isinstance(obj, pd.DataFrame):
+        return sum(
+            getattr(col, "nbytes", 0) for col in obj.values.T
+        )
+    return 0
 
 
 def _pairwise_symmetric(

@@ -22,8 +22,8 @@ def compute_p_product(
     arg1: V,
     arg2: V,
 ) -> NoReturn:
-    msg = f"PProductMetric not implemented for type {type(arg1)} and \
-        {type(arg2)}."
+    msg = (f"PProductMetric not implemented for type {type(arg1)} and "
+       f"{type(arg2)}.")
     raise NotImplementedError(msg)
 
 
@@ -49,8 +49,8 @@ def _(
     )
 
     if not isinstance(metric_computator, Metric):
-        msg = f"Only one metric is supported for NDArrayFloat. \
-            Got {metric.metrics}."
+        msg = (f"Only one metric is supported for NDArrayFloat. "
+            f"Got {metric.metrics}.")
         raise TypeError(msg)
 
     return (metric_computator(arg1, arg2) ** metric.p * weights) ** (
@@ -78,15 +78,15 @@ def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
     if isinstance(metrics, Metric):
         metrics = [metrics] * D
     elif isinstance(metrics, list) and len(metrics) != D:
-        msg = f"Number of metrics ({len(metrics)}) does not match the number\
-                of dimensions ({D})."
+        msg = (f"Number of metrics ({len(metrics)}) does not match the number"
+                f" of dimensions ({D}).")
         raise ValueError(msg)
 
     if isinstance(weights, (float, int)):
         weights = np.full(D, weights)
     elif isinstance(weights, np.ndarray) and len(weights) != D:
-        msg = f"Number of weights ({len(weights)}) does not match the\
-                number of dimensions ({D})."
+        msg = (f"Number of weights ({len(weights)}) does not match the"
+               f" number of dimensions ({D}).")
         raise ValueError(msg)
 
     if isinstance(arg1, FDataBasis):
@@ -125,20 +125,27 @@ def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
 
 
 def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
-    return df1.dtypes.equals(df2.dtypes) and all(
-        (
-            (
-                np.issubdtype(dtype, np.number)
-                and df1[col].shape == df2[col].shape
-            )
-            or (issubclass(dtype.type, FData) and df1[col].__eq__(df2[col]))
-            or not (
-                np.issubdtype(dtype, np.number)
-                or issubclass(dtype.type, FData)
-            )
-        )
-        for col, dtype in df1.dtypes.items()
-    )
+    if not df1.columns.equals(df2.columns):
+        return False
+    
+
+    for col in df1.columns:
+        s1, s2 = df1[col], df2[col]
+        sample = s1.iloc[0]
+
+        if pd.api.types.is_numeric_dtype(s1):
+            if s1.shape != s2.shape:
+                return False
+
+        elif isinstance(sample, FData):
+            #if not all(a.__eq__(b) for a, b in zip(s1, s2, strict=False)):
+            return True
+
+        else:
+            return False  # unknown column type, reject for now
+
+    return True
+
 
 
 @compute_p_product.register
@@ -150,8 +157,10 @@ def _(
     from ..metrics import l2_distance
 
     if not same_structure_and_data(arg1, arg2):
-        msg = "DataFrames must have the same structure and data to compute \
-            p-product."
+        msg = (
+            "DataFrames must have the same structure and data to compute"
+            " p-product."
+        )
         raise ValueError(msg)
 
     n_cols = arg1.shape[1]
@@ -162,13 +171,13 @@ def _(
         metrics = [metrics] * n_cols
     elif isinstance(metrics, Sequence):
         if len(metrics) != n_cols:
-            msg = f"Number of metrics ({len(metrics)}) does not match the \
-                number of columns ({n_cols})."
+            msg = (f"Number of metrics ({len(metrics)}) does not match the"
+                f" number of columns ({n_cols}).")
             raise ValueError(msg)
     elif isinstance(metrics, dict):
         if len(metrics) != n_cols:
-            msg = f"Number of metrics ({len(metrics)}) does not match the \
-                number of columns ({n_cols})."
+            msg = (f"Number of metrics ({len(metrics)}) does not match the"
+                f" number of columns ({n_cols}).")
             raise ValueError(msg)
         for col in metrics:
             if col not in arg1.columns:
@@ -179,13 +188,15 @@ def _(
     if isinstance(weights, (float, int)):
         weights = np.full(n_cols, weights)
     elif isinstance(weights, np.ndarray) and len(weights) != n_cols:
-        msg = f"Number of weights ({len(weights)}) does not match the \
-            number of columns ({n_cols})."
+        msg = (f"Number of weights ({len(weights)}) does not match the"
+            " number of columns ({n_cols}).")
         raise ValueError(msg)
 
-    values = np.array(
-        [metrics[i](arg1.iloc[:, i], arg2.iloc[:, i]) for i in range(n_cols)],
-    )
+    values = np.array([
+        [metrics[i](arg1.iloc[j, i], arg2.iloc[j, i]) for i in range(n_cols)]
+        for j in range(len(arg1))
+    ])
+
     res: NDArrayFloat = np.atleast_1d(
         np.sum(np.power(values, metric.p) * weights, axis=0, dtype=np.float64),
     )
@@ -225,3 +236,5 @@ def pproduct_metric(
 ) -> NDArrayFloat:
     metric = PProductMetric(p, metrics=metrics, weights=weights)
     return metric(arg1, arg2)
+
+

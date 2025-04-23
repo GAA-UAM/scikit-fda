@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Sequence, TypeVar, Union, overload
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Literal, TypeVar, overload
 
+import pandas as pd
 from sklearn.neighbors import (
     KNeighborsClassifier as _KNeighborsClassifier,
     RadiusNeighborsClassifier as _RadiusNeighborsClassifier,
 )
-from typing_extensions import Literal
 
 from ..._utils._neighbors_base import (
     AlgorithmType,
@@ -19,12 +20,14 @@ from ..._utils._neighbors_base import (
 )
 from ...misc.metrics import l2_distance
 from ...representation import FData
-from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 
-InputBound = Union[NDArrayFloat, FData]
+if TYPE_CHECKING:
+    from ...typing._metric import Metric
+
+InputBound = NDArrayFloat| FData | pd.DataFrame
 Input = TypeVar("Input", contravariant=True, bound=InputBound)
-OutlierLabelType = Union[int, str, Sequence[int], Sequence[str], None]
+OutlierLabelType = int| str| Sequence[int]| Sequence[str]| None
 
 
 class KNeighborsClassifier(
@@ -96,7 +99,7 @@ class KNeighborsClassifier(
         >>> neigh.predict_proba(fd[0]) # Probabilities of sample 0
         array([[ 1.,  0.]])
 
-    See also:
+    See Also:
         :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
         :class:`~skfda.ml.classification.NearestCentroid`
         :class:`~skfda.ml.regression.KNeighborsRegressor`

@@ -19,7 +19,7 @@ from ...misc.validation import (
     check_fdata_same_dimensions,
     validate_random_state,
 )
-from ...representation import FDataGrid
+from ...representation import FData
 from ...typing._base import RandomState, RandomStateLike
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
@@ -28,7 +28,7 @@ SelfType = TypeVar("SelfType", bound="BaseKMeans[Any, Any]")
 MembershipType = TypeVar("MembershipType", bound=NDArrayAny)
 
 # TODO: Generalize to FData and NDArray, without losing performance
-Input = TypeVar("Input", bound=FDataGrid)
+Input = TypeVar("Input", bound=FData)
 
 
 class BaseKMeans(
@@ -103,25 +103,23 @@ class BaseKMeans(
 
         """
         if len(fdata) < 2:
-            raise ValueError(
-                "The number of observations must be greater than 1.",
-            )
+            msg = "The number of observations must be greater than 1."
+            raise ValueError(msg)
 
         if self.n_clusters < 2:
-            raise ValueError(
-                "The number of clusters must be greater than 1.",
-            )
+            msg = "The number of clusters must be greater than 1."
+            raise ValueError(msg)
 
         if self.n_init < 1:
-            raise ValueError(
-                "The number of iterations must be greater than 0.",
-            )
+            msg = "The number of iterations must be greater than 0."
+            raise ValueError(msg)
+
 
         if self.init is not None and self.n_init != 1:
             self.n_init = 1
             warnings.warn(
                 "Warning: The number of iterations is ignored "
-                "because the init parameter is set.",
+                "because the init parameter is set.", stacklevel=2,
             )
 
         if (
@@ -130,19 +128,20 @@ class BaseKMeans(
                 (self.n_clusters,) + fdata.data_matrix.shape[1:]
             )
         ):
-            raise ValueError(
+            msg = (
                 "The init FDataGrid data_matrix should be of "
                 "shape (n_clusters, n_features, dim_codomain) "
-                "and gives the initial centers.",
+                "and gives the initial centers."
             )
+            raise ValueError(msg)
 
         if self.max_iter < 1:
-            raise ValueError(
-                "The number of maximum iterations must be greater than 0.",
-            )
+            msg = "The number of maximum iterations must be greater than 0."
+            raise ValueError(msg)
 
         if self.tol < 0:
-            raise ValueError("The tolerance must be positive.")
+            msg = "The tolerance must be positive."
+            raise ValueError(msg)
 
         return fdata
 
@@ -178,11 +177,12 @@ class BaseKMeans(
             unique_data = fdatagrid[np.sort(idx)]
 
             if len(unique_data) < self.n_clusters:
-                raise ValueError(
+                msg = (
                     "Not enough unique data points to "
                     "initialize the requested number of "
-                    "clusters",
+                    "clusters"
                 )
+                raise ValueError(msg)
 
             indices = random_state.permutation(len(unique_data))[
                 :self.n_clusters
@@ -214,7 +214,7 @@ class BaseKMeans(
         self,
         fdata: Input,
         random_state: RandomState,
-    ) -> Tuple[NDArrayFloat, Input, NDArrayFloat, int]:
+    ) -> tuple[NDArrayFloat, Input, NDArrayFloat, int]:
         """
         Fuzzy K-Means algorithm.
 

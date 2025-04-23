@@ -15,66 +15,6 @@ from ...preprocessing.dim_reduction import FPCA
 from ...representation.basis import Basis
 from ...misc.regularization import TikhonovRegularization
 
-
-class MultivariateMahalanobisDistance(BaseEstimator):
-    def __init__(
-        self,
-        n_components: int = 10,
-        centering: bool = True,
-        regularization: Optional[TikhonovRegularization[FDataGrid]] = None,
-        weights: Optional[np.ndarray] = None,
-        components_basis: Optional[Basis] = None,
-        alpha: float = 0.001,
-        eigenvalues: Optional[np.ndarray] = None,
-        eigenvectors: Optional[FDataGrid] = None,
-        p: float = 1.0,
-    ) -> None:
-        self.n_components = n_components
-        self.centering = centering
-        self.regularization = regularization
-        self.weights = weights
-        self.components_basis = components_basis
-        self.alpha = alpha
-        self.eigenvalues = eigenvalues
-        self.eigenvectors = eigenvectors
-        self.p = p
-
-    def fit(self, X: FDataGrid, y: None = None) -> "MultivariateMahalanobisDistance":
-        if self.eigenvalues is None or self.eigenvectors is None:
-            fpca = FPCA(
-                n_components=self.n_components,
-                centering=self.centering,
-                regularization=self.regularization,
-                components_basis=self.components_basis,
-                _weights=self.weights,
-            )
-            fpca.fit(X)
-            self.eigenvalues_ = fpca.explained_variance_
-            self.eigenvectors_ = fpca.components_
-        else:
-            self.eigenvalues_ = self.eigenvalues
-            self.eigenvectors_ = self.eigenvectors
-        return self
-
-    def _compute_h_l(self, lambda_l: float) -> float:
-        """Compute the h_l(p) function as defined in the paper."""
-        return lambda_l / (lambda_l + 1 / self.p)
-
-    def __call__(self, e1: FDataGrid, e2: FDataGrid) -> np.ndarray:
-        if not hasattr(self, "eigenvalues_") or not hasattr(self, "eigenvectors_"):
-            raise ValueError("The model has not been fitted yet.")
-
-        #distances = []
-        for l, (eigenvalue, eigenvector) in enumerate(
-            zip(self.eigenvalues_, self.eigenvectors_)
-        ):
-            #d_M_l = (inner_product / eigenvalue) ** 2
-            h_l = self._compute_h_l(eigenvalue)
-            #distances.append(d_M_l * h_l)
-
-        return np.sqrt(np.sum(10, axis=0))
-
-
 class BasisBasedDistance:
     r"""
     Class for computing the weighted distance between two functional observations 

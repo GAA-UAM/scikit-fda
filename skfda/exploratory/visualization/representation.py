@@ -465,7 +465,7 @@ class ScatterPlot(BasePlot):
         n_rows: int | None = None,
         n_cols: int | None = None,
         grid_points: GridPointsLike | None = None,
-        domain_range: Tuple[int, int] | DomainRangeLike | None = None,
+        domain_range: tuple[int, int] | DomainRangeLike | None = None,
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,

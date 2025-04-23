@@ -236,3 +236,12 @@ def pproduct_metric(
     metric = PProductMetric(p, metrics=metrics, weights=weights)
     return metric(arg1, arg2)
 
+
+def pairwise_metric_optimization(
+    metric: PProductMetric[V],
+    arg1: V,
+    arg2: V | None = None,
+) -> NDArrayFloat:
+    """Pairwise metric optimization for PProductMetric."""
+    return compute_p_product(metric, arg1, arg2)
+

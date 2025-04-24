@@ -6,6 +6,7 @@ It allows multiple modes and colors, which could
 be set manually or automatically depending on values
 like depth measures.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypeVar
@@ -31,8 +32,8 @@ from ._utils import ColorLike, _set_labels
 if TYPE_CHECKING:
     from collections.abc import Sequence, Sized
 
-K = TypeVar('K', contravariant=True)
-V = TypeVar('V', covariant=True)
+K = TypeVar("K", contravariant=True)
+V = TypeVar("V", covariant=True)
 
 
 class Indexable(Protocol[K, V]):
@@ -51,8 +52,8 @@ def _get_color_info(
     group_names: Indexable[K, str] | None = None,
     group_colors: Indexable[K, ColorLike] | None = None,
     legend: bool = False,
-    kwargs: Dict[str, Any] | None = None,
-) -> Tuple[
+    kwargs: dict[str, Any] | None = None,
+) -> tuple[
     Sequence[ColorLike] | None,
     Sequence[matplotlib.patches.Patch] | None,
 ]:
@@ -77,11 +78,13 @@ def _get_color_info(
                 [group_colors[g] for g in group_unique],
             )
         else:
-            prop_cycle = matplotlib.rcParams['axes.prop_cycle']
-            cycle_colors = prop_cycle.by_key()['color']
+            prop_cycle = matplotlib.rcParams["axes.prop_cycle"]
+            cycle_colors = prop_cycle.by_key()["color"]
 
             group_colors_array = np.take(
-                cycle_colors, np.arange(n_labels), mode='wrap',
+                cycle_colors,
+                np.arange(n_labels),
+                mode="wrap",
             )
 
         sample_colors = list(group_colors_array[group_indexes])
@@ -101,20 +104,19 @@ def _get_color_info(
                 for c, l in zip(group_colors_array, group_names_array)
             ]
 
+    # In this case, each curve has a different color unless specified
+    # otherwise
+
+    elif "color" in kwargs:
+        sample_colors = len(fdata) * [kwargs.get("color")]
+        kwargs.pop("color")
+
+    elif "c" in kwargs:
+        sample_colors = len(fdata) * [kwargs.get("c")]
+        kwargs.pop("c")
+
     else:
-        # In this case, each curve has a different color unless specified
-        # otherwise
-
-        if 'color' in kwargs:
-            sample_colors = len(fdata) * [kwargs.get("color")]
-            kwargs.pop('color')
-
-        elif 'c' in kwargs:
-            sample_colors = len(fdata) * [kwargs.get("c")]
-            kwargs.pop('c')
-
-        else:
-            sample_colors = None
+        sample_colors = None
 
     return sample_colors, patches
 
@@ -247,13 +249,10 @@ class GraphPlot(BasePlot):
             else:
                 self.max_grad = max_grad
 
-            self.gradient_list: Sequence[float] | None = (
-                [
-                    (grad_color - self.min_grad)
-                    / (self.max_grad - self.min_grad)
-                    for grad_color in self.gradient_criteria
-                ]
-            )
+            self.gradient_list: Sequence[float] | None = [
+                (grad_color - self.min_grad) / (self.max_grad - self.min_grad)
+                for grad_color in self.gradient_criteria
+            ]
         else:
             self.gradient_list = None
 
@@ -365,7 +364,7 @@ class GraphPlot(BasePlot):
             # Evaluation of the functional object
             Z = self.fdata((x, y), grid=True)
 
-            X, Y = np.meshgrid(x, y, indexing='ij')
+            X, Y = np.meshgrid(x, y, indexing="ij")
 
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
@@ -465,7 +464,8 @@ class ScatterPlot(BasePlot):
         else:
             self.grid_points = _to_grid_points(grid_points)
             self.evaluated_points = self.fdata(
-                self.grid_points, grid=True,
+                self.grid_points,
+                grid=True,
             )
 
         self.domain_range = domain_range
@@ -634,10 +634,12 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
 
         # There may be different points for each function
         self.grid_points = np.split(
-            self.fdata.points, self.fdata.start_indices[1:],
+            self.fdata.points,
+            self.fdata.start_indices[1:],
         )
         self.evaluated_points = np.split(
-            self.fdata.values, self.fdata.start_indices[1:],
+            self.fdata.values,
+            self.fdata.start_indices[1:],
         )
 
         self.domain_range = domain_range
@@ -784,7 +786,6 @@ def set_color_dict(
         color_dict["color"] = sample_colors[ind]
 
 
-
 class MixedDataPlot(BasePlot):
     def __init__(
         self,
@@ -795,6 +796,10 @@ class MixedDataPlot(BasePlot):
         axes: Axes | Sequence[Axes] | None = None,
         n_rows: int | None = None,
         n_cols: int | None = None,
+        group: Sequence[K] | None = None,
+        group_colors: Indexable[K, ColorLike] | None = None,
+        group_names: Indexable[K, str] | None = None,
+        legend: bool = False,
     ) -> None:
         super().__init__(
             chart,
@@ -804,6 +809,20 @@ class MixedDataPlot(BasePlot):
             n_cols=n_cols,
         )
         self.df = df
+        self.group = group
+        self.group_colors = group_colors
+        self.group_names = group_names
+        self.legend = legend
+
+        sample_colors, patches = _get_color_info(
+            self.df,
+            self.group,
+            self.group_names,
+            self.group_colors,
+            self.legend,
+        )
+        self.sample_colors = sample_colors
+        self.patches = patches
 
     @property
     def n_subplots(self) -> int:
@@ -824,27 +843,38 @@ class MixedDataPlot(BasePlot):
 
         for col in self.df.columns:
             ax = axes[i]
-            data = self.df[col]
-            val = data.iloc[0]
+            data = self.df[col].values
 
-            if isinstance(val, FData):
-                fd_codim = val.dim_codomain
+            if isinstance(data, FData):
+                fd_codim = data.dim_codomain
 
                 if fd_codim > 1:
-                    col_axes = axes[i:i+fd_codim]
-                    for fd in data:
-                        fd.plot(axes=col_axes)
+                    col_axes = axes[i : i + fd_codim]
+                    data.plot(
+                        axes=col_axes,
+                        group=self.group,
+                        group_colors=self.group_colors,
+                        group_names=self.group_names,
+                    )
                     for j, ax_sub in enumerate(col_axes):
                         ax_sub.set_title(f"{col} - {j+1}")
                     i += fd_codim
                 else:
-                    for fd in data:
-                        fd.plot(axes=ax)
+                    data.plot(
+                        axes=ax,
+                        group=self.group,
+                        group_colors=self.group_colors,
+                        group_names=self.group_names,
+                    )
                     ax.set_title(col)
                     i += 1
 
-            elif isinstance(val, np.ndarray) or np.isscalar(val):
-                ax.scatter(range(len(data)), data)
+            elif isinstance(data[0], np.ndarray) or np.isscalar(data[0]):
+                if self.sample_colors is not None:
+                    ax.scatter(range(len(data)), data, c=self.sample_colors)
+                else:
+                    ax.scatter(range(len(data)), data)
+
                 ax.set_title(col)
                 i += 1
 
@@ -856,12 +886,24 @@ class MixedDataPlot(BasePlot):
         for j in range(i, len(axes)):
             axes[j].axis("off")
 
+        if self.patches is not None:
+            fig.legend(handles=self.patches)
+        elif self.patches is not None:
+            axes[0].legend(handles=self.patches)
+
 
 def plot_mixed_data(
     df: pd.DataFrame,
+    chart: Figure | Axes | None = None,
     *,
+    fig: Figure | None = None,
+    axes: Axes | Sequence[Axes] | None = None,
     n_rows: int | None = None,
     n_cols: int | None = None,
+    group: Sequence[K] | None = None,
+    group_colors: Indexable[K, ColorLike] | None = None,
+    group_names: Indexable[K, str] | None = None,
+    legend: bool = False,
 ) -> Figure:
     """
     Plot a DataFrame containing numerical and functional (FData) data.
@@ -881,7 +923,14 @@ def plot_mixed_data(
     """
     plotter = MixedDataPlot(
         df,
+        chart=chart,
+        fig=fig,
+        axes=axes,
         n_rows=n_rows,
         n_cols=n_cols,
+        group=group,
+        group_colors=group_colors,
+        group_names=group_names,
+        legend=legend,
     )
     return plotter.plot()

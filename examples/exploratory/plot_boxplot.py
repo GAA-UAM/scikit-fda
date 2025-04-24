@@ -4,15 +4,15 @@ Boxplot
 
 Shows the use of the functional Boxplot applied to the Canadian Weather
 dataset.
-"""
+"""  # noqa: INP001
 
 # Author: Amanda Hernando Bernabé
 # License: MIT
 
 # sphinx_gallery_thumbnail_number = 2
 
-import matplotlib
-import matplotlib.pyplot as plt
+import matplotlib  # noqa: ICN001
+import matplotlib.pyplot as plt  # noqa: F401
 import numpy as np
 
 from skfda import datasets
@@ -34,7 +34,7 @@ fd_temperatures = fd.coordinates[0]
 # which the weather stations belong to.
 
 # Each climate is assigned a color. Defaults to grey.
-colormap = matplotlib.colormaps['seismic']
+colormap = matplotlib.colormaps['seismic']  # noqa: Q000
 label_names = y.values.categories
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
@@ -54,7 +54,7 @@ fd_temperatures.plot(group=y.values.codes,
 # central regions is plotted. We want the entire curve to be shown, that is
 # why the ``show_full_outliers`` parameter is set to True.
 
-fdBoxplot = Boxplot(fd_temperatures)
+fdBoxplot = Boxplot(fd_temperatures)  # noqa: N816
 fdBoxplot.show_full_outliers = True
 
 fdBoxplot.plot()
@@ -91,7 +91,7 @@ fd_temperatures.plot(group=fdBoxplot.outliers.astype(int),
 # a consequence, this measure detects better shape outliers compared to the
 # previous one.
 
-fdBoxplot = Boxplot(
+fdBoxplot = Boxplot(  # noqa: N816
     fd_temperatures, depth_method=ModifiedBandDepth(), factor=0.4)
 fdBoxplot.show_full_outliers = True
 
@@ -106,7 +106,7 @@ fdBoxplot.plot()
 # :func:`~skfda.exploratory.depth.IntegratedDepth` is used and the 25% and
 # 75% central regions are specified.
 
-fdBoxplot = Boxplot(fd_temperatures, depth_method=IntegratedDepth(),
+fdBoxplot = Boxplot(fd_temperatures, depth_method=IntegratedDepth(),  # noqa: N816
                     prob=[0.75, 0.5, 0.25])
 fdBoxplot.plot()
 

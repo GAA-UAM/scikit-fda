@@ -3,7 +3,7 @@ Elastic registration
 ====================
 
 Shows the usage of the elastic registration to perform a groupwise alignment.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -74,7 +74,7 @@ fd_align.plot()
 growth = fetch_growth()
 
 # Select only one sex
-fd = growth['data'][growth['target'] == 0]
+fd = growth['data'][growth['target'] == 0]  # noqa: Q000
 
 # Obtain velocity curves
 fd.interpolation = skfda.representation.interpolation.SplineInterpolation(3)

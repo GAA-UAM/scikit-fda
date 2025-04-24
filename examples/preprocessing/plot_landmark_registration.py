@@ -3,7 +3,7 @@ Landmark registration
 =====================
 
 This example shows the basic usage of the landmark registration.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -66,7 +66,7 @@ print(landmarks)
 #
 # After the identification of the landmarks asociated with the features of
 # each of our curves we can construct the warping function with the function
-# :func:`~skfda.preprocessing.registration.landmark_elastic_registration_warping`.
+# :func:`~skfda.preprocessing.registration.landmark_elastic_registration_warping`.  # noqa: E501
 #
 # Let :math:`h_i` be the warping function corresponding with the curve
 # :math:`i`, :math:`t_{ij}` the time where the curve :math:`i` has their
@@ -79,7 +79,7 @@ print(landmarks)
 #
 # In this case we will place the landmarks at -0.5 and 0.5.
 
-warping = skfda.preprocessing.registration.landmark_elastic_registration_warping(
+warping = skfda.preprocessing.registration.landmark_elastic_registration_warping(  # noqa: E501
     fd,
     landmarks,
     location=[-0.5, 0.5],

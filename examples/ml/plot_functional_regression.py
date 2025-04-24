@@ -5,7 +5,7 @@ Functional Linear Regression with multivariate covariates.
 This example explores the use of the linear regression with
 multivariate (scalar) covariates and functional response.
 
-"""
+"""  # noqa: INP001
 
 # Author: Rafael Hidalgo Alejo
 # License: MIT
@@ -29,7 +29,7 @@ from skfda.representation.basis import FDataBasis, FourierBasis
 X_weather, y_weather = skfda.datasets.fetch_weather(
     return_X_y=True, as_frame=True,
 )
-fd = X_weather.iloc[:, 0].values
+fd = X_weather.iloc[:, 0].values  # noqa: PD011
 
 # %%
 # The main goal is knowing about the effect of stations' geographic location
@@ -42,8 +42,8 @@ fd = X_weather.iloc[:, 0].values
 
 # We first create the one-hot encoding of the climates.
 
-enc = OneHotEncoder(handle_unknown='ignore')
-enc.fit([['Atlantic'], ['Continental'], ['Pacific']])
+enc = OneHotEncoder(handle_unknown='ignore')  # noqa: Q000
+enc.fit([['Atlantic'], ['Continental'], ['Pacific']])  # noqa: Q000
 X = np.array(y_weather).reshape(-1, 1)
 X = enc.transform(X).toarray()
 
@@ -83,7 +83,7 @@ predictions.append(funct_reg.predict([[0, 0, 0, 1]])[0])
 
 predictions_conc = FDataBasis.concatenate(*predictions)
 
-predictions_conc.argument_names = ('day',)
-predictions_conc.coordinate_names = ('temperature (ºC)',)
+predictions_conc.argument_names = ('day',)  # noqa: Q000
+predictions_conc.coordinate_names = ('temperature (ºC)',)  # noqa: Q000
 
 predictions_conc.plot()

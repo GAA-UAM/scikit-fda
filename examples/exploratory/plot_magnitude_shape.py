@@ -3,14 +3,14 @@ Magnitude-Shape Plot
 ====================
 
 Shows the use of the MS-Plot applied to the Canadian Weather dataset.
-"""
+"""  # noqa: INP001
 
 # Author: Amanda Hernando Bernabé
 # License: MIT
 
 # sphinx_gallery_thumbnail_number = 2
 
-import matplotlib
+import matplotlib  # noqa: ICN001
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -35,7 +35,7 @@ target = y.values
 # which the weather stations belong.
 
 # Each climate is assigned a color. Defaults to grey.
-colormap = matplotlib.colormaps['seismic']
+colormap = matplotlib.colormaps['seismic']  # noqa: Q000
 label_names = target.categories
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
@@ -72,7 +72,7 @@ msplot.plot()
 fd_temperatures.plot(
     group=msplot.outliers.astype(int),
     group_colors=msplot.colormap([color, outliercol]),
-    group_names=['nonoutliers', 'outliers'],
+    group_names=['nonoutliers', 'outliers'],  # noqa: Q000
 )
 
 ##############################################################################
@@ -107,8 +107,8 @@ msplot.plot()
 # deviation in the directional outlyingness) to the Pacific one, which has
 # smoother curves.
 
-group1 = np.where(msplot.points[:, 0] < -0.6)
-group2 = np.where(msplot.points[:, 1] > 0.12)
+group1 = np.where(msplot.points[:, 0] < -0.6)  # noqa: PLR2004
+group2 = np.where(msplot.points[:, 1] > 0.12)  # noqa: PLR2004
 
 colors = np.copy(msplot.outliers).astype(float)
 colors[:] = color

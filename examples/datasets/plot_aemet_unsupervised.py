@@ -4,7 +4,7 @@ Meteorological data: data visualization, clustering, and functional PCA
 
 Shows the use of data visualization tools, clustering and functional
 principal component analysis (FPCA).
-"""
+"""  # noqa: INP001
 
 # License: MIT
 
@@ -12,15 +12,15 @@ principal component analysis (FPCA).
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Tuple
+from typing import Any, Mapping, Tuple  # noqa: UP035
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-import numpy as np
+import numpy as np  # noqa: TC002
 import sklearn.cluster
 from cartopy.io.img_tiles import GoogleTiles
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 
 from skfda.datasets import fetch_aemet
 from skfda.exploratory.depth import ModifiedBandDepth
@@ -107,8 +107,8 @@ station_latitudes = aemet.loc[:, "latitude"].values
 
 
 def create_map(
-    coords: Tuple[float, float, float, float],
-    figsize: Tuple[float, float],
+    coords: Tuple[float, float, float, float],  # noqa: UP006
+    figsize: Tuple[float, float],  # noqa: UP006
 ) -> Figure:
     """Create a map for a region of the world."""
     tiler = GoogleTiles(style="satellite")
@@ -119,7 +119,7 @@ def create_map(
     ax.set_extent(coords, crs=ccrs.PlateCarree())
 
     ax.add_image(tiler, 8)
-    ax.set_adjustable('datalim')
+    ax.set_adjustable('datalim')  # noqa: Q000
 
     return fig
 
@@ -139,7 +139,7 @@ def plot_cluster_points(
             latitudes[selection],
             s=64,
             color=color_map[cluster],
-            edgecolors='white',
+            edgecolors='white',  # noqa: Q000
             transform=ccrs.Geodetic(),
         )
 
@@ -258,8 +258,8 @@ for cluster in range(n_clusters):
         label=climate_names[cluster],
     )
 
-ax.set_xlabel('First principal component')
-ax.set_ylabel('Second principal component')
+ax.set_xlabel('First principal component')  # noqa: Q000
+ax.set_ylabel('Second principal component')  # noqa: Q000
 ax.legend()
 plt.show()
 

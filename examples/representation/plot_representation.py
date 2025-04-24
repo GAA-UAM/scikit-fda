@@ -3,15 +3,15 @@ Representation of functional data
 =================================
 
 Explores the different representations of functional data.
-"""
+"""  # noqa: INP001
 
 # Author: Carlos Ramos Carreño
 # License: MIT
 
-import skfda
+import skfda  # noqa: I001
 from skfda.representation.interpolation import SplineInterpolation
 
-import skfda.representation.basis as basis
+import skfda.representation.basis as basis  # noqa: PLR0402
 
 
 ##############################################################################
@@ -23,12 +23,12 @@ import skfda.representation.basis as basis
 # girls measured until the 18 years of age. The number and times of the
 # measurements are the same for each individual.
 dataset = skfda.datasets.fetch_growth()
-fd = dataset['data']
-y = dataset['target']
+fd = dataset['data']  # noqa: Q000
+y = dataset['target']  # noqa: Q000
 
 print(repr(fd))
 
-fd.plot(group=y, group_colors=['red', 'blue'])
+fd.plot(group=y, group_colors=['red', 'blue'])  # noqa: Q000
 
 ##############################################################################
 # This kind of representation is a discretized representation, in which the
@@ -43,7 +43,7 @@ print(fd.data_matrix)
 # By default, the data points are interpolated using a linear interpolation,
 # but this is configurable.
 dataset = skfda.datasets.fetch_medflies()
-fd = dataset['data']
+fd = dataset['data']  # noqa: Q000
 
 first_curve = fd[0]
 first_curve.plot()
@@ -73,8 +73,8 @@ fd.plot()
 # It is possible to transform between both representations. Let us use again
 # the Berkeley Growth dataset.
 dataset = skfda.datasets.fetch_growth()
-fd = dataset['data']
-y = dataset['target']
+fd = dataset['data']  # noqa: Q000
+y = dataset['target']  # noqa: Q000
 
 fd.plot()
 
@@ -98,7 +98,7 @@ fig = fd[0].plot()
 fd_basis[0].plot(fig=fig)
 fd_basis_big[0].plot(fig=fig)
 
-fig.axes[0].legend(['Original', '4 elements', '7 elements'])
+fig.axes[0].legend(['Original', '4 elements', '7 elements'])  # noqa: Q000
 
 ##############################################################################
 # We can also see the effect of changing the basis.

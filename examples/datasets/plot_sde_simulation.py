@@ -4,7 +4,7 @@ SDE simulation: creating synthetic datasets using SDEs
 
 This example shows how to use numeric SDE solvers to simulate solutions of
 Stochastic Differential Equations (SDEs).
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Soto Martín
 # License: MIT
@@ -340,7 +340,7 @@ def rvs_gaussian_mixture(
 ) -> np.ndarray:
     """Generate samples of a gaussian mixture."""
     n_gaussians, dim = np.shape(means)
-    selected_gaussians = np.random.multinomial(size, probabilities)
+    selected_gaussians = np.random.multinomial(size, probabilities)  # noqa: NPY002
     samples = [multivariate_normal.rvs(
         means[index],
         cov_matrices[index],
@@ -350,7 +350,7 @@ def rvs_gaussian_mixture(
     ]
 
     samples = np.concatenate(samples)
-    np.random.shuffle(samples)
+    np.random.shuffle(samples)  # noqa: NPY002
     return np.array(samples)
 
 # %%
@@ -396,8 +396,8 @@ def update3d(frame: int) -> None:
     kde = KernelDensity(bandwidth=0.5, kernel="gaussian")
     kde.fit(data)
     grid_points_3d = np.c_[X.ravel(), Y.ravel()]
-    Z = np.exp(kde.score_samples(grid_points_3d))
-    Z = Z.reshape(X.shape)
+    Z = np.exp(kde.score_samples(grid_points_3d))  # noqa: N806
+    Z = Z.reshape(X.shape)  # noqa: N806
 
     ax.clear()
     ax.set_xlim(-4, 6)

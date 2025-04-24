@@ -20,7 +20,7 @@ Thus a sample with a high reconstruction error (RE)
 is likely an outlier, in the sense that
 it is underlied by a different covariance function
 compared the training samples (nonoutliers).
-"""
+"""  # noqa: INP001
 
 # Author: Clément Lejeune
 # License: MIT
@@ -67,9 +67,9 @@ train_set = make_gaussian_process(
     start=0.0,
     stop=25.0,
     cov=cov_clean,
-    random_state=20
+    random_state=20  # noqa: COM812
 )
-train_set_labels = np.array(['train(nonoutliers)'] * n_train)
+train_set_labels = np.array(['train(nonoutliers)'] * n_train)  # noqa: Q000
 
 ##############################################################
 # The test set is generated according to a Gaussian process
@@ -82,9 +82,9 @@ test_set_clean = make_gaussian_process(
     start=0.0,
     stop=25.0,
     cov=cov_clean,
-    random_state=20
+    random_state=20  # noqa: COM812
 )  # clean test set
-test_set_clean_labels = np.array(['test(nonoutliers)'] * (n_test // 2))
+test_set_clean_labels = np.array(['test(nonoutliers)'] * (n_test // 2))  # noqa: Q000
 
 cov_outlier = Exponential()
 
@@ -94,15 +94,15 @@ test_set_outlier = make_gaussian_process(
     start=0.0,
     stop=25.0,
     cov=cov_outlier,
-    random_state=20
+    random_state=20  # noqa: COM812
 )  # test set with outliers
 test_set_outlier.sample_names = [
-    'test_outl_' + str(i) for i in range(test_set_outlier.n_samples)]
-test_set_outlier_labels = np.array(['test(outliers)'] * (n_test // 2))
+    'test_outl_' + str(i) for i in range(test_set_outlier.n_samples)]  # noqa: Q000
+test_set_outlier_labels = np.array(['test(outliers)'] * (n_test // 2))  # noqa: Q000
 
 test_set = test_set_clean.concatenate(test_set_outlier)
 test_set_labels = np.concatenate(
-    (test_set_clean_labels, test_set_outlier_labels)
+    (test_set_clean_labels, test_set_outlier_labels)  # noqa: COM812
 )
 
 #############################
@@ -113,14 +113,14 @@ whole_data_labels = np.concatenate((train_set_labels, test_set_labels))
 fig = whole_data.plot(
     group=whole_data_labels,
     group_colors={
-        'train(nonoutliers)': 'grey',
-        'test(nonoutliers)': 'red',
-        'test(outliers)': 'C1'},
+        'train(nonoutliers)': 'grey',  # noqa: Q000
+        'test(nonoutliers)': 'red',  # noqa: Q000
+        'test(outliers)': 'C1'},  # noqa: Q000
     linewidth=0.95,
     alpha=0.3,
-    legend=True
+    legend=True  # noqa: COM812
 )
-plt.title('train and test samples')
+plt.title('train and test samples')  # noqa: Q000
 fig.show()
 
 #####################################################################
@@ -135,20 +135,20 @@ q = 5
 fpca_clean = FPCA(n_components=q)
 fpca_clean.fit(train_set)
 train_set_hat = fpca_clean.inverse_transform(
-    fpca_clean.transform(train_set)
+    fpca_clean.transform(train_set)  # noqa: COM812
 )
 
 err_train = l2_distance(
     train_set,
-    train_set_hat
+    train_set_hat  # noqa: COM812
 ) / l2_norm(train_set)
 
 test_set_hat = fpca_clean.inverse_transform(
-    fpca_clean.transform(test_set)
+    fpca_clean.transform(test_set)  # noqa: COM812
 )
 err_test = l2_distance(
     test_set,
-    test_set_hat
+    test_set_hat  # noqa: COM812
 ) / l2_norm(test_set)
 
 ###########################################################################
@@ -171,16 +171,16 @@ density_test_err_inli = gaussian_kde(err_test[err_test < err_thresh])
 plt.plot(
     x_density,
     density_train_err(x_density),
-    label='Error train',
-    color='grey'
+    label='Error train',  # noqa: Q000
+    color='grey'  # noqa: COM812, Q000
 )
 
 # density estimate of test errors
 plt.plot(
     x_density,
     density_test_err(x_density),
-    label='Error test (outliers+nonoutliers)',
-    color='C0'
+    label='Error test (outliers+nonoutliers)',  # noqa: Q000
+    color='C0'  # noqa: COM812, Q000
 )
 
 # outlyingness threshold
@@ -188,39 +188,39 @@ plt.vlines(
     err_thresh,
     ymax=max(density_train_err(x_density)),
     ymin=0.0,
-    label='thresh=quantile(p=0.99)',
-    linestyles='dashed',
-    color='black'
+    label='thresh=quantile(p=0.99)',  # noqa: Q000
+    linestyles='dashed',  # noqa: Q000
+    color='black'  # noqa: COM812, Q000
 )
 
 # density estimate of the error of test samples flagged as outliers
 plt.plot(
     x_density,
     density_test_err_outl(x_density),
-    label='Error test>= thresh (outliers)',
-    color='C1'
+    label='Error test>= thresh (outliers)',  # noqa: Q000
+    color='C1'  # noqa: COM812, Q000
 )
 
 # density estimate of the error of test samples flagged as nonoutliers
 plt.plot(
     x_density,
     density_test_err_inli(x_density),
-    label='Error test< thresh (nonoutliers)',
-    color='red'
+    label='Error test< thresh (nonoutliers)',  # noqa: Q000
+    color='red'  # noqa: COM812, Q000
 )
 
-plt.xlabel('Relative L2-norm reconstruction errors')
-plt.ylabel('Density (unnormalized)')
-plt.title(f'Densities of reconstruction errors with {q} components')
+plt.xlabel('Relative L2-norm reconstruction errors')  # noqa: Q000
+plt.ylabel('Density (unnormalized)')  # noqa: Q000
+plt.title(f'Densities of reconstruction errors with {q} components')  # noqa: Q000
 plt.legend()
 plt.show()
 
 ####################################################################
 # We can check that the outliers are all detected with this method,
 # with no false positive (wrongly) in the test set.
-print('Flagged outliers: ')
+print('Flagged outliers: ')  # noqa: Q000
 print(test_set_labels[err_test >= err_thresh])
-print('Flagged nonoutliers: ')
+print('Flagged nonoutliers: ')  # noqa: Q000
 print(test_set_labels[err_test < err_thresh])
 
 ##############################################################################

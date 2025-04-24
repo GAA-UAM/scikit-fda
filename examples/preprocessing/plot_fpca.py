@@ -3,7 +3,7 @@ Functional Principal Component Analysis
 =======================================
 
 Explores the two possible ways to do functional principal component analysis.
-"""
+"""  # noqa: INP001
 
 # Author: Yujian Hong
 # License: MIT
@@ -25,24 +25,24 @@ from skfda.representation.basis import (
 # to explore datasets and obtain conclusions about said dataset using this
 # technique.
 #
-# FPCA is a dimensionality reduction method for functional data that aims to 
+# FPCA is a dimensionality reduction method for functional data that aims to  # noqa: E501, RUF100, W291
 # reduce the complexity of studying observations by finding a finite number of
-# principal components. These components are the directions that capture the 
+# principal components. These components are the directions that capture the  # noqa: E501, RUF100, W291
 # main modes of variation across the function (the directions in which the
-# curves vary the most). FPCA can be though of as a basis expansion, but what 
+# curves vary the most). FPCA can be though of as a basis expansion, but what  # noqa: E501, RUF100, W291
 # distinguishes FPCA is that among all basis expansions that use K components
 # for a fixed K, the FPCA expansion explains most of the variation in X.
 #
-# For more information abour FPCA and its objectives, see 
+# For more information abour FPCA and its objectives, see  # noqa: RUF100, W291
 # :footcite:ts:`wang+chiou+muller_2016_fpca`.
-# 
+#  # noqa: RUF100, W291
 # Firstly, we are going to fetch the Berkeley Growth Study data. This dataset
 # correspond to the height of several boys and girls measured from birth to
 # when they are 18 years old. The number and time of the measurements are the
 # same for each individual. To better understand the data we plot it.
 dataset = skfda.datasets.fetch_growth()
-fd = dataset['data']
-y = dataset['target']
+fd = dataset['data']  # noqa: Q000
+y = dataset['target']  # noqa: Q000
 fd.plot()
 
 ##############################################################################
@@ -64,7 +64,7 @@ fpca_discretized.components_.plot()
 # representation. This is because the FPCA module modifies the original data.
 # We also plot the data for better visual representation.
 dataset = fetch_growth()
-fd = dataset['data']
+fd = dataset['data']  # noqa: Q000
 basis = skfda.representation.basis.BSplineBasis(n_basis=7)
 basis_fd = fd.to_basis(basis)
 basis_fd.plot()
@@ -104,7 +104,7 @@ FPCAPlot(
 # the functions are not periodic it does not make sense to use the Fourier
 # basis
 dataset = fetch_growth()
-fd = dataset['data']
+fd = dataset['data']  # noqa: Q000
 basis_fd = fd.to_basis(BSplineBasis(n_basis=7))
 fpca = FPCA(n_components=2, components_basis=FourierBasis(n_basis=7))
 fpca.fit(basis_fd)
@@ -117,7 +117,7 @@ fpca.components_.plot()
 # case the best option is to use the BSpline basis as the basis for the
 # principal components
 dataset = fetch_growth()
-fd = dataset['data']
+fd = dataset['data']  # noqa: Q000
 basis_fd = fd.to_basis(BSplineBasis(n_basis=7))
 fpca = FPCA(n_components=2, components_basis=MonomialBasis(n_basis=4))
 fpca.fit(basis_fd)

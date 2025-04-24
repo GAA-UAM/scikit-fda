@@ -4,7 +4,7 @@ Kernel Regression
 
 In this example we will see and compare the performance of different kernel
 regression methods.
-"""
+"""  # noqa: INP001
 
 # Author: Elena Petrunina
 # License: MIT
@@ -30,7 +30,7 @@ from skfda.ml.regression._kernel_regression import KernelRegression
 
 X, y = skfda.datasets.fetch_tecator(return_X_y=True, as_frame=True)
 X = X.iloc[:, 0].values
-fat = y['fat'].values
+fat = y['fat'].values  # noqa: Q000
 
 ##############################################################################
 # Fat percentages will be estimated from the spectrum.
@@ -58,7 +58,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 n_neighbors = np.array(range(1, 100))
 knn = GridSearchCV(
     KernelRegression(kernel_estimator=KNeighborsHatMatrix()),
-    param_grid={'kernel_estimator__n_neighbors': n_neighbors},
+    param_grid={'kernel_estimator__n_neighbors': n_neighbors},  # noqa: Q000
 )
 
 
@@ -68,8 +68,8 @@ knn = GridSearchCV(
 
 knn.fit(X_train, y_train)
 print(
-    'KNN bandwidth:',
-    knn.best_params_['kernel_estimator__n_neighbors'],
+    'KNN bandwidth:',  # noqa: Q000
+    knn.best_params_['kernel_estimator__n_neighbors'],  # noqa: Q000
 )
 
 ##############################################################################
@@ -78,7 +78,7 @@ print(
 
 y_pred = knn.predict(X_test)
 knn_res = r2_score(y_pred, y_test)
-print('Score KNN:', knn_res)
+print('Score KNN:', knn_res)  # noqa: Q000
 
 
 ##############################################################################
@@ -88,7 +88,7 @@ print('Score KNN:', knn_res)
 bandwidth = np.logspace(-2, 0, num=100)
 nw = GridSearchCV(
     KernelRegression(kernel_estimator=NadarayaWatsonHatMatrix()),
-    param_grid={'kernel_estimator__bandwidth': bandwidth},
+    param_grid={'kernel_estimator__bandwidth': bandwidth},  # noqa: Q000
 )
 
 ##############################################################################
@@ -96,8 +96,8 @@ nw = GridSearchCV(
 
 nw.fit(X_train, y_train)
 print(
-    'Nadaraya-Watson bandwidth:',
-    nw.best_params_['kernel_estimator__bandwidth'],
+    'Nadaraya-Watson bandwidth:',  # noqa: Q000
+    nw.best_params_['kernel_estimator__bandwidth'],  # noqa: Q000
 )
 
 ##############################################################################
@@ -106,7 +106,7 @@ print(
 
 y_pred = nw.predict(X_test)
 nw_res = r2_score(y_pred, y_test)
-print('Score NW:', nw_res)
+print('Score NW:', nw_res)  # noqa: Q000
 
 ##############################################################################
 # For Local Linear Regression, FDataBasis representation with a basis should be
@@ -132,15 +132,15 @@ bandwidth = np.logspace(0.3, 1, num=100)
 
 llr = GridSearchCV(
     KernelRegression(kernel_estimator=LocalLinearRegressionHatMatrix()),
-    param_grid={'kernel_estimator__bandwidth': bandwidth},
+    param_grid={'kernel_estimator__bandwidth': bandwidth},  # noqa: Q000
 )
 
 ##############################################################################
 # The bandwidth obtained by cross-validation is indicated below.
 llr.fit(X_basis_train, y_train)
 print(
-    'LLR bandwidth:',
-    llr.best_params_['kernel_estimator__bandwidth'],
+    'LLR bandwidth:',  # noqa: Q000
+    llr.best_params_['kernel_estimator__bandwidth'],  # noqa: Q000
 )
 
 ##############################################################################
@@ -149,7 +149,7 @@ print(
 
 y_pred = llr.predict(X_basis_test)
 llr_res = r2_score(y_pred, y_test)
-print('Score LLR:', llr_res)
+print('Score LLR:', llr_res)  # noqa: Q000
 
 ##############################################################################
 # For this data set using the derivative should give a better performance.
@@ -175,18 +175,18 @@ Xd_train, Xd_test, y_train, y_test = train_test_split(
 # K-Nearest Neighbours
 knn = GridSearchCV(
     KernelRegression(kernel_estimator=KNeighborsHatMatrix()),
-    param_grid={'kernel_estimator__n_neighbors': n_neighbors},
+    param_grid={'kernel_estimator__n_neighbors': n_neighbors},  # noqa: Q000
 )
 
 knn.fit(Xd_train, y_train)
 print(
-    'KNN bandwidth:',
-    knn.best_params_['kernel_estimator__n_neighbors'],
+    'KNN bandwidth:',  # noqa: Q000
+    knn.best_params_['kernel_estimator__n_neighbors'],  # noqa: Q000
 )
 
 y_pred = knn.predict(Xd_test)
 dknn_res = r2_score(y_pred, y_test)
-print('Score KNN:', dknn_res)
+print('Score KNN:', dknn_res)  # noqa: Q000
 
 
 ##############################################################################
@@ -194,18 +194,18 @@ print('Score KNN:', dknn_res)
 bandwidth = np.logspace(-3, -1, num=100)
 nw = GridSearchCV(
     KernelRegression(kernel_estimator=NadarayaWatsonHatMatrix()),
-    param_grid={'kernel_estimator__bandwidth': bandwidth},
+    param_grid={'kernel_estimator__bandwidth': bandwidth},  # noqa: Q000
 )
 
 nw.fit(Xd_train, y_train)
 print(
-    'Nadara-Watson bandwidth:',
-    nw.best_params_['kernel_estimator__bandwidth'],
+    'Nadara-Watson bandwidth:',  # noqa: Q000
+    nw.best_params_['kernel_estimator__bandwidth'],  # noqa: Q000
 )
 
 y_pred = nw.predict(Xd_test)
 dnw_res = r2_score(y_pred, y_test)
-print('Score NW:', dnw_res)
+print('Score NW:', dnw_res)  # noqa: Q000
 
 ##############################################################################
 # For both Nadaraya-Watson and KNN the accuracy has improved significantly
@@ -224,18 +224,18 @@ Xd_basis_train, Xd_basis_test, y_train, y_test = train_test_split(
 bandwidth = np.logspace(-2, 1, 100)
 llr = GridSearchCV(
     KernelRegression(kernel_estimator=LocalLinearRegressionHatMatrix()),
-    param_grid={'kernel_estimator__bandwidth': bandwidth},
+    param_grid={'kernel_estimator__bandwidth': bandwidth},  # noqa: Q000
 )
 
 llr.fit(Xd_basis_train, y_train)
 print(
-    'LLR bandwidth:',
-    llr.best_params_['kernel_estimator__bandwidth'],
+    'LLR bandwidth:',  # noqa: Q000
+    llr.best_params_['kernel_estimator__bandwidth'],  # noqa: Q000
 )
 
 y_pred = llr.predict(Xd_basis_test)
 dllr_res = r2_score(y_pred, y_test)
-print('Score LLR:', dllr_res)
+print('Score LLR:', dllr_res)  # noqa: Q000
 
 ##############################################################################
 # LLR accuracy has also improved, but the difference with Nadaraya-Watson and

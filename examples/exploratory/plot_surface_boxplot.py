@@ -4,18 +4,18 @@ Surface Boxplot
 
 Shows the use of the surface boxplot, which is a generalization of the
 functional boxplot for FDataGrid whose domain dimension is 2.
-"""
+"""  # noqa: INP001
 
 # Author: Amanda Hernando Bernabé
 # License: MIT
 
 # sphinx_gallery_thumbnail_number = 3
 
-from skfda import FDataGrid
+from skfda import FDataGrid  # noqa: I001
 from skfda.datasets import make_gaussian_process
 from skfda.exploratory.visualization import SurfaceBoxplot, Boxplot
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: F401
 import numpy as np
 
 
@@ -73,7 +73,7 @@ fd.plot()
 # :class:`~skfda.exploratory.visualization.SurfaceBoxplot` object is
 # made, showing the surface boxplot which corresponds to our FDataGrid
 
-surfaceBoxplot = SurfaceBoxplot(fd_2)
+surfaceBoxplot = SurfaceBoxplot(fd_2)  # noqa: N816
 surfaceBoxplot.plot()
 
 ##############################################################################

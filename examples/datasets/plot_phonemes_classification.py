@@ -5,7 +5,7 @@ Voice signals: smoothing, registration, and classification
 Shows the use of functional preprocessing tools such as
 smoothing and registration, and functional classification
 methods.
-"""
+"""  # noqa: INP001
 
 # License: MIT
 
@@ -37,7 +37,7 @@ from skfda.preprocessing.smoothing import KernelSmoother
 # %%
 # We will first load the (binary) Phoneme dataset and plot the first 20
 # functions.
-# We restrict the data to the first 150 variables, as done in Ferraty and 
+# We restrict the data to the first 150 variables, as done in Ferraty and  # noqa: E501, RUF100, W291
 # Vieu (chapter 7)\ :footcite:ps:`ferraty+vieu_2006`, because most of the
 # useful information is in the lower frequencies.
 X, y = fetch_phoneme(return_X_y=True)

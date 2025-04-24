@@ -5,7 +5,7 @@ Mixed effects model for irregular data: robustness of the conversion by decimati
 This example converts irregular data to a basis representation using a mixed
 effects model and checks the robustness of the method by fitting
 the model with decreasing number of measurement points per curve.
-"""
+"""  # noqa: INP001, E501
 # Author: Pablo Cuesta Sierra
 # License: MIT
 
@@ -91,7 +91,7 @@ scores = {
     for score_name in score_functions
 }
 converter = EMMixedEffectsConverter(basis)
-for n_points, train_irregular, test_irregular in zip(
+for n_points, train_irregular, test_irregular in zip(  # noqa: B905
     n_points_list,
     train_irregular_datasets.values(),
     test_irregular_datasets.values(),
@@ -118,7 +118,7 @@ for n_points, train_irregular, test_irregular in zip(
 # %%
 # Finally, we have the scores for the train and test sets with decreasing
 # number of measurement points per curve.
-for score_name in scores.keys():
+for score_name in scores.keys():  # noqa: SIM118, PLC0206
     print(f"{score_name} scores:")
     print("-" * 62)
     print((
@@ -131,7 +131,7 @@ for score_name in scores.keys():
 # Plot the scores.
 plt.figure(figsize=(12, 5))
 for i, (score_name, values) in enumerate(scores.items()):
-    df = (
+    df = (  # noqa: PD901
         pd.DataFrame(values)
         .sort_values("n_points_per_curve").set_index("n_points_per_curve")
     )
@@ -170,12 +170,12 @@ for i, (score_name, values) in enumerate(scores.items()):
 # %%
 # Show the original curves along with the converted
 # test curves for the conversions with 7, 5, 4 and 3 points per curve.
-def plot_conversion_evolution(index: int):
+def plot_conversion_evolution(index: int):  # noqa: D103
     plt.figure(figsize=(8, 8.5))
     i = 0
     for n_points_per_curve in n_points_list[3:]:
         axes = plt.subplot(2, 2, i + 1)
-        i += 1
+        i += 1  # noqa: SIM113
 
         test_irregular_datasets[n_points_per_curve][index].scatter(
             axes=axes, color="C0",
@@ -193,14 +193,14 @@ def plot_conversion_evolution(index: int):
             axes=axes,
             color="C0",
             linestyle="--",
-            label=f"Test curve transformed",
+            label=f"Test curve transformed",  # noqa: F541
         )
         plt.title(f"Transform of test curves with {n_points_per_curve} points")
         plt.ylim(ylim)
 
     plt.suptitle(
         "Evolution of the conversion of a curve with decreasing measurements "
-        f"({test_original.sample_names[index]} station)"
+        f"({test_original.sample_names[index]} station)"  # noqa: COM812
     )
 
     # Add common legend at the bottom:

@@ -3,7 +3,7 @@ Neighbors Functional Regression
 ===============================
 
 Shows the usage of the nearest neighbors regressor with functional response.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -32,7 +32,7 @@ from skfda.representation.basis import FourierBasis
 # curves.
 
 data = skfda.datasets.fetch_weather()
-fd = data['data']
+fd = data['data']  # noqa: Q000
 
 
 # Split dataset, temperatures and curves of precipitation
@@ -78,7 +78,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 # the response we will use a mean of the response, weighted by their distance
 # to the test sample.
 
-knn = KNeighborsRegressor(n_neighbors=5, weights='distance')
+knn = KNeighborsRegressor(n_neighbors=5, weights='distance')  # noqa: Q000
 knn.fit(X_train, y_train)
 
 ##############################################################################
@@ -93,7 +93,7 @@ y_pred = knn.predict(X_test)
 # Plot prediction
 fig = y_pred.plot()
 fig.axes[0].set_prop_cycle(None)  # Reset colors
-y_test.plot(fig=fig, linestyle='--')
+y_test.plot(fig=fig, linestyle='--')  # noqa: Q000
 
 
 ##############################################################################

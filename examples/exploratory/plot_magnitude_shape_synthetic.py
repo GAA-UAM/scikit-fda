@@ -3,7 +3,7 @@ Magnitude-Shape Plot synthetic example
 ======================================
 
 Shows the use of the MS-Plot applied to a synthetic dataset.
-"""
+"""  # noqa: INP001
 
 # Author: Carlos Ramos Carreño
 # License: MIT
@@ -45,7 +45,7 @@ shape_outlier_shift = skfda.datasets.make_gaussian_process(
     n_samples=1,
     n_features=100,
     cov=skfda.misc.covariances.Exponential(),
-    mean=lambda t: 4 * t + 10 * (t > 0.4),
+    mean=lambda t: 4 * t + 10 * (t > 0.4),  # noqa: PLR2004
     random_state=random_state,
 )
 
@@ -53,7 +53,7 @@ shape_outlier_peak = skfda.datasets.make_gaussian_process(
     n_samples=1,
     n_features=100,
     cov=skfda.misc.covariances.Exponential(),
-    mean=lambda t: 4 * t - 10 * ((0.25 < t) & (t < 0.3)),
+    mean=lambda t: 4 * t - 10 * ((0.25 < t) & (t < 0.3)),  # noqa: SIM300, PLR2004
     random_state=random_state,
 )
 
@@ -97,7 +97,7 @@ labels = [0] * n_samples + [1] * 6
 
 fd.plot(
     group=labels,
-    group_colors=['lightgrey', 'black'],
+    group_colors=['lightgrey', 'black'],  # noqa: Q000
 )
 
 ##############################################################################
@@ -115,13 +115,13 @@ msplot.plot()
 
 labels = [0] * n_samples + [1, 2, 3, 4, 5, 6]
 colors = [
-    'lightgrey',
-    'orange',
-    'blue',
-    'black',
-    'green',
-    'brown',
-    'lightblue',
+    'lightgrey',  # noqa: Q000
+    'orange',  # noqa: Q000
+    'blue',  # noqa: Q000
+    'black',  # noqa: Q000
+    'green',  # noqa: Q000
+    'brown',  # noqa: Q000
+    'lightblue',  # noqa: Q000
 ]
 
 fd.plot(

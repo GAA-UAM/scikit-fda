@@ -3,14 +3,14 @@ Discretized function representation
 ===================================
 
 Shows how to make a discretized representation of a function.
-"""
+"""  # noqa: INP001
 
 # Author: Carlos Ramos Carreño <vnmabus@gmail.com>
 # License: MIT
 
 # sphinx_gallery_thumbnail_number = 2
 
-from skfda import FDataGrid
+from skfda import FDataGrid  # noqa: I001
 
 import numpy as np
 
@@ -29,9 +29,9 @@ data = np.array([np.sin((grid_points + random_state.randn())
 # that are measured at the same points.
 
 fd = FDataGrid(data, grid_points,
-               dataset_name='Sinusoidal curves',
-               argument_names=['t'],
-               coordinate_names=['x(t)'])
+               dataset_name='Sinusoidal curves',  # noqa: Q000
+               argument_names=['t'],  # noqa: Q000
+               coordinate_names=['x(t)'])  # noqa: Q000
 
 fd = fd[:5]
 

@@ -3,7 +3,7 @@ Neighbors Scalar Regression
 ===========================
 
 Shows the usage of the nearest neighbors regressor with scalar response.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -36,7 +36,7 @@ from skfda.ml.regression import KNeighborsRegressor
 # curves.
 
 data = skfda.datasets.fetch_weather()
-fd = data['data']
+fd = data['data']  # noqa: Q000
 
 
 # Split dataset, temperatures and curves of precipitation
@@ -89,7 +89,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 # :class:`~skfda.representation.grid.FDataGrid` as input instead of an array
 # with multivariate data.
 
-knn = KNeighborsRegressor(weights='distance')
+knn = KNeighborsRegressor(weights='distance')  # noqa: Q000
 knn.fit(X_train, y_train)
 
 ##############################################################################
@@ -145,8 +145,8 @@ print(score)
 
 
 param_grid = {
-    'n_neighbors': range(1, 12, 2),
-    'weights': ['uniform', 'distance'],
+    'n_neighbors': range(1, 12, 2),  # noqa: Q000
+    'weights': ['uniform', 'distance'],  # noqa: Q000
 }
 
 

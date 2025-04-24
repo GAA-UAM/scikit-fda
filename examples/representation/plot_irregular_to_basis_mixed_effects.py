@@ -4,7 +4,7 @@ Mixed effects model for irregular data
 
 This example converts irregular data to a basis representation using a mixed
 effects model.
-"""
+"""  # noqa: INP001
 # Author: Pablo Cuesta Sierra
 # License: MIT
 
@@ -76,8 +76,8 @@ noise_std = .3
 fd_irregular = FDataIrregular(
     points=fd_irregular_without_noise.points,
     start_indices=fd_irregular_without_noise.start_indices,
-    values=fd_irregular_without_noise.values + random_state.normal(
-        0, noise_std, fd_irregular_without_noise.values.shape,
+    values=fd_irregular_without_noise.values + random_state.normal(  # noqa: PD011
+        0, noise_std, fd_irregular_without_noise.values.shape,  # noqa: PD011
     ),
 )
 
@@ -152,7 +152,7 @@ plt.show()
 # As can be seen in the previous plot, when measurements are distributed
 # across the domain, both the mixed effects model and the function-wise
 # conversion are able to provide a good approximation of the original data.
-# However, when the measurements are concentrated in a small region of 
+# However, when the measurements are concentrated in a small region of  # noqa: E501, RUF100, W291
 # the domain, e can see that the mixed effects model is able to provide a more
 # accurate approximation. Moreover, the mixed effects model is able to remove
 # the noise from the measurements, which is not the case for the function-wise
@@ -206,8 +206,8 @@ irregular_temperatures = irregular_sample(
 print(weather.categories["region"])
 arctic = np.where(weather.target == 0)[0]
 atlantic = np.where(weather.target == 1)[0]
-continental = np.where(weather.target == 2)[0]
-pacific = np.where(weather.target == 3)[0]
+continental = np.where(weather.target == 2)[0]  # noqa: PLR2004
+pacific = np.where(weather.target == 3)[0]  # noqa: PLR2004
 
 
 # %%
@@ -264,7 +264,7 @@ for k in range(4):
     )
     plt.title(
         f"{fd_temperatures.sample_names[idx]} station "
-        f"({weather.categories['region'][weather.target[idx]]})"
+        f"({weather.categories['region'][weather.target[idx]]})"  # noqa: COM812
     )
     plt.ylim(ylim)
     axes.legend()

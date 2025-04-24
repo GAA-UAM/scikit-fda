@@ -5,15 +5,15 @@ Clustering
 In this example, the use of the clustering plot methods is shown applied to the
 Canadian Weather dataset. K-Means and Fuzzy K-Means algorithms are employed to
 calculate the results plotted.
-"""
+"""  # noqa: INP001
 
 # Author: Amanda Hernando Bernabé
 # License: MIT
 
 # sphinx_gallery_thumbnail_number = 6
 
-import matplotlib
-import matplotlib.pyplot as plt
+import matplotlib  # noqa: ICN001
+import matplotlib.pyplot as plt  # noqa: F401
 import numpy as np
 
 from skfda import datasets
@@ -47,7 +47,7 @@ fd = fd_temperatures[indices_samples]
 climates = target[indices_samples].remove_unused_categories()
 
 # Assigning the color to each of the groups.
-colormap = matplotlib.colormaps['tab20b']
+colormap = matplotlib.colormaps['tab20b']  # noqa: Q000
 n_climates = len(climates.categories)
 climate_colors = colormap(np.arange(n_climates) / (n_climates - 1))
 
@@ -92,10 +92,10 @@ ClusterPlot(kmeans, fd, cluster_colors=cluster_colors,
 # above procedure, an object of this type is instantiated  with the desired
 # data and then, the
 # :func:`~skfda.ml.clustering.FuzzyCMeans.fit` method is called.
-# Internally, the attribute ``membership_degree_`` is calculated, which contains
-# ´n_clusters´ elements for each sample and dimension, denoting the degree of
+# Internally, the attribute ``membership_degree_`` is calculated, which contains  # noqa: E501
+# ´n_clusters´ elements for each sample and dimension, denoting the degree of  # noqa: E501, RUF003
 # membership of each sample to each cluster. They are obtained calling the
-# method :func:`~skfda.ml.clustering.FuzzyCMeans.predict_proba`. Also, the centroids
+# method :func:`~skfda.ml.clustering.FuzzyCMeans.predict_proba`. Also, the centroids  # noqa: E501
 # of each cluster are obtained.
 
 fuzzy_kmeans = FuzzyCMeans(n_clusters=n_clusters, random_state=seed)
@@ -114,7 +114,7 @@ ClusterPlot(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
 ##############################################################################
 # Another plot implemented to show the results in the class
 # :class:`~skfda.ml.clustering.FuzzyCMeans` is
-# :class:`~skfda.exploratory.visualization.clustering.ClusterMembershipLinesPlot`.
+# :class:`~skfda.exploratory.visualization.clustering.ClusterMembershipLinesPlot`.  # noqa: E501
 # which is similar to parallel coordinates. It is recommended to assign colors
 # to each of the samples in order to identify them. In this example, the
 # colors are the ones of the first plot, dividing the samples by climate.

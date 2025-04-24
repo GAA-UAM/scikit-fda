@@ -3,7 +3,7 @@ Pairwise alignment
 ==================
 
 Shows the usage of the elastic registration to perform a pairwise alignment.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -35,7 +35,7 @@ from skfda.preprocessing.registration import (
 # In the case of elastic registration it is taken as energy function the
 # Fisher-Rao distance with a penalisation term, due to the property of
 # invariance to reparameterizations of warpings functions,
-# as detailed in Srivastava and Klassen (chapter 4)\ 
+# as detailed in Srivastava and Klassen (chapter 4)\  # noqa: RUF100, W291
 # :footcite:p:`srivastava+klassen_2016`.
 #
 # .. math::
@@ -56,7 +56,7 @@ fd = make_multimodal_samples(
 )
 
 fig = fd.plot()
-fig.axes[0].legend(['$f$', '$g$'])
+fig.axes[0].legend(['$f$', '$g$'])  # noqa: Q000
 plt.show()
 
 ##############################################################################
@@ -74,11 +74,11 @@ elastic_registration = FisherRaoElasticRegistration(template=g)
 f_align = elastic_registration.fit_transform(f)
 
 fig = fd.plot()
-f_align.plot(fig=fig, color='C0', linestyle='--')
+f_align.plot(fig=fig, color='C0', linestyle='--')  # noqa: Q000
 
 
 # Legend
-fig.axes[0].legend(['$f$', '$g$', r'$f \circ \gamma $'])
+fig.axes[0].legend(['$f$', '$g$', r'$f \circ \gamma $'])  # noqa: Q000
 plt.show()
 
 ##############################################################################
@@ -91,10 +91,10 @@ fig = warping.plot()
 
 # Plot identity
 t = np.linspace(0, 1)
-fig.axes[0].plot(t, t, linestyle='--')
+fig.axes[0].plot(t, t, linestyle='--')  # noqa: Q000
 
 # Legend
-fig.axes[0].legend([r'$\gamma$', r'$\gamma_{id}$'])
+fig.axes[0].legend([r'$\gamma$', r'$\gamma_{id}$'])  # noqa: Q000
 plt.show()
 
 ##############################################################################
@@ -105,12 +105,12 @@ plt.show()
 
 warping_inverse = invert_warping(warping)
 
-fig = fd.plot(label='$f$')
-g.compose(warping_inverse).plot(fig=fig, color='C1', linestyle='--')
+fig = fd.plot(label='$f$')  # noqa: Q000
+g.compose(warping_inverse).plot(fig=fig, color='C1', linestyle='--')  # noqa: Q000
 
 
 # Legend
-fig.axes[0].legend(['$f$', '$g$', r'$g \circ \gamma^{-1} $'])
+fig.axes[0].legend(['$f$', '$g$', r'$g \circ \gamma^{-1} $'])  # noqa: Q000
 plt.show()
 
 ##############################################################################
@@ -126,21 +126,21 @@ plt.show()
 penalties = np.linspace(0, 0.2, 20)
 
 # Creation of a color gradient
-cmap = clr.LinearSegmentedColormap.from_list('custom cmap', ['C1', 'C0'])
+cmap = clr.LinearSegmentedColormap.from_list('custom cmap', ['C1', 'C0'])  # noqa: Q000
 color = cmap(0.2 + 3 * penalties)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
 
 
-for penalty, c in zip(penalties, color):
+for penalty, c in zip(penalties, color):  # noqa: B905
 
     elastic_registration.set_params(penalty=penalty)
     elastic_registration.transform(f).plot(fig, color=c)
 
 
-f.plot(fig=fig, color='C0', linewidth=2, label='$f$')
-g.plot(fig=fig, color='C1', linewidth=2, label='$g$')
+f.plot(fig=fig, color='C0', linewidth=2, label='$f$')  # noqa: Q000
+g.plot(fig=fig, color='C1', linewidth=2, label='$g$')  # noqa: Q000
 
 # Legend
 fig.axes[0].legend()
@@ -154,13 +154,13 @@ plt.show()
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
 
-for penalty, c in zip(penalties, color):
+for penalty, c in zip(penalties, color):  # noqa: B905
     elastic_registration.set_params(penalty=penalty)
     elastic_registration.transform(f)
     elastic_registration.warping_.plot(fig, color=c)
 
 # Plots identity
-fig.axes[0].plot(t, t, color='C0', linestyle="--")
+fig.axes[0].plot(t, t, color='C0', linestyle="--")  # noqa: Q000
 plt.show()
 
 ##############################################################################

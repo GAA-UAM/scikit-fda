@@ -1,5 +1,5 @@
-# fmt: off
-# type: ignore
+# fmt: off  # noqa: INP001
+# type: ignore  # noqa: PGH003
 """
 Creating a new basis
 ====================
@@ -30,11 +30,11 @@ import numpy as np
 # arrays).
 
 
-def f(t):
+def f(t):  # noqa: D103
     return np.sin(6 * t)
 
 
-def g(t):
+def g(t):  # noqa: D103
     return t**2
 
 

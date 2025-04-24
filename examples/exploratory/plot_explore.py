@@ -4,7 +4,7 @@ Exploring data
 
 Explores the Tecator data set by plotting the functional data and calculating
 means and derivatives.
-"""
+"""  # noqa: INP001
 
 # Author: Miguel Carbajo Berrocal
 # License: MIT
@@ -23,18 +23,18 @@ import skfda
 # of fat, and meat with a higher fat content.
 X, y = skfda.datasets.fetch_tecator(return_X_y=True, as_frame=True)
 fd = X.iloc[:, 0].values
-fat = y['fat'].values
+fat = y['fat'].values  # noqa: Q000
 
 ##############################################################################
 # We will now plot in red samples containing less than 20% of fat and in blue
 # the rest.
 
-low_fat = fat < 20
-labels = np.full(fd.n_samples, 'high fat')
-labels[low_fat] = 'low fat'
+low_fat = fat < 20  # noqa: PLR2004
+labels = np.full(fd.n_samples, 'high fat')  # noqa: Q000
+labels[low_fat] = 'low fat'  # noqa: Q000
 colors = {
-    'high fat': 'red',
-    'low fat': 'blue',
+    'high fat': 'red',  # noqa: Q000
+    'low fat': 'blue',  # noqa: Q000
 }
 
 fig = fd.plot(
@@ -55,7 +55,7 @@ means = mean_high.concatenate(mean_low)
 
 means.dataset_name = f"{fd.dataset_name} - means"
 means.plot(
-    group=['high fat', 'low fat'],
+    group=['high fat', 'low fat'],  # noqa: Q000
     group_colors=colors,
     linewidth=0.5,
     legend=True,

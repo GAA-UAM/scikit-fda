@@ -4,7 +4,7 @@ Interpolation
 
 This example shows the types of interpolation used in the evaluation of
 FDataGrids.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -71,7 +71,7 @@ fd = fd[1]
 fd_monotone = fd.copy(data_matrix=np.sort(fd.data_matrix, axis=1))
 
 
-fig = fd_monotone.plot(linestyle='--', label="cubic")
+fig = fd_monotone.plot(linestyle='--', label="cubic")  # noqa: Q000
 
 
 fd_monotone.interpolation = SplineInterpolation(
@@ -80,7 +80,7 @@ fd_monotone.interpolation = SplineInterpolation(
 )
 fd_monotone.plot(fig=fig, label="PCHIP")
 
-fd_monotone.scatter(fig=fig, c='C1')
+fd_monotone.scatter(fig=fig, c='C1')  # noqa: Q000
 fig.legend()
 plt.show()
 

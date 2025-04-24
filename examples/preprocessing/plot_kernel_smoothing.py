@@ -6,7 +6,7 @@ This example uses different kernel smoothing methods over the phoneme data
 set (:func:`phoneme <skfda.datasets.fetch_phoneme>`) and shows how cross
 validations scores vary over a range of different parameters used in the
 smoothing methods. It also shows examples of undersmoothing and oversmoothing.
-"""
+"""  # noqa: INP001
 
 # Author: Miguel Carbajo Berrocal
 # Modified: Elena Petrunina
@@ -35,7 +35,7 @@ from skfda.preprocessing.smoothing.validation import SmoothingParameterSearch
 # plot, the first five curves are shown.
 
 dataset = skfda.datasets.fetch_phoneme()
-fd = dataset['data'][:300]
+fd = dataset['data'][:300]  # noqa: Q000
 
 fd[:5].plot()
 plt.show()
@@ -145,7 +145,7 @@ bandwidth = np.linspace(
 knn = SmoothingParameterSearch(
     KernelSmoother(kernel_estimator=KNeighborsHatMatrix()),
     n_neighbors,
-    param_name='kernel_estimator__n_neighbors',
+    param_name='kernel_estimator__n_neighbors',  # noqa: Q000
 )
 knn.fit(fd)
 knn_fd = knn.transform(fd)
@@ -154,7 +154,7 @@ knn_fd = knn.transform(fd)
 llr = SmoothingParameterSearch(
     KernelSmoother(kernel_estimator=LocalLinearRegressionHatMatrix()),
     bandwidth,
-    param_name='kernel_estimator__bandwidth',
+    param_name='kernel_estimator__bandwidth',  # noqa: Q000
 )
 llr.fit(fd)
 llr_fd = llr.transform(fd)
@@ -163,7 +163,7 @@ llr_fd = llr.transform(fd)
 nw = SmoothingParameterSearch(
     KernelSmoother(kernel_estimator=NadarayaWatsonHatMatrix()),
     bandwidth,
-    param_name='kernel_estimator__bandwidth',
+    param_name='kernel_estimator__bandwidth',  # noqa: Q000
 )
 nw.fit(fd)
 nw_fd = nw.transform(fd)
@@ -171,7 +171,7 @@ nw_fd = nw.transform(fd)
 ##############################################################################
 # For more information on how the parameter search is performed and how score
 # is calculated see
-# :class:`~skfda.preprocessing.smoothing.validation.LinearSmootherGeneralizedCVScorer`
+# :class:`~skfda.preprocessing.smoothing.validation.LinearSmootherGeneralizedCVScorer`  # noqa: E501
 
 ##############################################################################
 # The plot of the mean test scores for all smoothers is shown below.
@@ -184,18 +184,18 @@ fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
 ax.plot(
     n_neighbors,
-    knn.cv_results_['mean_test_score'],
-    label='k-nearest neighbors',
+    knn.cv_results_['mean_test_score'],  # noqa: Q000
+    label='k-nearest neighbors',  # noqa: Q000
 )
 ax.plot(
     n_neighbors,
-    llr.cv_results_['mean_test_score'],
-    label='local linear regression',
+    llr.cv_results_['mean_test_score'],  # noqa: Q000
+    label='local linear regression',  # noqa: Q000
 )
 ax.plot(
     n_neighbors,
-    nw.cv_results_['mean_test_score'],
-    label='Nadaraya-Watson',
+    nw.cv_results_['mean_test_score'],  # noqa: Q000
+    label='Nadaraya-Watson',  # noqa: Q000
 )
 ax.legend()
 plt.show()
@@ -206,9 +206,9 @@ plt.show()
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
-ax.set_xlabel('Smoothing method parameter')
-ax.set_ylabel('GCV score')
-ax.set_title('Scores through GCV for different smoothing methods')
+ax.set_xlabel('Smoothing method parameter')  # noqa: Q000
+ax.set_ylabel('GCV score')  # noqa: Q000
+ax.set_title('Scores through GCV for different smoothing methods')  # noqa: Q000
 
 fd[10].plot(fig=fig)
 knn_fd[10].plot(fig=fig)
@@ -216,12 +216,12 @@ llr_fd[10].plot(fig=fig)
 nw_fd[10].plot(fig=fig)
 ax.legend(
     [
-        'original data',
-        'k-nearest neighbors',
-        'local linear regression',
-        'Nadaraya-Watson',
+        'original data',  # noqa: Q000
+        'k-nearest neighbors',  # noqa: Q000
+        'local linear regression',  # noqa: Q000
+        'Nadaraya-Watson',  # noqa: Q000
     ],
-    title='Smoothing method',
+    title='Smoothing method',  # noqa: Q000
 )
 plt.show()
 
@@ -236,5 +236,5 @@ fd[:5].plot(ax[0])
 nw_fd[:5].plot(ax[1])
 # Disable xticks and xlabel of first image
 ax[0].set_xticks([])
-ax[0].set_xlabel('')
+ax[0].set_xlabel('')  # noqa: Q000
 plt.show()

@@ -4,7 +4,7 @@ Shift Registration
 
 Shows the use of shift registration applied to a sinusoidal
 process represented in a Fourier basis.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -72,9 +72,9 @@ sine = make_sinusoidal_process(
 
 fig = fd_basis.mean().plot()
 fd_registered.mean().plot(fig)
-sine.plot(fig, linestyle='dashed')
+sine.plot(fig, linestyle='dashed')  # noqa: Q000
 
-fig.axes[0].legend(['original mean', 'registered mean', 'sine'])
+fig.axes[0].legend(['original mean', 'registered mean', 'sine'])  # noqa: Q000
 
 ##############################################################################
 # The values of the shifts :math:`\delta_i`, stored in the attribute `deltas_`

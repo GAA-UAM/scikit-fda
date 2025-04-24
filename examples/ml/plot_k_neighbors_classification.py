@@ -3,13 +3,13 @@ K-nearest neighbors classification
 ==================================
 
 Shows the usage of the k-nearest neighbors classifier.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
 
 import matplotlib.pyplot as plt
-import numpy as np
+import numpy as np  # noqa: F401
 from sklearn.model_selection import GridSearchCV, train_test_split
 
 import skfda

@@ -3,7 +3,7 @@ Function composition
 ====================
 
 This example shows the composition of multidimensional FDataGrids.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT

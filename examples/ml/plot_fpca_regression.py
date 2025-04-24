@@ -5,7 +5,7 @@ Functional Principal Component Analysis Regression.
 This example explores the use of the functional principal component analysis
 (FPCA) in regression problems.
 
-"""
+"""  # noqa: INP001
 
 # Author: David del Val
 # License: MIT

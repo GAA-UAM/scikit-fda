@@ -4,13 +4,13 @@ One-way functional ANOVA with synthetic data
 
 This example shows how to perform a functional one-way ANOVA test with
 synthetic data.
-"""
+"""  # noqa: INP001
 
 # Author: David García Fernández
 # License: MIT
 
 
-from skfda.datasets import make_gaussian_process
+from skfda.datasets import make_gaussian_process  # noqa: I001
 from skfda.inference.anova import oneway_anova
 from skfda.misc.covariances import WhiteNoise
 from skfda.representation import FDataGrid
@@ -59,9 +59,9 @@ _ = FDataGrid([m1, m2, m3],
 # A total of ``n_samples`` trajectories will be created for each mean, so an
 # array of labels is created to identify them when plotting.
 
-groups = np.full(n_samples * n_groups, 'Sample 1')
-groups[10:20] = 'Sample 2'
-groups[20:] = 'Sample 3'
+groups = np.full(n_samples * n_groups, 'Sample 1')  # noqa: Q000
+groups[10:20] = 'Sample 2'  # noqa: Q000
+groups[20:] = 'Sample 3'  # noqa: Q000
 
 ###############################################################################
 # First simulation uses a low :math:`\sigma^2 = 0.01` value. In this case the
@@ -81,8 +81,8 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
                             n_features=n_features, random_state=3, start=start,
                             stop=stop)
 stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
-print("Statistic: {:.3f}".format(stat))
-print("p-value: {:.3f}".format(p_val))
+print("Statistic: {:.3f}".format(stat))  # noqa: UP032
+print("p-value: {:.3f}".format(p_val))  # noqa: UP032
 
 
 ##########################################################################
@@ -107,8 +107,8 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
                             stop=t[-1])
 
 stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
-print("Statistic: {:.3f}".format(stat))
-print("p-value: {:.3f}".format(p_val))
+print("Statistic: {:.3f}".format(stat))  # noqa: UP032
+print("p-value: {:.3f}".format(p_val))  # noqa: UP032
 
 
 ##########################################################################
@@ -128,12 +128,12 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
                             stop=t[-1])
 
 stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
-print("Statistic: {:.3f}".format(stat))
-print("p-value: {:.3f}".format(p_val))
+print("Statistic: {:.3f}".format(stat))  # noqa: UP032
+print("p-value: {:.3f}".format(p_val))  # noqa: UP032
 
 ##########################################################################
 # **References:**
 #
-#  [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An anova test
+#  [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An anova test  # noqa: E501
 #  for functional data". *Computational Statistics  Data Analysis*,
 #  47:111-112, 02 2004

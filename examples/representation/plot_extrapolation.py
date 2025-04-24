@@ -3,7 +3,7 @@ Extrapolation
 =============
 
 Shows the usage of the different types of extrapolation.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -31,7 +31,7 @@ import skfda
 #
 # The extrapolation could be specified by a string with the short name of an
 # extrapolator or with an
-# :class:´~skfda.representation.extrapolation.Extrapolator´.
+# :class:´~skfda.representation.extrapolation.Extrapolator´.  # noqa: RUF003
 #
 # To show how it works we will create a dataset with two unidimensional curves
 # defined in (0,1), and we will represent it using a grid and different types

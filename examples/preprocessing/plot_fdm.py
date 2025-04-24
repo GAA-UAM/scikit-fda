@@ -1,4 +1,4 @@
-# flake8: noqa: WPS440, WPS441
+# flake8: noqa: WPS440, WPS441  # noqa: INP001
 
 """
 Functional Diffusion Maps
@@ -15,7 +15,7 @@ provided.
 # Author: Eduardo Terrés Caballero
 # License: MIT
 
-from itertools import product
+from itertools import product  # noqa: I001, RUF100
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +24,7 @@ from sklearn import datasets
 
 from skfda.datasets import fetch_phoneme
 from skfda.misc.covariances import Gaussian
-from skfda.preprocessing.dim_reduction import DiffusionMap 
+from skfda.preprocessing.dim_reduction import DiffusionMap  # noqa: RUF100, W291
 from skfda.representation import FDataGrid
 
 random_state = 0
@@ -152,7 +152,7 @@ fig, axes = plt.subplots(
     len(alpha_set), len(length_scale_set), figsize=(16, 8),
 )
 
-for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
+for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):  # noqa: B905
     fdm = DiffusionMap(
         n_components=2,
         kernel=Gaussian(length_scale=length_scale),
@@ -165,10 +165,10 @@ for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
     ax.set_xticklabels([])
     ax.set_yticklabels([])
 
-for ax, alpha in zip(axes[:, 0], alpha_set):
+for ax, alpha in zip(axes[:, 0], alpha_set):  # noqa: B905
     ax.set_ylabel(f"$\\alpha$: {alpha}", size=20, rotation=0, ha="right")
 
-for ax, length_scale in zip(axes[0], length_scale_set):
+for ax, length_scale in zip(axes[0], length_scale_set):  # noqa: B905
     ax.set_title(f"$len-sc$: {length_scale}", size=20, va="bottom")
 
 plt.show()
@@ -213,7 +213,7 @@ fig, axes = plt.subplots(
     figsize=(16, 4),
 )
 
-for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
+for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):  # noqa: B905
     fdm = DiffusionMap(
         n_components=2,
         kernel=Gaussian(length_scale=length_scale),
@@ -230,7 +230,7 @@ axes[0].set_ylabel(
     f"$\\alpha$: {alpha_set[0]}", size=20, rotation=0, ha="right",
 )
 
-for ax, length_scale in zip(axes, length_scale_set):
+for ax, length_scale in zip(axes, length_scale_set):  # noqa: B905
     ax.set_title(f"$len-sc$: {length_scale}", size=20, va="bottom")
 
 plt.show()
@@ -296,7 +296,7 @@ fig, axes = plt.subplots(
     subplot_kw={"projection": "3d"},
 )
 
-for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
+for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):  # noqa: B905
     fdm = DiffusionMap(
         n_components=3,
         kernel=Gaussian(length_scale=length_scale),
@@ -393,7 +393,7 @@ fig, axes = plt.subplots(
     1, len(view_points), figsize=(18, 6), subplot_kw={"projection": "3d"},
 )
 
-for view, ax in zip(view_points, axes.ravel()):
+for view, ax in zip(view_points, axes.ravel()):  # noqa: B905
     ax.scatter(
         diffusion_coord[:, 0],
         diffusion_coord[:, 1],

@@ -1,4 +1,4 @@
-# type: ignore
+# type: ignore  # noqa: INP001, PGH003
 """
 Creating a new interpolation or extrapolation strategy
 ======================================================
@@ -23,7 +23,7 @@ from skfda.representation import FDataGrid
 
 def evaluator_prototype(fdata, eval_points, *, aligned):
     """Prototype of a extrapolation/interpolation strategy."""
-    pass
+    pass  # noqa: PIE790
 
 # %%
 # Here, ``fdata`` is a :class:`~skfda.representation.FData` object,

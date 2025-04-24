@@ -4,7 +4,7 @@ Spectrometric data: derivatives, regression, and variable selection
 
 Shows the use of derivatives, functional regression and
 variable selection for functional data.
-"""
+"""  # noqa: INP001
 
 # License: MIT
 
@@ -19,7 +19,7 @@ from sklearn.tree import DecisionTreeRegressor, plot_tree
 
 from skfda.datasets import fetch_tecator
 from skfda.ml.regression import LinearRegression
-from skfda.preprocessing.dim_reduction.variable_selection.maxima_hunting import (
+from skfda.preprocessing.dim_reduction.variable_selection.maxima_hunting import (  # noqa: E501
     MaximaHunting,
     RelativeLocalMaximaSelector,
 )

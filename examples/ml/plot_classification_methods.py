@@ -12,7 +12,7 @@ finally, one based on the quadratic discriminant analysis, Parameterized
 Functional QDA.
 
 The Berkeley Growth Study dataset is used as input data.
-"""
+"""  # noqa: INP001
 
 # Author:Álvaro Castillo García
 # License: MIT
@@ -39,9 +39,9 @@ from skfda.ml.classification import (
 # comparison of the different methods, we will try to learn the sex of a person
 # by using its growth curve.
 X, y = fetch_growth(return_X_y=True, as_frame=True)
-X = X.iloc[:, 0].values
-categories = y.values.categories
-y = y.values.codes
+X = X.iloc[:, 0].values  # noqa: PD011
+categories = y.values.categories  # noqa: PD011
+y = y.values.codes  # noqa: PD011
 
 
 ##############################################################################
@@ -81,7 +81,7 @@ depth = MaximumDepthClassifier(depth_method=ModifiedBandDepth())
 depth.fit(X_train, y_train)
 depth_pred = depth.predict(X_test)
 print(depth_pred)
-print('The score of Maximum Depth Classifier is {0:2.2%}'.format(
+print('The score of Maximum Depth Classifier is {0:2.2%}'.format(  # noqa: Q000, UP030, UP032
     depth.score(X_test, y_test),
 ))
 
@@ -94,7 +94,7 @@ knn = KNeighborsClassifier()
 knn.fit(X_train, y_train)
 knn_pred = knn.predict(X_test)
 print(knn_pred)
-print('The score of KNN is {0:2.2%}'.format(knn.score(X_test, y_test)))
+print('The score of KNN is {0:2.2%}'.format(knn.score(X_test, y_test)))  # noqa: Q000, UP030, UP032
 
 
 ##############################################################################
@@ -104,7 +104,7 @@ centroid = NearestCentroid()
 centroid.fit(X_train, y_train)
 centroid_pred = centroid.predict(X_test)
 print(centroid_pred)
-print('The score of Nearest Centroid Classifier is {0:2.2%}'.format(
+print('The score of Nearest Centroid Classifier is {0:2.2%}'.format(  # noqa: Q000, UP030, UP032
     centroid.score(X_test, y_test),
 ))
 
@@ -128,7 +128,7 @@ qda = QuadraticDiscriminantAnalysis(
 qda.fit(X_train, y_train)
 qda_pred = qda.predict(X_test)
 print(qda_pred)
-print('The score of functional QDA is {0:2.2%}'.format(
+print('The score of functional QDA is {0:2.2%}'.format(  # noqa: Q000, UP030, UP032
     qda.score(X_test, y_test),
 ))
 
@@ -145,25 +145,25 @@ print('The score of functional QDA is {0:2.2%}'.format(
 # functional QDA.
 
 accuracies = pd.DataFrame({
-    'Classification methods':
+    'Classification methods':  # noqa: Q000
         [
-            'Maximum Depth Classifier',
-            'K-Nearest-Neighbors',
-            'Nearest Centroid Classifier',
-            'Functional QDA',
+            'Maximum Depth Classifier',  # noqa: Q000
+            'K-Nearest-Neighbors',  # noqa: Q000
+            'Nearest Centroid Classifier',  # noqa: Q000
+            'Functional QDA',  # noqa: Q000
         ],
-    'Accuracy':
+    'Accuracy':  # noqa: Q000
         [
-            '{0:2.2%}'.format(
+            '{0:2.2%}'.format(  # noqa: Q000, UP030, UP032
                 depth.score(X_test, y_test),
             ),
-            '{0:2.2%}'.format(
+            '{0:2.2%}'.format(  # noqa: Q000, UP030, UP032
                 knn.score(X_test, y_test),
             ),
-            '{0:2.2%}'.format(
+            '{0:2.2%}'.format(  # noqa: Q000, UP030, UP032
                 centroid.score(X_test, y_test),
             ),
-            '{0:2.2%}'.format(
+            '{0:2.2%}'.format(  # noqa: Q000, UP030, UP032
                 qda.score(X_test, y_test),
             ),
         ],
@@ -182,15 +182,15 @@ fig, axs = plt.subplots(2, 2)
 plt.subplots_adjust(hspace=0.45, bottom=0.06)
 
 X_test.plot(group=centroid_pred, group_names=categories, axes=axs[0][1])
-axs[0][1].set_title('Nearest Centroid Classifier', loc='left')
+axs[0][1].set_title('Nearest Centroid Classifier', loc='left')  # noqa: Q000
 
 X_test.plot(group=depth_pred, group_names=categories, axes=axs[0][0])
-axs[0][0].set_title('Maximum Depth Classifier', loc='left')
+axs[0][0].set_title('Maximum Depth Classifier', loc='left')  # noqa: Q000
 
 X_test.plot(group=knn_pred, group_names=categories, axes=axs[1][0])
-axs[1][0].set_title('KNN', loc='left')
+axs[1][0].set_title('KNN', loc='left')  # noqa: Q000
 
 X_test.plot(group=qda_pred, group_names=categories, axes=axs[1][1])
-axs[1][1].set_title('Functional QDA', loc='left')
+axs[1][1].set_title('Functional QDA', loc='left')  # noqa: Q000
 
 plt.show()

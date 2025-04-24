@@ -8,7 +8,7 @@ differences and similarities between
 :class:`~skfda.ml.classification.MaximumDepthClassifier`,
 :class:`~skfda.ml.classification.DDClassifier`,
 and :class:`~skfda.ml.classification.DDGClassifier` is made.
-"""
+"""  # noqa: INP001
 
 # Author: Pedro Martín Rodríguez-Ponga Eyriès
 # License: MIT
@@ -87,11 +87,11 @@ X_test.plot().show()
 clf = MaximumDepthClassifier(depth_method=ModifiedBandDepth())
 clf.fit(X_train, y_train)
 print(clf.predict(X_test))
-print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))
+print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))  # noqa: Q000, UP030, UP032
 
 fig, ax = plt.subplots()
 
-cmap_bold = ListedColormap(['#FF0000', '#0000FF'])
+cmap_bold = ListedColormap(['#FF0000', '#0000FF'])  # noqa: Q000
 
 index = y_train.astype(bool)
 DDPlot(
@@ -119,19 +119,19 @@ DDPlot(
 clf1 = DDClassifier(degree=1, depth_method=ModifiedBandDepth())
 clf1.fit(X_train, y_train)
 print(clf1.predict(X_test))
-print('The score is {0:2.2%}'.format(clf1.score(X_test, y_test)))
+print('The score is {0:2.2%}'.format(clf1.score(X_test, y_test)))  # noqa: Q000, UP030, UP032
 
 ##############################################################################
 clf2 = DDClassifier(degree=2, depth_method=ModifiedBandDepth())
 clf2.fit(X_train, y_train)
 print(clf2.predict(X_test))
-print('The score is {0:2.2%}'.format(clf2.score(X_test, y_test)))
+print('The score is {0:2.2%}'.format(clf2.score(X_test, y_test)))  # noqa: Q000, UP030, UP032
 
 ##############################################################################
 clf3 = DDClassifier(degree=3, depth_method=ModifiedBandDepth())
 clf3.fit(X_train, y_train)
 print(clf3.predict(X_test))
-print('The score is {0:2.2%}'.format(clf3.score(X_test, y_test)))
+print('The score is {0:2.2%}'.format(clf3.score(X_test, y_test)))  # noqa: Q000, UP030, UP032
 
 ##############################################################################
 fig, ax = plt.subplots()
@@ -143,19 +143,19 @@ def _plot_boundaries(axis):
     pol1 = axis.plot(
         ts,
         np.polyval(clf1.poly_, ts),
-        'c',
+        'c',  # noqa: Q000
         label="Polynomial",
     )[0]
     pol2 = axis.plot(
         ts,
         np.polyval(clf2.poly_, ts),
-        'm',
+        'm',  # noqa: Q000
         label="Polynomial",
     )[0]
     pol3 = axis.plot(
         ts,
         np.polyval(clf3.poly_, ts),
-        'g',
+        'g',  # noqa: Q000
         label="Polynomial",
     )[0]
     max_depth = axis.plot(
@@ -163,7 +163,7 @@ def _plot_boundaries(axis):
         color="gray",
     )[0]
 
-    axis.legend([pol1, pol2, pol3, max_depth], ['P1', 'P2', 'P3', 'MaxDepth'])
+    axis.legend([pol1, pol2, pol3, max_depth], ['P1', 'P2', 'P3', 'MaxDepth'])  # noqa: Q000
 
 
 _plot_boundaries(ax)
@@ -189,7 +189,7 @@ clf = DDGClassifier(
 )
 clf.fit(X_train, y_train)
 print(clf.predict(X_test))
-print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))
+print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))  # noqa: Q000, UP030, UP032
 
 
 ##############################################################################
@@ -219,7 +219,7 @@ clf.fit(X_train_trans, y_train)
 h = 0.01  # step size in the mesh
 
 # Create color maps
-cmap_light = ListedColormap(['#FFAAAA', '#AAAAFF'])
+cmap_light = ListedColormap(['#FFAAAA', '#AAAAFF'])  # noqa: Q000
 
 # Plot the decision boundary. For that, we will assign a color to each
 # point in the mesh [x_min, x_max]x[y_min, y_max].
@@ -235,7 +235,7 @@ Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
 Z = Z.reshape(xx.shape)
 
 fig, ax = plt.subplots()
-ax.pcolormesh(xx, yy, Z, cmap=cmap_light, shading='auto')
+ax.pcolormesh(xx, yy, Z, cmap=cmap_light, shading='auto')  # noqa: Q000
 
 _plot_boundaries(ax)
 DDPlot(
@@ -261,7 +261,7 @@ DDPlot(
 clf = DDGClassifier(
     depth_method=ModifiedBandDepth(),
     multivariate_classifier=MLPClassifier(
-        solver='lbfgs',
+        solver='lbfgs',  # noqa: Q000
         alpha=1e-5,
         hidden_layer_sizes=(6, 2),
         random_state=1,
@@ -269,12 +269,12 @@ clf = DDGClassifier(
 )
 clf.fit(X_train, y_train)
 print(clf.predict(X_test))
-print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))
+print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))  # noqa: Q000, UP030, UP032
 
 ##############################################################################
 clf1 = KNeighborsClassifier(n_neighbors=5)
 clf2 = MLPClassifier(
-    solver='lbfgs',
+    solver='lbfgs',  # noqa: Q000
     alpha=1e-5,
     hidden_layer_sizes=(6, 2),
     random_state=1,
@@ -290,8 +290,8 @@ Z2 = Z2.reshape(xx.shape)
 
 fig, axs = plt.subplots(1, 2, sharex=True, sharey=True)
 
-axs[0].pcolormesh(xx, yy, Z1, cmap=cmap_light, shading='auto')
-axs[1].pcolormesh(xx, yy, Z2, cmap=cmap_light, shading='auto')
+axs[0].pcolormesh(xx, yy, Z1, cmap=cmap_light, shading='auto')  # noqa: Q000
+axs[1].pcolormesh(xx, yy, Z2, cmap=cmap_light, shading='auto')  # noqa: Q000
 
 DDPlot(
     fdata=X_test,

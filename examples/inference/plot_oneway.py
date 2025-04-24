@@ -4,7 +4,7 @@ One-way functional ANOVA with real data
 
 This example shows how to perform a functional one-way ANOVA test using a
 real dataset.
-"""
+"""  # noqa: INP001
 
 # Author: David García Fernández
 # License: MIT
@@ -29,8 +29,8 @@ from skfda.representation.basis import FourierBasis
 # in GAIT dataset from *fda* R library. This dataset compiles a set of angles
 # of hips and knees from 39 different boys in a 20 point movement cycle.
 dataset = skfda.datasets.fetch_gait()
-fd_hip = dataset['data'].coordinates[0]
-fd_knee = dataset['data'].coordinates[1].to_basis(FourierBasis(n_basis=10))
+fd_hip = dataset['data'].coordinates[0]  # noqa: Q000
+fd_knee = dataset['data'].coordinates[1].to_basis(FourierBasis(n_basis=10))  # noqa: Q000
 
 ###############################################################################
 # Let's start with the first feature, the angle of the hip. The sample
@@ -46,7 +46,7 @@ fig = fd_hip.plot()
 fd_hip1 = fd_hip[0:13]
 fd_hip2 = fd_hip[13:26]
 fd_hip3 = fd_hip[26:39]
-fd_hip.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])
+fd_hip.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])  # noqa: PLR2004
 
 means = [fd_hip1.mean(), fd_hip2.mean(), fd_hip3.mean()]
 fd_means = skfda.concatenate(means)
@@ -69,8 +69,8 @@ v_n, p_val = oneway_anova(fd_hip1, fd_hip2, fd_hip3)
 # :func:`~skfda.inference.anova.oneway_anova` and
 # :footcite:t:`cuevas++_2004_anova`.
 
-print('Statistic: ', v_n)
-print('p-value: ', p_val)
+print('Statistic: ', v_n)  # noqa: Q000
+print('p-value: ', p_val)  # noqa: Q000
 
 ###############################################################################
 # This was the simplest way to call this function. Let's see another example,
@@ -83,7 +83,7 @@ fig = fd_knee.plot()
 fd_knee1 = fd_knee[0:13]
 fd_knee2 = fd_knee[13:26]
 fd_knee3 = fd_knee[26:39]
-fd_knee.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])
+fd_knee.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])  # noqa: PLR2004
 
 means = [fd_knee1.mean(), fd_knee2.mean(), fd_knee3.mean()]
 fd_means = skfda.concatenate(means)
@@ -106,9 +106,9 @@ fig = fd_means.plot()
 v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_reps=1500,
                                 return_dist=True)
 
-print('Statistic: ', v_n)
-print('p-value: ', p_val)
-print('Distribution: ', dist)
+print('Statistic: ', v_n)  # noqa: Q000
+print('p-value: ', p_val)  # noqa: Q000
+print('Distribution: ', dist)  # noqa: Q000
 
 ###############################################################################
 # **References:**

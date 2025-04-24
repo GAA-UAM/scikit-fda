@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3  # noqa: EXE001, D100
+# -*- coding: utf-8 -*-  # noqa: UP009
 #
 # scikit-fda documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 22 18:46:59 2017.
@@ -17,14 +17,14 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import inspect
 import os
 import sys
 import warnings
 from os.path import dirname, relpath
-from typing import Callable, Mapping
+from typing import Callable, Mapping  # noqa: UP035
 
 import pkg_resources
 # Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
@@ -41,7 +41,7 @@ import skfda
 project = "scikit-fda"
 package_name = "skfda"
 author = "Grupo de Aprendizaje Automático"
-copyright = (
+copyright = (  # noqa: A001
     "2019, Grupo de Aprendizaje Automático - "
     "Universidad Autónoma de Madrid"
 )
@@ -61,7 +61,7 @@ language = "en"
 try:
     release = pkg_resources.get_distribution(project).version
 except pkg_resources.DistributionNotFound:
-    print(
+    print(  # noqa: T201
         f"To build the documentation, The distribution information of\n"
         f"{project} has to be available.  Either install the package\n"
         f"into your development environment or run 'setup.py develop'\n"
@@ -207,11 +207,11 @@ epub_copyright = copyright
 # The unique identifier of the text. This can be a ISBN number
 # or the project homepage.
 #
-# epub_identifier = ""
+# epub_identifier = ""  # noqa: ERA001
 
 # A unique identification for the text.
 #
-# epub_uid = ""
+# epub_uid = ""  # noqa: ERA001
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ["search.html"]
@@ -274,7 +274,7 @@ def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
     for part in fullname.split("."):
         try:
             obj = getattr(obj, part)
-        except Exception:
+        except Exception:  # noqa: BLE001, PERF203
             return None
 
     fn = None
@@ -282,7 +282,7 @@ def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
 
     try:
         fn = inspect.getsourcefile(obj)
-    except Exception:
+    except Exception:  # noqa: BLE001
         fn = None
     if not fn:
         return None
@@ -295,12 +295,12 @@ def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
     try:
         source, lineno = inspect.getsourcelines(obj)
         lineno_final = lineno + len(source) - 1
-    except Exception:
+    except Exception:  # noqa: BLE001
         lineno_final = None
 
-    fn = relpath(fn, start=dirname(skfda.__file__))
+    fn = relpath(fn, start=dirname(skfda.__file__))  # noqa: PTH120
 
-    if lineno:
+    if lineno:  # noqa: SIM108
         linespec = f"#L{lineno}-L{lineno_final}"
     else:
         linespec = ""
@@ -323,38 +323,38 @@ napoleon_use_rtype = True
 # first, we define new methods for any new sections and add them to the class
 
 
-def parse_keys_section(self, section):
+def parse_keys_section(self, section):  # noqa: ANN001, ANN201, ARG001, D103
     return self._format_fields("Keys", self._consume_fields())
 
 
-GoogleDocstring._parse_keys_section = parse_keys_section
+GoogleDocstring._parse_keys_section = parse_keys_section  # noqa: SLF001
 
 
-def parse_attributes_section(self, section):
+def parse_attributes_section(self, section):  # noqa: ANN001, ANN201, ARG001, D103
     return self._format_fields("Attributes", self._consume_fields())
 
 
-GoogleDocstring._parse_attributes_section = parse_attributes_section
+GoogleDocstring._parse_attributes_section = parse_attributes_section  # noqa: SLF001
 
 
-def parse_class_attributes_section(self, section):
+def parse_class_attributes_section(self, section):  # noqa: ANN001, ANN201, ARG001, D103
     return self._format_fields("Class Attributes", self._consume_fields())
 
 
-GoogleDocstring._parse_class_attributes_section = parse_class_attributes_section
+GoogleDocstring._parse_class_attributes_section = parse_class_attributes_section  # noqa: SLF001, E501
 
 # we now patch the parse method to guarantee that the the above methods are
 # assigned to the _section dict
 
 
-def patched_parse(self):
+def patched_parse(self):  # noqa: ANN001, ANN201, D103
     self._sections["keys"] = self._parse_keys_section
     self._sections["class attributes"] = self._parse_class_attributes_section
     self._unpatched_parse()
 
 
-GoogleDocstring._unpatched_parse = GoogleDocstring._parse
-GoogleDocstring._parse = patched_parse
+GoogleDocstring._unpatched_parse = GoogleDocstring._parse  # noqa: SLF001
+GoogleDocstring._parse = patched_parse  # noqa: SLF001
 
 # -- Options for "sphinx.ext.todo" --
 
@@ -372,7 +372,7 @@ tutorial_list = [
 OrderType = Callable[[str], str]
 
 
-class SkfdaExplicitSubOrder(object):
+class SkfdaExplicitSubOrder(object):  # noqa: UP004
     """
     Class for use within the "within_subsection_order" key.
 
@@ -440,7 +440,7 @@ warnings.filterwarnings(
 original_gen_binder_rst = sphinx_gallery.interactive_example.gen_binder_rst
 
 
-def patched_gen_binder_rst(*args, **kwargs):
+def patched_gen_binder_rst(*args, **kwargs):  # noqa: ANN002, ANN003, ANN201, D103
     original_rst = original_gen_binder_rst(*args, **kwargs)
     return original_rst.replace(
         "../examples/auto_",

@@ -4,7 +4,7 @@ SDE simulation: Langevin dynamics
 
 This example shows how to use numeric SDE solvers to simulate solutions of
 Stochastic Differential Equations (SDEs).
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Soto Martín
 # License: MIT
@@ -175,11 +175,11 @@ score = score_gaussian_mixture(
     means,
     cov_matrices,
 )
-score = score.reshape(X_score.shape + (2,))
+score = score.reshape(X_score.shape + (2,))  # noqa: RUF005
 score_x_coord = score[:, :, 0]
 score_y_coord = score[:, :, 1]
 
-plt.contour(X, Y, Z, levels=25, cmap='autumn')
+plt.contour(X, Y, Z, levels=25, cmap='autumn')  # noqa: Q000
 plt.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
 plt.xticks([])
 plt.yticks([])
@@ -260,15 +260,15 @@ fd = make_sde_trajectories(
 points = fd.data_matrix
 fig, ax = plt.subplots()
 
-plt.contour(X, Y, Z, levels=25, cmap='autumn')
+plt.contour(X, Y, Z, levels=25, cmap='autumn')  # noqa: Q000
 plt.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
-rc('animation', html='jshtml')
+rc('animation', html='jshtml')  # noqa: Q000
 scatter = None
 
 
 def update(frame: int) -> None:
     """Creation of each frame of the animation."""
-    global scatter
+    global scatter  # noqa: PLW0603
 
     if scatter:
         scatter.remove()
@@ -279,7 +279,7 @@ def update(frame: int) -> None:
     ax.set_yticks([])
     x = points[:, grid_points_per_frame * frame, 0]
     y = points[:, grid_points_per_frame * frame, 1]
-    scatter = ax.scatter(x, y, s=5, c='dodgerblue')
+    scatter = ax.scatter(x, y, s=5, c='dodgerblue')  # noqa: Q000
 
 
 animation = FuncAnimation(fig, update, frames=frames, interval=500)

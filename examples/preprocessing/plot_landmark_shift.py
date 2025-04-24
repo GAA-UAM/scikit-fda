@@ -4,7 +4,7 @@ Landmark shift
 
 This example shows how to shift functional data objects to align
 its samples with a particular reference point.
-"""
+"""  # noqa: INP001
 
 # Author: Pablo Marcos Manchón
 # License: MIT
@@ -26,7 +26,7 @@ import skfda
 # :func:`~skfda.preprocessing.registration.landmark_shift_registration`.
 
 fd = skfda.datasets.make_multimodal_samples(random_state=1)
-fd.extrapolation = 'bounds'  #  See extrapolation for a detailed explanation.
+fd.extrapolation = 'bounds'  #  See extrapolation for a detailed explanation.  # noqa: E501, Q000, RUF003
 
 fd.plot()
 
@@ -95,7 +95,7 @@ fd_extrapolated = skfda.preprocessing.registration.landmark_shift_registration(
 )
 
 
-fig = fd_extrapolated.plot(linestyle='dashed', label='Extrapolated samples')
+fig = fd_extrapolated.plot(linestyle='dashed', label='Extrapolated samples')  # noqa: Q000
 fd_restricted.plot(fig=fig, label="Restricted samples")
 
 ##############################################################################

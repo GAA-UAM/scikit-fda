@@ -4,13 +4,13 @@ from __future__ import annotations
 from typing import TypeVar, overload
 
 from sklearn.utils.validation import check_is_fitted
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation._functional_data import FData
-from ...representation.extrapolation import ExtrapolationLike
+from ...representation.extrapolation import ExtrapolationLike  # noqa: TC001
 from ...representation.grid import FDataGrid
-from ...typing._base import GridPointsLike
+from ...typing._base import GridPointsLike  # noqa: TC001
 from ...typing._numpy import ArrayLike, NDArrayFloat
 
 Input = TypeVar("Input", bound=FData)
@@ -142,18 +142,18 @@ class EvaluationTransformer(
         self.extrapolation = extrapolation
         self.grid = grid
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, PYI019, RUF100
         self: SelfType,
         X: FData | NDArrayFloat,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> SelfType:
         if (
             callable(X)
             and self.eval_points is None
             and not isinstance(X, FDataGrid)
         ):
-            raise ValueError(
-                "If no eval_points are passed, the functions "
+            raise ValueError(  # noqa: TRY003
+                "If no eval_points are passed, the functions "  # noqa: EM101
                 "should be FDataGrid objects.",
             )
 
@@ -161,12 +161,12 @@ class EvaluationTransformer(
 
         return self
 
-    def transform(  # noqa: D102
+    def transform(  # noqa: D102, RUF100
         self,
         X: FData | NDArrayFloat,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> NDArrayFloat:
-        check_is_fitted(self, '_is_fitted')
+        check_is_fitted(self, '_is_fitted')  # noqa: Q000
 
         if callable(X):
             if self.eval_points is None:

@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any, TypeVar
 
 from ..._utils import _to_grid_points
-from ...typing._base import GridPointsLike
-from ...typing._numpy import NDArrayFloat
+from ...typing._base import GridPointsLike  # noqa: TC001
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ._basis import Basis
 
 T = TypeVar("T", bound="_GridBasis")
@@ -44,10 +44,10 @@ class _GridBasis(Basis):
 
     def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
         raise NotImplementedError(
-            "Evaluation is not implemented in this basis",
+            "Evaluation is not implemented in this basis",  # noqa: EM101
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         return (
             super().__eq__(other)
             and self.grid_points == other.grid_points

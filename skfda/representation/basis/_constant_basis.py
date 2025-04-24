@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Tuple, TypeVar
+from typing import Optional, Tuple, TypeVar  # noqa: UP035
 
 import numpy as np
 
@@ -27,18 +27,18 @@ class ConstantBasis(Basis):
 
     """
 
-    def __init__(self, domain_range: Optional[DomainRangeLike] = None) -> None:
+    def __init__(self, domain_range: Optional[DomainRangeLike] = None) -> None:  # noqa: UP007
         """Constant basis constructor."""
         super().__init__(domain_range=domain_range, n_basis=1)
 
     def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
         return np.ones((1, len(eval_points)))
 
-    def _derivative_basis_and_coefs(
+    def _derivative_basis_and_coefs(  # noqa: PYI019
         self: T,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
         return (
             (self.copy(), coefs.copy())
             if order == 0
@@ -52,7 +52,7 @@ class ConstantBasis(Basis):
 
     def _to_R(self) -> str:  # noqa: N802
         drange = self.domain_range[0]
-        drange_str = f"c({str(drange[0])}, {str(drange[1])})"
+        drange_str = f"c({str(drange[0])}, {str(drange[1])})"  # noqa: RUF010
         return f"create.constant.basis(rangeval = {drange_str})"
 
 
@@ -76,7 +76,7 @@ class Constant(ConstantBasis):
 
     """
 
-    def __init__(self, domain_range: Optional[DomainRangeLike] = None) -> None:
+    def __init__(self, domain_range: Optional[DomainRangeLike] = None) -> None:  # noqa: UP007
         """Constant basis constructor."""
         warnings.warn(
             "The Constant class is deprecated. Use ConstantBasis instead.",

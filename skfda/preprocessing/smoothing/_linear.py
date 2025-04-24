@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-  # noqa: UP009
 """Linear smoother.
 
 This module contains the abstract base class for all linear smoothers.
@@ -7,15 +7,15 @@ This module contains the abstract base class for all linear smoothers.
 from __future__ import annotations
 
 import abc
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional  # noqa: UP035
 
 import numpy as np
 
 from ..._utils import _to_grid_points
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation import FDataGrid
-from ...typing._base import GridPoints, GridPointsLike
-from ...typing._numpy import NDArrayFloat
+from ...typing._base import GridPoints, GridPointsLike  # noqa: TC001
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 
 
 class _LinearSmoother(
@@ -32,17 +32,17 @@ class _LinearSmoother(
     input_points_: GridPoints
     output_points_: GridPoints
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
-        output_points: Optional[GridPointsLike] = None,
+        output_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ):
         self.output_points = output_points
 
     def hat_matrix(
         self,
-        input_points: Optional[GridPointsLike] = None,
-        output_points: Optional[GridPointsLike] = None,
+        input_points: Optional[GridPointsLike] = None,  # noqa: UP007
+        output_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> NDArrayFloat:
 
         # Use the fitted points if they are not provided
@@ -66,13 +66,13 @@ class _LinearSmoother(
 
     def _more_tags(self) -> Mapping[str, Any]:
         return {
-            'X_types': [],
+            'X_types': [],  # noqa: Q000
         }
 
     def fit(
         self,
         X: FDataGrid,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> _LinearSmoother:
         """Compute the hat matrix for the desired output points.
 
@@ -98,7 +98,7 @@ class _LinearSmoother(
     def transform(
         self,
         X: FDataGrid,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> FDataGrid:
         """Multiply the hat matrix with the function values to smooth them.
 
@@ -111,7 +111,7 @@ class _LinearSmoother(
 
         """
         assert all(
-            np.array_equal(i, s) for i, s in zip(
+            np.array_equal(i, s) for i, s in zip(  # noqa: B905
                 self.input_points_,
                 X.grid_points,
             )

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Tuple, TypeVar, Union, overload
+from typing import Tuple, TypeVar, Union, overload  # noqa: UP035
 
 from sklearn.neighbors import (
     KNeighborsRegressor as _KNeighborsRegressor,
     RadiusNeighborsRegressor as _RadiusNeighborsRegressor,
 )
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils._neighbors_base import (
     AlgorithmType,
@@ -19,12 +19,12 @@ from ..._utils._neighbors_base import (
 )
 from ...misc.metrics import l2_distance
 from ...representation import FData
-from ...typing._metric import Metric
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 
-InputBound = Union[NDArrayFloat, FData]
-Input = TypeVar("Input", contravariant=True, bound=InputBound)
-TargetBound = Union[NDArrayFloat, FData]
+InputBound = Union[NDArrayFloat, FData]  # noqa: UP007
+Input = TypeVar("Input", contravariant=True, bound=InputBound)  # noqa: PLC0105
+TargetBound = Union[NDArrayFloat, FData]  # noqa: UP007
 Target = TypeVar("Target", bound=TargetBound)
 
 
@@ -150,15 +150,15 @@ class KNeighborsRegressor(
 
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
-    """
+    """  # noqa: D405
 
     @overload
     def __init__(
         self: KNeighborsRegressor[NDArrayFloat, Target],
         *,
         n_neighbors: int = 5,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"],
         n_jobs: int | None = None,
@@ -170,8 +170,8 @@ class KNeighborsRegressor(
         self: KNeighborsRegressor[InputBound, Target],
         *,
         n_neighbors: int = 5,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         n_jobs: int | None = None,
     ) -> None:
@@ -182,8 +182,8 @@ class KNeighborsRegressor(
         self,
         *,
         n_neighbors: int = 5,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -195,8 +195,8 @@ class KNeighborsRegressor(
         self,
         *,
         n_neighbors: int = 5,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -224,7 +224,7 @@ class KNeighborsRegressor(
     def _query(
         self,
         X: Input,
-    ) -> Tuple[NDArrayFloat, NDArrayInt]:
+    ) -> Tuple[NDArrayFloat, NDArrayInt]:  # noqa: UP006
         """Return distances and neighbors of given sample."""
         return self.kneighbors(X)
 
@@ -345,15 +345,15 @@ class RadiusNeighborsRegressor(
 
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
-    """
+    """  # noqa: D405
 
     @overload
     def __init__(
         self: RadiusNeighborsRegressor[NDArrayFloat, Target],
         *,
         radius: float = 1.0,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"],
         n_jobs: int | None = None,
@@ -365,8 +365,8 @@ class RadiusNeighborsRegressor(
         self: RadiusNeighborsRegressor[InputBound, Target],
         *,
         radius: float = 1.0,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         n_jobs: int | None = None,
     ) -> None:
@@ -377,8 +377,8 @@ class RadiusNeighborsRegressor(
         self,
         *,
         radius: float = 1.0,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -390,8 +390,8 @@ class RadiusNeighborsRegressor(
         self,
         *,
         radius: float = 1.0,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -419,5 +419,5 @@ class RadiusNeighborsRegressor(
     def _query(
         self,
         X: Input,
-    ) -> Tuple[NDArrayFloat, NDArrayInt]:
+    ) -> Tuple[NDArrayFloat, NDArrayInt]:  # noqa: UP006
         return self.radius_neighbors(X)

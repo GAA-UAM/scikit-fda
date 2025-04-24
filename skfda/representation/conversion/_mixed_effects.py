@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-  # noqa: UP009
 r"""
 Mixed effects converters
 ========================
@@ -104,12 +104,12 @@ References
 
 .. footbibliography::
 
-"""
+"""  # noqa: W291, D205, D415, D416
 from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass
-from typing import Callable, List, Literal, Protocol
+from typing import Callable, List, Literal, Protocol  # noqa: UP035
 
 import numpy as np
 import scipy
@@ -119,8 +119,8 @@ from typing_extensions import Self
 
 from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...representation import FDataBasis, FDataIrregular
-from ...representation.basis import Basis
-from ...typing._numpy import NDArrayFloat
+from ...representation.basis import Basis  # noqa: TC001
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ._to_basis import _ToBasisConverter
 
 _SCIPY_MINIMIZATION_METHODS = [
@@ -152,7 +152,7 @@ _EM_MINIMIZATION_METHODS = [
 
 def _get_values_list(
     fdatairregular: FDataIrregular,
-) -> List[NDArrayFloat]:
+) -> List[NDArrayFloat]:  # noqa: UP006
     """Get the values vectors for the mixed-effects model.
 
     Args:
@@ -188,7 +188,7 @@ def _get_values_list(
 def _get_basis_evaluations_list(
     fdatairregular: FDataIrregular,
     basis: Basis,
-) -> List[NDArrayFloat]:
+) -> List[NDArrayFloat]:  # noqa: UP006
     """Get the matrix of basis evaluations for the mixed-effects model.
 
     Args:
@@ -248,7 +248,7 @@ def _get_basis_evaluations_list(
                   [  0.,  0.,  1.,  4.,  16.],
                   [  1.,  5.,  0.,  0.,   0.],
                   [  0.,  0.,  1.,  5.,  25.]])]
-    """
+    """  # noqa: E501
     return np.split(
         basis(fdatairregular.points).reshape(basis.n_basis, -1).T,
         fdatairregular.start_indices[1:] * fdatairregular.dim_codomain,
@@ -273,9 +273,9 @@ def _minimize(
     if minimization_method is None:
         minimization_method = _SCIPY_MINIMIZATION_METHODS[0]
     elif minimization_method not in _SCIPY_MINIMIZATION_METHODS:
-        raise ValueError(
-            f"Invalid minimize method: \"{minimization_method}\". "
-            f"Supported methods are {_SCIPY_MINIMIZATION_METHODS}."
+        raise ValueError(  # noqa: TRY003
+            f"Invalid minimize method: \"{minimization_method}\". "  # noqa: EM102
+            f"Supported methods are {_SCIPY_MINIMIZATION_METHODS}."  # noqa: COM812
         )
 
     result = scipy.optimize.minimize(
@@ -283,16 +283,16 @@ def _minimize(
         x0=x0,
         method=minimization_method,
         options={
-            # "disp": True,
-            # "maxiter": 1000,
+            # "disp": True,  # noqa: ERA001
+            # "maxiter": 1000,  # noqa: ERA001
         },
     )
-    return result  # even if it failed
+    return result  # even if it failed  # noqa: RET504
 
 def _sum_mahalanobis(
-    r_list: List[NDArrayFloat],
-    cov_mat_list: List[NDArrayFloat],
-    r_list2: List[NDArrayFloat] | None = None,
+    r_list: List[NDArrayFloat],  # noqa: UP006
+    cov_mat_list: List[NDArrayFloat],  # noqa: UP006
+    r_list2: List[NDArrayFloat] | None = None,  # noqa: UP006
 ) -> NDArrayFloat:
     """sum_k ( r_list[k]^T @ cov_mat_list[k]^{-1} @ r_list2[k] )
 
@@ -303,7 +303,7 @@ def _sum_mahalanobis(
 
     Returns:
         sum_k ( r_list[k]^T @ cov_mat_list[k]^{-1} @ r_list2[k] )
-    """
+    """  # noqa: D415
     if r_list2 is None:
         r_list2 = r_list
     return sum(
@@ -312,8 +312,8 @@ def _sum_mahalanobis(
             r2,
             lstsq_method="cholesky",
         )
-        for r1, cov_mat, r2 in zip(r_list, cov_mat_list, r_list2)
-    )  # type: ignore
+        for r1, cov_mat, r2 in zip(r_list, cov_mat_list, r_list2)  # noqa: B905
+    )  # type: ignore  # noqa: PGH003
 
 
 class _MixedEffectsParams(Protocol):
@@ -350,7 +350,7 @@ class _MixedEffectsParamsResult:
 
 
 def _initial_params(
-    dim_effects: int,  # TODO add X: FDataIrregular, basis: Basis ?
+    dim_effects: int,  # TODO add X: FDataIrregular, basis: Basis ?  # noqa: E501, FIX002, TD002, TD003, TD004
 ) -> _MixedEffectsParams:
     """Generic initial parameters."""
     return _MixedEffectsParamsResult(
@@ -375,8 +375,8 @@ class _MixedEffectsModel:
             points where the curves are evaluated.
     """
 
-    values: List[NDArrayFloat]
-    basis_evaluations: List[NDArrayFloat]
+    values: List[NDArrayFloat]  # noqa: UP006
+    basis_evaluations: List[NDArrayFloat]  # noqa: UP006
     n_measurements: int
     _profile_loglikelihood_additive_constants: float
 
@@ -403,14 +403,14 @@ class _MixedEffectsModel:
     def partial_residuals(
         self,
         mean: NDArrayFloat,
-    ) -> List[NDArrayFloat]:
+    ) -> List[NDArrayFloat]:  # noqa: UP006
         """Residuals of the mixed effects model.
 
         r[k] = value[k] - basis_evaluations[k] @ mean
         """
         return [
             value - basis_evaluation @ mean
-            for value, basis_evaluation in zip(
+            for value, basis_evaluation in zip(  # noqa: B905
                 self.values, self.basis_evaluations,
             )
         ]
@@ -418,7 +418,7 @@ class _MixedEffectsModel:
     def values_covariances_div_sigmasq(
         self,
         cov_div_sigmasq: NDArrayFloat,
-    ) -> List[NDArrayFloat]:
+    ) -> List[NDArrayFloat]:  # noqa: UP006
         """Covariance of the values divided by sigmasq.
 
         values_covariances_div_sigmasq[k] = (
@@ -437,7 +437,7 @@ class _MixedEffectsModel:
         self,
         sigmasq: float,
         random_effects_covariance: NDArrayFloat,
-    ) -> List[NDArrayFloat]:
+    ) -> List[NDArrayFloat]:  # noqa: UP006
         """Covariance of the values.
 
         values_covariances[k] = (
@@ -449,7 +449,7 @@ class _MixedEffectsModel:
         Args:
             sigmasq: Variance of the noise term.
             random_effects_covariance: Covariance of the random effects.
-        """
+        """  # noqa: D202
 
         return [
             sigmasq * np.eye(basis_evaluation.shape[0])
@@ -460,8 +460,8 @@ class _MixedEffectsModel:
     def _random_effects_estimate(
         self,
         random_effects_covariance: NDArrayFloat,
-        values_covariances: List[NDArrayFloat],
-        partial_residuals: List[NDArrayFloat],
+        values_covariances: List[NDArrayFloat],  # noqa: UP006
+        partial_residuals: List[NDArrayFloat],  # noqa: UP006
     ) -> NDArrayFloat:
         """Estimates of the random effects (generalized least squares).
 
@@ -476,12 +476,12 @@ class _MixedEffectsModel:
             partial_residuals: List of: value - basis_evaluation @ mean.
         """
         return np.array([
-            random_effects_covariance @ basis_eval.T @ solve_regularized_weighted_lstsq(
+            random_effects_covariance @ basis_eval.T @ solve_regularized_weighted_lstsq(  # noqa: E501
                 value_cov,
                 r,
                 lstsq_method="cholesky",
             )
-            for basis_eval, value_cov, r in zip(
+            for basis_eval, value_cov, r in zip(  # noqa: B905
                 self.basis_evaluations,
                 values_covariances,
                 partial_residuals,
@@ -511,21 +511,21 @@ class _MixedEffectsModel:
             params.covariance_div_sigmasq,
         )
 
-        # slogdet_V_list = [np.linalg.slogdet(V) for V in V_list]
+        # slogdet_V_list = [np.linalg.slogdet(V) for V in V_list]  # noqa: E501, ERA001
         # if any(slogdet_V[0] <= 0 for slogdet_V in slogdet_V_list):
-        #     return -np.inf
-        # TODO remove check sign?
+        #     return -np.inf  # noqa: ERA001
+        # TODO remove check sign?  # noqa: FIX002, TD002, TD003, TD004
 
         # sum_logdet_V: float = sum(
         #     slogdet_V[1] for slogdet_V in slogdet_V_list
-        # )
-        sum_logdet_V: float = sum(
+        # )  # noqa: ERA001, RUF100
+        sum_logdet_V: float = sum(  # noqa: N806
             np.linalg.slogdet(V)[1] for V in values_covariances
         )
         sum_mahalanobis = _sum_mahalanobis(
             partial_residuals, values_covariances,
         )
-        log_sum_mahalanobis: float = np.log(sum_mahalanobis)  # type: ignore
+        log_sum_mahalanobis: float = np.log(sum_mahalanobis)  # type: ignore  # noqa: PGH003
 
         return (
             - sum_logdet_V / 2
@@ -674,7 +674,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
                 self._model.values_covariances_div_sigmasq(
                     self.covariance_div_sigmasq,
                 ),
-            ) / self._model.n_measurements  # type: ignore
+            ) / self._model.n_measurements  # type: ignore  # noqa: PGH003
 
         @classmethod
         def from_vec(
@@ -682,7 +682,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             vec: NDArrayFloat,
             dim_effects: int,
             model: _MixedEffectsModel | None = None,
-            has_mean: bool = True,
+            has_mean: bool = True,  # noqa: FBT001, FBT002
         ) -> Self:
             """Create Params from vectorized parameters."""
             mean = vec[:dim_effects] if has_mean else None
@@ -693,7 +693,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             )
             return cls(
                 mean=mean,
-                sqrt_cov_div_sigmasq=sqrt_cov_div_sigmasq, 
+                sqrt_cov_div_sigmasq=sqrt_cov_div_sigmasq,  # noqa: RUF100, W291
                 model=model,
             )
 
@@ -709,7 +709,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
     def fit(
         self,
         X: FDataIrregular,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
         *,
         initial_params: (
             MinimizeMixedEffectsConverter.Params | NDArrayFloat | None
@@ -758,7 +758,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
                     dim_effects,
                     model=self,
                     has_mean=has_mean,
-                )
+                )  # noqa: COM812
             ) / n_samples
 
         minimize_result = _minimize(
@@ -785,7 +785,7 @@ class MinimizeMixedEffectsConverter(MixedEffectsConverter):
             message=minimize_result.message,
             **(
                 {"nit": minimize_result.nit}
-                if "nit" in minimize_result.keys()
+                if "nit" in minimize_result.keys()  # noqa: SIM118
                 else {}
             ),
         )
@@ -838,7 +838,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
     def _mean(
         self,
         model: _MixedEffectsModel,
-        values_covariances_list: List[NDArrayFloat],
+        values_covariances_list: List[NDArrayFloat],  # noqa: UP006
     ) -> NDArrayFloat:
         """Return the mean estimate."""
         return solve_regularized_weighted_lstsq(
@@ -859,14 +859,14 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         self,
         model: _MixedEffectsModel,
         curr_params: EMMixedEffectsConverter.Params,
-        partial_residuals: List[NDArrayFloat],
-        values_cov: List[NDArrayFloat],
+        partial_residuals: List[NDArrayFloat],  # noqa: UP006
+        values_cov: List[NDArrayFloat],  # noqa: UP006
         random_effects: NDArrayFloat,
     ) -> EMMixedEffectsConverter.Params:
         """Return the next parameters of the EM algorithm."""
         residuals = [
             r - basis_eval @ random_effect
-            for r, basis_eval, random_effect in zip(
+            for r, basis_eval, random_effect in zip(  # noqa: B905
                 partial_residuals, model.basis_evaluations, random_effects,
             )
         ]
@@ -875,7 +875,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         ]
         sum_squared_residuals = sum(np.inner(r, r) for r in residuals)
         sum_traces = curr_params.sigmasq * sum(
-            # np.trace(np.eye(cov_inv.shape[0]) - params.sigmasq * cov_inv)
+            # np.trace(np.eye(cov_inv.shape[0]) - params.sigmasq * cov_inv)  # noqa: E501, ERA001
             cov_inv.shape[0] - curr_params.sigmasq * np.trace(cov_inv)
             for cov_inv in values_cov_inv
         )
@@ -892,7 +892,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
                     lstsq_method="cholesky",
                 )
             )
-            for basis_eval, Sigma, random_effect in zip(
+            for basis_eval, Sigma, random_effect in zip(  # noqa: B905
                 model.basis_evaluations,
                 values_cov,
                 random_effects,
@@ -904,10 +904,10 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             covariance=next_covariance,
         )
 
-    def fit(
+    def fit(  # noqa: C901, PLR0912
         self,
         X: FDataIrregular,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
         *,
         initial_params: (
             EMMixedEffectsConverter.Params | NDArrayFloat | None
@@ -959,9 +959,9 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             convergence_criterion = "params"
 
         if convergence_criterion not in _EM_MINIMIZATION_METHODS:
-            raise ValueError(
-                "Invalid convergence criterion for the EM algorithm: "
-                f"\"{convergence_criterion}\"."
+            raise ValueError(  # noqa: TRY003
+                "Invalid convergence criterion for the EM algorithm: "  # noqa: EM102
+                f"\"{convergence_criterion}\"."  # noqa: COM812
             )
 
         use_error = convergence_criterion in ("squared-error",)
@@ -972,14 +972,14 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
         converged = False
         convergence_val: NDArrayFloat | float | None = None
         prev_convergence_val: NDArrayFloat | float | None = None
-        for iter_number in range(maxiter):
+        for iter_number in range(maxiter):  # noqa: B007
             curr_params = next_params
             values_cov = model.values_covariances(
                 curr_params.sigmasq, curr_params.covariance,
             )
             mean = self._mean(model, values_cov)
             partial_residuals = model.partial_residuals(mean)
-            random_effects = model._random_effects_estimate(
+            random_effects = model._random_effects_estimate(  # noqa: SLF001
                 curr_params.covariance, values_cov, partial_residuals,
             )
             next_params = self._next_params(
@@ -995,7 +995,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
             elif convergence_criterion == "squared-error":
                 estimates = np.concatenate([  # estimated values
                     basis_eval @ (mean + random_effect)
-                    for basis_eval, random_effect in zip(
+                    for basis_eval, random_effect in zip(  # noqa: B905
                         model.basis_evaluations, random_effects,
                     )
                 ])
@@ -1007,7 +1007,7 @@ class EMMixedEffectsConverter(MixedEffectsConverter):
                         mean=mean,
                         covariance=next_params.covariance,
                         sigmasq=next_params.sigmasq,
-                    )
+                    )  # noqa: COM812
                 )
 
             if prev_convergence_val is not None:

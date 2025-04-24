@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import singledispatch
-from typing import List, Tuple
+from typing import List, Tuple  # noqa: UP035
 
 import numpy as np
 
@@ -51,7 +51,7 @@ def irregular_sample(
         start_indices=start_indices,
         values=np.concatenate([
             func(func_points)[0, :, :]
-            for func, func_points in zip(fdata, points_list)
+            for func, func_points in zip(fdata, points_list)  # noqa: B905
         ]),
     )
 
@@ -70,7 +70,7 @@ def _irregular_sample_points_list(
     fdata: FDataBasis | FDataGrid | FDataIrregular,
     n_points_per_curve: NDArrayInt,
     random_state: RandomState,
-) -> Tuple[List[NDArrayFloat], NDArrayInt]:
+) -> Tuple[List[NDArrayFloat], NDArrayInt]:  # noqa: UP006
     """Return a list of points and the start indices for each curve.
 
     The points are selected at random (uniformly) from the domain of the input.
@@ -80,7 +80,7 @@ def _irregular_sample_points_list(
         start_indices: Start indices for each curve.
     """
     raise NotImplementedError(
-        "Only implemented for FDataBasis, FDataGrid and FDataIrregular.",
+        "Only implemented for FDataBasis, FDataGrid and FDataIrregular.",  # noqa: EM101
     )
 
 
@@ -89,7 +89,7 @@ def _irregular_sample_points_matrix_fdatagrid(
     fdata: FDataGrid,
     n_points_per_curve: NDArrayInt,
     random_state: RandomState,
-) -> Tuple[List[NDArrayFloat], NDArrayInt]:
+) -> Tuple[List[NDArrayFloat], NDArrayInt]:  # noqa: UP006
     all_points_single_function = _cartesian_product(
         _to_grid_points(fdata.grid_points),
     )
@@ -114,7 +114,7 @@ def _irregular_sample_points_matrix_fdatairregular(
     fdata: FDataIrregular,
     n_points_per_curve: NDArrayInt,
     random_state: RandomState,
-) -> Tuple[List[NDArrayFloat], NDArrayInt]:
+) -> Tuple[List[NDArrayFloat], NDArrayInt]:  # noqa: UP006
     original_n_points_per_curve = np.diff(
         np.concatenate([fdata.start_indices, [len(fdata.points)]]),
     )
@@ -127,7 +127,7 @@ def _irregular_sample_points_matrix_fdatairregular(
             random_state.permutation(curve_points)[
                 :min(n_points, len(curve_points)),
             ]
-            for n_points, curve_points in zip(
+            for n_points, curve_points in zip(  # noqa: B905
                 n_points_per_curve,
                 np.split(fdata.points, fdata.start_indices[1:]),
             )
@@ -141,7 +141,7 @@ def _irregular_sample_points_matrix_fdatabasis(
     fdata: FDataBasis,
     n_points_per_curve: NDArrayInt,
     random_state: RandomState,
-) -> Tuple[List[NDArrayFloat], NDArrayInt]:
+) -> Tuple[List[NDArrayFloat], NDArrayInt]:  # noqa: UP006
     len_points = np.sum(n_points_per_curve)
     separate_coordinate_points = [
         random_state.uniform(*domain_range_coordinate, size=(len_points))

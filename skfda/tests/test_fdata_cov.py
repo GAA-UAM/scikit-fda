@@ -1,5 +1,5 @@
 """Test the covariance method of FData."""
-from typing import Any, Callable, Tuple
+from typing import Any, Callable, Tuple  # noqa: UP035
 
 import numpy as np
 import pytest
@@ -28,8 +28,8 @@ N_FEATURES = 100
     ],
 )
 def basis_type(
-    request: Any,
-) -> Any:
+    request: Any,  # noqa: ANN401
+) -> Any:  # noqa: ANN401
     """Fixture for classes to test."""
     return request.param
 
@@ -41,8 +41,8 @@ def basis_type(
     ],
 )
 def n_basis(
-    request: Any,
-) -> Any:
+    request: Any,  # noqa: ANN401
+) -> Any:  # noqa: ANN401
     """Generate a basis."""
     return request.param
 
@@ -54,8 +54,8 @@ def n_basis(
     ],
 )
 def interval(
-    request: Any,
-) -> Any:
+    request: Any,  # noqa: ANN401
+) -> Any:  # noqa: ANN401
     """Generate an interval."""
     return request.param
 
@@ -77,8 +77,8 @@ def interval(
     ],
 )
 def covariance(
-    request: Any,
-) -> Any:
+    request: Any,  # noqa: ANN401
+) -> Any:  # noqa: ANN401
     """Generate a covariance kernel."""
     return request.param
 
@@ -87,7 +87,7 @@ def covariance(
 def data_in_basis(
     basis_type: Callable[..., Basis],
     n_basis: int,
-    interval: Tuple[float, float],
+    interval: Tuple[float, float],  # noqa: UP006
     covariance: CovarianceLike,
 ) -> FDataBasis:
     """Generate gaussian process data using a basis."""

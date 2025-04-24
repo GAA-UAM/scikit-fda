@@ -9,14 +9,14 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "_mixed_effects": [
             "EMMixedEffectsConverter",
             "MixedEffectsConverter",
-            "MinimizeMixedEffectsConverter"
+            "MinimizeMixedEffectsConverter"  # noqa: COM812
         ],
     },
 )
 
 if TYPE_CHECKING:
     from ._mixed_effects import (
-        EMMixedEffectsConverter,
-        MinimizeMixedEffectsConverter,
-        MixedEffectsConverter,
+        EMMixedEffectsConverter,  # noqa: F401
+        MinimizeMixedEffectsConverter,  # noqa: F401
+        MixedEffectsConverter,  # noqa: F401
     )

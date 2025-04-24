@@ -1,6 +1,6 @@
-import abc
+import abc  # noqa: D100
 import warnings
-from typing import Callable, Optional
+from typing import Callable, Optional  # noqa: UP035
 
 from ...misc import kernels
 from ...misc.hat_matrix import (
@@ -24,20 +24,20 @@ warnings.warn(
 
 class _DeprecatedLinearKernelSmoother(_LinearSmoother):
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
-        smoothing_parameter: Optional[float] = None,
+        smoothing_parameter: Optional[float] = None,  # noqa: UP007
         kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.normal,
-        weights: Optional[NDArrayFloat] = None,
-        output_points: Optional[GridPointsLike] = None,
+        weights: Optional[NDArrayFloat] = None,  # noqa: UP007
+        output_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ):
         self.smoothing_parameter = smoothing_parameter
         self.kernel = kernel
         self.weights = weights
         self.output_points = output_points
 
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             f"Class \"{type(self)}\" is deprecated. "
             "Use the \"KernelSmoother\" class instead",
             DeprecationWarning,
@@ -49,7 +49,7 @@ class _DeprecatedLinearKernelSmoother(_LinearSmoother):
         output_points: GridPointsLike,
     ) -> NDArrayFloat:
 
-        return KernelSmoother(
+        return KernelSmoother(  # noqa: SLF001
             kernel_estimator=self._get_kernel_estimator(),
             weights=self.weights,
             output_points=output_points,
@@ -86,13 +86,13 @@ class LocalLinearRegressionSmoother(_DeprecatedLinearKernelSmoother):
 class KNeighborsSmoother(_DeprecatedLinearKernelSmoother):
     """Local linear regression smoother (deprecated)."""
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
-        smoothing_parameter: Optional[int] = None,
+        smoothing_parameter: Optional[int] = None,  # noqa: UP007
         kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.uniform,
-        weights: Optional[NDArrayFloat] = None,
-        output_points: Optional[GridPointsLike] = None,
+        weights: Optional[NDArrayFloat] = None,  # noqa: UP007
+        output_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ):
         super().__init__(
             smoothing_parameter=smoothing_parameter,

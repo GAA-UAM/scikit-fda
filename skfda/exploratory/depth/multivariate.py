@@ -10,15 +10,15 @@ import numpy as np
 import scipy.stats
 import sklearn
 from scipy.special import comb
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 
-T = TypeVar("T", contravariant=True)
+T = TypeVar("T", contravariant=True)  # noqa: PLC0105
 SelfType = TypeVar("SelfType")
 _Side = Literal["left", "right"]
-Input = TypeVar("Input", contravariant=True)
+Input = TypeVar("Input", contravariant=True)  # noqa: PLC0105
 
 
 class _DepthOrOutlyingness(
@@ -27,7 +27,7 @@ class _DepthOrOutlyingness(
 ):
     """Abstract class representing a depth or outlyingness function."""
 
-    def fit(self: SelfType, X: Input, y: object = None) -> SelfType:
+    def fit(self: SelfType, X: Input, y: object = None) -> SelfType:  # noqa: PYI019, ARG002
         """
         Learn the distribution from the observations.
 
@@ -54,9 +54,9 @@ class _DepthOrOutlyingness(
             Depth of each observation.
 
         """
-        pass
+        pass  # noqa: PIE790
 
-    def fit_transform(self, X: Input, y: object = None) -> NDArrayFloat:
+    def fit_transform(self, X: Input, y: object = None) -> NDArrayFloat:  # noqa: ARG002
         """
         Compute the depth or outlyingness of each observation.
 
@@ -103,7 +103,7 @@ class _DepthOrOutlyingness(
         Maximum (or supremum if there is no maximum) of the possibly predicted
         values.
 
-        """
+        """  # noqa: D205
         return 1
 
     @property
@@ -112,7 +112,7 @@ class _DepthOrOutlyingness(
         Minimum (or infimum if there is no maximum) of the possibly predicted
         values.
 
-        """
+        """  # noqa: D205
         return 0
 
 
@@ -128,15 +128,15 @@ def _searchsorted_one_dim(
     array: NDArrayFloat,
     values: NDArrayFloat,
     *,
-    side: _Side = 'left',
+    side: _Side = 'left',  # noqa: Q000
 ) -> NDArrayInt:
     return np.searchsorted(array, values, side=side)
 
 
 _searchsorted_vectorized = np.vectorize(
     _searchsorted_one_dim,
-    signature='(n),(m),()->(m)',
-    excluded='side',
+    signature='(n),(m),()->(m)',  # noqa: Q000
+    excluded='side',  # noqa: Q000
 )
 
 
@@ -144,7 +144,7 @@ def _searchsorted_ordered(
     array: NDArrayFloat,
     values: NDArrayFloat,
     *,
-    side: _Side = 'left',
+    side: _Side = 'left',  # noqa: Q000
 ) -> NDArrayInt:
     return _searchsorted_vectorized(  # type: ignore[no-any-return]
         array,
@@ -173,7 +173,7 @@ def _cumulative_distribution(column: NDArrayFloat) -> NDArrayFloat:
     return _searchsorted_ordered(
         np.sort(column),
         column,
-        side='right',
+        side='right',  # noqa: Q000
     ) / len(column)
 
 
@@ -193,7 +193,7 @@ class _UnivariateFraimanMuniz(Depth[NDArrayFloat]):
 
     """
 
-    def fit(self: SelfType, X: NDArrayFloat, y: object = None) -> SelfType:
+    def fit(self: SelfType, X: NDArrayFloat, y: object = None) -> SelfType:  # noqa: PYI019, ARG002
         self._sorted_values = np.sort(X, axis=0)
         return self
 
@@ -201,7 +201,7 @@ class _UnivariateFraimanMuniz(Depth[NDArrayFloat]):
         cum_dist = _searchsorted_ordered(
             np.moveaxis(self._sorted_values, 0, -1),
             np.moveaxis(X, 0, -1),
-            side='right',
+            side='right',  # noqa: Q000
         ).astype(X.dtype) / len(self._sorted_values)
 
         assert cum_dist.shape[-2] == 1
@@ -229,12 +229,12 @@ class SimplicialDepth(Depth[NDArrayFloat]):
         Simplices. The Annals of Statistics, 18(1), 405–414.
 
 
-    """
+    """  # noqa: RUF002
 
     def fit(  # noqa: D102
         self,
         X: NDArrayFloat,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> SimplicialDepth:
         self._dim = X.shape[-1]
 
@@ -242,7 +242,7 @@ class SimplicialDepth(Depth[NDArrayFloat]):
             self.sorted_values = np.sort(X, axis=0)
         else:
             raise NotImplementedError(
-                "SimplicialDepth is currently only "
+                "SimplicialDepth is currently only "  # noqa: EM101
                 "implemented for one-dimensional data.",
             )
 
@@ -263,7 +263,7 @@ class SimplicialDepth(Depth[NDArrayFloat]):
             positions_right = _searchsorted_ordered(
                 np.moveaxis(self.sorted_values, 0, -1),
                 np.moveaxis(X, 0, -1),
-                side='right',
+                side='right',  # noqa: Q000
             )
 
             positions_right = np.moveaxis(positions_right, -1, 0)[..., 0]
@@ -307,13 +307,13 @@ class OutlyingnessBasedDepth(Depth[T]):
 
     """
 
-    def __init__(self, outlyingness: Outlyingness[T]):
+    def __init__(self, outlyingness: Outlyingness[T]):  # noqa: ANN204
         self.outlyingness = outlyingness
 
     def fit(  # noqa: D102
         self,
         X: T,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> OutlyingnessBasedDepth[T]:
         self.outlyingness.fit(X)
 
@@ -349,12 +349,12 @@ class StahelDonohoOutlyingness(Outlyingness[NDArrayFloat]):
         estimator and depth-weighted means of multivariate data. Annals of
         Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
 
-    """
+    """  # noqa: RUF002
 
     def fit(  # noqa: D102
         self,
         X: NDArrayFloat,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> StahelDonohoOutlyingness:
 
         dim = X.shape[-1]
@@ -363,7 +363,7 @@ class StahelDonohoOutlyingness(Outlyingness[NDArrayFloat]):
             self._location = np.median(X, axis=0)
             self._scale = scipy.stats.median_abs_deviation(X, axis=0)
         else:
-            raise NotImplementedError("Only implemented for one dimension")
+            raise NotImplementedError("Only implemented for one dimension")  # noqa: EM101
 
         return self
 
@@ -377,10 +377,10 @@ class StahelDonohoOutlyingness(Outlyingness[NDArrayFloat]):
 
             return diff[..., 0]
 
-        raise NotImplementedError("Only implemented for one dimension")
+        raise NotImplementedError("Only implemented for one dimension")  # noqa: EM101
 
     @property
-    def max(self) -> float:
+    def max(self) -> float:  # noqa: D102
         return math.inf
 
 
@@ -399,7 +399,7 @@ class ProjectionDepth(OutlyingnessBasedDepth[NDArrayFloat]):
         estimator and depth-weighted means of multivariate data. Annals of
         Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
 
-    """
+    """  # noqa: D405, RUF002
 
     def __init__(self) -> None:
         super().__init__(outlyingness=StahelDonohoOutlyingness())

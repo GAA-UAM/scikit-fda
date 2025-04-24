@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence, TypeVar, Union
+from typing import Sequence, TypeVar, Union  # noqa: UP035
 
 import numpy as np
 from scipy.linalg import logm
@@ -9,11 +9,11 @@ from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
 from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
-from ...exploratory.stats.covariance import CovarianceEstimator
+from ...exploratory.stats.covariance import CovarianceEstimator  # noqa: TC001
 from ...representation import FDataGrid
 from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
-Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])  # noqa: UP007
 
 
 class QuadraticDiscriminantAnalysis(
@@ -202,12 +202,12 @@ class QuadraticDiscriminantAnalysis(
         means = []
         covariance = []
         for class_index, _ in enumerate(self.classes_):
-            X_class = X[self.y_ind == class_index]
+            X_class = X[self.y_ind == class_index]  # noqa: N806
             cov_estimator = clone(self.cov_estimator).fit(X_class)
 
             cov_estimators.append(cov_estimator)
             means.append(cov_estimator.location_)
-            # TODO: QDA should use the covariance estimators interface
+            # TODO: QDA should use the covariance estimators interface  # noqa: E501, FIX002, TD002, TD003
             covariance.append(
                 cov_estimator.covariance_.cov_fdata.data_matrix[0, ..., 0],
             )
@@ -229,7 +229,7 @@ class QuadraticDiscriminantAnalysis(
         # Calculates difference wrt. the mean (x - un)
         mean_values = np.array([m.data_matrix[0] for m in self.means_])
 
-        X_centered = (
+        X_centered = (  # noqa: N806
             X[:, np.newaxis, :, :]
             - mean_values[np.newaxis, :, :, :]
         )

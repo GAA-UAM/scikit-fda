@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING  # noqa: D104
 
 import lazy_loader as lazy
 
@@ -38,7 +38,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._real_datasets import (
+    from ._real_datasets import (  # noqa: I001
         fdata_constructor as fdata_constructor,
         fetch_aemet as fetch_aemet,
         fetch_cran as fetch_cran,
@@ -64,5 +64,5 @@ if TYPE_CHECKING:
         make_sde_trajectories as make_sde_trajectories,
     )
     from ._sample_from_fdata import (
-        irregular_sample
+        irregular_sample  # noqa: COM812, F401
     )

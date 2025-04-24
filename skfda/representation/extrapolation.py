@@ -8,16 +8,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union, overload
 
 import numpy as np
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
-from ..typing._base import EvaluationPoints
-from ..typing._numpy import NDArrayFloat
+from ..typing._base import EvaluationPoints  # noqa: TC001
+from ..typing._numpy import NDArrayFloat  # noqa: TC001
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
     from ._functional_data import FData
 
-ExtrapolationLike = Union[
+ExtrapolationLike = Union[  # noqa: UP007
     Evaluator,
     Literal["bounds", "exception", "nan", "none", "periodic", "zeros"],
 ]
@@ -55,7 +55,7 @@ class PeriodicExtrapolation(Evaluator):
                 [-1.086]]])
     """
 
-    def _evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102, RUF100
         self,
         fdata: FData,
         eval_points: EvaluationPoints,
@@ -105,7 +105,7 @@ class BoundaryExtrapolation(Evaluator):
                 [ 1.125]]])
     """
 
-    def _evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102, RUF100
         self,
         fdata: FData,
         eval_points: EvaluationPoints,
@@ -154,16 +154,16 @@ class ExceptionExtrapolation(Evaluator):
 
     """
 
-    def _evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102, RUF100
         self,
-        fdata: FData,
-        eval_points: EvaluationPoints,
+        fdata: FData,  # noqa: ARG002
+        eval_points: EvaluationPoints,  # noqa: ARG002
         *,
-        aligned: bool = True,
+        aligned: bool = True,  # noqa: ARG002
     ) -> NoReturn:
 
-        raise ValueError(
-            "Attempt to evaluate points outside the domain range.",
+        raise ValueError(  # noqa: TRY003
+            "Attempt to evaluate points outside the domain range.",  # noqa: EM101
         )
 
 
@@ -203,12 +203,12 @@ class FillExtrapolation(Evaluator):
     def __init__(self, fill_value: float) -> None:
         self.fill_value = fill_value
 
-    def _evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102, RUF100
         self,
         fdata: FData,
         eval_points: EvaluationPoints,
         *,
-        aligned: bool = True,
+        aligned: bool = True,  # noqa: ARG002
     ) -> NDArrayFloat:
 
         shape = (
@@ -224,7 +224,7 @@ class FillExtrapolation(Evaluator):
             f"fill_value={self.fill_value})"
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         return (
             super().__eq__(other)
             and (
@@ -251,8 +251,8 @@ def _parse_extrapolation(
 
 
 def _parse_extrapolation(
-    extrapolation: Optional[ExtrapolationLike],
-) -> Optional[Evaluator]:
+    extrapolation: Optional[ExtrapolationLike],  # noqa: UP007
+) -> Optional[Evaluator]:  # noqa: UP007
     """Parse the argument `extrapolation` of `FData`.
 
     If extrapolation is None returns the default extrapolator.
@@ -264,11 +264,11 @@ def _parse_extrapolation(
     Returns:
         (:class:´Extrapolator´ or Callable): Extrapolation method.
 
-    """
+    """  # noqa: RUF002
     if extrapolation is None:
         return None
 
-    elif isinstance(extrapolation, str):
+    elif isinstance(extrapolation, str):  # noqa: RET505
         return extrapolation_methods[extrapolation.lower()]
 
     return extrapolation

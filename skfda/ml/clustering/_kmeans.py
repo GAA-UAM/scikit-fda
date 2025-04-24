@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import warnings
 from abc import abstractmethod
-from typing import Any, Generic, Tuple, TypeVar
+from typing import Any, Generic, Tuple, TypeVar  # noqa: UP035
 
 import numpy as np
 from sklearn.utils.validation import check_is_fitted
@@ -20,14 +20,14 @@ from ...misc.validation import (
     validate_random_state,
 )
 from ...representation import FDataGrid
-from ...typing._base import RandomState, RandomStateLike
-from ...typing._metric import Metric
+from ...typing._base import RandomState, RandomStateLike  # noqa: TC001
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType", bound="BaseKMeans[Any, Any]")
 MembershipType = TypeVar("MembershipType", bound=NDArrayAny)
 
-# TODO: Generalize to FData and NDArray, without losing performance
+# TODO: Generalize to FData and NDArray, without losing performance  # noqa: E501, FIX002, TD002, TD003
 Input = TypeVar("Input", bound=FDataGrid)
 
 
@@ -45,7 +45,7 @@ class BaseKMeans(
     classes inherit.
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
         n_clusters: int = 2,
@@ -102,24 +102,24 @@ class BaseKMeans(
             Validated input.
 
         """
-        if len(fdata) < 2:
-            raise ValueError(
-                "The number of observations must be greater than 1.",
+        if len(fdata) < 2:  # noqa: PLR2004
+            raise ValueError(  # noqa: TRY003
+                "The number of observations must be greater than 1.",  # noqa: EM101
             )
 
-        if self.n_clusters < 2:
-            raise ValueError(
-                "The number of clusters must be greater than 1.",
+        if self.n_clusters < 2:  # noqa: PLR2004
+            raise ValueError(  # noqa: TRY003
+                "The number of clusters must be greater than 1.",  # noqa: EM101
             )
 
         if self.n_init < 1:
-            raise ValueError(
-                "The number of iterations must be greater than 0.",
+            raise ValueError(  # noqa: TRY003
+                "The number of iterations must be greater than 0.",  # noqa: EM101
             )
 
         if self.init is not None and self.n_init != 1:
             self.n_init = 1
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "Warning: The number of iterations is ignored "
                 "because the init parameter is set.",
             )
@@ -130,19 +130,19 @@ class BaseKMeans(
                 (self.n_clusters,) + fdata.data_matrix.shape[1:]
             )
         ):
-            raise ValueError(
-                "The init FDataGrid data_matrix should be of "
+            raise ValueError(  # noqa: TRY003
+                "The init FDataGrid data_matrix should be of "  # noqa: EM101
                 "shape (n_clusters, n_features, dim_codomain) "
                 "and gives the initial centers.",
             )
 
         if self.max_iter < 1:
-            raise ValueError(
-                "The number of maximum iterations must be greater than 0.",
+            raise ValueError(  # noqa: TRY003
+                "The number of maximum iterations must be greater than 0.",  # noqa: EM101
             )
 
         if self.tol < 0:
-            raise ValueError("The tolerance must be positive.")
+            raise ValueError("The tolerance must be positive.")  # noqa: EM101, TRY003
 
         return fdata
 
@@ -178,8 +178,8 @@ class BaseKMeans(
             unique_data = fdatagrid[np.sort(idx)]
 
             if len(unique_data) < self.n_clusters:
-                raise ValueError(
-                    "Not enough unique data points to "
+                raise ValueError(  # noqa: TRY003
+                    "Not enough unique data points to "  # noqa: EM101
                     "initialize the requested number of "
                     "clusters",
                 )
@@ -214,7 +214,7 @@ class BaseKMeans(
         self,
         fdata: Input,
         random_state: RandomState,
-    ) -> Tuple[NDArrayFloat, Input, NDArrayFloat, int]:
+    ) -> Tuple[NDArrayFloat, Input, NDArrayFloat, int]:  # noqa: UP006
         """
         Fuzzy K-Means algorithm.
 
@@ -292,11 +292,11 @@ class BaseKMeans(
     ) -> float:
         pass
 
-    def fit(
+    def fit(  # noqa: PYI019
         self: SelfType,
         X: Input,
-        y: object = None,
-        sample_weight: None = None,
+        y: object = None,  # noqa: ARG002
+        sample_weight: None = None,  # noqa: ARG002
     ) -> SelfType:
         """
         Fit the model.
@@ -357,7 +357,7 @@ class BaseKMeans(
     def _predict_membership(
         self,
         X: Input,
-        sample_weight: None = None,
+        sample_weight: None = None,  # noqa: ARG002
     ) -> MembershipType:
         """Predict the closest cluster each sample in X belongs to.
 
@@ -433,8 +433,8 @@ class BaseKMeans(
     def fit_transform(
         self,
         X: Input,
-        y: object = None,
-        sample_weight: None = None,
+        y: object = None,  # noqa: ARG002
+        sample_weight: None = None,  # noqa: ARG002
     ) -> NDArrayFloat:
         """Compute clustering and transform X to cluster-distance space.
 
@@ -453,8 +453,8 @@ class BaseKMeans(
     def score(
         self,
         X: Input,
-        y: object = None,
-        sample_weight: None = None,
+        y: object = None,  # noqa: ARG002
+        sample_weight: None = None,  # noqa: ARG002
     ) -> float:
         """Opposite of the value of X on the K-means objective.
 
@@ -585,12 +585,12 @@ class KMeans(BaseKMeans[Input, NDArrayInt]):
                 [-1.        ],
                 [-1.        ]]])
 
-    """
+    """  # noqa: D412
 
     def _compute_inertia(
         self,
         membership: NDArrayInt,
-        centroids: Input,
+        centroids: Input,  # noqa: ARG002
         distances_to_centroids: NDArrayFloat,
     ) -> float:
         distances_to_their_center = np.choose(
@@ -752,9 +752,9 @@ class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
                 [ 4.25134384,  0.6251158 ]]])
 
 
-    """
+    """  # noqa: D412
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         n_clusters: int = 2,
@@ -784,18 +784,18 @@ class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
 
     def _check_params(self) -> None:
         if self.fuzzifier <= 1:
-            raise ValueError("The fuzzifier parameter must be greater than 1.")
+            raise ValueError("The fuzzifier parameter must be greater than 1.")  # noqa: EM101, TRY003
 
     def _compute_inertia(
         self,
         membership: NDArrayFloat,
-        centroids: Input,
+        centroids: Input,  # noqa: ARG002
         distances_to_centroids: NDArrayFloat,
     ) -> float:
         return float(
             np.sum(
                 membership**self.fuzzifier * distances_to_centroids**2,
-            )
+            )  # noqa: COM812
         )
 
     def _create_membership(self, n_samples: int) -> NDArrayFloat:
@@ -818,13 +818,13 @@ class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
         centroids: Input,
     ) -> None:
         # Divisions by zero allowed
-        with np.errstate(divide='ignore'):
+        with np.errstate(divide='ignore'):  # noqa: Q000
             distances_to_centers_raised = (
                 distances_to_centroids**(2 / (1 - self.fuzzifier))
             )
 
         # Divisions infinity by infinity allowed
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid='ignore'):  # noqa: Q000
             membership_matrix[:, :] = (
                 distances_to_centers_raised
                 / np.sum(
@@ -847,7 +847,7 @@ class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
         )
         centroids.data_matrix[:] = (
             np.einsum(
-                'ij,i...->j...',
+                'ij,i...->j...',  # noqa: Q000
                 membership_matrix_raised,
                 fdata.data_matrix,
             )

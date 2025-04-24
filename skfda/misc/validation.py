@@ -4,20 +4,20 @@ from __future__ import annotations
 
 import functools
 import numbers
-from typing import Container, Sequence, Tuple, cast
+from typing import Container, Sequence, Tuple, cast  # noqa: UP035
 
 import numpy as np
 from sklearn.utils import check_random_state as _check_random_state
 
 from ..representation import FData, FDataBasis, FDataGrid
 from ..typing._base import (
-    DomainRange,
-    DomainRangeLike,
-    EvaluationPoints,
-    RandomState,
-    RandomStateLike,
+    DomainRange,  # noqa: TC001
+    DomainRangeLike,  # noqa: TC001
+    EvaluationPoints,  # noqa: TC001
+    RandomState,  # noqa: TC001
+    RandomStateLike,  # noqa: TC001
 )
-from ..typing._numpy import ArrayLike
+from ..typing._numpy import ArrayLike  # noqa: TC001
 
 
 def check_fdata_dimensions(
@@ -44,19 +44,19 @@ def check_fdata_dimensions(
     if isinstance(dim_codomain, int):
         dim_codomain = {dim_codomain}
 
-    if dim_domain is not None:
+    if dim_domain is not None:  # noqa: SIM102
 
         if fd.dim_domain not in dim_domain:
-            raise ValueError(
-                "Invalid domain dimension for functional data object:"
+            raise ValueError(  # noqa: TRY003
+                "Invalid domain dimension for functional data object:"  # noqa: EM102
                 f"{fd.dim_domain} not in {dim_domain}.",
             )
 
-    if dim_codomain is not None:
+    if dim_codomain is not None:  # noqa: SIM102
 
         if fd.dim_codomain not in dim_codomain:
-            raise ValueError(
-                "Invalid domain dimension for functional data object:"
+            raise ValueError(  # noqa: TRY003
+                "Invalid domain dimension for functional data object:"  # noqa: EM102
                 f"{fd.dim_codomain} not in {dim_codomain}.",
             )
 
@@ -77,20 +77,20 @@ def check_fdata_same_dimensions(
 
     """
     if (fdata1.dim_domain != fdata2.dim_domain):
-        raise ValueError(
-            f"Functional data has incompatible domain dimensions: "
+        raise ValueError(  # noqa: TRY003
+            f"Functional data has incompatible domain dimensions: "  # noqa: EM102
             f"{fdata1.dim_domain} != {fdata2.dim_domain}",
         )
 
     if (fdata1.dim_codomain != fdata2.dim_codomain):
-        raise ValueError(
-            f"Functional data has incompatible codomain dimensions: "
+        raise ValueError(  # noqa: TRY003
+            f"Functional data has incompatible codomain dimensions: "  # noqa: EM102
             f"{fdata1.dim_codomain} != {fdata2.dim_codomain}",
         )
 
     if (fdata1.domain_range != fdata2.domain_range):
-        raise ValueError(
-            f"Functional data has incompatible domain range: "
+        raise ValueError(  # noqa: TRY003
+            f"Functional data has incompatible domain range: "  # noqa: EM102
             f"{fdata1.domain_range} != {fdata2.domain_range}",
         )
 
@@ -110,13 +110,13 @@ def _check_fdatagrid_same_kind_specific(
 ) -> None:
 
     # First we do an identity comparison to speed up the common case
-    if fdata1.grid_points is not fdata2.grid_points:
+    if fdata1.grid_points is not fdata2.grid_points:  # noqa: SIM102
         if not all(
             np.array_equal(g1, g2)
-            for g1, g2 in zip(fdata1.grid_points, fdata2.grid_points)
+            for g1, g2 in zip(fdata1.grid_points, fdata2.grid_points)  # noqa: B905
         ):
-            raise ValueError(
-                f"Incompatible grid points between functional data objects:"
+            raise ValueError(  # noqa: TRY003
+                f"Incompatible grid points between functional data objects:"  # noqa: EM102
                 f"{fdata1.grid_points} != {fdata2.grid_points}",
             )
 
@@ -128,8 +128,8 @@ def _check_fdatabasis_same_kind_specific(
 ) -> None:
 
     if fdata1.basis != fdata2.basis:
-        raise ValueError(
-            f"Incompatible basis between functional data objects:"
+        raise ValueError(  # noqa: TRY003
+            f"Incompatible basis between functional data objects:"  # noqa: EM102
             f"{fdata1.basis} != {fdata2.basis}",
         )
 
@@ -176,7 +176,7 @@ def _valid_eval_points_shape(
 ) -> bool:
     """Check that the shape for aligned evaluation points is ok."""
     return (
-        (len(shape) == 2 and shape[-1] == dim_domain)  # noqa: WPS222
+        (len(shape) == 2 and shape[-1] == dim_domain)  # noqa: PLR2004, WPS222
         or (len(shape) <= 1 and dim_domain == 1)  # Domain ommited
         or (len(shape) == 1 and shape == (dim_domain,))  # Num. points ommited
     )
@@ -213,22 +213,22 @@ def validate_evaluation_points(
         if _valid_eval_points_shape(eval_points.shape, dim_domain=dim_domain):
             shape = (-1, dim_domain)
         else:
-            raise ValueError(
-                "Invalid shape for evaluation points."
+            raise ValueError(  # noqa: TRY003
+                "Invalid shape for evaluation points."  # noqa: EM102
                 f"An array with size (n_points, dim_domain (={dim_domain})) "
                 "was expected (both can be ommited if they are 1)."
                 "Instead, the received evaluation points have shape "
                 f"{eval_points.shape}.",
             )
-    else:
+    else:  # noqa: PLR5501
         if eval_points.shape[0] == n_samples and _valid_eval_points_shape(
             eval_points.shape[1:],
             dim_domain=dim_domain,
         ):
             shape = (n_samples, -1, dim_domain)
         else:
-            raise ValueError(
-                "Invalid shape for unaligned evaluation points."
+            raise ValueError(  # noqa: TRY003
+                "Invalid shape for unaligned evaluation points."  # noqa: EM102
                 f"An array with size (n_samples (={n_samples}), "
                 f"n_points, dim_domain (={dim_domain})) "
                 "was expected (the last two can be ommited if they are 1)."
@@ -241,10 +241,10 @@ def validate_evaluation_points(
 
 def _validate_domain_range_limits(
     limits: Sequence[float],
-) -> Tuple[float, float]:
-    if len(limits) != 2 or limits[0] > limits[1]:
-        raise ValueError(
-            f"Invalid domain interval {limits}. "
+) -> Tuple[float, float]:  # noqa: UP006
+    if len(limits) != 2 or limits[0] > limits[1]:  # noqa: PLR2004
+        raise ValueError(  # noqa: TRY003
+            f"Invalid domain interval {limits}. "  # noqa: EM102
             "Domain intervals should have 2 bounds for "
             "dimension: (lower, upper).",
         )
@@ -256,10 +256,10 @@ def _validate_domain_range_limits(
 def validate_domain_range(domain_range: DomainRangeLike) -> DomainRange:
     """Convert sequence to a proper domain range."""
     if isinstance(domain_range[0], numbers.Real):
-        domain_range = cast(Sequence[float], domain_range)
+        domain_range = cast(Sequence[float], domain_range)  # noqa: TC006
         domain_range = (domain_range,)
 
-    domain_range = cast(Sequence[Sequence[float]], domain_range)
+    domain_range = cast(Sequence[Sequence[float]], domain_range)  # noqa: TC006
 
     return tuple(_validate_domain_range_limits(s) for s in domain_range)
 

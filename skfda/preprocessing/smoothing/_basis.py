@@ -1,23 +1,23 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-  # noqa: UP009
 """Basis smoother.
 
 This module contains the class for the basis smoothing.
 
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Optional
 
 import numpy as np
-from typing_extensions import Final
+from typing_extensions import Final  # noqa: UP035
 
 from ..._utils import _cartesian_product, _to_grid_points
 from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
-from ...misc.regularization import L2Regularization
+from ...misc.regularization import L2Regularization  # noqa: TC001
 from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
-from ...representation.basis import Basis
-from ...typing._base import GridPointsLike
-from ...typing._numpy import NDArrayFloat
+from ...representation.basis import Basis  # noqa: TC001
+from ...typing._base import GridPointsLike  # noqa: TC001
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ._linear import _LinearSmoother
 
 
@@ -206,17 +206,17 @@ class BasisSmoother(_LinearSmoother):
 
     """
 
-    _required_parameters = ["basis"]
+    _required_parameters = ["basis"]  # noqa: RUF012
 
     def __init__(
         self,
         basis: Basis,
         *,
         smoothing_parameter: float = 1.0,
-        weights: Optional[NDArrayFloat] = None,
-        regularization: Optional[L2Regularization[FDataGrid]] = None,
-        output_points: Optional[GridPointsLike] = None,
-        method: LstsqMethod = 'svd',
+        weights: Optional[NDArrayFloat] = None,  # noqa: UP007
+        regularization: Optional[L2Regularization[FDataGrid]] = None,  # noqa: UP007
+        output_points: Optional[GridPointsLike] = None,  # noqa: UP007
+        method: LstsqMethod = 'svd',  # noqa: Q000
         return_basis: bool = False,
     ) -> None:
         self.basis = basis
@@ -289,7 +289,7 @@ class BasisSmoother(_LinearSmoother):
             self
 
         """
-        self.input_points_ = X._get_input_points()
+        self.input_points_ = X._get_input_points()  # noqa: SLF001
         self.output_points_ = (
             _to_grid_points(self.output_points)
             if self.output_points is not None
@@ -318,13 +318,13 @@ class BasisSmoother(_LinearSmoother):
 
         """
         assert all(
-            np.array_equal(i, s) for i, s in zip(
+            np.array_equal(i, s) for i, s in zip(  # noqa: B905
                 self.input_points_,
-                X._get_input_points(),
+                X._get_input_points(),  # noqa: SLF001
             )
         )
 
-        eval_points, function_values = X._get_points_and_values()
+        eval_points, function_values = X._get_points_and_values()  # noqa: SLF001
 
         if self.return_basis:
             coefficients = self._coef_matrix(

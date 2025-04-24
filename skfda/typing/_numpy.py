@@ -15,7 +15,7 @@ try:  # noqa: WPS229
     NDArrayAny = NDArray[Any]
     NDArrayInt = NDArray[np.int_]
     NDArrayFloat = NDArray[np.float64]
-    NDArrayReal = NDArray[Union[np.float64, np.int_]]
+    NDArrayReal = NDArray[Union[np.float64, np.int_]]  # noqa: UP007
     NDArrayBool = NDArray[np.bool_]
     NDArrayStr = NDArray[np.str_]
     NDArrayObject = NDArray[np.object_]

@@ -1,21 +1,21 @@
 """Defines methods for the validation of the smoothing."""
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, Tuple
+from typing import Any, Callable, Iterable, Tuple  # noqa: UP035
 
 import numpy as np
 import sklearn
 from sklearn.model_selection import GridSearchCV
 
 from ...representation import FDataGrid
-from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt  # noqa: TC001
 from ._linear import _LinearSmoother
 
 
 def _get_input_estimation_and_matrix(
     estimator: _LinearSmoother,
     X: FDataGrid,
-) -> Tuple[FDataGrid, NDArrayFloat]:
+) -> Tuple[FDataGrid, NDArrayFloat]:  # noqa: UP006
     """Return the smoothed data evaluated at the input points & the matrix."""
     if estimator.output_points is not None:
         estimator = sklearn.base.clone(estimator)
@@ -113,7 +113,7 @@ class LinearSmootherGeneralizedCVScorer:
 
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         penalization_function: Callable[[NDArrayFloat], float] | None = None,
     ):
@@ -153,19 +153,19 @@ class _FullSplitter:
     def split(
         self,
         X: FDataGrid,
-        y: FDataGrid | None = None,
-        groups: NDArrayInt | None = None,
+        y: FDataGrid | None = None,  # noqa: ARG002
+        groups: NDArrayInt | None = None,  # noqa: ARG002
     ) -> Iterable[tuple[NDArrayInt, NDArrayInt]]:
         """Return the split."""
         idx = np.arange(len(X))
 
         return [(idx, idx)]
-    
+  # noqa: RUF100, W293
     def get_n_splits(
         self,
-        X: FDataGrid,
-        y: FDataGrid | None = None,
-        groups: NDArrayInt | None = None,
+        X: FDataGrid,  # noqa: ARG002
+        y: FDataGrid | None = None,  # noqa: ARG002
+        groups: NDArrayInt | None = None,  # noqa: ARG002
     ) -> int:
         """Return the number of splits."""
         return 1
@@ -335,16 +335,16 @@ class SmoothingParameterSearch(
                 [ 2.5 ]]])
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204, PLR0913
         self,
         estimator: _LinearSmoother,
         param_values: Iterable[float],
         *,
-        param_name: str = 'smoothing_parameter',
+        param_name: str = 'smoothing_parameter',  # noqa: Q000
         scoring: Scorer | None = None,
         n_jobs: int | None = None,
         verbose: int = 0,
-        pre_dispatch: int | str | None = '2*n_jobs',
+        pre_dispatch: int | str | None = '2*n_jobs',  # noqa: Q000
         error_score: str | float = np.nan,
     ):
         super().__init__(
@@ -367,7 +367,7 @@ class SmoothingParameterSearch(
         X: FDataGrid,
         y: FDataGrid | None = None,
         groups: NDArrayInt | None = None,
-        **fit_params: Any,
+        **fit_params: Any,  # noqa: ANN401
     ) -> SmoothingParameterSearch:
         if y is None:
             y = X
@@ -428,7 +428,7 @@ def finite_prediction_error(hat_matrix: NDArrayFloat) -> float:
     """
     return float(
         (1 + hat_matrix.diagonal().mean())
-        / (1 - hat_matrix.diagonal().mean())
+        / (1 - hat_matrix.diagonal().mean())  # noqa: COM812
     )
 
 

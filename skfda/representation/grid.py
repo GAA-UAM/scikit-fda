@@ -5,12 +5,12 @@ lists of values, each representing the observation of a function measured in a
 list of discretisation points.
 
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import copy
 import numbers
 import warnings
-from typing import (
+from typing import (  # noqa: UP035
     TYPE_CHECKING,
     Any,
     Callable,
@@ -29,7 +29,7 @@ import numpy as np
 import pandas.api.extensions
 import scipy.integrate
 import scipy.stats.mstats
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure  # noqa: TC002
 
 from .._utils import (
     _cartesian_product,
@@ -39,22 +39,22 @@ from .._utils import (
     constants,
 )
 from ..typing._base import (
-    DomainRange,
-    DomainRangeLike,
-    GridPoints,
-    GridPointsLike,
-    LabelTupleLike,
+    DomainRange,  # noqa: TC001
+    DomainRangeLike,  # noqa: TC001
+    GridPoints,  # noqa: TC001
+    GridPointsLike,  # noqa: TC001
+    LabelTupleLike,  # noqa: TC001
 )
-from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt  # noqa: TC001
 from ._functional_data import FData
-from .evaluator import Evaluator
-from .extrapolation import ExtrapolationLike
+from .evaluator import Evaluator  # noqa: TC001
+from .extrapolation import ExtrapolationLike  # noqa: TC001
 from .interpolation import SplineInterpolation
 
 if TYPE_CHECKING:
     from .basis import Basis, FDataBasis
 
-T = TypeVar("T", bound='FDataGrid')
+T = TypeVar("T", bound='FDataGrid')  # noqa: Q000
 
 
 class FDataGrid(FData):  # noqa: WPS214
@@ -134,25 +134,25 @@ class FDataGrid(FData):  # noqa: WPS214
 
     """
 
-    def __init__(  # noqa: WPS211
+    def __init__(  # noqa: ANN204, PLR0913, WPS211
         self,
         data_matrix: ArrayLike,
-        grid_points: Optional[GridPointsLike] = None,
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
         *,
-        sample_points: Optional[GridPointsLike] = None,
-        domain_range: Optional[DomainRangeLike] = None,
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        interpolation: Optional[Evaluator] = None,
+        sample_points: Optional[GridPointsLike] = None,  # noqa: UP007
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
+        dataset_name: Optional[str] = None,  # noqa: UP007
+        argument_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        coordinate_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        sample_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+        interpolation: Optional[Evaluator] = None,  # noqa: UP007
     ):
         """Construct a FDataGrid object."""
         from ..misc.validation import validate_domain_range
 
         if sample_points is not None:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "Parameter sample_points is deprecated. Use the "
                 "parameter grid_points instead.",
                 DeprecationWarning,
@@ -177,8 +177,8 @@ class FDataGrid(FData):  # noqa: WPS214
             grid_points_shape = [len(i) for i in self.grid_points]
 
             if not np.array_equal(data_shape, grid_points_shape):
-                raise ValueError(
-                    f"Incorrect dimension in data_matrix and "
+                raise ValueError(  # noqa: TRY003
+                    f"Incorrect dimension in data_matrix and "  # noqa: EM102
                     f"grid_points. Data has shape {data_shape} and grid "
                     f"points have shape {grid_points_shape}",
                 )
@@ -195,9 +195,9 @@ class FDataGrid(FData):  # noqa: WPS214
         self._domain_range = validate_domain_range(domain_range)
 
         if len(self._domain_range) != self.dim_domain:
-            raise ValueError("Incorrect shape of domain_range.")
+            raise ValueError("Incorrect shape of domain_range.")  # noqa: EM101, TRY003
 
-        for domain_range, grid_points in zip(
+        for domain_range, grid_points in zip(  # noqa: B905
             self._domain_range,
             self.grid_points,
         ):
@@ -205,8 +205,8 @@ class FDataGrid(FData):  # noqa: WPS214
                 domain_range[0] > grid_points[0]
                 or domain_range[-1] < grid_points[-1]
             ):
-                raise ValueError(
-                    "Grid points must be within the domain range.",
+                raise ValueError(  # noqa: TRY003
+                    "Grid points must be within the domain range.",  # noqa: EM101
                 )
 
         # Adjust the data matrix if the dimension of the image is one
@@ -226,7 +226,7 @@ class FDataGrid(FData):  # noqa: WPS214
     def round(  # noqa: WPS125
         self,
         decimals: int = 0,
-        out: Optional[FDataGrid] = None,
+        out: Optional[FDataGrid] = None,  # noqa: UP007
     ) -> FDataGrid:
         """Evenly round to the given number of decimals.
 
@@ -252,12 +252,12 @@ class FDataGrid(FData):  # noqa: WPS214
                 self.domain_range != out.domain_range
                 or not all(
                     np.array_equal(a, b)
-                    for a, b in zip(self.grid_points, out.grid_points)
+                    for a, b in zip(self.grid_points, out.grid_points)  # noqa: B905
                 )
                 or self.data_matrix.shape != out.data_matrix.shape
             )
         ):
-            raise ValueError("out parameter is not valid")
+            raise ValueError("out parameter is not valid")  # noqa: EM101, TRY003
 
         data_matrix = np.round(
             self.data_matrix,
@@ -268,8 +268,8 @@ class FDataGrid(FData):  # noqa: WPS214
         return self.copy(data_matrix=data_matrix) if out is None else out
 
     @property
-    def sample_points(self) -> GridPoints:
-        warnings.warn(
+    def sample_points(self) -> GridPoints:  # noqa: D102
+        warnings.warn(  # noqa: B028
             "Parameter sample_points is deprecated. Use the "
             "parameter grid_points instead.",
             DeprecationWarning,
@@ -277,11 +277,11 @@ class FDataGrid(FData):  # noqa: WPS214
         return self.grid_points
 
     @property
-    def dim_domain(self) -> int:
+    def dim_domain(self) -> int:  # noqa: D102
         return len(self.grid_points)
 
     @property
-    def dim_codomain(self) -> int:
+    def dim_codomain(self) -> int:  # noqa: D102
         try:
             # The dimension of the image is the length of the array that can
             #  be extracted from the data_matrix using all the dimensions of
@@ -292,7 +292,7 @@ class FDataGrid(FData):  # noqa: WPS214
             return 1
 
     @property
-    def coordinates(self: T) -> _CoordinateIterator[T]:
+    def coordinates(self: T) -> _CoordinateIterator[T]:  # noqa: PYI019
         r"""Returns an object to access to the image coordinates.
 
         If the functional object contains multivariate samples
@@ -344,7 +344,7 @@ class FDataGrid(FData):  # noqa: WPS214
             >>> len(fd_list)
             3
 
-        """
+        """  # noqa: D202, D412
 
         return _CoordinateIterator(self)
 
@@ -389,7 +389,7 @@ class FDataGrid(FData):  # noqa: WPS214
         return self._interpolation
 
     @interpolation.setter
-    def interpolation(self, new_interpolation: Optional[Evaluator]) -> None:
+    def interpolation(self, new_interpolation: Optional[Evaluator]) -> None:  # noqa: UP007
 
         if new_interpolation is None:
             new_interpolation = SplineInterpolation()
@@ -409,11 +409,11 @@ class FDataGrid(FData):  # noqa: WPS214
             aligned=aligned,
         )
 
-    def derivative(
+    def derivative(  # noqa: PYI019
         self: T,
         *,
         order: int = 1,
-        method: Optional[Basis] = None,
+        method: Optional[Basis] = None,  # noqa: UP007
     ) -> T:
         """
         Differentiate a FDataGrid object.
@@ -465,13 +465,13 @@ class FDataGrid(FData):  # noqa: WPS214
         """
         order_list = np.atleast_1d(order)
         if order_list.ndim != 1 or len(order_list) != self.dim_domain:
-            raise ValueError("The order for each partial should be specified.")
+            raise ValueError("The order for each partial should be specified.")  # noqa: EM101, TRY003
 
         if method is None:
             operator = findiff.FinDiff(*[
                 (1 + i, *z)
                 for i, z in enumerate(
-                    zip(self.grid_points, order_list),
+                    zip(self.grid_points, order_list),  # noqa: B905
                 )
             ])
             data_matrix = operator(self.data_matrix.astype(float))
@@ -487,10 +487,10 @@ class FDataGrid(FData):  # noqa: WPS214
             data_matrix=data_matrix,
         )
 
-    def integrate(
+    def integrate(  # noqa: PYI019
         self: T,
         *,
-        domain: Optional[DomainRange] = None,
+        domain: Optional[DomainRange] = None,  # noqa: UP007
     ) -> NDArrayFloat:
         """
         Integration of the FData object.
@@ -514,7 +514,7 @@ class FDataGrid(FData):  # noqa: WPS214
             >>> fdata.integrate()
             array([[ 15.]])
         """
-        if domain is not None:
+        if domain is not None:  # noqa: SIM108
             data = self.restrict(domain)
         else:
             data = self
@@ -530,25 +530,25 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return integrand
 
-    def _check_same_dimensions(self: T, other: T) -> None:
+    def _check_same_dimensions(self: T, other: T) -> None:  # noqa: PYI019
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:
-            raise ValueError("Error in columns dimensions")
+            raise ValueError("Error in columns dimensions")  # noqa: EM101, TRY003
         if not np.array_equal(self.grid_points, other.grid_points):
-            raise ValueError("Grid points for both objects must be equal")
+            raise ValueError("Grid points for both objects must be equal")  # noqa: EM101, TRY003
 
-    def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: PYI019, UP006
         return (
             _cartesian_product(_to_grid_points(self.grid_points)),
             self.data_matrix.reshape((self.n_samples, -1)).T,
         )
 
-    def _get_input_points(self: T) -> GridPoints:
+    def _get_input_points(self: T) -> GridPoints:  # noqa: PYI019
         return self.grid_points
 
-    def sum(  # noqa: WPS125
+    def sum(  # noqa: PYI019, WPS125
         self: T,
         *,
-        axis: Optional[int] = None,
+        axis: Optional[int] = None,  # noqa: UP007
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
@@ -598,7 +598,7 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T, correction: int = 0) -> T:
+    def var(self: T, correction: int = 0) -> T:  # noqa: PYI019
         """Compute the variance of a set of samples in a FDataGrid object.
 
         Args:
@@ -638,13 +638,13 @@ class FDataGrid(FData):  # noqa: WPS214
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
-    def cov(  # noqa: WPS320, WPS451
+    def cov(  # noqa: PYI019, WPS320, WPS451
         self: T,
-        s_points: Optional[NDArrayFloat] = None,
-        t_points: Optional[NDArrayFloat] = None,
+        s_points: Optional[NDArrayFloat] = None,  # noqa: UP007
+        t_points: Optional[NDArrayFloat] = None,  # noqa: UP007
         /,
         correction: int = 0,
-    ) -> Union[
+    ) -> Union[  # noqa: UP007
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,
     ]:
@@ -674,7 +674,7 @@ class FDataGrid(FData):  # noqa: WPS214
             return cov_function
         return cov_function(s_points, t_points)
 
-    def gmean(self: T) -> T:
+    def gmean(self: T) -> T:  # noqa: PYI019
         """Compute the geometric mean of all samples in the FDataGrid object.
 
         Returns:
@@ -695,7 +695,7 @@ class FDataGrid(FData):  # noqa: WPS214
         if not super().equals(other):
             return False
 
-        other = cast(FDataGrid, other)
+        other = cast(FDataGrid, other)  # noqa: TC006
 
         if not np.array_equal(self.data_matrix, other.data_matrix):
             return False
@@ -706,14 +706,14 @@ class FDataGrid(FData):  # noqa: WPS214
             or len(self.grid_points) != len(other.grid_points)
             or not all(
                 np.array_equal(a, b)
-                for a, b in zip(self.grid_points, other.grid_points)
+                for a, b in zip(self.grid_points, other.grid_points)  # noqa: B905
             )
         ):
             return False
 
         return self.interpolation == other.interpolation
 
-    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
+    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:  # noqa: PYI019
         """Elementwise equality of FDataGrid."""
         return np.all(  # type: ignore[no-any-return]
             self.data_matrix == other.data_matrix,
@@ -722,15 +722,15 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _get_op_matrix(
         self,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
-    ) -> Union[None, float, NDArrayFloat, NDArrayInt]:
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
+    ) -> Union[None, float, NDArrayFloat, NDArrayInt]:  # noqa: UP007
         if isinstance(other, numbers.Real):
             return float(other)
-        elif isinstance(other, np.ndarray):
+        elif isinstance(other, np.ndarray):  # noqa: RET505
 
             if other.shape in {(), (1,)}:
                 return other
-            elif other.shape == (self.n_samples,):
+            elif other.shape == (self.n_samples,):  # noqa: RET505
                 other_index = (
                     (slice(None),) + (np.newaxis,)
                     * (self.data_matrix.ndim - 1)
@@ -749,8 +749,8 @@ class FDataGrid(FData):  # noqa: WPS214
 
                 return other[other_index]
 
-            raise ValueError(
-                f"Invalid dimensions in operator between "
+            raise ValueError(  # noqa: TRY003
+                f"Invalid dimensions in operator between "  # noqa: EM102
                 f"FDataGrid (data_matrix.shape={self.data_matrix.shape}) "
                 f"and Numpy array (shape={other.shape})",
             )
@@ -761,9 +761,9 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return None
 
-    def __add__(
+    def __add__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -772,16 +772,16 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix + data_matrix)
 
-    def __radd__(
+    def __radd__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
 
         return self.__add__(other)
 
-    def __sub__(
+    def __sub__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -790,9 +790,9 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix - data_matrix)
 
-    def __rsub__(
+    def __rsub__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -801,9 +801,9 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self.copy(data_matrix=data_matrix - self.data_matrix)
 
-    def __mul__(
+    def __mul__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -812,16 +812,16 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix * data_matrix)
 
-    def __rmul__(
+    def __rmul__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
 
         return self.__mul__(other)
 
-    def __truediv__(
+    def __truediv__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -830,9 +830,9 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix / data_matrix)
 
-    def __rtruediv__(
+    def __rtruediv__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -841,11 +841,11 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=data_matrix / self.data_matrix)
 
-    def __neg__(self: T) -> T:
+    def __neg__(self: T) -> T:  # noqa: PYI019
         """Negation of FData object."""
         return self.copy(data_matrix=-self.data_matrix)
 
-    def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
+    def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:  # noqa: PYI019
         """Join samples from a similar FDataGrid object.
 
         Joins samples from another FDataGrid object if it has the same
@@ -890,15 +890,15 @@ class FDataGrid(FData):  # noqa: WPS214
             np.array_equal(self.grid_points, other.grid_points)
             for other in others
         ):
-            raise ValueError(
-                "All the FDataGrids must be sampled in the  same "
+            raise ValueError(  # noqa: TRY003
+                "All the FDataGrids must be sampled in the  same "  # noqa: EM101
                 "grid points.",
             )
 
         elif any(self.n_samples != other.n_samples for other in others):
 
-            raise ValueError(
-                f"All the FDataGrids must contain the same "
+            raise ValueError(  # noqa: TRY003
+                f"All the FDataGrids must contain the same "  # noqa: EM102
                 f"number of samples {self.n_samples} to "
                 f"concatenate as a new coordinate.",
             )
@@ -921,7 +921,7 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=sum(sample_names, ()),
         )
 
-    def scatter(self, *args: Any, **kwargs: Any) -> Figure:
+    def scatter(self, *args: Any, **kwargs: Any) -> Figure:  # noqa: ANN401
         """Scatter plot of the FDatGrid object.
 
         Args:
@@ -939,7 +939,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return ScatterPlot(self, *args, **kwargs).plot()
 
-    def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
+    def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:  # noqa: ANN401
         """Return the basis representation of the object.
 
         Args:
@@ -970,15 +970,15 @@ class FDataGrid(FData):  # noqa: WPS214
         from ..preprocessing.smoothing import BasisSmoother
 
         if self.dim_domain != basis.dim_domain:
-            raise ValueError(
-                f"The domain of the function has "
+            raise ValueError(  # noqa: TRY003
+                f"The domain of the function has "  # noqa: EM102
                 f"dimension {self.dim_domain} "
                 f"but the domain of the basis has "
                 f"dimension {basis.dim_domain}",
             )
-        elif self.dim_codomain != basis.dim_codomain:
-            raise ValueError(
-                f"The codomain of the function has "
+        elif self.dim_codomain != basis.dim_codomain:  # noqa: RET506
+            raise ValueError(  # noqa: TRY003
+                f"The codomain of the function has "  # noqa: EM102
                 f"dimension {self.dim_codomain} "
                 f"but the codomain of the basis has "
                 f"dimension {basis.dim_codomain}",
@@ -996,15 +996,15 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return smoother.fit_transform(self)
 
-    def to_grid(  # noqa: D102
+    def to_grid(  # noqa: D102, PYI019
         self: T,
-        grid_points: Optional[GridPointsLike] = None,
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
         *,
-        sample_points: Optional[GridPointsLike] = None,
+        sample_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> T:
 
         if sample_points is not None:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "Parameter sample_points is deprecated. Use the "
                 "parameter grid_points instead.",
                 DeprecationWarning,
@@ -1022,20 +1022,20 @@ class FDataGrid(FData):  # noqa: WPS214
             grid_points=grid_points,
         )
 
-    def copy(  # noqa: WPS211
+    def copy(  # noqa: C901, PLR0913, PYI019, WPS211
         self: T,
         *,
-        deep: bool = False,  # For Pandas compatibility
-        data_matrix: Optional[ArrayLike] = None,
-        grid_points: Optional[GridPointsLike] = None,
-        sample_points: Optional[GridPointsLike] = None,
-        domain_range: Optional[DomainRangeLike] = None,
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        interpolation: Optional[Evaluator] = None,
+        deep: bool = False,  # For Pandas compatibility  # noqa: ARG002
+        data_matrix: Optional[ArrayLike] = None,  # noqa: UP007
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
+        sample_points: Optional[GridPointsLike] = None,  # noqa: UP007
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
+        dataset_name: Optional[str] = None,  # noqa: UP007
+        argument_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        coordinate_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        sample_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+        interpolation: Optional[Evaluator] = None,  # noqa: UP007
     ) -> T:
         """
         Return a copy of the FDataGrid.
@@ -1045,7 +1045,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         """
         if sample_points is not None:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "Parameter sample_points is deprecated. Use the "
                 "parameter grid_points instead.",
                 DeprecationWarning,
@@ -1096,7 +1096,7 @@ class FDataGrid(FData):  # noqa: WPS214
             interpolation=interpolation,
         )
 
-    def restrict(
+    def restrict(  # noqa: PYI019
         self: T,
         domain_range: DomainRangeLike,
         *,
@@ -1119,17 +1119,17 @@ class FDataGrid(FData):  # noqa: WPS214
         domain_range = validate_domain_range(domain_range)
         assert all(
             c <= a < b <= d  # noqa: WPS228
-            for ((a, b), (c, d)) in zip(domain_range, self.domain_range)
+            for ((a, b), (c, d)) in zip(domain_range, self.domain_range)  # noqa: B905
         )
 
         # Eliminate points outside the new range.
         slice_list = []
-        for (a, b), dim_points in zip(domain_range, self.grid_points):
+        for (a, b), dim_points in zip(domain_range, self.grid_points):  # noqa: B905
             ia = np.searchsorted(dim_points, a)
-            ib = np.searchsorted(dim_points, b, 'right')
+            ib = np.searchsorted(dim_points, b, 'right')  # noqa: Q000
             slice_list.append(slice(ia, ib))
-        grid_points = [g[s] for g, s in zip(self.grid_points, slice_list)]
-        data_matrix = self.data_matrix[(slice(None),) + tuple(slice_list)]
+        grid_points = [g[s] for g, s in zip(self.grid_points, slice_list)]  # noqa: B905
+        data_matrix = self.data_matrix[(slice(None),) + tuple(slice_list)]  # noqa: RUF005
 
         # Ensure that boundaries are in grid_points.
         if with_bounds:
@@ -1150,11 +1150,11 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def shift(
         self,
-        shifts: Union[ArrayLike, float],
+        shifts: Union[ArrayLike, float],  # noqa: UP007
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        grid_points: Optional[GridPointsLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> FDataGrid:
         r"""
         Perform a shift of the curves.
@@ -1252,11 +1252,11 @@ class FDataGrid(FData):  # noqa: WPS214
             grid_points=grid_points,
         )
 
-    def compose(
+    def compose(  # noqa: PYI019
         self: T,
         fd: T,
         *,
-        eval_points: Optional[GridPointsLike] = None,
+        eval_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> T:
         """Composition of functions.
 
@@ -1272,8 +1272,8 @@ class FDataGrid(FData):  # noqa: WPS214
 
         """
         if self.dim_domain != fd.dim_codomain:
-            raise ValueError(
-                f"Dimension of codomain of first function do not "
+            raise ValueError(  # noqa: TRY003
+                f"Dimension of codomain of first function do not "  # noqa: EM102
                 f"match with the domain of the second function "
                 f"{self.dim_domain} != {fd.dim_codomain}.",
             )
@@ -1356,13 +1356,13 @@ class FDataGrid(FData):  # noqa: WPS214
             f"\nextrapolation={self.extrapolation!r},"
             f"\ninterpolation={self.interpolation!r})"
         ).replace(
-            '\n',
-            '\n    ',
+            '\n',  # noqa: Q000
+            '\n    ',  # noqa: Q000
         )
 
-    def __getitem__(
+    def __getitem__(  # noqa: PYI019
         self: T,
-        key: Union[int, slice, NDArrayInt, NDArrayBool],
+        key: Union[int, slice, NDArrayInt, NDArrayBool],  # noqa: UP007
     ) -> T:
         """Return self[key]."""
         key = _check_array_key(self.data_matrix, key)
@@ -1378,11 +1378,11 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def __array_ufunc__(
         self,
-        ufunc: Any,
+        ufunc: Any,  # noqa: ANN401
         method: str,
-        *inputs: Any,
-        **kwargs: Any,
-    ) -> Any:
+        *inputs: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> Any:  # noqa: ANN401
 
         for i in inputs:
             if (
@@ -1396,13 +1396,13 @@ class FDataGrid(FData):  # noqa: WPS214
             else self._get_op_matrix(i) for i in inputs
         ]
 
-        outputs = kwargs.pop('out', None)
+        outputs = kwargs.pop('out', None)  # noqa: Q000
         if outputs:
             new_outputs = [
                 o.data_matrix if isinstance(o, FDataGrid)
                 else o for o in outputs
             ]
-            kwargs['out'] = tuple(new_outputs)
+            kwargs['out'] = tuple(new_outputs)  # noqa: Q000
         else:
             new_outputs = (None,) * ufunc.nout
 
@@ -1415,7 +1415,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         results = tuple(
             (result if output is None else output)
-            for result, output in zip(results, new_outputs)
+            for result, output in zip(results, new_outputs)  # noqa: B905
         )
 
         results = [self.copy(data_matrix=r) for r in results]
@@ -1426,7 +1426,7 @@ class FDataGrid(FData):  # noqa: WPS214
     # Pandas ExtensionArray methods
     #####################################################################
 
-    def _take_allow_fill(
+    def _take_allow_fill(  # noqa: PYI019
         self: T,
         indices: NDArrayInt,
         fill_value: T,
@@ -1449,7 +1449,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
     @property
     def dtype(self) -> FDataGridDType:
-        """The dtype for this extension array, FDataGridDType"""
+        """The dtype for this extension array, FDataGridDType"""  # noqa: D415
         return FDataGridDType(
             grid_points=self.grid_points,
             domain_range=self.domain_range,
@@ -1460,7 +1460,7 @@ class FDataGrid(FData):  # noqa: WPS214
     def nbytes(self) -> int:
         """
         The number of bytes needed to store this object in memory.
-        """
+        """  # noqa: D200
         return self.data_matrix.nbytes + sum(
             p.nbytes for p in self.grid_points
         )
@@ -1483,8 +1483,8 @@ class FDataGridDType(
 ):
     """DType corresponding to FDataGrid in Pandas."""
 
-    name = 'FDataGrid'
-    kind = 'O'
+    name = 'FDataGrid'  # noqa: Q000
+    kind = 'O'  # noqa: Q000
     type = FDataGrid  # noqa: WPS125
     na_value = pandas.NA
 
@@ -1492,7 +1492,7 @@ class FDataGridDType(
         self,
         grid_points: GridPointsLike,
         dim_codomain: int,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
     ) -> None:
         from ..misc.validation import validate_domain_range
 
@@ -1507,13 +1507,13 @@ class FDataGridDType(
         self.dim_codomain = dim_codomain
 
     @classmethod
-    def construct_array_type(cls) -> Type[FDataGrid]:  # noqa: D102
+    def construct_array_type(cls) -> Type[FDataGrid]:  # noqa: D102, UP006
         return FDataGrid
 
     def _na_repr(self) -> FDataGrid:
 
         shape = (
-            (1,)
+            (1,)  # noqa: RUF005
             + tuple(len(s) for s in self.grid_points)
             + (self.dim_codomain,)
         )
@@ -1526,7 +1526,7 @@ class FDataGridDType(
             data_matrix=data_matrix,
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         """
         Compare dtype equality.
 
@@ -1538,7 +1538,7 @@ class FDataGridDType(
         """
         if isinstance(other, str):
             return other == self.name
-        elif other is self:
+        elif other is self:  # noqa: RET505
             return True
 
         return (
@@ -1561,7 +1561,7 @@ class _CoordinateIterator(Sequence[T]):
 
     def __getitem__(
         self,
-        key: Union[int, slice, NDArrayInt, NDArrayBool],
+        key: Union[int, slice, NDArrayInt, NDArrayBool],  # noqa: UP007
     ) -> T:
         """Get a specific coordinate."""
         s_key = key

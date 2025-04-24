@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 import warnings
-from typing import Any, Generic, Iterable, Optional, Union
+from typing import Any, Generic, Iterable, Optional, Union  # noqa: UP035
 
 import numpy as np
 import scipy.linalg
@@ -10,7 +10,7 @@ import scipy.linalg
 from ..._utils._sklearn_adapter import BaseEstimator
 from ...representation import FData
 from ...representation.basis import Basis
-from ...typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ..operators import Identity, Operator, gram_matrix
 from ..operators._operators import OperatorInput
 
@@ -83,7 +83,7 @@ class L2Regularization(
 
     def __init__(
         self,
-        linear_operator: Optional[Operator[OperatorInput, Any]] = None,
+        linear_operator: Optional[Operator[OperatorInput, Any]] = None,  # noqa: UP007
         *,
         regularization_parameter: float = 1,
     ) -> None:
@@ -113,37 +113,37 @@ class TikhonovRegularization(
 
     def __init__(
         self,
-        linear_operator: Optional[Operator[OperatorInput, Any]] = None,
+        linear_operator: Optional[Operator[OperatorInput, Any]] = None,  # noqa: UP007
         *,
         regularization_parameter: float = 1,
     ) -> None:
 
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             "Class TikhonovRegularization is deprecated. Use class "
             "L2Regularization instead.",
             DeprecationWarning,
         )
 
-        return super().__init__(
+        return super().__init__(  # noqa: PLE0101
             linear_operator=linear_operator,
             regularization_parameter=regularization_parameter,
         )
 
 
-BasisTypes = Union[np.ndarray, FData, Basis]
+BasisTypes = Union[np.ndarray, FData, Basis]  # noqa: UP007
 Regularization = L2Regularization[Any]
-RegularizationLike = Union[
+RegularizationLike = Union[  # noqa: UP007
     None,
     Regularization,
-    Iterable[Optional[Regularization]],
+    Iterable[Optional[Regularization]],  # noqa: UP007
 ]
 
 
 def compute_penalty_matrix(
     basis_iterable: Iterable[BasisTypes],
-    regularization_parameter: Union[float, Iterable[float]],
+    regularization_parameter: Union[float, Iterable[float]],  # noqa: UP007
     regularization: RegularizationLike,
-) -> Optional[NDArrayFloat]:
+) -> Optional[NDArrayFloat]:  # noqa: UP007
     """
     Compute the regularization matrix for a linear differential operator.
 
@@ -166,7 +166,7 @@ def compute_penalty_matrix(
     penalty_blocks = [
         np.zeros((len(b), len(b))) if r is None else
         a * r.penalty_matrix(b)
-        for b, r, a in zip(
+        for b, r, a in zip(  # noqa: B905
             basis_iterable,
             regularization,
             regularization_parameter,

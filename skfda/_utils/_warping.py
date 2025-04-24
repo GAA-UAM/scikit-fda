@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 from scipy.interpolate import PchipInterpolator
 
-from ..typing._base import DomainRangeLike
-from ..typing._numpy import ArrayLike, NDArrayFloat
+from ..typing._base import DomainRangeLike  # noqa: TC001
+from ..typing._numpy import ArrayLike, NDArrayFloat  # noqa: TC001
 
 if TYPE_CHECKING:
     from ..representation import FDataGrid
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 def invert_warping(
     warping: FDataGrid,
     *,
-    output_points: Optional[ArrayLike] = None,
+    output_points: Optional[ArrayLike] = None,  # noqa: UP007
 ) -> FDataGrid:
     r"""
     Compute the inverse of a diffeomorphism.
@@ -128,7 +128,7 @@ def normalize_scale(
 
 def normalize_warping(
     warping: FDataGrid,
-    domain_range: Optional[DomainRangeLike] = None,
+    domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
 ) -> FDataGrid:
     r"""
     Rescale a warping to normalize their :term:`domain`.

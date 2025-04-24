@@ -5,18 +5,18 @@ from __future__ import annotations
 import copy
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Tuple, TypeVar  # noqa: UP035
 
 import numpy as np
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure  # noqa: TC002
 
-from ...typing._base import DomainRange, DomainRangeLike
-from ...typing._numpy import ArrayLike, NDArrayFloat
+from ...typing._base import DomainRange, DomainRangeLike  # noqa: TC001
+from ...typing._numpy import ArrayLike, NDArrayFloat  # noqa: TC001
 
 if TYPE_CHECKING:
     from ._fdatabasis import FDataBasis
 
-T = TypeVar("T", bound='Basis')
+T = TypeVar("T", bound='Basis')  # noqa: Q000
 
 
 class Basis(ABC):
@@ -43,8 +43,8 @@ class Basis(ABC):
             domain_range = validate_domain_range(domain_range)
 
         if n_basis < 1:
-            raise ValueError(
-                "The number of basis has to be strictly positive.",
+            raise ValueError(  # noqa: TRY003
+                "The number of basis has to be strictly positive.",  # noqa: EM101
             )
 
         self._domain_range = domain_range
@@ -79,9 +79,9 @@ class Basis(ABC):
         from ...misc.validation import validate_evaluation_points
 
         if derivative < 0:
-            raise ValueError("derivative only takes non-negative values.")
-        elif derivative != 0:
-            warnings.warn(
+            raise ValueError("derivative only takes non-negative values.")  # noqa: EM101, TRY003
+        elif derivative != 0:  # noqa: RET506
+            warnings.warn(  # noqa: B028
                 "Parameter derivative is deprecated. Use the "
                 "derivative method instead.",
                 DeprecationWarning,
@@ -145,7 +145,7 @@ class Basis(ABC):
         Subclasses must override this to provide basis evaluation.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     def evaluate(
         self,
@@ -203,11 +203,11 @@ class Basis(ABC):
         """
         return self.to_basis().derivative(order=order)
 
-    def _derivative_basis_and_coefs(
+    def _derivative_basis_and_coefs(  # noqa: PYI019
         self: T,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
         """
         Return basis and coefficients of the derivative.
 
@@ -222,15 +222,15 @@ class Basis(ABC):
 
         """
         raise NotImplementedError(
-            f"{type(self)} basis does not support the construction of a "
+            f"{type(self)} basis does not support the construction of a "  # noqa: EM102
             "basis of the derivatives.",
         )
 
-    def derivative_basis_and_coefs(
+    def derivative_basis_and_coefs(  # noqa: PYI019
         self: T,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
         """
         Return basis and coefficients of the derivative.
 
@@ -244,7 +244,7 @@ class Basis(ABC):
         """
         return self._derivative_basis_and_coefs(coefs, order)
 
-    def plot(self, *args: Any, **kwargs: Any) -> Figure:
+    def plot(self, *args: Any, **kwargs: Any) -> Figure:  # noqa: ANN401
         """Plot the basis object or its derivatives.
 
         Args:
@@ -263,26 +263,26 @@ class Basis(ABC):
         self,
         coefs: NDArrayFloat,
         key: int | slice,
-    ) -> Tuple[Basis, NDArrayFloat]:
+    ) -> Tuple[Basis, NDArrayFloat]:  # noqa: UP006
         """
         Return a basis and coefficients for the indexed coordinate functions.
 
         Subclasses can override this to provide coordinate indexing.
 
         """
-        raise NotImplementedError("Coordinate indexing not implemented")
+        raise NotImplementedError("Coordinate indexing not implemented")  # noqa: EM101
 
     def coordinate_basis_and_coefs(
         self,
         coefs: NDArrayFloat,
         key: int | slice,
-    ) -> Tuple[Basis, NDArrayFloat]:
+    ) -> Tuple[Basis, NDArrayFloat]:  # noqa: UP006
         """Return a fdatabasis for the coordinate functions indexed by key."""
         # Raises error if not in range and normalize key
         r_key = range(self.dim_codomain)[key]
 
         if isinstance(r_key, range) and len(r_key) == 0:
-            raise IndexError("Empty number of coordinates selected")
+            raise IndexError("Empty number of coordinates selected")  # noqa: EM101, TRY003
 
         # Full fdatabasis case
         if (
@@ -296,7 +296,7 @@ class Basis(ABC):
             key=key,
         )
 
-    def rescale(self: T, domain_range: DomainRangeLike | None = None) -> T:
+    def rescale(self: T, domain_range: DomainRangeLike | None = None) -> T:  # noqa: PYI019
         """
         Return a copy of the basis with a new :term:`domain` range.
 
@@ -311,7 +311,7 @@ class Basis(ABC):
         """
         return self.copy(domain_range=domain_range)
 
-    def copy(self: T, domain_range: DomainRangeLike | None = None) -> T:
+    def copy(self: T, domain_range: DomainRangeLike | None = None) -> T:  # noqa: PYI019
         """Basis copy."""
         from ...misc.validation import validate_domain_range
 
@@ -320,7 +320,7 @@ class Basis(ABC):
         if domain_range is not None:
             domain_range = validate_domain_range(domain_range)
 
-            new_copy._domain_range = domain_range  # noqa: WPS437
+            new_copy._domain_range = domain_range  # noqa: SLF001, WPS437
 
         return new_copy
 
@@ -412,11 +412,11 @@ class Basis(ABC):
 
         return gram
 
-    def _mul_constant(
+    def _mul_constant(  # noqa: PYI019
         self: T,
         coefs: NDArrayFloat,
         other: float,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
         coefs = coefs.copy()
         other_array = np.atleast_2d(other).reshape(-1, 1)
         coefs *= other_array
@@ -431,7 +431,7 @@ class Basis(ABC):
             f"n_basis={self.n_basis})"
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         """Test equality of Basis."""
         from ..._utils import _same_domain
         return (

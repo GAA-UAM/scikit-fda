@@ -49,7 +49,7 @@ class TestPerClassTransformer(unittest.TestCase):
         t = PerClassTransformer[FDataGrid, np.typing.NDArray[np.float64]](
             KNeighborsClassifier(),
         )
-        self.assertRaises(
+        self.assertRaises(  # noqa: PT027
             TypeError,
             t.fit,
             self.X,
@@ -57,5 +57,5 @@ class TestPerClassTransformer(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

@@ -6,35 +6,35 @@ It allows multiple modes and colors, which could
 be set manually or automatically depending on values
 like depth measures.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from typing import Any, Dict, Optional, Sequence, Sized, Tuple, TypeVar
+from typing import Any, Dict, Optional, Sequence, Sized, Tuple, TypeVar  # noqa: F401, UP035
 
-import matplotlib
+import matplotlib  # noqa: ICN001
 import matplotlib.patches
 import numpy as np
 from matplotlib.artist import Artist
-from matplotlib.axes import Axes
-from matplotlib.colors import Colormap
-from matplotlib.figure import Figure
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.colors import Colormap  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 from typing_extensions import Protocol
 
 from ..._utils import _to_grid_points, constants
 from ...misc.validation import validate_domain_range
-from ...representation._functional_data import FData
-from ...representation.irregular import FDataIrregular
-from ...typing._base import DomainRangeLike, GridPointsLike
+from ...representation._functional_data import FData  # noqa: TC001
+from ...representation.irregular import FDataIrregular  # noqa: TC001
+from ...typing._base import DomainRangeLike, GridPointsLike  # noqa: TC001
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _set_labels
 
-K = TypeVar('K', contravariant=True)
-V = TypeVar('V', covariant=True)
+K = TypeVar('K', contravariant=True)  # noqa: Q000, PLC0105
+V = TypeVar('V', covariant=True)  # noqa: Q000, PLC0105
 
 
 class Indexable(Protocol[K, V]):
     """Class Indexable used to type _get_color_info."""
 
-    def __getitem__(self, __key: K) -> V:
+    def __getitem__(self, __key: K) -> V:  # noqa: PYI063
         pass
 
     def __len__(self) -> int:
@@ -46,9 +46,9 @@ def _get_color_info(
     group: Sequence[K] | None = None,
     group_names: Indexable[K, str] | None = None,
     group_colors: Indexable[K, ColorLike] | None = None,
-    legend: bool = False,
-    kwargs: Dict[str, Any] | None = None,
-) -> Tuple[
+    legend: bool = False,  # noqa: FBT001, FBT002
+    kwargs: Dict[str, Any] | None = None,  # noqa: UP006
+) -> Tuple[  # noqa: UP006
     Sequence[ColorLike] | None,
     Sequence[matplotlib.patches.Patch] | None,
 ]:
@@ -73,11 +73,11 @@ def _get_color_info(
                 [group_colors[g] for g in group_unique],
             )
         else:
-            prop_cycle = matplotlib.rcParams['axes.prop_cycle']
-            cycle_colors = prop_cycle.by_key()['color']
+            prop_cycle = matplotlib.rcParams['axes.prop_cycle']  # noqa: Q000
+            cycle_colors = prop_cycle.by_key()['color']  # noqa: Q000
 
             group_colors_array = np.take(
-                cycle_colors, np.arange(n_labels), mode='wrap',
+                cycle_colors, np.arange(n_labels), mode='wrap',  # noqa: Q000
             )
 
         sample_colors = list(group_colors_array[group_indexes])
@@ -94,20 +94,20 @@ def _get_color_info(
         if group_names_array is not None:
             patches = [
                 matplotlib.patches.Patch(color=c, label=l)
-                for c, l in zip(group_colors_array, group_names_array)
+                for c, l in zip(group_colors_array, group_names_array)  # noqa: B905, E741
             ]
 
-    else:
+    else:  # noqa: PLR5501
         # In this case, each curve has a different color unless specified
         # otherwise
 
-        if 'color' in kwargs:
+        if 'color' in kwargs:  # noqa: Q000
             sample_colors = len(fdata) * [kwargs.get("color")]
-            kwargs.pop('color')
+            kwargs.pop('color')  # noqa: Q000
 
-        elif 'c' in kwargs:
+        elif 'c' in kwargs:  # noqa: Q000
             sample_colors = len(fdata) * [kwargs.get("c")]
-            kwargs.pop('c')
+            kwargs.pop('c')  # noqa: Q000
 
         else:
             sample_colors = None
@@ -191,9 +191,9 @@ class GraphPlot(BasePlot):
         gradient_list: normalization of the values from gradient color_list
             that will be used to determine the intensity of the color
             each function will have.
-    """
+    """  # noqa: D410, D411
 
-    def __init__(
+    def __init__(  # noqa: PLR0912, PLR0913
         self,
         fdata: FData,
         chart: Figure | Axes | None = None,
@@ -202,7 +202,7 @@ class GraphPlot(BasePlot):
         axes: Axes | None = None,
         n_rows: int | None = None,
         n_cols: int | None = None,
-        n_points: int | Tuple[int, int] | None = None,
+        n_points: int | Tuple[int, int] | None = None,  # noqa: UP006
         domain_range: DomainRangeLike | None = None,
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
@@ -212,7 +212,7 @@ class GraphPlot(BasePlot):
         min_grad: float | None = None,
         colormap: Colormap | str | None = None,
         legend: bool = False,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         super().__init__(
             chart,
@@ -225,8 +225,8 @@ class GraphPlot(BasePlot):
         self.gradient_criteria = gradient_criteria
         if self.gradient_criteria is not None:
             if len(self.gradient_criteria) != fdata.n_samples:
-                raise ValueError(
-                    f"The length of the gradient color list "
+                raise ValueError(  # noqa: TRY003
+                    f"The length of the gradient color list "  # noqa: EM102
                     f"({len(self.gradient_criteria)}) "
                     f"should be the same as the number "
                     f"of samples in fdata "
@@ -293,15 +293,15 @@ class GraphPlot(BasePlot):
         self.patches = patches
 
     @property
-    def dim(self) -> int:
+    def dim(self) -> int:  # noqa: D102
         return self.fdata.dim_domain + 1
 
     @property
-    def n_subplots(self) -> int:
+    def n_subplots(self) -> int:  # noqa: D102
         return self.fdata.dim_codomain
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return self.fdata.n_samples
 
     def _plot(
@@ -315,7 +315,7 @@ class GraphPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: Dict[str, ColorLike | None] = {}  # noqa: UP006
 
         if self.fdata.dim_domain == 1:
 
@@ -347,9 +347,9 @@ class GraphPlot(BasePlot):
                 n_points_tuple = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
             elif isinstance(self.n_points, int):
                 n_points_tuple = (self.n_points, self.n_points)
-            elif len(self.n_points) != 2:
+            elif len(self.n_points) != 2:  # noqa: PLR2004
                 raise ValueError(
-                    "n_points should be a number or a tuple of "
+                    "n_points should be a number or a tuple of "  # noqa: EM103, UP030, UP032
                     "length 2, and has "
                     "length {0}.".format(len(self.n_points)),
                 )
@@ -359,9 +359,9 @@ class GraphPlot(BasePlot):
             y = np.linspace(*self.domain_range[1], n_points_tuple[1])
 
             # Evaluation of the functional object
-            Z = self.fdata((x, y), grid=True)
+            Z = self.fdata((x, y), grid=True)  # noqa: N806
 
-            X, Y = np.meshgrid(x, y, indexing='ij')
+            X, Y = np.meshgrid(x, y, indexing='ij')  # noqa: Q000, N806
 
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
@@ -428,7 +428,7 @@ class ScatterPlot(BasePlot):
             matplotlib.pyplot.plot_surface function.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         fdata: FData,
         chart: Figure | Axes | None = None,
@@ -438,12 +438,12 @@ class ScatterPlot(BasePlot):
         n_rows: int | None = None,
         n_cols: int | None = None,
         grid_points: GridPointsLike | None = None,
-        domain_range: Tuple[int, int] | DomainRangeLike | None = None,
+        domain_range: Tuple[int, int] | DomainRangeLike | None = None,  # noqa: UP006
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,
         legend: bool = False,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         super().__init__(
             chart,
@@ -487,15 +487,15 @@ class ScatterPlot(BasePlot):
         self.patches = patches
 
     @property
-    def dim(self) -> int:
+    def dim(self) -> int:  # noqa: D102
         return self.fdata.dim_domain + 1
 
     @property
-    def n_subplots(self) -> int:
+    def n_subplots(self) -> int:  # noqa: D102
         return self.fdata.dim_codomain
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return self.fdata.n_samples
 
     def _plot(
@@ -514,7 +514,7 @@ class ScatterPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: Dict[str, ColorLike | None] = {}  # noqa: UP006
 
         if self.fdata.dim_domain == 1:
 
@@ -534,8 +534,8 @@ class ScatterPlot(BasePlot):
         else:
 
             X = self.fdata.grid_points[0]
-            Y = self.fdata.grid_points[1]
-            X, Y = np.meshgrid(X, Y)
+            Y = self.fdata.grid_points[1]  # noqa: N806
+            X, Y = np.meshgrid(X, Y)  # noqa: N806
 
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
@@ -602,7 +602,7 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
             matplotlib.pyplot.plot_surface function.
     """
 
-    def __init__(  # noqa: WPS211
+    def __init__(  # noqa: PLR0913, WPS211
         self,
         fdata: FDataIrregular,
         chart: Figure | Axes | None = None,
@@ -611,13 +611,13 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         axes: Axes | None = None,
         n_rows: int | None = None,
         n_cols: int | None = None,
-        domain_range: Tuple[int, int] | DomainRangeLike | None = None,
+        domain_range: Tuple[int, int] | DomainRangeLike | None = None,  # noqa: UP006
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,
         legend: bool = False,
         marker: str | None = None,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         super().__init__(
             chart,
@@ -660,15 +660,15 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         self.patches = patches
 
     @property
-    def dim(self) -> int:
+    def dim(self) -> int:  # noqa: D102
         return self.fdata.dim_domain + 1
 
     @property
-    def n_subplots(self) -> int:
+    def n_subplots(self) -> int:  # noqa: D102
         return self.fdata.dim_codomain
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return self.fdata.n_samples
 
     def _plot(
@@ -701,7 +701,7 @@ class LinearPlotIrregular(PlotIrregular):
         artists_shape = (self.n_samples, self.fdata.dim_codomain)
         self.artists = np.zeros(artists_shape, dtype=Artist)
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: Dict[str, ColorLike | None] = {}  # noqa: UP006
 
         if self.fdata.dim_domain == 1:
             for j in range(self.fdata.n_samples):
@@ -717,8 +717,8 @@ class LinearPlotIrregular(PlotIrregular):
                     marker=self.marker,
                 )
         else:
-            # TODO Implementar para multidimension. Como hacer mesh?
-            raise NotImplementedError()
+            # TODO Implementar para multidimension. Como hacer mesh?  # noqa: E501, FIX002, TD002, TD003, TD004
+            raise NotImplementedError()  # noqa: RSE102
 
         _set_labels(self.fdata, fig, axes, self.patches)
 
@@ -740,7 +740,7 @@ class ScatterPlotIrregular(PlotIrregular):
         artists_shape = (self.n_samples, self.fdata.dim_codomain)
         self.artists = np.zeros(artists_shape, dtype=Artist)
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: Dict[str, ColorLike | None] = {}  # noqa: UP006
 
         if self.fdata.dim_domain == 1:
 
@@ -759,16 +759,16 @@ class ScatterPlotIrregular(PlotIrregular):
 
         else:
 
-            # TODO Implement for multidimensional
-            raise NotImplementedError()
+            # TODO Implement for multidimensional  # noqa: E501, FIX002, TD002, TD003, TD004
+            raise NotImplementedError()  # noqa: RSE102
 
         _set_labels(self.fdata, fig, axes, self.patches)
 
 
 def set_color_dict(
-    sample_colors: Any,
+    sample_colors: Any,  # noqa: ANN401
     ind: int,
-    color_dict: Dict[str, ColorLike | None],
+    color_dict: Dict[str, ColorLike | None],  # noqa: UP006
 ) -> None:
     """
     Auxiliary method used to update color_dict.

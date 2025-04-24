@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-import skfda.representation.basis as basis
+import skfda.representation.basis as basis  # noqa: PLR0402
 from skfda.datasets import fetch_growth
 from skfda.preprocessing.feature_construction import (
     unconditional_expected_value,
@@ -29,5 +29,5 @@ class TestUnconditionalExpectedValues(unittest.TestCase):
         np.testing.assert_allclose(data_basis, data_grid, rtol=1e-3)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

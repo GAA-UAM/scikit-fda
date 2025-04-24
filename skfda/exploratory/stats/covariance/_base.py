@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Callable, Generic, TypeVar
+from typing import Callable, Generic, TypeVar  # noqa: UP035
 
 from ...._utils._sklearn_adapter import BaseEstimator
 from ....representation import FData
-from ....typing._numpy import NDArrayFloat
+from ....typing._numpy import NDArrayFloat  # noqa: TC001
 
 Input = TypeVar("Input", bound=FData)
 
@@ -37,6 +37,6 @@ class CovarianceEstimator(
 
         return self
 
-    def score(self, X_test: Input, y: object = None) -> float:
+    def score(self, X_test: Input, y: object = None) -> float:  # noqa: N803
 
         pass

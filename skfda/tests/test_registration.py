@@ -251,7 +251,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         )
         self.fd.extrapolation = "periodic"  # type: ignore[assignment]
 
-    def test_fit_transform(self) -> None:
+    def test_fit_transform(self) -> None:  # noqa: D102
 
         reg = LeastSquaresShiftRegistration[FDataGrid]()
 
@@ -259,10 +259,10 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         fd_reg = reg.fit_transform(self.fd)
 
         # Check attributes fitted
-        self.assertTrue(hasattr(reg, 'deltas_'))
-        self.assertTrue(hasattr(reg, 'template_'))
-        self.assertTrue(hasattr(reg, 'n_iter_'))
-        self.assertTrue(isinstance(fd_reg, FDataGrid))
+        self.assertTrue(hasattr(reg, 'deltas_'))  # noqa: PT009, Q000
+        self.assertTrue(hasattr(reg, 'template_'))  # noqa: PT009, Q000
+        self.assertTrue(hasattr(reg, 'n_iter_'))  # noqa: PT009, Q000
+        self.assertTrue(isinstance(fd_reg, FDataGrid))  # noqa: PT009
 
         deltas = reg.deltas_.round(3)
         np.testing.assert_array_almost_equal(deltas, [-0.022, 0.03])
@@ -285,14 +285,14 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         response = reg.fit(self.fd)
 
         # Check attributes and returned value
-        self.assertTrue(hasattr(reg, 'template_'))
-        self.assertTrue(response is reg)
+        self.assertTrue(hasattr(reg, 'template_'))  # noqa: PT009, Q000
+        self.assertTrue(response is reg)  # noqa: PT009
 
         reg.transform(fd)
         deltas = reg.deltas_.round(3)
         np.testing.assert_allclose(deltas, [0.071, -0.072])
 
-    def test_inverse_transform(self) -> None:
+    def test_inverse_transform(self) -> None:  # noqa: D102
 
         reg = LeastSquaresShiftRegistration[FDataGrid]()
         fd = reg.fit_transform(self.fd)
@@ -304,7 +304,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
             decimal=3,
         )
 
-    def test_raises(self) -> None:
+    def test_raises(self) -> None:  # noqa: D102
 
         reg = LeastSquaresShiftRegistration[FDataGrid]()
 
@@ -340,7 +340,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         with np.testing.assert_raises(ValueError):
             reg.fit_transform(self.fd)
 
-    def test_template(self) -> None:
+    def test_template(self) -> None:  # noqa: D102
 
         reg = LeastSquaresShiftRegistration[FDataGrid]()
         fd_registered_1 = reg.fit_transform(self.fd)
@@ -375,7 +375,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
             fd_registered_4.data_matrix,
         )
 
-    def test_restrict_domain(self) -> None:
+    def test_restrict_domain(self) -> None:  # noqa: D102
         reg = LeastSquaresShiftRegistration[FDataGrid](restrict_domain=True)
         fd_registered_1 = reg.fit_transform(self.fd)
 
@@ -407,16 +407,16 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
             fd_registered_1.data_matrix,
         )
 
-    def test_initial_estimation(self) -> None:
+    def test_initial_estimation(self) -> None:  # noqa: D102
         reg = LeastSquaresShiftRegistration[FDataGrid](
             initial=[-0.02161235, 0.03032652],
         )
         reg.fit_transform(self.fd)
 
         # Only needed 1 iteration until convergence
-        self.assertEqual(reg.n_iter_, 1)
+        self.assertEqual(reg.n_iter_, 1)  # noqa: PT009
 
-    def test_custom_grid_points(self) -> None:
+    def test_custom_grid_points(self) -> None:  # noqa: D102
         reg = LeastSquaresShiftRegistration[FDataGrid](
             grid_points=np.linspace(0, 1, 50),
         )
@@ -482,7 +482,7 @@ class TestRegistrationValidation(unittest.TestCase):
         np.testing.assert_allclose(ret.r_squared, 0.991082, rtol=1e-5)
         np.testing.assert_allclose(ret.c_r, 0.959302, rtol=1e-5)
 
-    def test_raises_amplitude_phase(self) -> None:
+    def test_raises_amplitude_phase(self) -> None:  # noqa: D102
         scorer = AmplitudePhaseDecomposition()
 
         # Inconsistent number of functions registered
@@ -494,5 +494,5 @@ class TestRegistrationValidation(unittest.TestCase):
             scorer.score_function(self.X, self.X[:-1])
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

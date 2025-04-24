@@ -6,7 +6,7 @@ import lazy_loader as lazy
 __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
     submod_attrs={
-        '_boxplot': ["BoxplotOutlierDetector"],
+        '_boxplot': ["BoxplotOutlierDetector"],  # noqa: Q000
         "_directional_outlyingness": [
             "MSPlotOutlierDetector",
             "directional_outlyingness_stats",
@@ -17,12 +17,12 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._boxplot import BoxplotOutlierDetector as BoxplotOutlierDetector
+    from ._boxplot import BoxplotOutlierDetector as BoxplotOutlierDetector  # noqa: I001
     from ._directional_outlyingness import (
         MSPlotOutlierDetector as MSPlotOutlierDetector,
         directional_outlyingness_stats as directional_outlyingness_stats,
     )
     from ._outliergram import (
-        OutliergramOutlierDetector as OutliergramOutlierDetector
+        OutliergramOutlierDetector as OutliergramOutlierDetector  # noqa: COM812
     )
     from .neighbors_outlier import LocalOutlierFactor as LocalOutlierFactor

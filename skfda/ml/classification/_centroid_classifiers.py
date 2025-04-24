@@ -1,7 +1,7 @@
 """Centroid-based models for supervised classification."""
 from __future__ import annotations
 
-from typing import Callable, TypeVar, Union
+from typing import Callable, TypeVar, Union  # noqa: UP035
 
 from sklearn.utils.validation import check_is_fitted
 
@@ -12,11 +12,11 @@ from ...exploratory.stats import mean, trim_mean
 from ...misc.metrics import PairwiseMetric, l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData
-from ...typing._metric import Metric
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayInt, NDArrayStr
 
 Input = TypeVar("Input", bound=FData)
-Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])  # noqa: UP007
 
 
 class NearestCentroid(
@@ -67,9 +67,9 @@ class NearestCentroid(
 
     See also:
         :class:`~skfda.ml.classification.DTMClassifier`
-    """
+    """  # noqa: D405, D411
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         metric: Metric[Input] = l2_distance,
         centroid: Callable[[Input], Input] = mean,
@@ -179,7 +179,7 @@ class DTMClassifier(NearestCentroid[Input, Target]):
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: D405
 
     def __init__(
         self,

@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Tuple, TypeVar
+from typing import Optional, Tuple, TypeVar  # noqa: UP035
 
 import numpy as np
 import scipy.linalg
@@ -80,11 +80,11 @@ class MonomialBasis(Basis):
 
         return raised.T
 
-    def _derivative_basis_and_coefs(
+    def _derivative_basis_and_coefs(  # noqa: PYI019
         self: T,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
         if order >= self.n_basis:
             return (
                 type(self)(domain_range=self.domain_range, n_basis=1),
@@ -198,10 +198,10 @@ class Monomial(MonomialBasis):
                 [ 2.]]])
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
         n_basis: int = 1,
     ):
         super().__init__(

@@ -1,6 +1,6 @@
 """scikit-fda package."""
-import errno as _errno
-import os as _os
+import errno as _errno  # noqa: F401
+import os as _os  # noqa: F401
 from typing import TYPE_CHECKING
 
 import lazy_loader as lazy
@@ -17,10 +17,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "representation",
     ],
     submod_attrs={
-        'representation': [
+        'representation': [  # noqa: Q000
             "FData", "FDataBasis", "FDataGrid", "FDataIrregular",
         ],
-        'representation._functional_data': ['concatenate'],
+        'representation._functional_data': ['concatenate'],  # noqa: Q000
     },
 )
 

@@ -34,7 +34,7 @@ class TestBasis(unittest.TestCase):
                 x,
                 grid_points=t,
                 basis=basis,
-                method='cholesky',
+                method='cholesky',  # noqa: Q000
             ).coefficients.round(2),
             np.array([[1.0, 2.78, -3.0, -0.78, 1.0]]),
         )
@@ -49,7 +49,7 @@ class TestBasis(unittest.TestCase):
                 x,
                 grid_points=t,
                 basis=basis,
-                method='qr',
+                method='qr',  # noqa: Q000
             ).coefficients.round(2),
             np.array([[1.0, 2.78, -3.0, -0.78, 1.0]]),
         )
@@ -85,13 +85,13 @@ class TestBasis(unittest.TestCase):
             ],
         )
 
-        # TODO testing with other basis
+        # TODO testing with other basis  # noqa: FIX002, TD002, TD003, TD004
 
     def test_basis_gram_matrix_monomial(self) -> None:
         """Test the Gram matrix with monomial basis."""
         basis = MonomialBasis(n_basis=3)
         gram_matrix = basis.gram_matrix()
-        gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: WPS437
+        gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: SLF001, WPS437
         gram_matrix_res = np.array([
             [1, 1 / 2, 1 / 3],
             [1 / 2, 1 / 3, 1 / 4],
@@ -111,7 +111,7 @@ class TestBasis(unittest.TestCase):
         """Test the Gram matrix with fourier basis."""
         basis = FourierBasis(n_basis=3)
         gram_matrix = basis.gram_matrix()
-        gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: WPS437
+        gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: SLF001, WPS437
         gram_matrix_res = np.identity(3)
 
         np.testing.assert_allclose(
@@ -129,7 +129,7 @@ class TestBasis(unittest.TestCase):
         """Test the Gram matrix with B-spline basis."""
         basis = BSplineBasis(n_basis=6)
         gram_matrix = basis.gram_matrix()
-        gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: WPS437
+        gram_matrix_numerical = basis._gram_matrix_numerical()  # noqa: SLF001, WPS437
         gram_matrix_res = np.array([
             [0.04761905, 0.02916667, 0.00615079, 0.00039683, 0, 0],
             [0.02916667, 0.07380952, 0.05208333, 0.01145833, 0.00014881, 0],
@@ -260,7 +260,7 @@ class TestFDataBasisOperations(unittest.TestCase):
             [[1, 2, 3], [3, 4, 5]],
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (monomial1 + monomial2).equals(
                 FDataBasis(
                     MonomialBasis(n_basis=3),
@@ -283,7 +283,7 @@ class TestFDataBasisOperations(unittest.TestCase):
             [[1, 2, 3], [3, 4, 5]],
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (monomial1 - monomial2).equals(
                 FDataBasis(
                     MonomialBasis(n_basis=3),
@@ -305,7 +305,7 @@ class TestFDataBasisOperations(unittest.TestCase):
         monomial1 = FDataBasis(basis, [1, 2, 3])
         monomial2 = FDataBasis(basis, [[1, 2, 3], [3, 4, 5]])
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (monomial1 * 2).equals(
                 FDataBasis(
                     basis,
@@ -314,7 +314,7 @@ class TestFDataBasisOperations(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (3 * monomial2).equals(
                 FDataBasis(
                     basis,
@@ -323,13 +323,13 @@ class TestFDataBasisOperations(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (3 * monomial2).equals(
                 monomial2 * 3,
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (monomial2 * np.array([1, 2])).equals(
                 FDataBasis(
                     basis,
@@ -338,7 +338,7 @@ class TestFDataBasisOperations(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (np.array([1, 2]) * monomial2).equals(
                 FDataBasis(
                     basis,
@@ -363,14 +363,14 @@ class TestFDataBasisOperations(unittest.TestCase):
         monomial1 = FDataBasis(basis, [1, 2, 3])
         monomial2 = FDataBasis(basis, [[1, 2, 3], [3, 4, 5]])
 
-        self.assertTrue((monomial1 / 2).equals(
+        self.assertTrue((monomial1 / 2).equals(  # noqa: PT009
             FDataBasis(
                 basis,
                 [[1 / 2, 1, 3 / 2]],
             ),
         ))
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (monomial2 / 2).equals(
                 FDataBasis(
                     basis,
@@ -379,7 +379,7 @@ class TestFDataBasisOperations(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             (monomial2 / [1, 2]).equals(
                 FDataBasis(
                     basis,
@@ -399,7 +399,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             [[1], [2], [3], [4]],
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             constant.derivative().equals(
                 FDataBasis(
                     ConstantBasis(),
@@ -408,7 +408,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             constant.derivative(order=0).equals(
                 FDataBasis(
                     ConstantBasis(),
@@ -433,7 +433,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             ],
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             monomial.derivative().equals(
                 FDataBasis(
                     MonomialBasis(n_basis=7),
@@ -442,11 +442,11 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             monomial.derivative(order=0).equals(monomial),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             monomial.derivative(order=6).equals(
                 FDataBasis(
                     MonomialBasis(n_basis=2),
@@ -455,7 +455,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             monomial2.derivative().equals(
                 FDataBasis(
                     MonomialBasis(n_basis=4),
@@ -468,11 +468,11 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             monomial2.derivative(order=0).equals(monomial2),
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             monomial2.derivative(order=3).equals(
                 FDataBasis(
                     MonomialBasis(n_basis=2),
@@ -516,7 +516,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             ),
         )
 
-        self.assertTrue(fou0.equals(fourier))
+        self.assertTrue(fou0.equals(fourier))  # noqa: PT009
         np.testing.assert_equal(fou2.basis, fourier.basis)
         np.testing.assert_almost_equal(
             fou2.coefficients.round(5),
@@ -542,7 +542,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             ],
         )
 
-        self.assertTrue(fou0.equals(fourier2))
+        self.assertTrue(fou0.equals(fourier2))  # noqa: PT009
         np.testing.assert_equal(fou2.basis, fourier2.basis)
         np.testing.assert_almost_equal(
             fou2.coefficients.round(5),
@@ -578,7 +578,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             np.atleast_2d([60, 22.5, 5, -10, 5, -30, 15]),
         )
 
-        self.assertTrue(bs0.equals(bspline))
+        self.assertTrue(bs0.equals(bspline))  # noqa: PT009
 
         np.testing.assert_equal(
             bs2.basis,
@@ -605,7 +605,7 @@ class TestFDataBasisDerivatives(unittest.TestCase):
             ],
         )
 
-        self.assertTrue(bs0.equals(bspline2))
+        self.assertTrue(bs0.equals(bspline2))  # noqa: PT009
 
         np.testing.assert_equal(
             bs2.basis,
@@ -637,17 +637,17 @@ class TestVectorValuedBasis(unittest.TestCase):
             [basis_dim] * 2,
         )
 
-        X_basis = X.to_basis(basis)
+        X_basis = X.to_basis(basis)  # noqa: N806
 
-        self.assertEqual(X_basis.dim_codomain, 2)
+        self.assertEqual(X_basis.dim_codomain, 2)  # noqa: PT009
 
-        self.assertEqual(X_basis.coordinates[0].basis, basis_dim)
+        self.assertEqual(X_basis.coordinates[0].basis, basis_dim)  # noqa: PT009
         np.testing.assert_allclose(
             X_basis.coordinates[0].coefficients,
             X.coordinates[0].to_basis(basis_dim).coefficients,
         )
 
-        self.assertEqual(X_basis.coordinates[1].basis, basis_dim)
+        self.assertEqual(X_basis.coordinates[1].basis, basis_dim)  # noqa: PT009
         np.testing.assert_allclose(
             X_basis.coordinates[1].coefficients,
             X.coordinates[1].to_basis(basis_dim).coefficients,
@@ -731,9 +731,9 @@ class TestTensorBasis(unittest.TestCase):
                     dims=self.dims,
                 )
 
-                self.assertEqual(index, index2)
+                self.assertEqual(index, index2)  # noqa: PT009
 
-                self.assertAlmostEqual(
+                self.assertAlmostEqual(  # noqa: PT009
                     val[index],
                     val_x[x] * val_y[y] * val_z[z],
                 )
@@ -756,11 +756,11 @@ class TestTensorBasis(unittest.TestCase):
                 value_gram_y = gram_y[left[1], right[1]]
                 value_gram_z = gram_z[left[2], right[2]]
 
-                self.assertAlmostEqual(
+                self.assertAlmostEqual(  # noqa: PT009
                     value_gram,
                     value_gram_x * value_gram_y * value_gram_z,
                 )
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

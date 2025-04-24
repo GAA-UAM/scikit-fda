@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 import warnings
-from typing import (
+from typing import (  # noqa: UP035
     Any,
     Callable,
     Iterable,
@@ -26,42 +26,42 @@ from ...representation.basis import Basis, ConstantBasis
 from ...typing._numpy import NDArrayFloat
 from ._coefficients import CoefficientInfo, coefficient_info_from_covariate
 
-RegularizationType = Union[
+RegularizationType = Union[  # noqa: UP007
     L2Regularization[Any],
-    Sequence[Optional[L2Regularization[Any]]],
+    Sequence[Optional[L2Regularization[Any]]],  # noqa: UP007
     None,
 ]
 
-RegularizationIterableType = Union[
+RegularizationIterableType = Union[  # noqa: UP007
     L2Regularization[Any],
-    Iterable[Optional[L2Regularization[Any]]],
+    Iterable[Optional[L2Regularization[Any]]],  # noqa: UP007
     None,
 ]
 
-AcceptedDataType = Union[
+AcceptedDataType = Union[  # noqa: UP007
     FData,
     NDArrayFloat,
 ]
 
-AcceptedDataCoefsType = Union[
+AcceptedDataCoefsType = Union[  # noqa: UP007
     CoefficientInfo[FData],
     CoefficientInfo[NDArrayFloat],
 ]
 
-BasisCoefsType = Sequence[Optional[Basis]]
+BasisCoefsType = Sequence[Optional[Basis]]  # noqa: UP007
 
 
-ArgcheckResultType = Tuple[
+ArgcheckResultType = Tuple[  # noqa: UP006
     Sequence[AcceptedDataType],
     NDArrayFloat,
-    Optional[NDArrayFloat],
+    Optional[NDArrayFloat],  # noqa: UP007
     Sequence[AcceptedDataCoefsType],
 ]
 
 
 class LinearRegression(
     RegressorMixin[
-        Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        Union[AcceptedDataType, Sequence[AcceptedDataType]],  # noqa: UP007
         NDArrayFloat,
     ],
     BaseEstimator,
@@ -296,12 +296,12 @@ class LinearRegression(
                 [ 3.27884682  1.27018536]],
              ...)
 
-    """
+    """  # noqa: D412
 
     def __init__(
         self,
         *,
-        coef_basis: Optional[BasisCoefsType] = None,
+        coef_basis: Optional[BasisCoefsType] = None,  # noqa: UP007
         fit_intercept: bool = True,
         regularization: RegularizationType = None,
     ) -> None:
@@ -309,14 +309,14 @@ class LinearRegression(
         self.fit_intercept = fit_intercept
         self.regularization = regularization
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: C901, D102, PLR0912, PLR0915, RUF100
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],  # noqa: UP007
         y: AcceptedDataType,
-        sample_weight: Optional[NDArrayFloat] = None,
+        sample_weight: Optional[NDArrayFloat] = None,  # noqa: UP007
     ) -> LinearRegression:
 
-        X_new, y, sample_weight, coef_info = self._argcheck_X_y(
+        X_new, y, sample_weight, coef_info = self._argcheck_X_y(  # noqa: N806
             X,
             y,
             sample_weight,
@@ -329,16 +329,16 @@ class LinearRegression(
 
         if self.fit_intercept:
             new_x = np.ones((len(y), 1))
-            X_new = [new_x] + list(X_new)
+            X_new = [new_x] + list(X_new)  # noqa: N806, RUF005
 
             intercept_basis = self._choose_beta_basis(
                 coef_basis=None,
                 x_basis=None,
                 y_basis=y.basis if isinstance(y, FDataBasis) else None,
             )
-            coef_basis = [intercept_basis] + coef_basis
+            coef_basis = [intercept_basis] + coef_basis  # noqa: RUF005
 
-            new_coef_info_list: List[AcceptedDataCoefsType] = [
+            new_coef_info_list: List[AcceptedDataCoefsType] = [  # noqa: UP006
                 coefficient_info_from_covariate(
                     new_x,
                     y,
@@ -364,7 +364,7 @@ class LinearRegression(
             left_inner_products_list = []
             right_inner_products_list = []
 
-            Xt = self._make_transpose(X_new)
+            Xt = self._make_transpose(X_new)  # noqa: N806
 
             for i, basis_i in enumerate(coef_basis):
                 coef_lengths.append(basis_i.n_basis)
@@ -406,7 +406,7 @@ class LinearRegression(
 
             inner_products_list = [
                 c.regression_matrix(x, y)  # type: ignore[arg-type]
-                for x, c in zip(X_new, coef_info)
+                for x, c in zip(X_new, coef_info)  # noqa: B905
             ]
 
             # This is C @ J
@@ -447,22 +447,22 @@ class LinearRegression(
 
         return self
 
-    def predict(  # noqa: D102
+    def predict(  # noqa: D102, RUF100
         self,
-        X: Union[Sequence[AcceptedDataType], pd.DataFrame],
+        X: Union[Sequence[AcceptedDataType], pd.DataFrame],  # noqa: UP007
     ) -> NDArrayFloat:
 
         check_is_fitted(self)
         X = self._argcheck_X(X)
         result = []
 
-        for coef, x, coef_info in zip(self.coef_, X, self._coef_info):
+        for coef, x, coef_info in zip(self.coef_, X, self._coef_info):  # noqa: B905
             if self._functional_response:
-                def prediction(arg, x_eval=x, coef_eval=coef):  # noqa: WPS430
+                def prediction(arg, x_eval=x, coef_eval=coef):  # noqa: ANN001, ANN202, WPS430
                     if isinstance(x_eval, Callable):
                         x_eval = x_eval(arg)  # noqa: WPS220
 
-                    # TODO: MIRAR ESTO BIEN
+                    # TODO: MIRAR ESTO BIEN  # noqa: FIX002, TD002, TD003
                     x_eval = x_eval.reshape((-1, 1, 1))
 
                     return coef_eval(arg) * x_eval
@@ -490,11 +490,11 @@ class LinearRegression(
 
     def _argcheck_X(  # noqa: N802
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],  # noqa: UP007
     ) -> Sequence[AcceptedDataType]:
 
-        if isinstance(X, List) and any(isinstance(x, FData) for x in X):
-            warnings.warn(
+        if isinstance(X, List) and any(isinstance(x, FData) for x in X):  # noqa: UP006
+            warnings.warn(  # noqa: B028
                 "Usage of arguments of type sequence of "
                 "FData, ndarray is deprecated (fit, predict). "
                 "Use pandas DataFrame instead",
@@ -514,10 +514,10 @@ class LinearRegression(
 
     def _weighted_inner_product_integrate(
         self,
-        basis: Union[FDataBasis, Basis],
-        transposed_basis: Union[FDataBasis, Basis],
-        transposed_weight: Union[FDataBasis, NDArrayFloat],
-        weight: Union[FDataBasis, NDArrayFloat],
+        basis: Union[FDataBasis, Basis],  # noqa: UP007
+        transposed_basis: Union[FDataBasis, Basis],  # noqa: UP007
+        transposed_weight: Union[FDataBasis, NDArrayFloat],  # noqa: UP007
+        weight: Union[FDataBasis, NDArrayFloat],  # noqa: UP007
     ) -> NDArrayFloat:
         r"""
         Return the weighted inner product matrix between its arguments.
@@ -553,11 +553,11 @@ class LinearRegression(
             basis.domain_range,
             transposed_weight.domain_range,
         ):
-            raise ValueError("Domain range for weight and basis must be equal")
+            raise ValueError("Domain range for weight and basis must be equal")  # noqa: EM101, TRY003
 
         domain_range = basis.domain_range
 
-        def integrand(args):  # noqa: WPS430
+        def integrand(args):  # noqa: ANN001, ANN202, WPS430
             eval_basis = basis(args)[:, 0, :]
             eval_transposed_basis = transposed_basis(args)[:, 0, :]
 
@@ -584,7 +584,7 @@ class LinearRegression(
         self,
         X: Sequence[AcceptedDataType],
     ) -> Sequence[AcceptedDataType]:
-        Xt: list[AcceptedDataType] = []
+        Xt: list[AcceptedDataType] = []  # noqa: N806
         for x in X:
             if isinstance(x, FData):
                 Xt.append(x)
@@ -606,9 +606,9 @@ class LinearRegression(
         Returns:
             np.ndarray: numpy 2D array.
         """
-        new_X = np.asarray(X)
+        new_X = np.asarray(X)  # noqa: N806
         if new_X.ndim == 1:
-            new_X = new_X[:, np.newaxis]
+            new_X = new_X[:, np.newaxis]  # noqa: N806
         return new_X
 
     def _convert_from_constant_coefs(
@@ -620,24 +620,24 @@ class LinearRegression(
         if self._functional_response:
             return [
                 FDataBasis(basis=basis, coefficients=coef.T)
-                for basis, coef in zip(coef_basis, coef_list)
+                for basis, coef in zip(coef_basis, coef_list)  # noqa: B905
             ]
         return [
             c.convert_from_constant_coefs(bcoefs)
-            for c, bcoefs in zip(coef_info, coef_list)
+            for c, bcoefs in zip(coef_info, coef_list)  # noqa: B905
         ]
 
     def _argcheck_X_y(  # noqa: N802
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
-        y: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-        sample_weight: Optional[NDArrayFloat] = None,
-        coef_basis: Optional[BasisCoefsType] = None,
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],  # noqa: UP007
+        y: Union[AcceptedDataType, Sequence[AcceptedDataType]],  # noqa: UP007
+        sample_weight: Optional[NDArrayFloat] = None,  # noqa: UP007
+        coef_basis: Optional[BasisCoefsType] = None,  # noqa: UP007
     ) -> ArgcheckResultType:
         """Do some checks to types and shapes."""
-        new_X = self._argcheck_X(X)
+        new_X = self._argcheck_X(X)  # noqa: N806
 
-        len_new_X = len(new_X)
+        len_new_X = len(new_X)  # noqa: N806
 
         self._y_basis = y.basis if isinstance(y, FDataBasis) else None
 
@@ -645,8 +645,8 @@ class LinearRegression(
             self._functional_response = True
         else:
             if any(len(y) != len(x) for x in new_X):
-                raise ValueError(
-                    "The number of samples on independent and "
+                raise ValueError(  # noqa: TRY003
+                    "The number of samples on independent and "  # noqa: EM101
                     "dependent variables should be the same",
                 )
             self._functional_response = False
@@ -660,8 +660,8 @@ class LinearRegression(
             coef_basis = [coef_basis[0]] * len_new_X
 
         if len_new_X != len(coef_basis):
-            raise ValueError(
-                "The number of covariates and coefficients "
+            raise ValueError(  # noqa: TRY003
+                "The number of covariates and coefficients "  # noqa: EM101
                 "basis should be the same",
             )
 
@@ -671,14 +671,14 @@ class LinearRegression(
                 x_basis=x.basis if isinstance(x, FDataBasis) else None,
                 y_basis=self._y_basis,
             )
-            for c_basis, x in zip(coef_basis, new_X)
+            for c_basis, x in zip(coef_basis, new_X)  # noqa: B905
         ]
 
         self._coef_basis = coef_basis
 
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)
-            for x, b in zip(new_X, coef_basis)
+            for x, b in zip(new_X, coef_basis)  # noqa: B905
         ]
 
         if sample_weight is not None:
@@ -694,31 +694,31 @@ class LinearRegression(
     ) -> Basis | None:
         if coef_basis is not None:
             return coef_basis
-        elif y_basis is None:
+        elif y_basis is None:  # noqa: RET505
             return x_basis
         else:
             return y_basis
 
-    def _sample_weight_check(
+    def _sample_weight_check(  # noqa: ANN202
         self,
-        sample_weight: Optional[NDArrayFloat],
+        sample_weight: Optional[NDArrayFloat],  # noqa: UP007
         y: NDArrayFloat,
     ):
         if len(sample_weight) != len(y):
-            raise ValueError(
-                "The number of sample weights should be "
+            raise ValueError(  # noqa: TRY003
+                "The number of sample weights should be "  # noqa: EM101
                 "equal to the number of samples.",
             )
 
         if np.any(np.array(sample_weight) < 0):
-            raise ValueError(
-                "The sample weights should be non negative values",
+            raise ValueError(  # noqa: TRY003
+                "The sample weights should be non negative values",  # noqa: EM101
             )
 
     def _dataframe_conversion(
         self,
         X: pd.DataFrame,
-    ) -> List[AcceptedDataType]:
+    ) -> List[AcceptedDataType]:  # noqa: UP006
         """Convert DataFrames to a list with input columns.
 
         Args:
@@ -727,4 +727,4 @@ class LinearRegression(
         Returns:
             List: list which elements are the input DataFrame columns.
         """
-        return [v.values for k, v in X.items()]
+        return [v.values for k, v in X.items()]  # noqa: PD011

@@ -71,5 +71,5 @@ class TestsDirectionalOutlyingness(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

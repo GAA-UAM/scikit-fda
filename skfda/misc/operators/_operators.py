@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union  # noqa: UP035
 
 import multimethod
 from typing_extensions import Protocol
@@ -10,17 +10,17 @@ from ...representation import FData
 from ...representation.basis import Basis
 from ...typing._numpy import NDArrayFloat
 
-InputType = Union[NDArrayFloat, FData, Basis]
+InputType = Union[NDArrayFloat, FData, Basis]  # noqa: UP007
 
-OperatorInput = TypeVar(
+OperatorInput = TypeVar(  # noqa: PLC0105
     "OperatorInput",
     bound=InputType,
     contravariant=True,
 )
 
-OutputType = Union[NDArrayFloat, Callable[[NDArrayFloat], NDArrayFloat]]
+OutputType = Union[NDArrayFloat, Callable[[NDArrayFloat], NDArrayFloat]]  # noqa: UP007
 
-OperatorOutput = TypeVar(
+OperatorOutput = TypeVar(  # noqa: PLC0105
     "OperatorOutput",
     bound=OutputType,
     covariant=True,
@@ -33,13 +33,13 @@ class Operator(Protocol[OperatorInput, OperatorOutput]):
     @abc.abstractmethod
     def __call__(self, vector: OperatorInput) -> OperatorOutput:
         """Evaluate the operator."""
-        pass
+        pass  # noqa: PIE790
 
 
 @multimethod.multidispatch
 def gram_matrix_optimization(
-    linear_operator: Any,
-    basis: OperatorInput,
+    linear_operator: Any,  # noqa: ANN401, ARG001
+    basis: OperatorInput,  # noqa: ARG001
 ) -> NDArrayFloat:
     """
     Efficient implementation of gram_matrix.
@@ -112,5 +112,5 @@ class MatrixOperator(Operator[NDArrayFloat, NDArrayFloat]):
     def __init__(self, matrix: NDArrayFloat) -> None:
         self.matrix = matrix
 
-    def __call__(self, f: NDArrayFloat) -> NDArrayFloat:  # noqa: D102
+    def __call__(self, f: NDArrayFloat) -> NDArrayFloat:  # noqa: D102, RUF100
         return self.matrix @ f

@@ -1,10 +1,10 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: D100
 
 import warnings
-from typing import Sequence
+from typing import Sequence  # noqa: UP035
 
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 
 from skfda.exploratory.visualization.representation import GraphPlot
 from skfda.representation import FData
@@ -30,7 +30,7 @@ class FPCAPlot(BasePlot):
         n_cols: Designates the number of columns of the figure.
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204, PLR0913
         self,
         mean: FData,
         components: FData,
@@ -55,7 +55,7 @@ class FPCAPlot(BasePlot):
         if multiple is None:
             self.factor = factor
         else:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "The 'multiple' parameter is deprecated, "
                 "use 'factor' instead.",
                 DeprecationWarning,
@@ -63,20 +63,20 @@ class FPCAPlot(BasePlot):
             self.factor = multiple
 
     @property
-    def multiple(self) -> float:
-        warnings.warn(
+    def multiple(self) -> float:  # noqa: D102
+        warnings.warn(  # noqa: B028
             "The 'multiple' attribute is deprecated, use 'factor' instead.",
             DeprecationWarning,
         )
         return self.factor
 
     @property
-    def n_subplots(self) -> int:
+    def n_subplots(self) -> int:  # noqa: D102
         return len(self.components)
 
     def _plot(
         self,
-        fig: Figure,
+        fig: Figure,  # noqa: ARG002
         axes: Sequence[Axes],
     ) -> None:
 
@@ -102,7 +102,7 @@ class FPCAPlot(BasePlot):
             the negative perturbation.
         """
         if not isinstance(self.mean, FData):
-            raise AttributeError("X must be a FData object")
+            raise AttributeError("X must be a FData object")  # noqa: EM101, TRY003, TRY004
         perturbations = self.mean.copy()
         perturbations = perturbations.concatenate(
             perturbations[0] + self.factor * self.components[index],

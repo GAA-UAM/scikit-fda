@@ -8,7 +8,7 @@ from ...misc.validation import validate_domain_range
 from .. import nquad_vec
 
 if TYPE_CHECKING:
-    from ...typing._numpy import NDArrayFloat
+    from ...typing._numpy import NDArrayFloat  # noqa: I001
     from ...representation import FData
     from ...typing._base import DomainRangeLike
 
@@ -26,11 +26,11 @@ UfuncMethod = Literal[
 class _SupportsArrayUFunc(Protocol):
     def __array_ufunc__(
         self,
-        ufunc: Any,
+        ufunc: Any,  # noqa: ANN401
         method: UfuncMethod,
-        *inputs: Any,
-        **kwargs: Any,
-    ) -> Any:
+        *inputs: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> Any:  # noqa: ANN401
         pass
 
 
@@ -39,7 +39,7 @@ T = TypeVar("T", bound=_SupportsArrayUFunc)
 
 class _UnaryUfunc(Protocol):
 
-    def __call__(self, __arg: T) -> T:  # noqa: WPS112
+    def __call__(self, __arg: T) -> T:  # noqa: PYI063, WPS112
         pass
 
 
@@ -105,5 +105,5 @@ def average_function_value(
         `Entry on Wikipedia
         <https://en.wikipedia.org/wiki/Mean_of_a_function>`_
 
-    """
+    """  # noqa: D405
     return _average_function_ufunc(data, ufunc=lambda x: x, domain=domain)

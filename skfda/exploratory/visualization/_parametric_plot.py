@@ -7,19 +7,19 @@ of them with domain 1 and codomain 1.
 """
 from __future__ import annotations
 
-from typing import Dict, Sequence, TypeVar
+from typing import Dict, Sequence, TypeVar  # noqa: UP035
 
 import numpy as np
 from matplotlib.artist import Artist
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 
-from ...representation import FData
+from ...representation import FData  # noqa: TC001
 from ._baseplot import BasePlot
-from ._utils import ColorLike
+from ._utils import ColorLike  # noqa: TC001
 from .representation import Indexable, _get_color_info
 
-K = TypeVar('K', contravariant=True)
+K = TypeVar('K', contravariant=True)  # noqa: Q000, PLC0105
 
 
 class ParametricPlot(BasePlot):
@@ -45,7 +45,7 @@ class ParametricPlot(BasePlot):
         ax: axis where the graphs are plotted. If None, see param fig.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         fdata1: FData,
         fdata2: FData | None = None,
@@ -99,11 +99,11 @@ class ParametricPlot(BasePlot):
             self.legend,
         )
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: Dict[str, ColorLike | None] = {}  # noqa: UP006
 
         if (
             self.fd_final.dim_domain == 1
-            and self.fd_final.dim_codomain == 2
+            and self.fd_final.dim_codomain == 2  # noqa: PLR2004
         ):
             ax = axes[0]
 
@@ -119,8 +119,8 @@ class ParametricPlot(BasePlot):
                 )[0]
 
         else:
-            raise ValueError(
-                "Error in data arguments,",
+            raise ValueError(  # noqa: TRY003
+                "Error in data arguments,",  # noqa: EM101
                 "codomain or domain is not correct.",
             )
 

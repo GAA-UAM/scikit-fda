@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable  # noqa: UP035
 
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -8,7 +8,7 @@ from sklearn.gaussian_process.kernels import Kernel, WhiteKernel
 
 from ....misc.covariances import Covariance, EmpiricalGrid
 from ....representation import FDataGrid
-from ....typing._numpy import NDArrayFloat
+from ....typing._numpy import NDArrayFloat  # noqa: TC001
 from ._empirical import EmpiricalCovariance
 
 
@@ -30,12 +30,12 @@ class ParametricGaussianCovariance(EmpiricalCovariance[FDataGrid]):
     def fit(
         self,
         X: FDataGrid,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> ParametricGaussianCovariance:
 
         self._fit_mean(X)
 
-        X_centered = X - self.location_
+        X_centered = X - self.location_  # noqa: N806
 
         data_matrix = X_centered.data_matrix[:, :, 0]
 
@@ -53,8 +53,8 @@ class ParametricGaussianCovariance(EmpiricalCovariance[FDataGrid]):
         regressor.fit(grid_points, data_matrix.T)
         self.cov_ = regressor.kernel_
 
-        # TODO: Skip cov computation?
-        # TODO: Use a user-public structure to represent the covariance,
+        # TODO: Skip cov computation?  # noqa: FIX002, TD002, TD003
+        # TODO: Use a user-public structure to represent the covariance,  # noqa: E501, FIX002, TD002, TD003
         #  instead of a Callable object
         self.covariance_ = X.cov()
         assert isinstance(self.covariance_, EmpiricalGrid)

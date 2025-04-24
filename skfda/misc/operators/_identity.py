@@ -4,9 +4,9 @@ from typing import Any, TypeVar
 
 import numpy as np
 
-from ...representation import FDataGrid
-from ...representation.basis import Basis
-from ...typing._numpy import NDArrayFloat
+from ...representation import FDataGrid  # noqa: TC001
+from ...representation.basis import Basis  # noqa: TC001
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ._operators import InputType, Operator, gram_matrix_optimization
 
 T = TypeVar("T", bound=InputType)
@@ -24,13 +24,13 @@ class Identity(Operator[T, T]):
 
     """
 
-    def __call__(self, f: T) -> T:  # noqa: D102
+    def __call__(self, f: T) -> T:  # noqa: D102, RUF100
         return f
 
 
 @gram_matrix_optimization.register
 def basis_penalty_matrix_optimized(
-    linear_operator: Identity[Any],
+    linear_operator: Identity[Any],  # noqa: ARG001
     basis: Basis,
 ) -> NDArrayFloat:
     """Optimized version of the penalty matrix for Basis."""
@@ -39,7 +39,7 @@ def basis_penalty_matrix_optimized(
 
 @gram_matrix_optimization.register
 def fdatagrid_penalty_matrix_optimized(
-    linear_operator: Identity[Any],
+    linear_operator: Identity[Any],  # noqa: ARG001
     basis: FDataGrid,
 ) -> NDArrayFloat:
     """Optimized version of the penalty matrix for FDataGrid."""

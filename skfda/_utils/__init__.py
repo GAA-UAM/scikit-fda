@@ -23,7 +23,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "function_to_fdatabasis",
             "nquad_vec",
         ],
-        '_warping': [
+        '_warping': [  # noqa: Q000
             "invert_warping",
             "normalize_scale",
             "normalize_warping",

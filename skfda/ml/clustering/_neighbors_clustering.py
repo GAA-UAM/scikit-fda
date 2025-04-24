@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, TypeVar, Union, overload
 
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils._neighbors_base import (
     AlgorithmType,
@@ -12,11 +12,11 @@ from ..._utils._neighbors_base import (
 )
 from ...misc.metrics import l2_distance
 from ...representation import FData
-from ...typing._metric import Metric
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayFloat
 
-InputBound = Union[NDArrayFloat, FData]
-Input = TypeVar("Input", contravariant=True, bound=InputBound)
+InputBound = Union[NDArrayFloat, FData]  # noqa: UP007
+Input = TypeVar("Input", contravariant=True, bound=InputBound)  # noqa: PLC0105
 SelfType = TypeVar("SelfType", bound="NearestNeighbors[Any]")
 
 
@@ -103,7 +103,7 @@ class NearestNeighbors(
 
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
-    """
+    """  # noqa: D405
 
     @overload
     def __init__(
@@ -111,7 +111,7 @@ class NearestNeighbors(
         *,
         n_neighbors: int = 5,
         radius: float = 1.0,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"],
         n_jobs: int | None = None,
@@ -124,7 +124,7 @@ class NearestNeighbors(
         *,
         n_neighbors: int = 5,
         radius: float = 1.0,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -137,7 +137,7 @@ class NearestNeighbors(
         *,
         n_neighbors: int = 5,
         radius: float = 1.0,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -150,7 +150,7 @@ class NearestNeighbors(
         *,
         n_neighbors: int = 5,
         radius: float = 1.0,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -165,7 +165,7 @@ class NearestNeighbors(
         )
 
     # There is actually a change here: the default parameter!!
-    def fit(  # noqa: WPS612, D102
+    def fit(  # noqa: D102, PYI019, RUF100, WPS612
         self: SelfType,
         X: Input,
         y: None = None,

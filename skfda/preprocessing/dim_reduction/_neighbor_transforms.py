@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypeVar, Union, overload
 
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix  # noqa: TC002
 from sklearn.neighbors import KNeighborsTransformer as _KNeighborsTransformer
 
 from skfda._utils._sklearn_adapter import InductiveTransformerMixin
@@ -10,11 +10,11 @@ from skfda._utils._sklearn_adapter import InductiveTransformerMixin
 from ..._utils._neighbors_base import AlgorithmType, KNeighborsMixin
 from ...misc.metrics import l2_distance
 from ...representation import FData
-from ...typing._metric import Metric
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayFloat
 
-InputBound = Union[NDArrayFloat, FData]
-Input = TypeVar("Input", contravariant=True, bound=InputBound)
+InputBound = Union[NDArrayFloat, FData]  # noqa: UP007
+Input = TypeVar("Input", contravariant=True, bound=InputBound)  # noqa: PLC0105
 Target = TypeVar("Target")
 SelfType = TypeVar("SelfType", bound="KNeighborsTransformer[Any, Any]")
 
@@ -32,7 +32,7 @@ class KNeighborsTransformer(
         *,
         mode: Literal["connectivity", "distance"] = "distance",
         n_neighbors: int = 5,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"],
         n_jobs: int | None = None,
@@ -45,7 +45,7 @@ class KNeighborsTransformer(
         *,
         mode: Literal["connectivity", "distance"] = "distance",
         n_neighbors: int = 5,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         n_jobs: int | None = None,
     ) -> None:
@@ -57,7 +57,7 @@ class KNeighborsTransformer(
         *,
         mode: Literal["connectivity", "distance"] = "distance",
         n_neighbors: int = 5,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -70,7 +70,7 @@ class KNeighborsTransformer(
         *,
         mode: Literal["connectivity", "distance"] = "distance",
         n_neighbors: int = 5,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -95,11 +95,11 @@ class KNeighborsTransformer(
             n_jobs=self.n_jobs,
         )
 
-    def _fit(
+    def _fit(  # noqa: PYI019
         self: SelfType,
         X: Input,
         y: Target,
-        fit_with_zeros: bool = True,
+        fit_with_zeros: bool = True,  # noqa: FBT001, FBT002, ARG002
     ) -> SelfType:
         ret = super()._fit(X, y)
 

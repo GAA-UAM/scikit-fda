@@ -29,7 +29,7 @@ class TestFDAFeatureUnion(unittest.TestCase):
             array_output=True,
         )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError):  # noqa: PT027
             u.fit_transform(self.X)
 
     def test_correct_transformation_concat(self) -> None:
@@ -62,5 +62,5 @@ class TestFDAFeatureUnion(unittest.TestCase):
         assert_frame_equal(true_frame, created_frame)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

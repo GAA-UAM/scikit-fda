@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Sequence  # noqa: UP035
 
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.gaussian_process.kernels as sklearn_kern
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure  # noqa: TC002
 from numpy.typing import NDArray
 from scipy.special import gamma, kv
 
@@ -38,9 +38,9 @@ def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     t = np.asarray(t, dtype=np.float64)
 
     dim = t.ndim
-    assert dim <= 2
+    assert dim <= 2  # noqa: PLR2004
 
-    if dim < 2:
+    if dim < 2:  # noqa: PLR2004
         t = np.atleast_2d(t).T
 
     return t
@@ -84,7 +84,7 @@ class Covariance(abc.ABC):
         y: Input | None = None,
     ) -> NDArrayFloat:
         """Compute covariance function on input data."""
-        pass
+        pass  # noqa: PIE790
 
     def _param_check_and_transform(
         self,
@@ -96,15 +96,15 @@ class Covariance(abc.ABC):
             y = x
 
         if type(x) is not type(y):  # noqa: WPS516
-            raise ValueError(
-                'Cannot operate objects x and y from different classes',
-                f'({type(x)}, {type(y)}).',
+            raise ValueError(  # noqa: TRY003
+                'Cannot operate objects x and y from different classes',  # noqa: EM101, Q000
+                f'({type(x)}, {type(y)}).',  # noqa: Q000
             )
 
         if not isinstance(x, FData) and not isinstance(y, FData):
-            if len(x.shape) < 2:
+            if len(x.shape) < 2:  # noqa: PLR2004
                 x = np.atleast_2d(x)
-            if len(y.shape) < 2:
+            if len(y.shape) < 2:  # noqa: PLR2004
                 y = np.atleast_2d(y)
 
         return x, y
@@ -142,8 +142,8 @@ class Covariance(abc.ABC):
 
     def __repr__(self) -> str:
 
-        params_str = ', '.join(
-            f'{n}={getattr(self, n)}' for n, _ in self._parameters_str
+        params_str = ', '.join(  # noqa: Q000
+            f'{n}={getattr(self, n)}' for n, _ in self._parameters_str  # noqa: Q000
         )
 
         return (
@@ -153,8 +153,8 @@ class Covariance(abc.ABC):
         )
 
     def _latex_content(self) -> str:
-        params_str = ''.join(
-            fr'{l} &= {getattr(self, n)} \\' for n, l in self._parameters_str
+        params_str = ''.join(  # noqa: Q000
+            fr'{l} &= {getattr(self, n)} \\' for n, l in self._parameters_str  # noqa: Q000, E741
         )
 
         return (
@@ -179,7 +179,7 @@ class Covariance(abc.ABC):
         sample_trajectories = _figure_to_svg(fig)
         plt.close(fig)
 
-        row_style = ''
+        row_style = ''  # noqa: Q000
 
         def column_style(  # noqa: WPS430
             percent: float,
@@ -213,7 +213,7 @@ class Covariance(abc.ABC):
     def to_sklearn(self) -> sklearn_kern.Kernel:
         """Convert it to a sklearn kernel, if there is one."""
         raise NotImplementedError(
-            f"{type(self).__name__} covariance not "
+            f"{type(self).__name__} covariance not "  # noqa: EM102
             f"implemented in scikit-learn",
         )
 
@@ -274,7 +274,7 @@ class Brownian(Covariance):
         r"|x' - \mathcal{O}| - |x - x'|}{2}"
     )
 
-    _parameters_str = [
+    _parameters_str = [  # noqa: RUF012
         ("variance", r"\sigma^2"),
         ("origin", r"\mathcal{O}"),
     ]
@@ -290,8 +290,8 @@ class Brownian(Covariance):
     ) -> NDArrayFloat:
         """Compute Brownian covariance function on input data."""
         if isinstance(x, FData) or isinstance(y, FData):
-            raise ValueError(
-                'Brownian covariance not defined for FData objects.',
+            raise ValueError(  # noqa: TRY003, TRY004
+                'Brownian covariance not defined for FData objects.',  # noqa: EM101, Q000
             )
 
         x = _transform_to_2d(x)
@@ -361,7 +361,7 @@ class Linear(Covariance):
 
     _latex_formula = r"K(x, x') = \sigma^2 (x^T x' + c)"
 
-    _parameters_str = [
+    _parameters_str = [  # noqa: RUF012
         ("variance", r"\sigma^2"),
         ("intercept", "c"),
     ]
@@ -437,7 +437,7 @@ class Polynomial(Covariance):
 
     _latex_formula = r"K(x, x') = \sigma^2 (\alpha x^T x' + c)^d"
 
-    _parameters_str = [
+    _parameters_str = [  # noqa: RUF012
         ("variance", r"\sigma^2"),
         ("intercept", "c"),
         ("slope", r"\alpha"),
@@ -529,12 +529,12 @@ class Gaussian(Covariance):
         r"\right)"
     )
 
-    _parameters_str = [
+    _parameters_str = [  # noqa: RUF012
         ("variance", r"\sigma^2"),
         ("length_scale", "l"),
     ]
 
-    def __init__(self, *, variance: float = 1, length_scale: float = 1):
+    def __init__(self, *, variance: float = 1, length_scale: float = 1):  # noqa: ANN204
         self.variance = variance
         self.length_scale = length_scale
 
@@ -607,7 +607,7 @@ class Exponential(Covariance):
         r"\right)"
     )
 
-    _parameters_str = [
+    _parameters_str = [  # noqa: RUF012
         ("variance", r"\sigma^2"),
         ("length_scale", "l"),
     ]
@@ -695,9 +695,9 @@ class WhiteNoise(Covariance):
         r"0, \quad x \neq x'\\ \end{cases}"
     )
 
-    _parameters_str = [("variance", r"\sigma^2")]
+    _parameters_str = [("variance", r"\sigma^2")]  # noqa: RUF012
 
-    def __init__(self, *, variance: float = 1):
+    def __init__(self, *, variance: float = 1):  # noqa: ANN204
         self.variance = variance
 
     def __call__(
@@ -707,7 +707,7 @@ class WhiteNoise(Covariance):
     ) -> NDArrayFloat:
         """Compute white noise covariance function on input data."""
         if isinstance(x, FData) or isinstance(y, FData):
-            raise ValueError('Not defined for FData objects.')
+            raise ValueError('Not defined for FData objects.')  # noqa: EM101, Q000, TRY003, TRY004
 
         x = _transform_to_2d(x)
         return self.variance * np.eye(x.shape[0])
@@ -773,7 +773,7 @@ class Matern(Covariance):
         r"K_{\nu}\left( \frac{\sqrt{2\nu}|x - x'|}{l} \right)"
     )
 
-    _parameters_str = [
+    _parameters_str = [  # noqa: RUF012
         ("variance", r"\sigma^2"),
         ("length_scale", "l"),
         ("nu", r"\nu"),
@@ -806,7 +806,7 @@ class Matern(Covariance):
             p = int(p)
             body = np.sqrt(2 * p + 1) * distance_x_y / self.length_scale
             exponential = np.exp(-body)
-            power_list = np.full(shape=(p,) + body.shape, fill_value=2 * body)
+            power_list = np.full(shape=(p,) + body.shape, fill_value=2 * body)  # noqa: RUF005
             power_list = np.cumprod(power_list, axis=0)
             power_list = np.concatenate(
                 (power_list[::-1], np.asarray([np.ones_like(body)])),
@@ -823,7 +823,7 @@ class Matern(Covariance):
             return (  # type: ignore[no-any-return]
                 self.variance * exponential * np.sum(sum_terms, axis=-1)
             )
-        elif self.nu == np.inf:
+        elif self.nu == np.inf:  # noqa: RET505
             return (  # type: ignore[no-any-return]
                 self.variance * np.exp(
                     -distance_x_y ** 2 / (2 * self.length_scale ** 2),
@@ -836,7 +836,7 @@ class Matern(Covariance):
         power = body**self.nu
         bessel = kv(self.nu, body)
 
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid='ignore'):  # noqa: Q000
             eval_cov = self.variance * scaling * power * bessel
 
         # Values with nan are where the distance is 0
@@ -874,7 +874,7 @@ class Empirical(Covariance):
         r"K(t, s) = \frac{1}{N-\text{correction}}\sum_{n=1}^N"
         r"(x_n(t) - \bar{x}(t))(x_n(s) - \bar{x}(s))"
     )
-    _parameters_str = [
+    _parameters_str = [  # noqa: RUF012
         ("data", "data"),
     ]
 
@@ -885,7 +885,7 @@ class Empirical(Covariance):
     def __init__(self, data: FData) -> None:
         if data.dim_domain != 1 or data.dim_codomain != 1:
             raise NotImplementedError(
-                "Covariance only implemented "
+                "Covariance only implemented "  # noqa: EM101
                 "for univariate functions",
             )
 
@@ -904,7 +904,7 @@ class Empirical(Covariance):
             Covariance function evaluated at the grid formed by x and y.
         """
         if isinstance(x, FData) or isinstance(y, FData):
-            raise ValueError('Not defined for FData objects.')
+            raise ValueError('Not defined for FData objects.')  # noqa: EM101, Q000, TRY003, TRY004
 
         return self.cov_fdata([x, y], grid=True)[0, ..., 0]
 

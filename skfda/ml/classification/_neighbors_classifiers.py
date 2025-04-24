@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Sequence, TypeVar, Union, overload
+from typing import Sequence, TypeVar, Union, overload  # noqa: UP035
 
 from sklearn.neighbors import (
     KNeighborsClassifier as _KNeighborsClassifier,
     RadiusNeighborsClassifier as _RadiusNeighborsClassifier,
 )
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils._neighbors_base import (
     AlgorithmType,
@@ -19,12 +19,12 @@ from ..._utils._neighbors_base import (
 )
 from ...misc.metrics import l2_distance
 from ...representation import FData
-from ...typing._metric import Metric
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 
-InputBound = Union[NDArrayFloat, FData]
-Input = TypeVar("Input", contravariant=True, bound=InputBound)
-OutlierLabelType = Union[int, str, Sequence[int], Sequence[str], None]
+InputBound = Union[NDArrayFloat, FData]  # noqa: UP007
+Input = TypeVar("Input", contravariant=True, bound=InputBound)  # noqa: PLC0105
+OutlierLabelType = Union[int, str, Sequence[int], Sequence[str], None]  # noqa: UP007
 
 
 class KNeighborsClassifier(
@@ -117,15 +117,15 @@ class KNeighborsClassifier(
         training data.
 
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
-    """
+    """  # noqa: D405, RUF002
 
     @overload
     def __init__(
         self: KNeighborsClassifier[NDArrayFloat],
         *,
         n_neighbors: int = 5,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"],
         n_jobs: int | None = None,
@@ -137,8 +137,8 @@ class KNeighborsClassifier(
         self: KNeighborsClassifier[InputBound],
         *,
         n_neighbors: int = 5,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         n_jobs: int | None = None,
     ) -> None:
@@ -149,8 +149,8 @@ class KNeighborsClassifier(
         self,
         *,
         n_neighbors: int = 5,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -162,8 +162,8 @@ class KNeighborsClassifier(
         self,
         *,
         n_neighbors: int = 5,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
         n_jobs: int | None = None,
@@ -271,15 +271,15 @@ class RadiusNeighborsClassifier(
         `sklearn.neighbors.RadiusNeighborsClassifier`.
 
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
-    """
+    """  # noqa: D405
 
     @overload
     def __init__(
         self: RadiusNeighborsClassifier[NDArrayFloat],
         *,
         radius: float = 1.0,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"],
         outlier_label: OutlierLabelType = None,
@@ -292,8 +292,8 @@ class RadiusNeighborsClassifier(
         self: RadiusNeighborsClassifier[InputBound],
         *,
         radius: float = 1.0,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         outlier_label: OutlierLabelType = None,
         n_jobs: int | None = None,
@@ -305,8 +305,8 @@ class RadiusNeighborsClassifier(
         self,
         *,
         radius: float = 1.0,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
         outlier_label: OutlierLabelType = None,
@@ -318,8 +318,8 @@ class RadiusNeighborsClassifier(
         self,
         *,
         radius: float = 1.0,
-        weights: WeightsType = 'uniform',
-        algorithm: AlgorithmType = 'auto',
+        weights: WeightsType = 'uniform',  # noqa: Q000
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
         outlier_label: OutlierLabelType = None,

@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import numpy as np
 from matplotlib.artist import Artist
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 
-from ...representation import FDataGrid
+from ...representation import FDataGrid  # noqa: TC001
 from ..outliers import OutliergramOutlierDetector
 from ._baseplot import BasePlot
 
@@ -57,7 +57,7 @@ class Outliergram(BasePlot):
         Arribas-Gil A., Romo J.. Shape outlier detection and visualization for
         functional data: the outliergram
         https://academic.oup.com/biostatistics/article/15/4/603/266279
-    """
+    """  # noqa: W291, D410, D411
 
     def __init__(
         self,
@@ -88,7 +88,7 @@ class Outliergram(BasePlot):
 
     def _plot(
         self,
-        fig: Figure,
+        fig: Figure,  # noqa: ARG002
         axes: Axes,
     ) -> None:
 
@@ -98,7 +98,7 @@ class Outliergram(BasePlot):
         )
 
         for i, (mei, mbd) in enumerate(
-            zip(self.outlier_detector.mei_, self.outlier_detector.mbd_),
+            zip(self.outlier_detector.mei_, self.outlier_detector.mbd_),  # noqa: B905
         ):
             self.artists[i, 0] = axes[0].scatter(
                 mei,
@@ -119,7 +119,7 @@ class Outliergram(BasePlot):
         axes[0].plot(
             self._mei_ordered,
             shifted_parabola,
-            linestyle='dashed',
+            linestyle='dashed',  # noqa: Q000
         )
 
         # Set labels of graph

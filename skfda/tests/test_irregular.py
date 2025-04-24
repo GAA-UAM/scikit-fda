@@ -1,8 +1,8 @@
 """Test the basic methods of the FDataIrregular structure."""
-from typing import Any, Tuple
+from typing import Any, Tuple  # noqa: UP035
 
 import numpy as np
-import pandas
+import pandas  # noqa: ICN001
 import pytest
 
 from skfda.datasets._real_datasets import _fetch_loon_data
@@ -32,9 +32,9 @@ COPY_KWARGS = [  # noqa: WPS407
 random_state = np.random.RandomState(seed=SEED)
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def input_arrays(
-) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:  # noqa: UP006
     """Create unidimensional arrays describing a FDataIrregular structure."""
     num_values_per_curve = np.array(range(NUM_CURVES)) + 1
 
@@ -55,9 +55,9 @@ def input_arrays(
     return indices, values, arguments
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def input_arrays_multidimensional(
-) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:  # noqa: UP006
     """Create multidimensional arrays describing a FDataIrregular structure."""
     num_values_per_curve = np.array(range(NUM_CURVES)) + 1
 
@@ -85,18 +85,18 @@ def input_arrays_multidimensional(
     ],
 )
 def fdatairregular(
-    request: Any,
+    request: Any,  # noqa: ANN401
     input_arrays: FDataIrregular,
     input_arrays_multidimensional: FDataIrregular,
 ) -> FDataIrregular:
     """Return 'input_arrays' or 'input_arrays_multidimensional'."""
-    if request.param == "input_arrays":
+    if request.param == "input_arrays":  # noqa: RET503
         return FDataIrregular(*input_arrays)
-    elif request.param == "input_arrays_multidimensional":
+    elif request.param == "input_arrays_multidimensional":  # noqa: RET505
         return FDataIrregular(*input_arrays_multidimensional)
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def fdatagrid_unidimensional(
 ) -> FDataGrid:
     """Generate FDataGrid."""
@@ -112,7 +112,7 @@ def fdatagrid_unidimensional(
     )
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def fdatagrid_multidimensional(
 ) -> FDataGrid:
     """Generate multidimensional FDataGrid."""
@@ -140,18 +140,18 @@ def fdatagrid_multidimensional(
     ],
 )
 def fdatagrid(
-    request: Any,
+    request: Any,  # noqa: ANN401
     fdatagrid_unidimensional: FDataGrid,
     fdatagrid_multidimensional: FDataGrid,
 ) -> FDataIrregular:
     """Return 'fdatagrid_unidimensional' or 'fdatagrid_multidimensional'."""
-    if request.param == "fdatagrid_unidimensional":
+    if request.param == "fdatagrid_unidimensional":  # noqa: RET503
         return fdatagrid_unidimensional
-    elif request.param == "fdatagrid_multidimensional":
+    elif request.param == "fdatagrid_multidimensional":  # noqa: RET505
         return fdatagrid_multidimensional
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def dataframe(
 ) -> pandas.DataFrame:
     """Generate long dataframe for testing."""
@@ -261,7 +261,7 @@ def test_fdatairregular_from_dataframe(
     argument_name = "age"
     coordinate_name = "spnbmd"
 
-    f_irreg = FDataIrregular._from_dataframe(
+    f_irreg = FDataIrregular._from_dataframe(  # noqa: SLF001
         dataframe,
         id_column=curve_name,
         argument_columns=argument_name,
@@ -271,8 +271,8 @@ def test_fdatairregular_from_dataframe(
         dataset_name="bone_ext",
     )
 
-    assert len(f_irreg) == 423
-    assert len(f_irreg.values) == 1003
+    assert len(f_irreg) == 423  # noqa: PLR2004
+    assert len(f_irreg.values) == 1003  # noqa: PLR2004
 
 
 def test_fdatairregular_getitem(
@@ -319,7 +319,7 @@ def test_fdatairregular_coordinates(
         assert len(f_data_coordinate) == len(fdatairregular)
         assert f_data_coordinate.dim_codomain == 1
         assert np.all(
-            f_data_coordinate.values[:, 0] == fdatairregular.values[:, dim],
+            f_data_coordinate.values[:, 0] == fdatairregular.values[:, dim],  # noqa: PD011
         )
 
 
@@ -336,7 +336,7 @@ def test_fdatairregular_round(
         decimals (int): Number of decimal places to round.
     """
     assert np.all(
-        fdatairregular.round(decimals).values
+        fdatairregular.round(decimals).values  # noqa: PD011
         == np.round(fdatairregular.values, decimals),
     )
 
@@ -363,7 +363,7 @@ def test_fdatairregular_concatenate(
     assert np.all(start_indices_halves[1] == second_half_indices)
     assert len(fd_concat.points) == 2 * len(fdatairregular.points)
     assert np.all(function_args_halves[1] == fdatairregular.points)
-    assert np.all(values_halves[1] == fdatairregular.values)
+    assert np.all(values_halves[1] == fdatairregular.values)  # noqa: PD011
 
 
 def test_fdatairregular_equals(

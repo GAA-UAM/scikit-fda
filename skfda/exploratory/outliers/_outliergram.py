@@ -4,7 +4,7 @@ import numpy as np
 
 from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
 from ...representation import FDataGrid
-from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt  # noqa: TC001
 from ..depth._depth import ModifiedBandDepth
 from ..stats import modified_epigraph_index
 
@@ -75,10 +75,10 @@ class OutliergramOutlierDetector(
         iqr = third_quartile - first_quartile
         return float(third_quartile + self.factor * iqr)
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, RUF100
         self,
         X: FDataGrid,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> OutliergramOutlierDetector:
         self.mbd_ = ModifiedBandDepth()(X)
         self.mei_ = modified_epigraph_index(X)
@@ -90,7 +90,7 @@ class OutliergramOutlierDetector(
 
         return self
 
-    def fit_predict(  # noqa: D102
+    def fit_predict(  # noqa: D102, RUF100
         self,
         X: FDataGrid,
         y: object = None,

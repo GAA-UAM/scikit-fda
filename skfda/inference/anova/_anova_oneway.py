@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import Sequence, Tuple, TypeVar, overload
+from typing import Sequence, Tuple, TypeVar, overload  # noqa: UP035
 
 import numpy as np
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils import constants
 from ...datasets import make_gaussian
 from ...misc.metrics import lp_distance
 from ...misc.validation import validate_random_state
 from ...representation import FData, FDataGrid, concatenate
-from ...typing._base import RandomStateLike
-from ...typing._numpy import ArrayLike, NDArrayFloat
+from ...typing._base import RandomStateLike  # noqa: TC001
+from ...typing._numpy import ArrayLike, NDArrayFloat  # noqa: TC001
 
 
 def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
@@ -77,9 +77,9 @@ def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
     """
     weights = np.asarray(weights)
     if not isinstance(fd, FData):
-        raise ValueError("Argument type must inherit FData.")
+        raise ValueError("Argument type must inherit FData.")  # noqa: EM101, TRY003, TRY004
     if len(weights) != fd.n_samples:
-        raise ValueError("Number of weights must match number of samples.")
+        raise ValueError("Number of weights must match number of samples.")  # noqa: EM101, TRY003
 
     t_ind = np.tril_indices(fd.n_samples, -1)
     coef = weights[t_ind[1]]
@@ -100,14 +100,14 @@ def _v_asymptotic_stat_with_reps(
     """Vectorized version of v_asymptotic_stat for repetitions."""
     weights = np.asarray(weights)
     if len(weights) != len(fds):
-        raise ValueError("Number of weights must match number of groups.")
+        raise ValueError("Number of weights must match number of groups.")  # noqa: EM101, TRY003
     if np.count_nonzero(weights) != len(weights):
-        raise ValueError("All weights must be non-zero.")
+        raise ValueError("All weights must be non-zero.")  # noqa: EM101, TRY003
 
     t_ind = np.tril_indices(len(fds), -1)
 
     results = np.zeros(shape=(len(t_ind[0]), fds[0].n_samples))
-    for i, pair in enumerate(zip(*t_ind)):
+    for i, pair in enumerate(zip(*t_ind)):  # noqa: B905
         left_fd = fds[pair[1]]
         coef = np.sqrt(weights[pair[1]] / weights[pair[0]])
         right_fd = fds[pair[0]] * coef
@@ -187,7 +187,7 @@ def v_asymptotic_stat(
             *fd,
             weights=weights,
             p=p,
-        ).reshape(())
+        ).reshape(())  # noqa: COM812
     )
 
 
@@ -196,17 +196,17 @@ def _anova_bootstrap(
     n_reps: int,
     random_state: RandomStateLike = None,
     p: int = 2,
-    equal_var: bool = True,
+    equal_var: bool = True,  # noqa: FBT001, FBT002
 ) -> NDArrayFloat:
 
     n_groups = len(fd_grouped)
-    if n_groups < 2:
-        raise ValueError("At least two groups must be passed in fd_grouped.")
+    if n_groups < 2:  # noqa: PLR2004
+        raise ValueError("At least two groups must be passed in fd_grouped.")  # noqa: EM101, TRY003
 
     for fd in fd_grouped[1:]:
         if not np.array_equal(fd.domain_range, fd_grouped[0].domain_range):
-            raise ValueError(
-                "Domain range must match for every FData in fd_grouped.",
+            raise ValueError(  # noqa: TRY003
+                "Domain range must match for every FData in fd_grouped.",  # noqa: EM101
             )
 
     # List with sizes of each group
@@ -265,7 +265,7 @@ def oneway_anova(
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
-) -> Tuple[float, float]:
+) -> Tuple[float, float]:  # noqa: UP006
     pass
 
 
@@ -278,7 +278,7 @@ def oneway_anova(
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
-) -> Tuple[float, float, NDArrayFloat]:
+) -> Tuple[float, float, NDArrayFloat]:  # noqa: UP006
     pass
 
 
@@ -290,7 +290,7 @@ def oneway_anova(
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
-) -> Tuple[float, float] | Tuple[float, float, NDArrayFloat]:
+) -> Tuple[float, float] | Tuple[float, float, NDArrayFloat]:  # noqa: UP006
     r"""
     Perform one-way functional ANOVA.
 
@@ -367,11 +367,11 @@ def oneway_anova(
 
     """
     if n_reps < 1:
-        raise ValueError("Number of simulations must be positive.")
+        raise ValueError("Number of simulations must be positive.")  # noqa: EM101, TRY003
 
     for fd in rest:
         if not np.array_equal(fd.domain_range, first.domain_range):
-            raise ValueError("Domain range must match for every FData passed.")
+            raise ValueError("Domain range must match for every FData passed.")  # noqa: EM101, TRY003
 
     fd_groups = [first, *rest]
     if isinstance(first, FDataGrid):
@@ -379,14 +379,14 @@ def oneway_anova(
         list_sample = [fd.grid_points[0].tolist() for fd in fd_groups]
         # Checking that the all the entries in the list are the same
         if list_sample.count(list_sample[0]) != len(list_sample):
-            raise ValueError(
-                "All FDataGrid passed must have the same grid points.",
+            raise ValueError(  # noqa: TRY003
+                "All FDataGrid passed must have the same grid points.",  # noqa: EM101
             )
     else:  # If type is FDataBasis, check same basis
         list_basis = [fd.basis for fd in fd_groups]
         if list_basis.count(list_basis[0]) != len(list_basis):
             raise NotImplementedError(
-                "Not implemented for FDataBasis with different basis.",
+                "Not implemented for FDataBasis with different basis.",  # noqa: EM101
             )
 
     # FData where each sample is the mean of each group

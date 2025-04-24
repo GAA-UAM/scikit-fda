@@ -21,7 +21,7 @@ class TestBoxplot(unittest.TestCase):
         ]
         grid_points = [0, 2, 4, 6, 8, 10]
         fd = FDataGrid(data_matrix, grid_points)
-        fdataBoxplot = Boxplot(fd, depth_method=IntegratedDepth())
+        fdataBoxplot = Boxplot(fd, depth_method=IntegratedDepth())  # noqa: N806
         np.testing.assert_array_equal(
             fdataBoxplot.median.ravel(),
             np.array([-1, -1, -0.5, 1, 1, 0.5]),
@@ -42,7 +42,7 @@ class TestBoxplot(unittest.TestCase):
             fdataBoxplot.non_outlying_envelope[1].ravel(),
             np.array([-0.5, -0.5, -0.5, 1, 1, 0.5]),
         )
-        self.assertEqual(len(fdataBoxplot.envelopes), 1)
+        self.assertEqual(len(fdataBoxplot.envelopes), 1)  # noqa: PT009
         np.testing.assert_array_equal(
             fdataBoxplot.envelopes[0],
             fdataBoxplot.central_envelope,
@@ -53,5 +53,5 @@ class TestBoxplot(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

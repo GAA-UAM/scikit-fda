@@ -83,11 +83,11 @@ class TestFPLSRegression(LatentVariablesModel):
             }
         """
         # Results from fda.usc:
-        path = os.path.join(
+        path = os.path.join(  # noqa: PTH118
             f"{__file__[:-3]}_data",  # Trim .py ending
             "test_fda_usc_no_reg_data.npy",
         )
-        with open(path, "rb") as f:
+        with open(path, "rb") as f:  # noqa: PTH123
             r_results = np.load(f, allow_pickle=False)
 
         signs = np.array([1, -1, 1, -1, 1])
@@ -98,13 +98,13 @@ class TestFPLSRegression(LatentVariablesModel):
             return_X_y=True,
         )
 
-        plsReg = FPLSRegression[FData, NDArrayFloat](
+        plsReg = FPLSRegression[FData, NDArrayFloat](  # noqa: N806
             n_components=5,
             _integration_weights_X=np.ones(len(X.grid_points[0])),
         )
         plsReg.fit(X, y)
 
-        W = plsReg.fpls_.x_weights_
+        W = plsReg.fpls_.x_weights_  # noqa: N806
         np.testing.assert_allclose(W, r_results, atol=1e-8)
 
     def test_fda_usc_reg(self) -> None:
@@ -157,11 +157,11 @@ class TestFPLSRegression(LatentVariablesModel):
         )
         fplsr.fit(X, y)
 
-        path = os.path.join(
+        path = os.path.join(  # noqa: PTH118
             f"{__file__[:-3]}_data",  # Trim .py ending
             "test_fda_usc_reg_data.npy",
         )
-        with open(path, "rb") as f:
+        with open(path, "rb") as f:  # noqa: PTH123
             r_results = np.load(f, allow_pickle=False)
 
         signs = np.array([1, -1, 1, -1, 1])
@@ -227,7 +227,7 @@ class TestFPLSRegression(LatentVariablesModel):
         y_observed, y_rotations = self.create_observed_multivariate_variable(
             n_features=y_features,
         )
-        X_observed, X_rotations = self.create_observed_multivariate_variable(
+        X_observed, X_rotations = self.create_observed_multivariate_variable(  # noqa: N806
             n_features=10,
         )
 
@@ -242,7 +242,7 @@ class TestFPLSRegression(LatentVariablesModel):
     @pytest.mark.parametrize("noise_std", [0, 1])
     def test_simple_regresion(
         self,
-        discretized: bool,
+        discretized: bool,  # noqa: FBT001
         n_features: int,
         noise_std: float,
     ) -> None:
@@ -255,7 +255,7 @@ class TestFPLSRegression(LatentVariablesModel):
             n_features=n_features,
             noise=noise_std,
         )
-        X_observed, X_rotations = self.create_observed_functional_variable(
+        X_observed, X_rotations = self.create_observed_functional_variable(  # noqa: N806
             discretized=discretized,
             noise=noise_std,
         )
@@ -271,8 +271,8 @@ class TestFPLSRegression(LatentVariablesModel):
     @pytest.mark.parametrize("noise_std", [0, 1])
     def test_simple_regresion_dataset_functional(
         self,
-        discretized_observed: bool,
-        discretized_response: bool,
+        discretized_observed: bool,  # noqa: FBT001
+        discretized_response: bool,  # noqa: FBT001
         noise_std: float,
     ) -> None:
         """Test multivariate regressor and functional response."""
@@ -280,7 +280,7 @@ class TestFPLSRegression(LatentVariablesModel):
 
         # Check that the model is able to recover the latent variables if
         # it has enough components
-        X_observed, X_rotations = self.create_observed_functional_variable(
+        X_observed, X_rotations = self.create_observed_functional_variable(  # noqa: N806
             discretized=discretized_observed,
             noise=noise_std,
         )

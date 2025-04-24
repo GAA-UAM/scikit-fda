@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Mapping, Tuple, overload
+from typing import Any, Mapping, Tuple, overload  # noqa: UP035
 
 import numpy as np
 import pandas as pd
@@ -9,16 +9,16 @@ import rdata
 from pandas import DataFrame, Series
 from skdatasets.repositories import cran, ucr
 from sklearn.utils import Bunch
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..representation import FDataGrid
 from ..representation.irregular import FDataIrregular
-from ..typing._numpy import NDArrayFloat, NDArrayInt
+from ..typing._numpy import NDArrayFloat, NDArrayInt  # noqa: TC001
 
 
 def fdata_constructor(
-    obj: Any,
-    attrs: Mapping[str | bytes, Any],
+    obj: Any,  # noqa: ANN401
+    attrs: Mapping[str | bytes, Any],  # noqa: ARG001
 ) -> FDataGrid:
     """
     Construct a :func:`FDataGrid` objet from a R `fdata` object.
@@ -34,16 +34,16 @@ def fdata_constructor(
         data_matrix=obj["data"],
         grid_points=obj["argvals"],
         domain_range=obj["rangeval"],
-        dataset_name=names['main'][0],
-        argument_names=(names['xlab'][0],),
-        coordinate_names=(names['ylab'][0],),
+        dataset_name=names['main'][0],  # noqa: Q000
+        argument_names=(names['xlab'][0],),  # noqa: Q000
+        coordinate_names=(names['ylab'][0],),  # noqa: Q000
     )
 
 
 def functional_constructor(
-    obj: Any,
-    attrs: Mapping[str | bytes, Any],
-) -> Tuple[FDataGrid, NDArrayInt]:
+    obj: Any,  # noqa: ANN401
+    attrs: Mapping[str | bytes, Any],  # noqa: ARG001
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     """
     Construct a :func:`FDataGrid` objet from a R `functional` object.
 
@@ -52,11 +52,11 @@ def functional_constructor(
     convert `functional` objects from the ddalpha package.
 
     """
-    name = obj['name']
-    args_label = obj['args']
-    values_label = obj['vals']
-    target = np.array(obj['labels']).ravel()
-    dataf = obj['dataf']
+    name = obj['name']  # noqa: Q000
+    args_label = obj['args']  # noqa: Q000
+    values_label = obj['vals']  # noqa: Q000
+    target = np.array(obj['labels']).ravel()  # noqa: Q000
+    dataf = obj['dataf']  # noqa: Q000
 
     grid_points_set = {a for o in dataf for a in o["args"]}
 
@@ -68,7 +68,7 @@ def functional_constructor(
     data_matrix = np.zeros(shape=(len(dataf), len(grid_points)))
 
     for num_sample, o in enumerate(dataf):
-        for t, x in zip(o["args"], o["vals"]):
+        for t, x in zip(o["args"], o["vals"]):  # noqa: B905
             data_matrix[num_sample, t - args_init] = x
 
     return (
@@ -89,8 +89,8 @@ def fetch_cran(
     package_name: str,
     *,
     converter: rdata.conversion.Converter | None = None,
-    **kwargs: Any,
-) -> Any:
+    **kwargs: Any,  # noqa: ANN401
+) -> Any:  # noqa: ANN401
     """
     Fetch a dataset from CRAN.
 
@@ -141,8 +141,8 @@ def _ucr_to_fdatagrid(name: str, data: NDArrayFloat) -> FDataGrid:
 def fetch_ucr(
     name: str,
     *,
-    return_X_y: Literal[False] = False,
-    **kwargs: Any,
+    return_X_y: Literal[False] = False,  # noqa: N803
+    **kwargs: Any,  # noqa: ANN401
 ) -> Bunch:
     pass
 
@@ -151,18 +151,18 @@ def fetch_ucr(
 def fetch_ucr(
     name: str,
     *,
-    return_X_y: Literal[True],
-    **kwargs: Any,
-) -> Tuple[FDataGrid, NDArrayInt]:
+    return_X_y: Literal[True],  # noqa: N803
+    **kwargs: Any,  # noqa: ANN401
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     pass
 
 
 def fetch_ucr(
     name: str,
     *,
-    return_X_y: bool = False,
+    return_X_y: bool = False,  # noqa: N803
     **kwargs: Any,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     r"""
     Fetch a dataset from the UCR/UEA repository.
 
@@ -190,19 +190,19 @@ def fetch_ucr(
     """
     dataset = ucr.fetch(name, **kwargs)
 
-    dataset['data'] = _ucr_to_fdatagrid(
-        name=dataset['name'],
-        data=dataset['data'],
+    dataset['data'] = _ucr_to_fdatagrid(  # noqa: Q000
+        name=dataset['name'],  # noqa: Q000
+        data=dataset['data'],  # noqa: Q000
     )
-    dataset.pop('feature_names')
+    dataset.pop('feature_names')  # noqa: Q000
 
     if return_X_y:
-        return dataset['data'], dataset['target']
+        return dataset['data'], dataset['target']  # noqa: Q000
 
     return dataset
 
 
-def _fetch_cran_no_encoding_warning(*args: Any, **kwargs: Any) -> Any:
+def _fetch_cran_no_encoding_warning(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
     # Probably non thread safe
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -213,7 +213,7 @@ def _fetch_cran_no_encoding_warning(*args: Any, **kwargs: Any) -> Any:
         return fetch_cran(*args, **kwargs)
 
 
-def _fetch_elem_stat_learn(name: str) -> Any:
+def _fetch_elem_stat_learn(name: str) -> Any:  # noqa: ANN401
     return _fetch_cran_no_encoding_warning(
         name,
         "ElemStatLearn",
@@ -221,15 +221,15 @@ def _fetch_elem_stat_learn(name: str) -> Any:
     )
 
 
-def _fetch_ddalpha(name: str) -> Any:
+def _fetch_ddalpha(name: str) -> Any:  # noqa: ANN401
     return _fetch_cran_no_encoding_warning(name, "ddalpha", version="1.3.4")
 
 
-def _fetch_fda(name: str) -> Any:
+def _fetch_fda(name: str) -> Any:  # noqa: ANN401
     return _fetch_cran_no_encoding_warning(name, "fda", version="2.4.7")
 
 
-def _fetch_fda_usc(name: str) -> Any:
+def _fetch_fda_usc(name: str) -> Any:  # noqa: ANN401
     return _fetch_cran_no_encoding_warning(name, "fda.usc", version="1.3.0")
 
 
@@ -288,7 +288,7 @@ _phoneme_descr = """
 @overload
 def fetch_phoneme(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -297,26 +297,26 @@ def fetch_phoneme(
 @overload
 def fetch_phoneme(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, NDArrayInt]:
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_phoneme(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, Series]:
+) -> Tuple[DataFrame, Series]:  # noqa: UP006
     pass
 
 
 def fetch_phoneme(
     *,
-    return_X_y: bool = False,
+    return_X_y: bool = False,  # noqa: N803
     as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:  # noqa: UP006
     """
     Load the phoneme dataset.
 
@@ -333,8 +333,8 @@ def fetch_phoneme(
     n_points = 256
 
     curve_data = data.iloc[:, 0:n_points]
-    sound = data["g"].values
-    speaker = data["speaker"].values
+    sound = data["g"].values  # noqa: PD011
+    speaker = data["speaker"].values  # noqa: PD011
 
     curves = FDataGrid(
         data_matrix=curve_data.values,
@@ -398,7 +398,7 @@ _growth_descr = """
 @overload
 def fetch_growth(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -407,25 +407,25 @@ def fetch_growth(
 @overload
 def fetch_growth(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, NDArrayInt]:
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_growth(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, Series]:
+) -> Tuple[DataFrame, Series]:  # noqa: UP006
     pass
 
 
 def fetch_growth(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:  # noqa: UP006
     """
     Load the Berkeley Growth Study dataset.
 
@@ -524,7 +524,7 @@ _tecator_descr = """
 @overload
 def fetch_tecator(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -533,25 +533,25 @@ def fetch_tecator(
 @overload
 def fetch_tecator(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, NDArrayFloat]:
+) -> Tuple[FDataGrid, NDArrayFloat]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_tecator(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, DataFrame]:
+) -> Tuple[DataFrame, DataFrame]:  # noqa: UP006
     pass
 
 
 def fetch_tecator(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayFloat] | Tuple[DataFrame, DataFrame]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, NDArrayFloat] | Tuple[DataFrame, DataFrame]:  # noqa: UP006
     """
     Load the Tecator dataset.
 
@@ -565,12 +565,12 @@ def fetch_tecator(
 
     data = raw_dataset["tecator"]
 
-    curves = data['absorp.fdata']
-    target = data['y'].rename(columns=str.lower)
+    curves = data['absorp.fdata']  # noqa: Q000
+    target = data['y'].rename(columns=str.lower)  # noqa: Q000
     # Wavelength units are wrongly labeled as mm
     curves.argument_names = [curves.argument_names[0].replace("mm", "nm")]
     feature_name = curves.dataset_name.lower()
-    target_names = target.columns.values.tolist()
+    target_names = target.columns.values.tolist()  # noqa: PD011
 
     frame = None
 
@@ -578,7 +578,7 @@ def fetch_tecator(
         curves = pd.DataFrame({feature_name: curves})
         frame = pd.concat([curves, target], axis=1)
     else:
-        target = target.values
+        target = target.values  # noqa: PD011
 
     if return_X_y:
         return curves, target
@@ -638,7 +638,7 @@ _medflies_descr = """
 @overload
 def fetch_medflies(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -647,25 +647,25 @@ def fetch_medflies(
 @overload
 def fetch_medflies(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, NDArrayInt]:
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_medflies(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, Series]:
+) -> Tuple[DataFrame, Series]:  # noqa: UP006
     pass
 
 
 def fetch_medflies(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:  # noqa: UP006
     """
     Load the Medflies dataset.
 
@@ -684,7 +684,7 @@ def fetch_medflies(
     unique = np.unique(data[1], return_inverse=True)
     target_categories = [unique[0][1], unique[0][0]]
     target = 1 - unique[1]
-    curve_name = 'eggs'
+    curve_name = 'eggs'  # noqa: Q000
     target_name = "lifetime"
 
     frame = None
@@ -734,7 +734,7 @@ _weather_descr = """
 @overload
 def fetch_weather(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -743,25 +743,25 @@ def fetch_weather(
 @overload
 def fetch_weather(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, NDArrayInt]:
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_weather(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, Series]:
+) -> Tuple[DataFrame, Series]:  # noqa: UP006
     pass
 
 
 def fetch_weather(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:  # noqa: UP006
     """
     Load the Canadian Weather dataset.
 
@@ -891,7 +891,7 @@ _aemet_descr = """
 @overload
 def fetch_aemet(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -900,25 +900,25 @@ def fetch_aemet(
 @overload
 def fetch_aemet(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, None]:
+) -> Tuple[FDataGrid, None]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_aemet(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, None]:
+) -> Tuple[DataFrame, None]:  # noqa: UP006
     pass
 
 
 def fetch_aemet(  # noqa: WPS210
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:  # noqa: UP006
     """
     Load the Spanish Weather dataset.
 
@@ -968,7 +968,7 @@ def fetch_aemet(  # noqa: WPS210
             curve_name: curves,
             **{
                 n: data["df"].iloc[:, d]
-                for (n, d) in zip(df_names, df_indexes)
+                for (n, d) in zip(df_names, df_indexes)  # noqa: B905
             },
         })
         X = frame
@@ -1032,7 +1032,7 @@ _octane_descr = """
 @overload
 def fetch_octane(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -1041,25 +1041,25 @@ def fetch_octane(
 @overload
 def fetch_octane(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, NDArrayInt]:
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_octane(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, Series]:
+) -> Tuple[DataFrame, Series]:  # noqa: UP006
     pass
 
 
 def fetch_octane(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:  # noqa: UP006
     """Load near infrared spectra of gasoline samples.
 
     This function fetchs the octane dataset from the R package 'mrfDepth'
@@ -1070,7 +1070,7 @@ def fetch_octane(
 
     # octane file from mrfDepth R package
     raw_dataset = fetch_cran("octane", "mrfDepth", version="1.0.11")
-    data = raw_dataset['octane'][..., 0].T
+    data = raw_dataset['octane'][..., 0].T  # noqa: Q000
 
     # The R package only stores the values of the curves, but the paper
     # describes the rest of the data. According to [RDEH2006], Section 5.4:
@@ -1087,7 +1087,7 @@ def fetch_octane(
         wavelength_count,
     )
 
-    # "The octane data set contains six outliers (25, 26, 36–39) to which
+    # "The octane data set contains six outliers (25, 26, 36–39) to which  # noqa: E501, RUF003
     # alcohol was added".
     target = np.zeros(len(data), dtype=np.bool_)
     target[24:26] = 1  # noqa: WPS432
@@ -1145,14 +1145,14 @@ _gait_descr = _gait_template.format(
     cite="[1]",
     bibliography="[1] Ramsay, J., & Silverman, B. W. (2005). Introduction. "
     "In J. Ramsay & B. W. Silverman, Functional data analysis (2nd ed., "
-    "pp. 1–18). Springer-Verlag. https://doi.org/10.1007/b98888",
+    "pp. 1–18). Springer-Verlag. https://doi.org/10.1007/b98888",  # noqa: RUF001
 )
 
 
 @overload
 def fetch_gait(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -1161,25 +1161,25 @@ def fetch_gait(
 @overload
 def fetch_gait(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, None]:
+) -> Tuple[FDataGrid, None]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_gait(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, None]:
+) -> Tuple[DataFrame, None]:  # noqa: UP006
     pass
 
 
 def fetch_gait(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:  # noqa: UP006
     """
     Load the GAIT dataset.
 
@@ -1194,11 +1194,11 @@ def fetch_gait(
 
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
-    grid_points = np.asarray(data.coords.get('dim_0'), dtype=np.float64)
+    grid_points = np.asarray(data.coords.get('dim_0'), dtype=np.float64)  # noqa: Q000
     sample_names = list(
-        np.asarray(data.coords.get('dim_1'), dtype=np.str_),
+        np.asarray(data.coords.get('dim_1'), dtype=np.str_),  # noqa: Q000
     )
-    feature_name = 'gait'
+    feature_name = 'gait'  # noqa: Q000
 
     curves = FDataGrid(
         data_matrix=data_matrix,
@@ -1255,7 +1255,7 @@ _handwriting_descr = _handwriting_template.format(
     cite="[1]",
     bibliography="[1] Ramsay, J., & Silverman, B. W. (2005). From functional "
     "data to smooth functions. In J. Ramsay & B. W. Silverman, Functional "
-    "data analysis (2nd ed., pp. 37–58). Springer-Verlag. "
+    "data analysis (2nd ed., pp. 37–58). Springer-Verlag. "  # noqa: RUF001
     "https://doi.org/10.1007/b98888",
 )
 
@@ -1263,7 +1263,7 @@ _handwriting_descr = _handwriting_template.format(
 @overload
 def fetch_handwriting(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -1272,25 +1272,25 @@ def fetch_handwriting(
 @overload
 def fetch_handwriting(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, None]:
+) -> Tuple[FDataGrid, None]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_handwriting(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, None]:
+) -> Tuple[DataFrame, None]:  # noqa: UP006
     pass
 
 
 def fetch_handwriting(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:  # noqa: UP006
     """
     Load the HANDWRIT dataset.
 
@@ -1305,11 +1305,11 @@ def fetch_handwriting(
 
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
-    grid_points = np.asarray(data.coords.get('dim_0'), dtype=np.float64)
+    grid_points = np.asarray(data.coords.get('dim_0'), dtype=np.float64)  # noqa: Q000
     sample_names = list(
-        np.asarray(data.coords.get('dim_1'), dtype=np.str_),
+        np.asarray(data.coords.get('dim_1'), dtype=np.str_),  # noqa: Q000
     )
-    feature_name = 'handwrit'
+    feature_name = 'handwrit'  # noqa: Q000
 
     curves = FDataGrid(
         data_matrix=data_matrix,
@@ -1361,17 +1361,17 @@ _nox_descr_template = """
 
 _nox_descr = _nox_descr_template.format(
     cite="[1]",
-    bibliography="[1] M. Febrero, P. Galeano, and W. González‐Manteiga, "
+    bibliography="[1] M. Febrero, P. Galeano, and W. González‐Manteiga, "  # noqa: RUF001
     "“Outlier detection in functional data by depth measures, with "
     "application to identify abnormal NOx levels,” Environmetrics, vol. 19, "
-    "no. 4, pp. 331–345, Jun. 2008, doi: 10.1002/env.878.",
+    "no. 4, pp. 331–345, Jun. 2008, doi: 10.1002/env.878.",  # noqa: RUF001
 )
 
 
 @overload
 def fetch_nox(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -1380,25 +1380,25 @@ def fetch_nox(
 @overload
 def fetch_nox(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, NDArrayInt]:
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_nox(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, DataFrame]:
+) -> Tuple[DataFrame, DataFrame]:  # noqa: UP006
     pass
 
 
 def fetch_nox(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, DataFrame]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, DataFrame]:  # noqa: UP006
     """
     Load the NOx dataset.
 
@@ -1411,20 +1411,20 @@ def fetch_nox(
 
     data = raw_dataset["poblenou"]
 
-    curves = data['nox']
-    target = data['df'].iloc[:, 2]
+    curves = data['nox']  # noqa: Q000
+    target = data['df'].iloc[:, 2]  # noqa: Q000
     weekend = (
-        (data['df'].iloc[:, 1] == "6")
-        | (data['df'].iloc[:, 1] == "7")
+        (data['df'].iloc[:, 1] == "6")  # noqa: Q000
+        | (data['df'].iloc[:, 1] == "7")  # noqa: Q000
     )
     target[weekend] = "1"
     target = pd.Series(
-        target.values.codes.astype(np.bool_),
+        target.values.codes.astype(np.bool_),  # noqa: PD011
         name="festive day",
     )
     curves.coordinate_names = ["$mglm^3$"]
     feature_name = curves.dataset_name.lower()
-    target_names = target.values.tolist()
+    target_names = target.values.tolist()  # noqa: PD011
 
     frame = None
 
@@ -1432,7 +1432,7 @@ def fetch_nox(
         curves = pd.DataFrame({feature_name: curves})
         frame = pd.concat([curves, target], axis=1)
     else:
-        target = target.values
+        target = target.values  # noqa: PD011
 
     if return_X_y:
         return curves, target
@@ -1480,7 +1480,7 @@ _mco_descr = _mco_descr_template.format(
 @overload
 def fetch_mco(
     *,
-    return_X_y: Literal[False] = False,
+    return_X_y: Literal[False] = False,  # noqa: N803
     as_frame: bool = False,
 ) -> Bunch:
     pass
@@ -1489,25 +1489,25 @@ def fetch_mco(
 @overload
 def fetch_mco(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, NDArrayInt]:
+) -> Tuple[FDataGrid, NDArrayInt]:  # noqa: UP006
     pass
 
 
 @overload
 def fetch_mco(
     *,
-    return_X_y: Literal[True],
+    return_X_y: Literal[True],  # noqa: N803
     as_frame: Literal[True],
-) -> Tuple[DataFrame, DataFrame]:
+) -> Tuple[DataFrame, DataFrame]:  # noqa: UP006
     pass
 
 
 def fetch_mco(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, DataFrame]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, DataFrame]:  # noqa: UP006
     """
     Load the mithochondiral calcium overload (MCO) dataset.
 
@@ -1520,13 +1520,13 @@ def fetch_mco(
 
     data = raw_dataset["MCO"]
 
-    curves = data['intact']
+    curves = data['intact']  # noqa: Q000
     target = pd.Series(
-        data['classintact'].rename_categories(["control", "treatment"]),
+        data['classintact'].rename_categories(["control", "treatment"]),  # noqa: Q000
         name="group",
     )
     feature_name = curves.dataset_name.lower()
-    target_names = target.values.tolist()
+    target_names = target.values.tolist()  # noqa: PD011
 
     frame = None
 
@@ -1534,7 +1534,7 @@ def fetch_mco(
         curves = pd.DataFrame({feature_name: curves})
         frame = pd.concat([curves, target], axis=1)
     else:
-        target = target.values.codes
+        target = target.values.codes  # noqa: PD011
 
     if return_X_y:
         return curves, target
@@ -1557,7 +1557,7 @@ if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
     ) + _param_descr
 
 
-def _fetch_loon_data(name: str) -> Any:
+def _fetch_loon_data(name: str) -> Any:  # noqa: ANN401
     return _fetch_cran_no_encoding_warning(
         name,
         "loon.data",
@@ -1586,9 +1586,9 @@ _bone_density_descr = """
 
 
 def fetch_bone_density(
-    return_X_y: bool = False,
-    as_frame: bool = False,
-) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
+    return_X_y: bool = False,  # noqa: FBT001, FBT002, N803
+    as_frame: bool = False,  # noqa: FBT001, FBT002
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:  # noqa: UP006
     """
     Load the Bone Density dataset. This is an irregular dataset.
 
@@ -1607,7 +1607,7 @@ def fetch_bone_density(
     target_name = "sex"
     coordinate_name = "spnbmd"
 
-    curves = FDataIrregular._from_dataframe(
+    curves = FDataIrregular._from_dataframe(  # noqa: SLF001
         data,
         id_column=curve_name,
         argument_columns=argument_name,
@@ -1623,14 +1623,14 @@ def fetch_bone_density(
     )
 
     feature_name = curves.dataset_name.lower()
-    target_names = target.values.tolist()
+    target_names = target.values.tolist()  # noqa: PD011
 
     if as_frame:
         curves = pd.DataFrame({feature_name: curves})
         target_as_frame = target.reset_index(drop=True).to_frame()
         frame = pd.concat([curves, target_as_frame], axis=1)
     else:
-        target = target.values.codes
+        target = target.values.codes  # noqa: PD011
 
     if return_X_y:
         return curves, target

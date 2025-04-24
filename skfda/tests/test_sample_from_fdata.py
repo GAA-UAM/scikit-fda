@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any  # noqa: D100
 
 import numpy as np
 import pytest
@@ -18,17 +18,17 @@ random_state = np.random.RandomState(23486974)
 def _assert_equivalent(fdata: FData, fdatairregular: FDataIrregular) -> None:
     points = np.split(fdatairregular.points, fdatairregular.start_indices[1:])
     assert len(points) == len(fdatairregular) == len(fdata)
-    for fun_points, original, irregular in zip(points, fdata, fdatairregular):
+    for fun_points, original, irregular in zip(points, fdata, fdatairregular):  # noqa: B905
         np.testing.assert_allclose(
             irregular.values, original(fun_points)[0],
-            # irregular(fun_points), original(fun_points),
+            # irregular(fun_points), original(fun_points),  # noqa: ERA001
         )
         # The commented line above should be used but evaluation of
         # FDataIrregular is not working for multidimensional domain
 
 
 @pytest.fixture
-def fdatabasis_1dimensional() -> FDataBasis:
+def fdatabasis_1dimensional() -> FDataBasis:  # noqa: D103
     basis = MonomialBasis(n_basis=4, domain_range=(0, 1))
     return FDataBasis(
         basis=basis,
@@ -38,7 +38,7 @@ def fdatabasis_1dimensional() -> FDataBasis:
 
 @pytest.fixture
 def fdatabasis_multidimensional() -> FDataBasis:
-    """3-dimensional domain and 2-dimensional codomain"""
+    """3-dimensional domain and 2-dimensional codomain"""  # noqa: D415
     basis_momonial1 = MonomialBasis(n_basis=3, domain_range=(-3, 3))
     basis_fourier1 = FourierBasis(n_basis=3, domain_range=(-3, 3))
     basis_monomial2 = MonomialBasis(n_basis=2, domain_range=(0, 1))
@@ -55,7 +55,7 @@ def fdatabasis_multidimensional() -> FDataBasis:
 
 
 @pytest.fixture
-def fdatabasis_2dimensional_domain() -> FDataBasis:
+def fdatabasis_2dimensional_domain() -> FDataBasis:  # noqa: D103
     basis_fourier = FourierBasis(n_basis=5, domain_range=(-3, 3))
     basis_monomial = MonomialBasis(n_basis=4, domain_range=(0, 1))
     basis = TensorBasis([basis_fourier, basis_monomial])
@@ -66,7 +66,7 @@ def fdatabasis_2dimensional_domain() -> FDataBasis:
 
 
 @pytest.fixture
-def fdatagrid_1dimensional() -> FDataGrid:
+def fdatagrid_1dimensional() -> FDataGrid:  # noqa: D103
     return FDataGrid(
         data_matrix=random_state.randn(14, 50),
         grid_points=np.linspace(0, 100, 50),
@@ -75,7 +75,7 @@ def fdatagrid_1dimensional() -> FDataGrid:
 
 @pytest.fixture
 def fdatagrid_multidimensional() -> FDataGrid:
-    """3-dimensional domain and 5-dimensional codomain"""
+    """3-dimensional domain and 5-dimensional codomain"""  # noqa: D415
     return FDataGrid(
         data_matrix=random_state.randn(14, 10, 5, 7, 5),
         grid_points=[
@@ -87,7 +87,7 @@ def fdatagrid_multidimensional() -> FDataGrid:
 
 
 @pytest.fixture
-def fdatairregular_1dimensional() -> FDataIrregular:
+def fdatairregular_1dimensional() -> FDataIrregular:  # noqa: D103
     start_indices = np.concatenate([
         [0], np.cumsum(random_state.randint(2, 5, 17)),
     ])
@@ -99,12 +99,12 @@ def fdatairregular_1dimensional() -> FDataIrregular:
 
 
 @pytest.fixture
-def fdatairregular_multidimensional() -> FDataIrregular:
+def fdatairregular_multidimensional() -> FDataIrregular:  # noqa: D103
     start_indices = np.concatenate([
         [0], np.cumsum(random_state.randint(2, 5, 17)),
     ])
     return FDataIrregular(
-        points=random_state.randn(100, 1),  # TODO: Change to multidimensional
+        points=random_state.randn(100, 1),  # TODO: Change to multidimensional  # noqa: E501, FIX002, TD002, TD003
         # domain when evaluation of FDataIrregular is working for
         # multidimensional domains.
         values=random_state.randn(100, 5),
@@ -125,7 +125,7 @@ def fdatairregular_multidimensional() -> FDataIrregular:
     ],
 )
 def test_irregular_sample(
-    fdata_fixture: str, request: Any
+    fdata_fixture: str, request: Any  # noqa: ANN401, COM812
 ) -> None:
     """Test the irregular sample function.
 

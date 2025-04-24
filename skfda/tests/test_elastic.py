@@ -54,7 +54,7 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
             random_state=1,
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             reg.fit(unimodal_samples)
 
     def test_transform_wrong_dimension(self) -> None:
@@ -68,7 +68,7 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         )
 
         reg.fit(self.unimodal_samples)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             reg.transform(unimodal_samples)
 
     def test_to_srsf(self) -> None:
@@ -355,5 +355,5 @@ class TestElasticDistances(unittest.TestCase):
         np.testing.assert_allclose(d, 0, atol=2e-2)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

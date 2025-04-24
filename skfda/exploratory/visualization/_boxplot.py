@@ -8,18 +8,18 @@ from __future__ import annotations
 
 import math
 from abc import abstractmethod
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple  # noqa: UP035
 
-import matplotlib
+import matplotlib  # noqa: ICN001
 import numpy as np
-from matplotlib.axes import Axes
-from matplotlib.colors import Colormap
-from matplotlib.figure import Figure
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.colors import Colormap  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 
-from skfda.exploratory.depth.multivariate import Depth
+from skfda.exploratory.depth.multivariate import Depth  # noqa: TC001
 
-from ...representation import FData, FDataGrid
-from ...typing._numpy import NDArrayBool, NDArrayFloat
+from ...representation import FData, FDataGrid  # noqa: TC001
+from ...typing._numpy import NDArrayBool, NDArrayFloat  # noqa: TC001
 from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes
 from ._baseplot import BasePlot
@@ -52,8 +52,8 @@ class FDataBoxplot(BasePlot):
         n_cols: int | None = None,
     ) -> None:
         if factor < 0:
-            raise ValueError(
-                "The number used to calculate the "
+            raise ValueError(  # noqa: TRY003
+                "The number used to calculate the "  # noqa: EM101
                 "outlying envelope must be positive.",
             )
 
@@ -79,11 +79,11 @@ class FDataBoxplot(BasePlot):
         pass
 
     @property
-    def central_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    def central_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         pass
 
     @property
-    def non_outlying_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    def non_outlying_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         pass
 
     @property
@@ -93,8 +93,8 @@ class FDataBoxplot(BasePlot):
     @colormap.setter
     def colormap(self, value: Colormap) -> None:
         if not isinstance(value, matplotlib.colors.LinearSegmentedColormap):
-            raise ValueError(
-                "colormap must be of type "
+            raise ValueError(  # noqa: TRY003, TRY004
+                "colormap must be of type "  # noqa: EM101
                 "matplotlib.colors.LinearSegmentedColormap",
             )
         self._colormap = value
@@ -264,7 +264,7 @@ class Boxplot(FDataBoxplot):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204, PLR0913
         self,
         fdatagrid: FData,
         chart: Figure | Axes | None = None,
@@ -315,17 +315,17 @@ class Boxplot(FDataBoxplot):
         )
 
         if fdatagrid.dim_domain != 1:
-            raise ValueError(
-                "Function only supports FDataGrid with domain dimension 1.",
+            raise ValueError(  # noqa: TRY003
+                "Function only supports FDataGrid with domain dimension 1.",  # noqa: EM101
             )
 
         if sorted(prob, reverse=True) != list(prob):
-            raise ValueError(
-                "Probabilities required to be in descending order.",
+            raise ValueError(  # noqa: TRY003
+                "Probabilities required to be in descending order.",  # noqa: EM101
             )
 
         if min(prob) < 0 or max(prob) > 1:
-            raise ValueError("Probabilities must be between 0 and 1.")
+            raise ValueError("Probabilities must be between 0 and 1.")  # noqa: EM101, TRY003
 
         if depth_method is None:
             depth_method = ModifiedBandDepth()
@@ -375,7 +375,7 @@ class Boxplot(FDataBoxplot):
 
         self._fdatagrid = fdatagrid
         self._prob = prob
-        self._colormap = matplotlib.colormaps['RdPu']
+        self._colormap = matplotlib.colormaps['RdPu']  # noqa: Q000
         self.barcol = "blue"
         self.outliercol = "red"
         self.mediancol = "black"
@@ -390,15 +390,15 @@ class Boxplot(FDataBoxplot):
         return self._median  # type: ignore[no-any-return]
 
     @property
-    def central_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    def central_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         return self._central_envelope
 
     @property
-    def non_outlying_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    def non_outlying_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         return self._non_outlying_envelope
 
     @property
-    def envelopes(self) -> Sequence[Tuple[NDArrayFloat, NDArrayFloat]]:
+    def envelopes(self) -> Sequence[Tuple[NDArrayFloat, NDArrayFloat]]:  # noqa: UP006
         return self._envelopes
 
     @property
@@ -412,7 +412,7 @@ class Boxplot(FDataBoxplot):
     @show_full_outliers.setter
     def show_full_outliers(self, boolean: bool) -> None:
         if not isinstance(boolean, bool):
-            raise ValueError("show_full_outliers must be boolean type")
+            raise ValueError("show_full_outliers must be boolean type")  # noqa: EM101, TRY003, TRY004
         self._show_full_outliers = boolean
 
     @property
@@ -428,7 +428,7 @@ class Boxplot(FDataBoxplot):
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 
-        if self.show_full_outliers:
+        if self.show_full_outliers:  # noqa: SIM108
             var_zorder = 1
         else:
             var_zorder = 4
@@ -445,11 +445,11 @@ class Boxplot(FDataBoxplot):
                     grid_points,
                     o.data_matrix[0, :, m],
                     color=self.outliercol,
-                    linestyle='--',
+                    linestyle='--',  # noqa: Q000
                     zorder=1,
                 )
 
-            for envelop, col in zip(self.envelopes, color):
+            for envelop, col in zip(self.envelopes, color):  # noqa: B905
                 # central regions
                 ax.fill_between(
                     grid_points,
@@ -515,13 +515,13 @@ class Boxplot(FDataBoxplot):
         """Return repr(self)."""
         return (
             f"Boxplot("
-            f"\nFDataGrid={repr(self.fdatagrid)},"
-            f"\nmedian={repr(self.median)},"
-            f"\ncentral envelope={repr(self.central_envelope)},"
-            f"\nnon-outlying envelope={repr(self.non_outlying_envelope)},"
-            f"\nenvelopes={repr(self.envelopes)},"
-            f"\noutliers={repr(self.outliers)})"
-        ).replace('\n', '\n    ')
+            f"\nFDataGrid={repr(self.fdatagrid)},"  # noqa: RUF010
+            f"\nmedian={repr(self.median)},"  # noqa: RUF010
+            f"\ncentral envelope={repr(self.central_envelope)},"  # noqa: RUF010
+            f"\nnon-outlying envelope={repr(self.non_outlying_envelope)},"  # noqa: RUF010
+            f"\nenvelopes={repr(self.envelopes)},"  # noqa: RUF010
+            f"\noutliers={repr(self.outliers)})"  # noqa: RUF010
+        ).replace('\n', '\n    ')  # noqa: Q000
 
 
 class SurfaceBoxplot(FDataBoxplot):
@@ -643,7 +643,7 @@ class SurfaceBoxplot(FDataBoxplot):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         fdatagrid: FDataGrid,
         chart: Figure | Axes | None = None,
@@ -665,9 +665,9 @@ class SurfaceBoxplot(FDataBoxplot):
             factor=factor,
         )
 
-        if fdatagrid.dim_domain != 2:
-            raise ValueError(
-                "Class only supports FDataGrid with domain dimension 2.",
+        if fdatagrid.dim_domain != 2:  # noqa: PLR2004
+            raise ValueError(  # noqa: TRY003
+                "Class only supports FDataGrid with domain dimension 2.",  # noqa: EM101
             )
 
         if depth_method is None:
@@ -700,7 +700,7 @@ class SurfaceBoxplot(FDataBoxplot):
         self._non_outlying_envelope = _envelopes.compute_envelope(inliers)
 
         self._fdatagrid = fdatagrid
-        self.colormap = matplotlib.colormaps['Greys']
+        self.colormap = matplotlib.colormaps['Greys']  # noqa: Q000
         self._boxcol = 1.0
         self._outcol = 0.7
 
@@ -713,11 +713,11 @@ class SurfaceBoxplot(FDataBoxplot):
         return self._median  # type: ignore[no-any-return]
 
     @property
-    def central_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    def central_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         return self._central_envelope
 
     @property
-    def non_outlying_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    def non_outlying_envelope(self) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         return self._non_outlying_envelope
 
     @property
@@ -727,7 +727,7 @@ class SurfaceBoxplot(FDataBoxplot):
     @boxcol.setter
     def boxcol(self, value: float) -> None:
         if value < 0 or value > 1:
-            raise ValueError("boxcol must be a number between 0 and 1.")
+            raise ValueError("boxcol must be a number between 0 and 1.")  # noqa: EM101, TRY003
 
         self._boxcol = value
 
@@ -738,7 +738,7 @@ class SurfaceBoxplot(FDataBoxplot):
     @outcol.setter
     def outcol(self, value: float) -> None:
         if value < 0 or value > 1:
-            raise ValueError("outcol must be a number between 0 and 1.")
+            raise ValueError("outcol must be a number between 0 and 1.")  # noqa: EM101, TRY003
         self._outcol = value
 
     @property
@@ -755,7 +755,7 @@ class SurfaceBoxplot(FDataBoxplot):
         lx = len(x)
         y = self.fdatagrid.grid_points[1]
         ly = len(y)
-        X, Y = np.meshgrid(x, y)
+        X, Y = np.meshgrid(x, y)  # noqa: N806
 
         for m, ax in enumerate(axes):
 
@@ -895,8 +895,8 @@ class SurfaceBoxplot(FDataBoxplot):
         """Return repr(self)."""
         return (
             f"SurfaceBoxplot("
-            f"\nFDataGrid={repr(self.fdatagrid)},"
-            f"\nmedian={repr(self.median)},"
-            f"\ncentral envelope={repr(self.central_envelope)},"
-            f"\noutlying envelope={repr(self.non_outlying_envelope)})"
-        ).replace('\n', '\n    ')
+            f"\nFDataGrid={repr(self.fdatagrid)},"  # noqa: RUF010
+            f"\nmedian={repr(self.median)},"  # noqa: RUF010
+            f"\ncentral envelope={repr(self.central_envelope)},"  # noqa: RUF010
+            f"\noutlying envelope={repr(self.non_outlying_envelope)})"  # noqa: RUF010
+        ).replace('\n', '\n    ')  # noqa: Q000

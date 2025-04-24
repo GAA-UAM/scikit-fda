@@ -7,7 +7,7 @@ from skfda.representation.basis import CustomBasis, FDataBasis, FourierBasis
 from skfda.representation.grid import FDataGrid
 
 
-def test_grid():
+def test_grid():  # noqa: ANN201
     """Test a datagrid toy example."""
     grid_points = np.array([0, 1, 2])
     sample = FDataGrid(
@@ -29,7 +29,7 @@ def test_grid():
     np.testing.assert_equal(data_basis(grid_points)[..., 0], evaluated)
 
 
-def test_basis():
+def test_basis():  # noqa: ANN201
     """Test a databasis toy example."""
     basis = FourierBasis(n_basis=3)
     coeficients = np.array(
@@ -59,7 +59,7 @@ def test_basis():
     )
 
 
-def test_not_linearly_independent_too_many():
+def test_not_linearly_independent_too_many():  # noqa: ANN201
     """
     Test that a non linearly independent basis raises an error.
 
@@ -73,7 +73,7 @@ def test_not_linearly_independent_too_many():
         grid_points=np.array([[0, 1, 2]]),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # noqa: PT011
         CustomBasis(fdata=sample)
 
     sample = FDataBasis(
@@ -88,11 +88,11 @@ def test_not_linearly_independent_too_many():
         ),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # noqa: PT011
         CustomBasis(fdata=sample)
 
 
-def test_not_linearly_independent_range():
+def test_not_linearly_independent_range():  # noqa: ANN201
     """
     Test that a non linearly independent basis raises an error.
 
@@ -104,7 +104,7 @@ def test_not_linearly_independent_range():
         grid_points=np.array([[0, 1, 2]]),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # noqa: PT011
         CustomBasis(fdata=sample)
 
     sample = FDataBasis(
@@ -118,11 +118,11 @@ def test_not_linearly_independent_range():
         ),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # noqa: PT011
         CustomBasis(fdata=sample)
 
 
-def test_derivative_grid():
+def test_derivative_grid():  # noqa: ANN201
     """Test the derivative of a basis constructed from a FDataGrid."""
     base_functions = FDataGrid(
         data_matrix=np.array([[1, 2, 3], [1, 1, 5]]),
@@ -156,7 +156,7 @@ def test_derivative_grid():
     )
 
 
-def test_derivative_basis():
+def test_derivative_basis():  # noqa: ANN201
     """Test the derivative of a basis constructed from a FDataBasis."""
     basis_coef = np.array(
         [
@@ -201,7 +201,7 @@ def test_derivative_basis():
     )
 
 
-def test_multivariate_codomain():
+def test_multivariate_codomain():  # noqa: ANN201
     """Test basis from a multivariate function."""
     points = np.array([0, 1, 2])
     base_functions = FDataGrid(
@@ -232,7 +232,7 @@ def test_multivariate_codomain():
     np.testing.assert_equal(functions(points), expected_data)
 
 
-def test_multivariate_codomain_linearly_dependent():
+def test_multivariate_codomain_linearly_dependent():  # noqa: ANN201
     """Test basis from multivariate linearly dependent functions."""
     points = np.array([0, 1, 2])
     base_functions = FDataGrid(
@@ -247,11 +247,11 @@ def test_multivariate_codomain_linearly_dependent():
     )
     # The third function is the sum of the first two
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # noqa: PT011
         CustomBasis(fdata=base_functions)
 
 
-def test_evaluate_derivative():
+def test_evaluate_derivative():  # noqa: ANN201
     """Test the evaluation of the derivative of a DataBasis."""
     grid_points = np.array([[0, 1, 2]])
     base_functions = FDataGrid(
@@ -275,7 +275,7 @@ def test_evaluate_derivative():
     )
 
 
-def test_coordinates():
+def test_coordinates():  # noqa: ANN201
     """Test the coordinates of a basis."""
     grid_points = np.array([[0, 1]])
     base_functions = FDataGrid(
@@ -307,7 +307,7 @@ def test_coordinates():
     )
 
 
-def test_equality():
+def test_equality():  # noqa: ANN201
     """Test the equality of two basis."""
     grid_points = np.array([[0, 1, 2]])
     base_functions = FDataGrid(

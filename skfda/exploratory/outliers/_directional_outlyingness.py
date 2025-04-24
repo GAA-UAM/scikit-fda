@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple  # noqa: UP035
 
 import numpy as np
 import scipy.integrate
@@ -12,8 +12,8 @@ from sklearn.covariance import MinCovDet
 from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
 from ...misc.validation import validate_random_state
 from ...representation import FDataGrid
-from ...typing._base import RandomStateLike
-from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ...typing._base import RandomStateLike  # noqa: TC001
+from ...typing._numpy import NDArrayFloat, NDArrayInt  # noqa: TC001
 from ..depth.multivariate import Depth, ProjectionDepth
 from . import _directional_outlyingness_experiment_results as experiments
 
@@ -134,9 +134,9 @@ def directional_outlyingness_stats(  # noqa: WPS218
         multivariate functional data." Computational Statistics & Data
         Analysis 131 (2019): 50-65.
 
-    """
+    """  # noqa: D412
     if fdatagrid.dim_domain > 1:
-        raise NotImplementedError("Only support 1 dimension on the domain.")
+        raise NotImplementedError("Only support 1 dimension on the domain.")  # noqa: EM101
 
     if multivariate_depth is None:
         multivariate_depth = ProjectionDepth()
@@ -148,8 +148,8 @@ def directional_outlyingness_stats(  # noqa: WPS218
             or pointwise_weights.sum() != 1
         )
     ):
-        raise ValueError(
-            "There must be a weight in pointwise_weights for each recorded "
+        raise ValueError(  # noqa: TRY003
+            "There must be a weight in pointwise_weights for each recorded "  # noqa: EM101
             "time point and altogether must integrate to 1.",
         )
 
@@ -174,7 +174,7 @@ def directional_outlyingness_stats(  # noqa: WPS218
     )
 
     # Obtaining the pointwise median sample Z, to calculate
-    # v(t) = {X(t) − Z(t)}/|| X(t) − Z(t) ||
+    # v(t) = {X(t) − Z(t)}/|| X(t) − Z(t) ||  # noqa: RUF003
     median_index = np.argmax(depth_pointwise, axis=0)
     pointwise_median = fdatagrid.copy(
         data_matrix=fdatagrid.data_matrix[
@@ -216,8 +216,8 @@ def directional_outlyingness_stats(  # noqa: WPS218
                 dir_outlyingness.data_matrix
                 - mean_dir_outlyingness[:, np.newaxis, :],
                 axis=-1,
-            )
-        )
+            )  # noqa: COM812
+        )  # noqa: COM812
     )
     weighted_norm = norm * pointwise_weights
     variation_dir_outlyingness = weighted_norm.integrate().ravel()
@@ -367,7 +367,7 @@ class MSPlotOutlierDetector(  # noqa: WPS230
         self,
         sample_size: int,
         dimension: int,
-    ) -> Tuple[float, float]:
+    ) -> Tuple[float, float]:  # noqa: UP006
         """Return the scaling and cutoff parameters via asymptotic formula."""
         n = sample_size
         p = dimension
@@ -449,21 +449,21 @@ class MSPlotOutlierDetector(  # noqa: WPS230
         self,
         sample_size: int,
         dimension: int,
-    ) -> Tuple[float, float]:
+    ) -> Tuple[float, float]:  # noqa: UP006
 
         key = sample_size // 5
 
         use_asympt = True
 
         if not self._force_asymptotic:
-            if dimension == 2:
+            if dimension == 2:  # noqa: PLR2004
                 scaling_list = experiments.dim2_scaling_list
                 cutoff_list = experiments.dim2_cutoff_list
                 assert len(scaling_list) == len(cutoff_list)
                 if key < len(scaling_list):
                     use_asympt = False
 
-            elif dimension == 3:
+            elif dimension == 3:  # noqa: PLR2004
                 scaling_list = experiments.dim3_scaling_list
                 cutoff_list = experiments.dim3_cutoff_list
                 assert len(scaling_list) == len(cutoff_list)
@@ -475,10 +475,10 @@ class MSPlotOutlierDetector(  # noqa: WPS230
 
         return scaling_list[key], cutoff_list[key]
 
-    def fit_predict(  # noqa: D102
+    def fit_predict(  # noqa: D102, RUF100
         self,
         X: FDataGrid,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> NDArrayInt:
 
         self.random_state_ = validate_random_state(self.random_state)

@@ -4,41 +4,41 @@ import io
 import math
 import re
 from itertools import repeat
-from typing import Sequence, Tuple, TypeVar, Union
+from typing import Sequence, Tuple, TypeVar, Union  # noqa: UP035
 
 import matplotlib.backends.backend_svg
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-from typing_extensions import Protocol, TypeAlias
+from matplotlib.figure import Figure  # noqa: TC002
+from typing_extensions import Protocol, TypeAlias  # noqa: UP035
 
-from ...representation._functional_data import FData
+from ...representation._functional_data import FData  # noqa: TC001
 
-non_close_text = '[^>]*?'
+non_close_text = '[^>]*?'  # noqa: Q000
 svg_width_regex = re.compile(
     f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)',
 )
-svg_width_replacement = r'\g<1>100%\g<2>'
+svg_width_replacement = r'\g<1>100%\g<2>'  # noqa: Q000
 svg_height_regex = re.compile(
     f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)',
 )
-svg_height_replacement = r'\g<1>\g<2>'
+svg_height_replacement = r'\g<1>\g<2>'  # noqa: Q000
 
-ColorLike: TypeAlias = Union[
-    Tuple[float, float, float],
-    Tuple[float, float, float, float],
+ColorLike: TypeAlias = Union[  # noqa: UP007
+    Tuple[float, float, float],  # noqa: UP006
+    Tuple[float, float, float, float],  # noqa: UP006
     str,
     Sequence[float],
 ]
 
-K = TypeVar('K', contravariant=True)
-V = TypeVar('V', covariant=True)
+K = TypeVar('K', contravariant=True)  # noqa: Q000, PLC0105
+V = TypeVar('V', covariant=True)  # noqa: Q000, PLC0105
 
 
 class Indexable(Protocol[K, V]):
     """Class Indexable used to type _get_color_info."""
 
-    def __getitem__(self, __key: K) -> V:
+    def __getitem__(self, __key: K) -> V:  # noqa: PYI063
         pass
 
     def __len__(self) -> int:
@@ -55,10 +55,10 @@ def _figure_to_svg(figure: Figure) -> str:
     old_canvas = figure.canvas
     matplotlib.backends.backend_svg.FigureCanvas(figure)
     output = io.BytesIO()
-    figure.savefig(output, format='svg')
+    figure.savefig(output, format='svg')  # noqa: Q000
     figure.set_canvas(old_canvas)
     data = output.getvalue()
-    decoded_data = data.decode('utf-8')
+    decoded_data = data.decode('utf-8')  # noqa: Q000
 
     new_data = svg_width_regex.sub(
         svg_width_replacement,
@@ -77,12 +77,12 @@ def _get_figure_and_axes(
     chart: Figure | Axes | Sequence[Axes] | None = None,
     fig: Figure | None = None,
     axes: Axes | Sequence[Axes] | None = None,
-) -> Tuple[Figure, Sequence[Axes]]:
+) -> Tuple[Figure, Sequence[Axes]]:  # noqa: UP006
     """Obtain the figure and axes from the arguments."""
     num_defined = sum(e is not None for e in (chart, fig, axes))
     if num_defined > 1:
-        raise ValueError(
-            "Only one of chart, fig and axes parameters"
+        raise ValueError(  # noqa: TRY003
+            "Only one of chart, fig and axes parameters"  # noqa: EM101
             "can be passed as an argument.",
         )
 
@@ -116,27 +116,27 @@ def _get_axes_shape(
     n_axes: int,
     n_rows: int | None = None,
     n_cols: int | None = None,
-) -> Tuple[int, int]:
+) -> Tuple[int, int]:  # noqa: UP006
     """Get the number of rows and columns of the subplots."""
     if (
         (n_rows is not None and n_cols is not None)
         and ((n_rows * n_cols) < n_axes)
     ):
-        raise ValueError(
-            f"The number of rows ({n_rows}) multiplied by "
+        raise ValueError(  # noqa: TRY003
+            f"The number of rows ({n_rows}) multiplied by "  # noqa: EM102
             f"the number of columns ({n_cols}) "
             f"is less than the number of required "
             f"axes ({n_axes})",
         )
 
     if n_rows is None and n_cols is None:
-        new_n_cols = int(math.ceil(math.sqrt(n_axes)))
-        new_n_rows = int(math.ceil(n_axes / new_n_cols))
+        new_n_cols = int(math.ceil(math.sqrt(n_axes)))  # noqa: RUF046
+        new_n_rows = int(math.ceil(n_axes / new_n_cols))  # noqa: RUF046
     elif n_rows is None and n_cols is not None:
         new_n_cols = n_cols
-        new_n_rows = int(math.ceil(n_axes / n_cols))
+        new_n_rows = int(math.ceil(n_axes / n_cols))  # noqa: RUF046
     elif n_cols is None and n_rows is not None:
-        new_n_cols = int(math.ceil(n_axes / n_rows))
+        new_n_cols = int(math.ceil(n_axes / n_rows))  # noqa: RUF046
         new_n_rows = n_rows
 
     return new_n_rows, new_n_cols
@@ -144,13 +144,13 @@ def _get_axes_shape(
 
 def _projection_from_dim(dim: int) -> str:
 
-    if dim == 2:
-        return 'rectilinear'
-    elif dim == 3:
-        return '3d'
+    if dim == 2:  # noqa: PLR2004
+        return 'rectilinear'  # noqa: Q000
+    elif dim == 3:  # noqa: RET505, PLR2004
+        return '3d'  # noqa: Q000
 
     raise NotImplementedError(
-        "Only bidimensional or tridimensional plots are supported.",
+        "Only bidimensional or tridimensional plots are supported.",  # noqa: EM101
     )
 
 
@@ -161,7 +161,7 @@ def _set_figure_layout(
     n_axes: int = 1,
     n_rows: int | None = None,
     n_cols: int | None = None,
-) -> Tuple[Figure, Sequence[Axes]]:
+) -> Tuple[Figure, Sequence[Axes]]:  # noqa: UP006
     """
     Set the figure axes for plotting.
 
@@ -186,15 +186,15 @@ def _set_figure_layout(
 
     """
     if len(axes) not in {0, n_axes}:
-        raise ValueError(
-            f"The number of axes ({len(axes)}) must be 0 (to create them)"
+        raise ValueError(  # noqa: TRY003
+            f"The number of axes ({len(axes)}) must be 0 (to create them)"  # noqa: EM102
             f" or equal to the number of axes needed "
             f"({n_axes} in this case).",
         )
 
     if len(axes) != 0 and (n_rows is not None or n_cols is not None):
-        raise ValueError(
-            "The number of columns and/or number of rows of "
+        raise ValueError(  # noqa: TRY003
+            "The number of columns and/or number of rows of "  # noqa: EM101
             "the figure, in which each dimension of the "
             "image is plotted, can only be customized in case "
             "that no axes are provided.",
@@ -230,17 +230,17 @@ def _set_figure_layout(
             else (_projection_from_dim(d) for d in dim)
         )
 
-        for a, proj in zip(axes, projections):
+        for a, proj in zip(axes, projections):  # noqa: B905
             if a.name != proj:
-                raise ValueError(
-                    f"The projection of the axes is {a.name} "
+                raise ValueError(  # noqa: TRY003
+                    f"The projection of the axes is {a.name} "  # noqa: EM102
                     f"but should be {proj}",
                 )
 
     return fig, axes
 
 
-def _set_labels(
+def _set_labels(  # noqa: C901
     fdata: FData,
     fig: Figure,
     axes: Sequence[Axes],
@@ -272,7 +272,7 @@ def _set_labels(
     assert len(axes) >= fdata.dim_codomain
 
     # Axis labels
-    if axes[0].name == '3d':
+    if axes[0].name == '3d':  # noqa: Q000
         for i, a in enumerate(axes):
             if fdata.argument_names[0] is not None:
                 a.set_xlabel(fdata.argument_names[0])

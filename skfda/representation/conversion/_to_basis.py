@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-  # noqa: UP009
 """To basis converter.
 
 This module contains the abstract base class for all FData to FDatabasis
@@ -11,9 +11,9 @@ from typing import TypeVar
 
 from ..._utils._sklearn_adapter import TransformerMixin
 from ...representation import FData, FDataBasis
-from ...representation.basis import Basis
+from ...representation.basis import Basis  # noqa: TC001
 
-Input = TypeVar(
+Input = TypeVar(  # noqa: PLC0105
     "Input",
     bound=FData,
     contravariant=True,

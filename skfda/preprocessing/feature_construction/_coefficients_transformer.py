@@ -42,23 +42,23 @@ class CoefficientsTransformer(
 
     """
 
-    def __init__(self, n_components: Optional[int] = None) -> None:
+    def __init__(self, n_components: Optional[int] = None) -> None:  # noqa: UP007
         self.n_components = n_components
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, RUF100
         self,
         X: FDataBasis,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> CoefficientsTransformer:
 
         self.basis_ = X.basis
 
         return self
 
-    def transform(  # noqa: D102
+    def transform(  # noqa: D102, RUF100
         self,
         X: FDataBasis,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> NDArrayFloat:
 
         check_is_fitted(self)

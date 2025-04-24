@@ -1,7 +1,7 @@
 """Maxima Hunting dimensionality reduction and related methods."""
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable  # noqa: UP035
 
 import numpy as np
 import scipy.signal
@@ -22,7 +22,7 @@ _LocalMaximaSelector = Callable[[FDataGrid], NDArrayInt]
 
 def _select_relative_maxima(X: FDataGrid, *, order: int = 1) -> NDArrayInt:
 
-    X_array = X.data_matrix[0, ..., 0]
+    X_array = X.data_matrix[0, ..., 0]  # noqa: N806
 
     indexes = scipy.signal.argrelextrema(
         X_array,
@@ -33,8 +33,8 @@ def _select_relative_maxima(X: FDataGrid, *, order: int = 1) -> NDArrayInt:
     # Discard flat
     maxima = X_array[indexes]
 
-    left_points = np.take(X_array, indexes - 1, mode='clip')
-    right_points = np.take(X_array, indexes + 1, mode='clip')
+    left_points = np.take(X_array, indexes - 1, mode='clip')  # noqa: Q000
+    right_points = np.take(X_array, indexes + 1, mode='clip')  # noqa: Q000
 
     is_not_flat = (maxima > left_points) | (maxima > right_points)
 
@@ -80,9 +80,9 @@ def select_local_maxima(X: FDataGrid, *, order: int = 1) -> NDArrayInt:
     return _select_relative_maxima(X, order=order)
 
 
-class RelativeLocalMaximaSelector(BaseEstimator):
+class RelativeLocalMaximaSelector(BaseEstimator):  # noqa: D101
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         smoothing_parameter: int = 1,
         max_points: int | None = None,
@@ -90,7 +90,7 @@ class RelativeLocalMaximaSelector(BaseEstimator):
         self.smoothing_parameter = smoothing_parameter
         self.max_points = max_points
 
-    def __call__(self, X: FDataGrid) -> NDArrayInt:
+    def __call__(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
         indexes = _select_relative_maxima(
             X,
             order=self.smoothing_parameter,
@@ -245,7 +245,7 @@ class MaximaHunting(
 
         return self
 
-    def get_support(self, indices: bool = False) -> NDArrayInt:  # noqa: D102
+    def get_support(self, indices: bool = False) -> NDArrayInt:  # noqa: D102, FBT001, FBT002
         if indices:
             return self.indexes_
 
@@ -256,14 +256,14 @@ class MaximaHunting(
     def transform(  # noqa: D102
         self,
         X: FDataGrid,
-        y: NDArrayInt | NDArrayFloat | None = None,
+        y: NDArrayInt | NDArrayFloat | None = None,  # noqa: ARG002
     ) -> NDArrayFloat:
 
         sklearn.utils.validation.check_is_fitted(self)
 
         if X.data_matrix.shape[1:] != self.features_shape_:
-            raise ValueError(
-                "The trajectories have a different number of "
+            raise ValueError(  # noqa: TRY003
+                "The trajectories have a different number of "  # noqa: EM101
                 "points than the ones fitted",
             )
 

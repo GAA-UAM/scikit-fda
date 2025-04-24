@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import (
+from typing import (  # noqa: UP035
     TYPE_CHECKING,
     Any,
     Callable,
@@ -25,8 +25,8 @@ from typing import (
 
 import numpy as np
 import pandas.api.extensions
-from matplotlib.figure import Figure
-from typing_extensions import Literal, Protocol
+from matplotlib.figure import Figure  # noqa: TC002
+from typing_extensions import Literal, Protocol  # noqa: UP035
 
 from .._utils import _evaluate_grid, _to_grid_points
 from ..typing._base import (
@@ -42,16 +42,16 @@ from ..typing._numpy import (
     NDArrayInt,
     NDArrayObject,
 )
-from .evaluator import Evaluator
+from .evaluator import Evaluator  # noqa: TC001
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
     from .basis import Basis, FDataBasis
     from .grid import FDataGrid
 
-T = TypeVar('T', bound='FData')
+T = TypeVar('T', bound='FData')  # noqa: Q000
 
-EvalPointsType = Union[
+EvalPointsType = Union[  # noqa: UP007
     ArrayLike,
     GridPointsLike,
     Iterable[GridPointsLike],
@@ -77,16 +77,16 @@ class FData(  # noqa: WPS214
 
     """
 
-    dataset_name: Optional[str]
+    dataset_name: Optional[str]  # noqa: UP007
 
     def __init__(
         self,
         *,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+        dataset_name: Optional[str] = None,  # noqa: UP007
+        argument_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        coordinate_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        sample_names: Optional[LabelTupleLike] = None,  # noqa: UP007
     ) -> None:
 
         self.extrapolation = extrapolation  # type: ignore[assignment]
@@ -103,15 +103,15 @@ class FData(  # noqa: WPS214
     @argument_names.setter
     def argument_names(
         self,
-        names: Optional[LabelTupleLike],
+        names: Optional[LabelTupleLike],  # noqa: UP007
     ) -> None:
         if names is None:
             names = (None,) * self.dim_domain
         else:
             names = tuple(names)
             if len(names) != self.dim_domain:
-                raise ValueError(
-                    "There must be a name for each of the "
+                raise ValueError(  # noqa: TRY003
+                    "There must be a name for each of the "  # noqa: EM101
                     "dimensions of the domain.",
                 )
 
@@ -124,15 +124,15 @@ class FData(  # noqa: WPS214
     @coordinate_names.setter
     def coordinate_names(
         self,
-        names: Optional[LabelTupleLike],
+        names: Optional[LabelTupleLike],  # noqa: UP007
     ) -> None:
         if names is None:
             names = (None,) * self.dim_codomain
         else:
             names = tuple(names)
             if len(names) != self.dim_codomain:
-                raise ValueError(
-                    "There must be a name for each of the "
+                raise ValueError(  # noqa: TRY003
+                    "There must be a name for each of the "  # noqa: EM101
                     "dimensions of the codomain.",
                 )
 
@@ -143,14 +143,14 @@ class FData(  # noqa: WPS214
         return self._sample_names
 
     @sample_names.setter
-    def sample_names(self, names: Optional[LabelTupleLike]) -> None:
+    def sample_names(self, names: Optional[LabelTupleLike]) -> None:  # noqa: UP007
         if names is None:
             names = (None,) * self.n_samples
         else:
             names = tuple(names)
             if len(names) != self.n_samples:
-                raise ValueError(
-                    "There must be a name for each of the samples.",
+                raise ValueError(  # noqa: TRY003
+                    "There must be a name for each of the samples.",  # noqa: EM101
                 )
 
         self._sample_names = names
@@ -164,7 +164,7 @@ class FData(  # noqa: WPS214
             Number of samples of the FData object.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @property
     @abstractmethod
@@ -175,7 +175,7 @@ class FData(  # noqa: WPS214
             Number of dimensions of the domain.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @property
     @abstractmethod
@@ -186,7 +186,7 @@ class FData(  # noqa: WPS214
             Number of dimensions of the codomain.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @property
     @abstractmethod
@@ -198,15 +198,15 @@ class FData(  # noqa: WPS214
         an iterator of the vector :math:`f = (f_1, ..., f_d)`.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @property
-    def extrapolation(self) -> Optional[Evaluator]:
+    def extrapolation(self) -> Optional[Evaluator]:  # noqa: UP007
         """Return default type of extrapolation."""
         return self._extrapolation
 
     @extrapolation.setter
-    def extrapolation(self, value: Optional[ExtrapolationLike]) -> None:
+    def extrapolation(self, value: Optional[ExtrapolationLike]) -> None:  # noqa: UP007
         """Set the type of extrapolation."""
         self._extrapolation = _parse_extrapolation(value)
 
@@ -217,8 +217,8 @@ class FData(  # noqa: WPS214
 
         Returns:
             List of tuples with the ranges for each domain dimension.
-        """
-        pass
+        """  # noqa: D415
+        pass  # noqa: PIE790
 
     def _extrapolation_index(self, eval_points: NDArrayFloat) -> NDArrayBool:
         """Check the points that need to be extrapolated.
@@ -234,7 +234,7 @@ class FData(  # noqa: WPS214
             in the index are outside the domain range and extrapolation
             should be applied.
 
-        """
+        """  # noqa: RUF002
         index = np.zeros(eval_points.shape[:-1], dtype=np.bool_)
 
         # Checks bounds in each domain dimension
@@ -317,7 +317,7 @@ class FData(  # noqa: WPS214
             dimension of the i-th sample, at the j-th evaluation point.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @overload
     def evaluate(
@@ -325,7 +325,7 @@ class FData(  # noqa: WPS214
         eval_points: ArrayLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: Literal[False] = False,
         aligned: Literal[True] = True,
     ) -> NDArrayFloat:
@@ -337,7 +337,7 @@ class FData(  # noqa: WPS214
         eval_points: Iterable[ArrayLike],
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: Literal[False] = False,
         aligned: Literal[False],
     ) -> NDArrayFloat:
@@ -349,7 +349,7 @@ class FData(  # noqa: WPS214
         eval_points: GridPointsLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: Literal[True],
         aligned: Literal[True] = True,
     ) -> NDArrayFloat:
@@ -361,7 +361,7 @@ class FData(  # noqa: WPS214
         eval_points: Iterable[GridPointsLike],
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: Literal[True],
         aligned: Literal[False],
     ) -> NDArrayFloat:
@@ -372,7 +372,7 @@ class FData(  # noqa: WPS214
         eval_points: EvalPointsType,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: bool = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -430,7 +430,7 @@ class FData(  # noqa: WPS214
         eval_points: ArrayLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: Literal[False] = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -442,7 +442,7 @@ class FData(  # noqa: WPS214
         eval_points: GridPointsLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: Literal[True],
         aligned: Literal[True] = True,
     ) -> NDArrayFloat:
@@ -454,7 +454,7 @@ class FData(  # noqa: WPS214
         eval_points: Iterable[GridPointsLike],
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: Literal[True],
         aligned: Literal[False],
     ) -> NDArrayFloat:
@@ -466,7 +466,7 @@ class FData(  # noqa: WPS214
         eval_points: EvalPointsType,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: bool = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -477,7 +477,7 @@ class FData(  # noqa: WPS214
         eval_points: EvalPointsType,
         *,
         derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         grid: bool = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -515,7 +515,7 @@ class FData(  # noqa: WPS214
         from ..misc.validation import validate_evaluation_points
 
         if derivative != 0:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "Parameter derivative is deprecated. Use the "
                 "derivative function instead.",
                 DeprecationWarning,
@@ -546,7 +546,7 @@ class FData(  # noqa: WPS214
             extrapolation = _parse_extrapolation(extrapolation)
 
         eval_points = cast(
-            ArrayLike,
+            ArrayLike,  # noqa: TC006
             eval_points,
         )
 
@@ -616,13 +616,13 @@ class FData(  # noqa: WPS214
             Functional object containg the derivative.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def integrate(
         self: T,
         *,
-        domain: Optional[DomainRange] = None,
+        domain: Optional[DomainRange] = None,  # noqa: UP007
     ) -> NDArrayFloat:
         """
         Integration of the FData object.
@@ -642,16 +642,16 @@ class FData(  # noqa: WPS214
             with the integrated data.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def shift(
         self,
-        shifts: Union[ArrayLike, float],
+        shifts: Union[ArrayLike, float],  # noqa: UP007
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        grid_points: Optional[GridPointsLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> FDataGrid:
         r"""
         Perform a shift of the curves.
@@ -704,8 +704,8 @@ class FData(  # noqa: WPS214
             )
 
         if len(arr_shifts) not in {1, self.n_samples}:
-            raise ValueError(
-                f"The length of the shift vector ({len(arr_shifts)}) must "
+            raise ValueError(  # noqa: TRY003
+                f"The length of the shift vector ({len(arr_shifts)}) must "  # noqa: EM102
                 f"have length equal to 1 or to the number of samples "
                 f"({self.n_samples})",
             )
@@ -721,7 +721,7 @@ class FData(  # noqa: WPS214
 
         if len(arr_shifts) == 1:
             shifted_grid_points = tuple(
-                g + s for g, s in zip(grid_points, arr_shifts[0])
+                g + s for g, s in zip(grid_points, arr_shifts[0])  # noqa: B905
             )
             data_matrix = self(
                 shifted_grid_points,
@@ -732,7 +732,7 @@ class FData(  # noqa: WPS214
         else:
             shifted_grid_points_per_sample = (
                 tuple(
-                    g + s for g, s in zip(grid_points, shift)
+                    g + s for g, s in zip(grid_points, shift)  # noqa: B905
                 ) for shift in arr_shifts
             )
             data_matrix = self(
@@ -752,7 +752,7 @@ class FData(  # noqa: WPS214
 
         return shifted
 
-    def plot(self, *args: Any, **kwargs: Any) -> Figure:
+    def plot(self, *args: Any, **kwargs: Any) -> Figure:  # noqa: ANN401
         """Plot the FDatGrid object.
 
         Args:
@@ -774,14 +774,14 @@ class FData(  # noqa: WPS214
         self: T,
         *,
         deep: bool = False,  # For Pandas compatibility
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        dataset_name: Optional[str] = None,  # noqa: UP007
+        argument_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        coordinate_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        sample_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
     ) -> T:
         """Make a copy of the object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod  # noqa: WPS125
     def sum(  # noqa: WPS125
@@ -815,7 +815,7 @@ class FData(  # noqa: WPS214
             or keepdims is not False
         ):
             raise NotImplementedError(
-                "Not implemented for that parameter combination",
+                "Not implemented for that parameter combination",  # noqa: EM101
             )
 
         return self
@@ -841,11 +841,11 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def cov(  # noqa: WPS320, WPS451
         self: T,
-        s_points: Optional[NDArrayFloat] = None,
-        t_points: Optional[NDArrayFloat] = None,
+        s_points: Optional[NDArrayFloat] = None,  # noqa: UP007
+        t_points: Optional[NDArrayFloat] = None,  # noqa: UP007
         /,
         correction: int = 0,
-    ) -> Union[
+    ) -> Union[  # noqa: UP007
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,
     ]:
@@ -872,9 +872,9 @@ class FData(  # noqa: WPS214
             Covariance function.
 
         """
-        pass
+        pass  # noqa: PIE790
 
-    def mean(
+    def mean(  # noqa: PYI019
         self: T,
         *,
         axis: int | None = None,
@@ -899,7 +899,7 @@ class FData(  # noqa: WPS214
         """
         if dtype is not None:
             raise NotImplementedError(
-                "Not implemented for that parameter combination",
+                "Not implemented for that parameter combination",  # noqa: EM101
             )
 
         return (
@@ -910,7 +910,7 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def to_grid(
         self,
-        grid_points: Optional[GridPointsLike] = None,
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> FDataGrid:
         """Return the discrete representation of the object.
 
@@ -923,13 +923,13 @@ class FData(  # noqa: WPS214
             object.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def to_basis(
         self,
         basis: Basis,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> FDataBasis:
         """Return the basis representation of the object.
 
@@ -944,7 +944,7 @@ class FData(  # noqa: WPS214
             object.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
@@ -964,14 +964,14 @@ class FData(  # noqa: WPS214
             original objects.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def compose(
         self: T,
         fd: T,
         *,
-        eval_points: Optional[NDArrayFloat] = None,
+        eval_points: Optional[NDArrayFloat] = None,  # noqa: UP007
     ) -> FData:
         """Composition of functions.
 
@@ -984,15 +984,15 @@ class FData(  # noqa: WPS214
             eval_points: Points to perform the evaluation.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __getitem__(
         self: T,
-        key: Union[int, slice, NDArrayInt],
+        key: Union[int, slice, NDArrayInt],  # noqa: UP007
     ) -> T:
         """Return self[key]."""
-        pass
+        pass  # noqa: PIE790
 
     def equals(self, other: object) -> bool:
         """Whole object equality."""
@@ -1007,7 +1007,7 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
         """Elementwise equality."""
-        pass
+        pass  # noqa: PIE790
 
     def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         """Elementwise equality, as with arrays."""
@@ -1017,14 +1017,14 @@ class FData(  # noqa: WPS214
             if pandas.api.types.is_list_like(other) and not isinstance(
                 other, (pandas.Series, pandas.Index, pandas.DataFrame),
             ):
-                other = cast(Iterable[object], other)
-                return np.concatenate([x == y for x, y in zip(self, other)])
+                other = cast(Iterable[object], other)  # noqa: TC006
+                return np.concatenate([x == y for x, y in zip(self, other)])  # noqa: B905
 
             return NotImplemented
 
         if len(self) != len(other) and len(self) != 1 and len(other) != 1:
-            raise ValueError(
-                f"Different lengths: "
+            raise ValueError(  # noqa: TRY003
+                f"Different lengths: "  # noqa: EM102
                 f"len(self)={len(self)} and "
                 f"len(other)={len(other)}",
             )
@@ -1039,10 +1039,10 @@ class FData(  # noqa: WPS214
 
         return ~result
 
-    def _copy_op(
+    def _copy_op(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
-        **kwargs: Any,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
+        **kwargs: Any,  # noqa: ANN401
     ) -> T:
 
         base_copy = (
@@ -1056,61 +1056,61 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def __add__(self: T, other: T) -> T:
         """Addition for FData object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __radd__(self: T, other: T) -> T:
         """Addition for FData object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __sub__(self: T, other: T) -> T:
         """Subtraction for FData object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __rsub__(self: T, other: T) -> T:
         """Right subtraction for FData object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __mul__(
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Multiplication for FData object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __rmul__(
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Multiplication for FData object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __truediv__(
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Division for FData object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __rtruediv__(
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Right division for FData object."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def __neg__(self: T) -> T:
         """Negation of FData object."""
-        pass
+        pass  # noqa: PIE790
 
-    def __iter__(self: T) -> Iterator[T]:
+    def __iter__(self: T) -> Iterator[T]:  # noqa: PYI019
         """Iterate over the samples."""
         yield from (self[i] for i in range(self.n_samples))
 
@@ -1122,7 +1122,7 @@ class FData(  # noqa: WPS214
     # Numpy methods
     #####################################################################
 
-    def __array__(self, *args: Any, **kwargs: Any) -> NDArrayObject:
+    def __array__(self, *args: Any, **kwargs: Any) -> NDArrayObject:  # noqa: ANN401
         """Return a numpy array with the objects."""
         # This is to prevent numpy to access inner dimensions
         array = np.empty(shape=len(self), dtype=np.object_)
@@ -1134,14 +1134,14 @@ class FData(  # noqa: WPS214
 
     def __array_ufunc__(
         self,
-        ufunc: Any,
+        ufunc: Any,  # noqa: ANN401
         method: str,
-        *inputs: Any,
-        **kwargs: Any,
-    ) -> Any:
+        *inputs: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> Any:  # noqa: ANN401
         """Prevent NumPy from converting to array just to do operations."""
         # Make normal multiplication by scalar use the __mul__ method
-        if ufunc == np.multiply and method == "__call__" and len(inputs) == 2:
+        if ufunc == np.multiply and method == "__call__" and len(inputs) == 2:  # noqa: PLR2004
             if isinstance(inputs[0], np.ndarray):
                 inputs = inputs[::-1]
 
@@ -1168,12 +1168,12 @@ class FData(  # noqa: WPS214
     @classmethod
     def _from_sequence(
         cls,
-        scalars: Union['FData', Sequence['FData']],
-        dtype: Any = None,
-        copy: bool = False,
-    ) -> 'FData':
+        scalars: Union['FData', Sequence['FData']],  # noqa: Q000, UP007, UP037
+        dtype: Any = None,  # noqa: ANN401
+        copy: bool = False,  # noqa: FBT001, FBT002
+    ) -> 'FData':  # noqa: UP037
 
-        scalars_seq: Sequence['FData'] = (
+        scalars_seq: Sequence['FData'] = (  # noqa: Q000, UP037
             [scalars] if isinstance(scalars, cls) else scalars
         )
 
@@ -1185,19 +1185,19 @@ class FData(  # noqa: WPS214
             dtype = first_element.dtype
 
         scalars_seq = [
-            s if s is not pandas.NA else dtype._na_repr()  # noqa: WPS437
+            s if s is not pandas.NA else dtype._na_repr()  # noqa: SLF001, WPS437
             for s in scalars_seq
         ]
 
         if len(scalars_seq) == 0:
-            scalars_seq = [dtype._na_repr()[:0]]  # noqa: WPS437
+            scalars_seq = [dtype._na_repr()[:0]]  # noqa: SLF001, WPS437
 
         return cls._concat_same_type(scalars_seq)
 
     @classmethod
-    def _from_factorized(cls, values: Any, original: Any) -> NoReturn:
+    def _from_factorized(cls, values: Any, original: Any) -> NoReturn:  # noqa: ANN401
         raise NotImplementedError(
-            "Factorization does not make sense for functional data",
+            "Factorization does not make sense for functional data",  # noqa: EM101
         )
 
     @abstractmethod
@@ -1209,14 +1209,14 @@ class FData(  # noqa: WPS214
         pass
 
     @abstractmethod
-    def isna(self) -> NDArrayBool:  # noqa: D102
+    def isna(self) -> NDArrayBool:  # noqa: D102, RUF100
         pass
 
-    def take(  # noqa: WPS238
+    def take(  # noqa: PYI019, WPS238
         self: T,
-        indices: Union[int, Sequence[int], NDArrayInt],
-        allow_fill: bool = False,
-        fill_value: Optional[T] = None,
+        indices: Union[int, Sequence[int], NDArrayInt],  # noqa: UP007
+        allow_fill: bool = False,  # noqa: FBT001, FBT002
+        fill_value: Optional[T] = None,  # noqa: UP007
         axis: int = 0,
     ) -> T:
         """
@@ -1265,7 +1265,7 @@ class FData(  # noqa: WPS214
         # The axis parameter must exist, because sklearn tries to use take
         # instead of __getitem__
         if axis != 0:
-            raise ValueError(f"Axis must be 0, not {axis}")
+            raise ValueError(f"Axis must be 0, not {axis}")  # noqa: EM102, TRY003
 
         arr_indices = np.atleast_1d(indices)
 
@@ -1276,7 +1276,7 @@ class FData(  # noqa: WPS214
 
         if allow_fill:
             if (arr_indices < -1).any():
-                raise ValueError("Invalid indexes")
+                raise ValueError("Invalid indexes")  # noqa: EM101, TRY003
 
             positive_mask = arr_indices >= 0
             if len(self) == 0 and positive_mask.any():
@@ -1321,7 +1321,7 @@ class FData(  # noqa: WPS214
 
         return concatenate(to_concat)
 
-    def astype(self, dtype: Any, copy: bool = True) -> Any:
+    def astype(self, dtype: Any, copy: bool = True) -> Any:  # noqa: ANN401, FBT001, FBT002
         """Cast to a new dtype."""
         if isinstance(dtype, type(self.dtype)):
             new_obj = self
@@ -1331,18 +1331,18 @@ class FData(  # noqa: WPS214
 
         return super().astype(dtype)
 
-    def _reduce(self, name: str, skipna: bool = True, **kwargs: Any) -> Any:
+    def _reduce(self, name: str, skipna: bool = True, **kwargs: Any) -> Any:  # noqa: ANN401, FBT001, FBT002
         meth = getattr(self, name, None)
         if meth:
             return meth(skipna=skipna, **kwargs)
 
-        raise TypeError(
-            f"'{type(self).__name__}' does not implement "
+        raise TypeError(  # noqa: TRY003
+            f"'{type(self).__name__}' does not implement "  # noqa: EM102
             f"reduction '{name}'",
         )
 
 
-def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
+def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:  # noqa: FBT001, FBT002, D417
     """
     Join samples from an iterable of similar FData objects.
 
@@ -1362,19 +1362,19 @@ def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
     Todo:
         By the moment, only unidimensional objects are supported in basis
         representation.
-    """
+    """  # noqa: D410, D411
     functions = iter(functions)
     first = next(functions, None)
 
     if first is None:
-        raise ValueError(
-            "At least one FData object must be provided to concatenate.",
+        raise ValueError(  # noqa: TRY003
+            "At least one FData object must be provided to concatenate.",  # noqa: EM101
         )
 
     return first.concatenate(*functions, as_coordinates=as_coordinates)
 
 
-F = TypeVar("F", covariant=True)
+F = TypeVar("F", covariant=True)  # noqa: PLC0105
 
 
 class _CoordinateSequence(Protocol[F]):
@@ -1387,7 +1387,7 @@ class _CoordinateSequence(Protocol[F]):
 
     def __getitem__(
         self,
-        key: Union[int, slice],
+        key: Union[int, slice],  # noqa: UP007
     ) -> F:
         pass
 

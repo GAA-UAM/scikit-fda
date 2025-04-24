@@ -11,7 +11,7 @@ from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
 from ...representation.interpolation import SplineInterpolation
-from ...typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 
 ###############################################################################
 # Based on the original implementation of J. Derek Tucker in                  #
@@ -99,7 +99,7 @@ def _fisher_rao_warping_mean(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
     eval_points = warping.grid_points[0]
     original_eval_points = eval_points
 
@@ -139,7 +139,7 @@ def _fisher_rao_warping_mean(
 
             theta = np.arccos(inner)
 
-            if theta > 1e-10:
+            if theta > 1e-10:  # noqa: PLR2004
                 vmean += theta / np.sin(theta) * (psi_i - np.cos(theta) * mu)
 
         # Mean of shooting vectors
@@ -190,7 +190,7 @@ def fisher_rao_karcher_mean(
     tol: float = 1e-3,
     initial: float | None = None,
     grid_dim: int = 7,
-    **kwargs: Any,
+    **kwargs: Any,  # noqa: ANN401
 ) -> FDataGrid:
     r"""
     Compute the Karcher mean under the elastic metric.
@@ -241,7 +241,7 @@ def fisher_rao_karcher_mean(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
     check_fdata_dimensions(
         fdatagrid,
         dim_domain=1,

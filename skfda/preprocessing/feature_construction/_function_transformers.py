@@ -1,14 +1,14 @@
 """Function transformers for feature construction techniques."""
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple  # noqa: UP035
 
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation import FData
 from ...representation.grid import FDataGrid
-from ...typing._base import DomainRangeLike
+from ...typing._base import DomainRangeLike  # noqa: TC001
 from ...typing._numpy import ArrayLike, NDArrayFloat, NDArrayInt
 from ._functions import local_averages, number_crossings, occupation_measure
 
@@ -73,7 +73,7 @@ class LocalAveragesTransformer(
         array([[ 117.,  177.],
                [ 112.,  158.],
                [ 107.,  155.]])
-    """
+    """  # noqa: D405
 
     def __init__(
         self,
@@ -82,7 +82,7 @@ class LocalAveragesTransformer(
     ) -> None:
         self.domains = domains
 
-    def transform(self, X: FData, y: object = None) -> NDArrayFloat:
+    def transform(self, X: FData, y: object = None) -> NDArrayFloat:  # noqa: ARG002
         """
         Transform the provided data to its local averages.
 
@@ -152,16 +152,16 @@ class OccupationMeasureTransformer(
                [ 6.3,  0. ]])
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
-        intervals: Sequence[Tuple[float, float]],
+        intervals: Sequence[Tuple[float, float]],  # noqa: UP006
         *,
-        n_points: Optional[int] = None,
+        n_points: Optional[int] = None,  # noqa: UP007
     ):
         self.intervals = intervals
         self.n_points = n_points
 
-    def transform(self, X: FData, y: object = None) -> NDArrayFloat:
+    def transform(self, X: FData, y: object = None) -> NDArrayFloat:  # noqa: ARG002, D417
         """
         Transform the provided data using the occupation_measure function.
 
@@ -231,9 +231,9 @@ class NumberCrossingsTransformer(
         >>> tf = NumberCrossingsTransformer(levels=0, direction="up")
         >>> tf.fit_transform(fd_grid)
         array([[ 2]])
-    """
+    """  # noqa: W293
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
         levels: ArrayLike = 0,
@@ -242,7 +242,7 @@ class NumberCrossingsTransformer(
         self.levels = levels
         self.direction = direction
 
-    def transform(self, X: FDataGrid, y: object = None) -> NDArrayInt:
+    def transform(self, X: FDataGrid, y: object = None) -> NDArrayInt:  # noqa: ARG002, D417
         """
         Transform the provided data using the number_up_crossings function.
 

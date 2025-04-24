@@ -1,7 +1,7 @@
 """Tests of the LinearDifferentialOperator."""
 
 import unittest
-from typing import Callable, Sequence, Union
+from typing import Callable, Sequence, Union  # noqa: UP035
 
 import numpy as np
 
@@ -22,20 +22,20 @@ class TestLinearDifferentialOperator(unittest.TestCase):
 
     def _assert_equal_weights(
         self,
-        weights: Sequence[Union[float, WeightCallable]],
-        weights2: Sequence[Union[float, WeightCallable]],
+        weights: Sequence[Union[float, WeightCallable]],  # noqa: UP007
+        weights2: Sequence[Union[float, WeightCallable]],  # noqa: UP007
         msg: str,
     ) -> None:
-        self.assertEqual(len(weights), len(weights2), msg)
+        self.assertEqual(len(weights), len(weights2), msg)  # noqa: PT009
 
-        for w, w2 in zip(weights, weights2):
+        for w, w2 in zip(weights, weights2):  # noqa: B905
 
             eq = getattr(w, "equals", None)
 
             if eq is None:
-                self.assertEqual(w, w2, msg)
+                self.assertEqual(w, w2, msg)  # noqa: PT009
             else:
-                self.assertTrue(eq(w2), msg)
+                self.assertTrue(eq(w2), msg)  # noqa: PT009
 
     def test_init_default(self) -> None:
         """Tests default initialization (do not penalize)."""
@@ -160,5 +160,5 @@ class TestLinearDifferentialOperator(unittest.TestCase):
 
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

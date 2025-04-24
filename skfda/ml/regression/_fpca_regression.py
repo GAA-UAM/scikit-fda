@@ -5,11 +5,11 @@ from typing import TypeVar
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
-from ...misc.regularization import L2Regularization
+from ...misc.regularization import L2Regularization  # noqa: TC001
 from ...preprocessing.dim_reduction import FPCA
-from ...representation import FData
+from ...representation import FData  # noqa: TC001
 from ...representation.basis import Basis, CustomBasis, FDataBasis
-from ...typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ._linear_regression import LinearRegression
 
 FPCARegressionSelf = TypeVar("FPCARegressionSelf", bound="FPCARegression")
@@ -71,7 +71,7 @@ class FPCARegression(
     def __init__(
         self,
         n_components: int = 5,
-        fit_intercept: bool = True,
+        fit_intercept: bool = True,  # noqa: FBT001, FBT002
         pca_regularization: L2Regularization | None = None,
         regression_regularization: L2Regularization | None = None,
         components_basis: Basis | None = None,
@@ -115,7 +115,7 @@ class FPCARegression(
             fdata=self._fpca.components_,
         )
 
-        X_transformed = FDataBasis(
+        X_transformed = FDataBasis(  # noqa: N806
             basis=self.fpca_basis,
             coefficients=transformed_coefficients,
         )
@@ -144,7 +144,7 @@ class FPCARegression(
         """
         check_is_fitted(self)
 
-        X_transformed = FDataBasis(
+        X_transformed = FDataBasis(  # noqa: N806
             basis=self.fpca_basis,
             coefficients=self._fpca.transform(X),
         )

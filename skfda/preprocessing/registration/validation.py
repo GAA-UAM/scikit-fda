@@ -10,8 +10,8 @@ import numpy as np
 from ..._utils import _to_grid
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FData
-from ...typing._numpy import NDArrayFloat
-from ._base import RegistrationTransformer
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
+from ._base import RegistrationTransformer  # noqa: TC001
 
 Input = TypeVar("Input", bound=FData)
 Output = TypeVar("Output", bound=FData)
@@ -48,7 +48,7 @@ class RegistrationScorer(ABC, Generic[Input, Output]):
         :class:`~SobolevLeastSquares`
         :class:`~PairwiseCorrelation`
 
-    """
+    """  # noqa: D405
 
     def __call__(
         self,
@@ -72,7 +72,7 @@ class RegistrationScorer(ABC, Generic[Input, Output]):
             y = X
 
         # Register the data
-        X_reg = estimator.transform(X)
+        X_reg = estimator.transform(X)  # noqa: N806
 
         return self.score_function(y, X_reg)
 
@@ -92,11 +92,11 @@ class RegistrationScorer(ABC, Generic[Input, Output]):
             Score of the transformation.
 
         """
-        pass
+        pass  # noqa: PIE790
 
 
 @dataclass
-class AmplitudePhaseDecompositionStats():
+class AmplitudePhaseDecompositionStats():  # noqa: UP039
     r"""Named tuple to store the values of the amplitude-phase decomposition.
 
     Values of the amplitude phase decomposition computed in
@@ -258,7 +258,7 @@ class AmplitudePhaseDecomposition(
         :class:`~SobolevLeastSquares`
         :class:`~PairwiseCorrelation`
 
-    """
+    """  # noqa: D405
 
     def stats(
         self,
@@ -289,12 +289,12 @@ class AmplitudePhaseDecomposition(
         )
 
         if len(y) != len(X):
-            raise ValueError(
-                f"The registered and unregistered curves must have "
+            raise ValueError(  # noqa: TRY003
+                f"The registered and unregistered curves must have "  # noqa: EM102
                 f"the same number of samples ({len(y)})!=({len(X)})",
             )
 
-        X_mean = X.mean()
+        X_mean = X.mean()  # noqa: N806
         y_mean = y.mean()
 
         c_r = float(np.sum(l2_norm(X)**2) / np.sum(l2_norm(y)**2))
@@ -408,7 +408,7 @@ class LeastSquares(RegistrationScorer[FData, FData]):
         :class:`~SobolevLeastSquares`
         :class:`~PairwiseCorrelation`
 
-    """
+    """  # noqa: D405, RUF002
 
     def score_function(self, X: FData, y: FData) -> float:
         """Compute the score of the transformation performed.
@@ -438,13 +438,13 @@ class LeastSquares(RegistrationScorer[FData, FData]):
         # It is used (1 + 1/(N-1))f_i - 1/(N-1) sum(j=1 ... N) f_j =
         # (1 + 1/(N-1))f_i - N/(N-1) mean(f) =
         # C1 * f_1 - C2 mean(f) for each i= 1 ... N
-        N = len(X)
-        C1 = 1 + 1 / (N - 1)
-        C2 = N / (N - 1)
+        N = len(X)  # noqa: N806
+        C1 = 1 + 1 / (N - 1)  # noqa: N806
+        C2 = N / (N - 1)  # noqa: N806
 
         X = C1 * X
         y = C1 * y
-        mean_X = C2 * X.mean()
+        mean_X = C2 * X.mean()  # noqa: N806
         mean_y = C2 * y.mean()
 
         # Compute distance to mean
@@ -529,7 +529,7 @@ class SobolevLeastSquares(RegistrationScorer[FData, FData]):
         :class:`~LeastSquares`
         :class:`~PairwiseCorrelation`
 
-    """
+    """  # noqa: D405
 
     def score_function(self, X: FData, y: FData) -> float:
         """Compute the score of the transformation performed.
@@ -632,7 +632,7 @@ class PairwiseCorrelation(RegistrationScorer[FData, FData]):
         :class:`~LeastSquares`
         :class:`~SobolevLeastSquares`
 
-    """
+    """  # noqa: D405, RUF002
 
     def __init__(self, eval_points: NDArrayFloat | None = None) -> None:
         self.eval_points = eval_points
@@ -665,7 +665,7 @@ class PairwiseCorrelation(RegistrationScorer[FData, FData]):
         # Compute correlation matrices with zeros in diagonal
         # corrcoefs computes the correlation between vector, without weights
         # due to the sample points
-        X_corr = np.corrcoef(X.data_matrix[..., 0])
+        X_corr = np.corrcoef(X.data_matrix[..., 0])  # noqa: N806
         np.fill_diagonal(X_corr, 0)
 
         y_corr = np.corrcoef(y.data_matrix[..., 0])

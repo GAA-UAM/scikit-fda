@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import unittest
 import warnings
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Union  # noqa: UP035
 
 import numpy as np
 from sklearn.datasets import make_regression
@@ -30,10 +30,10 @@ from skfda.representation.basis import (
     MonomialBasis,
 )
 
-LinearDifferentialOperatorInput = Union[
+LinearDifferentialOperatorInput = Union[  # noqa: UP007
     int,
     Sequence[
-        Union[
+        Union[  # noqa: UP007
             float,
             Callable[
                 [np.typing.NDArray[np.float64]],
@@ -53,7 +53,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         basis: Basis,
         linear_diff_op: LinearDifferentialOperatorInput,
         atol: float = 0,
-        result: Optional[np.typing.NDArray[np.float64]] = None,
+        result: Optional[np.typing.NDArray[np.float64]] = None,  # noqa: UP007
     ) -> None:
 
         operator = LinearDifferentialOperator(linear_diff_op)
@@ -321,7 +321,7 @@ class TestL2Regularization(unittest.TestCase):
             bias=3.5,
         )
 
-        X_train, X_test, y_train, _ = train_test_split(
+        X_train, X_test, y_train, _ = train_test_split(  # noqa: N806
             X,
             y,
             random_state=2,

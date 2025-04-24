@@ -45,7 +45,7 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
             Coefficients matrix.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @abc.abstractmethod
     def convert_from_constant_coefs(
@@ -62,7 +62,7 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
             Coefficient.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     @abc.abstractmethod
     def inner_product(
@@ -77,27 +77,27 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
         the covariate.
 
         """
-        pass
+        pass  # noqa: PIE790
 
 
 class CoefficientInfoNdarray(CoefficientInfo[NDArrayFloat]):
 
-    def regression_matrix(  # noqa: D102
+    def regression_matrix(  # noqa: D102, RUF100
         self,
         X: NDArrayFloat,
-        y: NDArrayFloat,
+        y: NDArrayFloat,  # noqa: ARG002
     ) -> NDArrayFloat:
 
         return np.atleast_2d(X)
 
-    def convert_from_constant_coefs(  # noqa: D102
+    def convert_from_constant_coefs(  # noqa: D102, RUF100
         self,
         coefs: NDArrayFloat,
     ) -> NDArrayFloat:
 
         return coefs
 
-    def inner_product(  # noqa: D102
+    def inner_product(  # noqa: D102, RUF100
         self,
         coefs: NDArrayFloat,
         X: NDArrayFloat,
@@ -115,10 +115,10 @@ class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
 
     """
 
-    def regression_matrix(  # noqa: D102
+    def regression_matrix(  # noqa: D102, RUF100
         self,
         X: FDataBasis,
-        y: NDArrayFloat,
+        y: NDArrayFloat,  # noqa: ARG002
     ) -> NDArrayFloat:
         # The matrix is the matrix of coefficients multiplied by
         # the matrix of inner products.
@@ -127,13 +127,13 @@ class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
         self.inner_basis = X.basis.inner_product_matrix(self.basis)
         return xcoef @ self.inner_basis
 
-    def convert_from_constant_coefs(  # noqa: D102
+    def convert_from_constant_coefs(  # noqa: D102, RUF100
         self,
         coefs: NDArrayFloat,
     ) -> FDataBasis:
         return FDataBasis(self.basis.basis, coefs.T)
 
-    def inner_product(  # noqa: D102
+    def inner_product(  # noqa: D102, RUF100
         self,
         coefs: FDataBasis,
         X: FDataBasis,
@@ -146,19 +146,19 @@ class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
 @singledispatch
 def coefficient_info_from_covariate(
     X: CovariateType,
-    y: NDArrayFloat,
-    **_: Any,
+    y: NDArrayFloat,  # noqa: ARG001
+    **_: Any,  # noqa: ANN401
 ) -> CoefficientInfo[CovariateType]:
     """Make a coefficient info object from a covariate."""
-    raise ValueError(f"Invalid type of covariate = {type(X)}.")
+    raise ValueError(f"Invalid type of covariate = {type(X)}.")  # noqa: EM102, TRY003
 
 
 @coefficient_info_from_covariate.register(np.ndarray)
 def _coefficient_info_from_covariate_ndarray(  # type: ignore[misc]
     X: NDArrayFloat,
-    y: NDArrayFloat,
+    y: NDArrayFloat,  # noqa: ARG001
     basis: Basis = None,
-    **_: Any,
+    **_: Any,  # noqa: ANN401
 ) -> CoefficientInfo[NDArrayFloat]:
     if basis:
         return CoefficientInfoNdarray(basis=basis)
@@ -169,16 +169,16 @@ def _coefficient_info_from_covariate_ndarray(  # type: ignore[misc]
 @coefficient_info_from_covariate.register(FDataBasis)
 def _coefficient_info_from_covariate_fdatabasis(
     X: FDataBasis,
-    y: NDArrayFloat,
+    y: NDArrayFloat,  # noqa: ARG001
     *,
     basis: Basis,
-    **_: Any,
+    **_: Any,  # noqa: ANN401
 ) -> CoefficientInfoFDataBasis:
 
     if basis is None:
         basis = X.basis
 
     if not isinstance(basis, Basis):
-        raise TypeError(f"basis must be a Basis object, not {type(basis)}")
+        raise TypeError(f"basis must be a Basis object, not {type(basis)}")  # noqa: EM102, TRY003
 
     return CoefficientInfoFDataBasis(basis=basis.to_basis())

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar  # noqa: UP035
 
 import numpy as np
 import scipy.integrate
@@ -95,7 +95,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
 
     def __init__(
         self,
@@ -108,7 +108,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     ) -> None:
 
         if n_components is None:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "The default value of n_components will change in a future "
                 "version to the maximum number of components that can be "
                 "extracted. Update your code to specify explicitly the "
@@ -137,7 +137,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def _fit_basis(
         self,
         X: FDataBasis,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> FPCA:
         """
         Compute the first n_components principal components and saves them.
@@ -162,16 +162,16 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         # check that the number of components is smaller than the sample size
         if self.n_components > X.n_samples:
-            raise AttributeError(
-                "The sample size must be bigger than the "
+            raise AttributeError(  # noqa: TRY003
+                "The sample size must be bigger than the "  # noqa: EM101
                 "number of components",
             )
 
         # check that we do not exceed limits for n_components as it should
         # be smaller than the number of attributes of the basis
         if self.n_components > n_basis:
-            raise AttributeError(
-                "The number of components should be "
+            raise AttributeError(  # noqa: TRY003
+                "The number of components should be "  # noqa: EM101
                 "smaller than the number of attributes of "
                 "target principal components' basis.",
             )
@@ -258,7 +258,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def _transform_basis(
         self,
         X: FDataBasis,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> NDArrayFloat:
         """Compute the n_components first principal components score.
 
@@ -271,8 +271,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         """
         if X.basis != self._X_basis:
-            raise ValueError(
-                "The basis used in fit is different from "
+            raise ValueError(  # noqa: TRY003
+                "The basis used in fit is different from "  # noqa: EM101
                 "the basis used in transform.",
             )
 
@@ -285,7 +285,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def _fit_grid(
         self,
         X: FDataGrid,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> FPCA:
         r"""
         Compute the n_components first principal components and saves them.
@@ -310,16 +310,16 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         """
         # check that the number of components is smaller than the sample size
         if self.n_components > X.n_samples:
-            raise AttributeError(
-                "The sample size must be bigger than the "
+            raise AttributeError(  # noqa: TRY003
+                "The sample size must be bigger than the "  # noqa: EM101
                 "number of components",
             )
 
         # check that we do not exceed limits for n_components as it should
         # be smaller than the number of attributes of the funcional data object
         if self.n_components > X.data_matrix.shape[1]:
-            raise AttributeError(
-                "The number of components should be "
+            raise AttributeError(  # noqa: TRY003
+                "The number of components should be "  # noqa: EM101
                 "smaller than the number of discretization "
                 "points of the functional data object.",
             )
@@ -368,7 +368,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             factorization_matrix += regularization_matrix
 
         # Tranpose of the Cholesky decomposition
-        Lt = np.linalg.cholesky(factorization_matrix).T
+        Lt = np.linalg.cholesky(factorization_matrix).T  # noqa: N806
 
         new_data_matrix = fd_data @ weights_matrix
         new_data_matrix = np.linalg.solve(Lt.T, new_data_matrix.T).T
@@ -395,7 +395,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def _transform_grid(
         self,
         X: FDataGrid,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> NDArrayFloat:
         """
         Compute the ``n_components`` first principal components score.
@@ -439,10 +439,10 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         """
         if isinstance(X, FDataGrid):
             return self._fit_grid(X, y)
-        elif isinstance(X, FDataBasis):
+        elif isinstance(X, FDataBasis):  # noqa: RET505
             return self._fit_basis(X, y)
 
-        raise AttributeError("X must be either FDataGrid or FDataBasis")
+        raise AttributeError("X must be either FDataGrid or FDataBasis")  # noqa: EM101, TRY003
 
     def transform(
         self,
@@ -464,10 +464,10 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
         if isinstance(X, FDataGrid):
             return self._transform_grid(X, y)
-        elif isinstance(X, FDataBasis):
+        elif isinstance(X, FDataBasis):  # noqa: RET505
             return self._transform_basis(X, y)
 
-        raise AttributeError("X must be either FDataGrid or FDataBasis")
+        raise AttributeError("X must be either FDataGrid or FDataBasis")  # noqa: EM101, TRY003
 
     def fit_transform(
         self,
@@ -514,12 +514,12 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
                 pc_scores = pc_scores[np.newaxis, :]
 
             if pc_scores.shape[1] != self.n_components:
-                raise AttributeError(
-                    "pc_scores must be a numpy array "
+                raise AttributeError(  # noqa: TRY003
+                    "pc_scores must be a numpy array "  # noqa: EM101
                     "with n_samples rows and n_components columns.",
                 )
         else:
-            raise AttributeError("pc_scores is not a numpy array.")
+            raise AttributeError("pc_scores is not a numpy array.")  # noqa: EM101, TRY003, TRY004
 
         # inverse_transform is slightly different whether
         # .fit was applied to FDataGrid or FDataBasis object

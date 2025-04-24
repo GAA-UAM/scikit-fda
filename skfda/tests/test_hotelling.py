@@ -13,33 +13,33 @@ class HotellingTests(unittest.TestCase):
         """Test that invalid arguments are rejected in test."""
         fd1 = FDataGrid([[1, 1, 1]])
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError):  # noqa: PT027
             hotelling_test_ind(fd1.to_basis(FourierBasis(n_basis=3)), fd1)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError):  # noqa: PT027
             hotelling_test_ind(fd1, fd1.to_basis(FourierBasis(n_basis=3)))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             hotelling_test_ind(fd1, fd1, n_reps=0)
 
     def test_hotelling_t2_args(self) -> None:
         """Test that invalid arguments are rejected in statistic."""
         fd1 = FDataGrid([[1, 1, 1]])
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError):  # noqa: PT027
             hotelling_t2(fd1.to_basis(FourierBasis(n_basis=3)), fd1)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError):  # noqa: PT027
             hotelling_t2(fd1, fd1.to_basis(FourierBasis(n_basis=3)))
 
     def test_hotelling_t2(self) -> None:
         """Trivial checks for the statistic."""
         fd1 = FDataGrid([[1, 1, 1], [1, 1, 1]])
         fd2 = FDataGrid([[1, 1, 1], [2, 2, 2]])
-        self.assertAlmostEqual(hotelling_t2(fd1, fd1), 0)
-        self.assertAlmostEqual(hotelling_t2(fd1, fd2), 1)
+        self.assertAlmostEqual(hotelling_t2(fd1, fd1), 0)  # noqa: PT009
+        self.assertAlmostEqual(hotelling_t2(fd1, fd2), 1)  # noqa: PT009
 
         fd1 = fd1.to_basis(FourierBasis(n_basis=3))
         fd2 = fd2.to_basis(FourierBasis(n_basis=3))
-        self.assertAlmostEqual(hotelling_t2(fd1, fd1), 0)
-        self.assertAlmostEqual(hotelling_t2(fd1, fd2), 1)
+        self.assertAlmostEqual(hotelling_t2(fd1, fd1), 0)  # noqa: PT009
+        self.assertAlmostEqual(hotelling_t2(fd1, fd2), 1)  # noqa: PT009
 
     def test_hotelling_test(self) -> None:
         """Trivial checks for the test."""
@@ -51,9 +51,9 @@ class HotellingTests(unittest.TestCase):
             return_dist=True,
             random_state=0,
         )
-        self.assertAlmostEqual(t2, 9)
-        self.assertAlmostEqual(pval, 0)
-        self.assertEqual(len(dist), 6)
+        self.assertAlmostEqual(t2, 9)  # noqa: PT009
+        self.assertAlmostEqual(pval, 0)  # noqa: PT009
+        self.assertEqual(len(dist), 6)  # noqa: PT009
         reps = 5
         t2, pval, dist = hotelling_test_ind(
             fd1,
@@ -62,8 +62,8 @@ class HotellingTests(unittest.TestCase):
             n_reps=reps,
             random_state=1,
         )
-        self.assertEqual(len(dist), reps)
+        self.assertEqual(len(dist), reps)  # noqa: PT009
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import functools
 import numbers
-from typing import (
+from typing import (  # noqa: UP035
     TYPE_CHECKING,
     Any,
     Callable,
@@ -26,11 +26,11 @@ import scipy.integrate
 from pandas.api.indexers import check_array_indexer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
-from typing_extensions import Literal, ParamSpec, Protocol
+from typing_extensions import Literal, ParamSpec, Protocol  # noqa: UP035
 
 from ..typing._base import GridPoints, GridPointsLike
 from ..typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt, NDArrayStr
-from ._sklearn_adapter import BaseEstimator
+from ._sklearn_adapter import BaseEstimator  # noqa: TC001
 
 ArrayDTypeT = TypeVar("ArrayDTypeT", bound="np.generic")
 
@@ -41,8 +41,8 @@ if TYPE_CHECKING:
 
     T = TypeVar("T", bound=FData)
 
-    Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
-    Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
+    Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])  # noqa: UP007
+    Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])  # noqa: UP007
     Target = TypeVar("Target", bound=NDArrayInt)
 
 
@@ -54,9 +54,9 @@ _MapAcceptableSelf = TypeVar(
 
 class _MapAcceptable(Protocol, Sized):
 
-    def __getitem__(
+    def __getitem__(  # noqa: PYI019
         self: _MapAcceptableSelf,
-        __key: Union[slice, NDArrayInt],  # noqa: WPS112
+        __key: Union[slice, NDArrayInt],  # noqa: PYI063, UP007, WPS112
     ) -> _MapAcceptableSelf:
         pass
 
@@ -65,12 +65,12 @@ class _MapAcceptable(Protocol, Sized):
         pass
 
 
-_MapAcceptableT = TypeVar(
+_MapAcceptableT = TypeVar(  # noqa: PLC0105
     "_MapAcceptableT",
     bound=_MapAcceptable,
     contravariant=True,
 )
-MapFunctionT = TypeVar("MapFunctionT", covariant=True)
+MapFunctionT = TypeVar("MapFunctionT", covariant=True)  # noqa: PLC0105
 P = ParamSpec("P")
 
 
@@ -90,7 +90,7 @@ class _PairwiseFunction(Protocol[_MapAcceptableT, P, MapFunctionT]):
 
     def __call__(
         self,
-        __arg1: _MapAcceptableT,  # noqa: WPS112
+        __arg1: _MapAcceptableT,  # noqa: PYI063, WPS112
         __arg2: _MapAcceptableT,  # noqa: WPS112
         **kwargs: P.kwargs,  # type: ignore[name-defined]
     ) -> MapFunctionT:
@@ -100,8 +100,8 @@ class _PairwiseFunction(Protocol[_MapAcceptableT, P, MapFunctionT]):
 def _to_grid(
     X: FData,
     y: FData,
-    eval_points: Optional[NDArrayFloat] = None,
-) -> Tuple[FDataGrid, FDataGrid]:
+    eval_points: Optional[NDArrayFloat] = None,  # noqa: UP007
+) -> Tuple[FDataGrid, FDataGrid]:  # noqa: UP006
     """Transform a pair of FDatas in grids to perform calculations."""
     from .. import FDataGrid
     x_is_grid = isinstance(X, FDataGrid)
@@ -164,7 +164,7 @@ def _cartesian_product(
     *,
     flatten: bool = True,
     return_shape: Literal[True],
-) -> Tuple[np.typing.NDArray[ArrayDTypeT], Tuple[int, ...]]:
+) -> Tuple[np.typing.NDArray[ArrayDTypeT], Tuple[int, ...]]:  # noqa: UP006
     pass
 
 
@@ -175,7 +175,7 @@ def _cartesian_product(  # noqa: WPS234
     return_shape: bool = False,
 ) -> (
     np.typing.NDArray[ArrayDTypeT]
-    | Tuple[np.typing.NDArray[ArrayDTypeT], Tuple[int, ...]]
+    | Tuple[np.typing.NDArray[ArrayDTypeT], Tuple[int, ...]]  # noqa: UP006
 ):
     """
     Compute the cartesian product of the axes.
@@ -218,7 +218,7 @@ def _cartesian_product(  # noqa: WPS234
         array([[ 0],
                [ 1]])
     """
-    cartesian = np.stack(np.meshgrid(*axes, indexing='ij'), -1)
+    cartesian = np.stack(np.meshgrid(*axes, indexing='ij'), -1)  # noqa: Q000
 
     shape = cartesian.shape
 
@@ -231,7 +231,7 @@ def _cartesian_product(  # noqa: WPS234
     return cartesian  # type: ignore[no-any-return]
 
 
-def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
+def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:  # noqa: UP007
     """Check if the domain range of two objects is the same."""
     return np.array_equal(fd.domain_range, fd2.domain_range)
 
@@ -240,7 +240,7 @@ def _one_grid_to_points(
     axes: GridPointsLike,
     *,
     dim_domain: int,
-) -> Tuple[NDArrayFloat, Tuple[int, ...]]:
+) -> Tuple[NDArrayFloat, Tuple[int, ...]]:  # noqa: UP006
     """
     Convert a list of ndarrays, one per domain dimension, in the points.
 
@@ -250,8 +250,8 @@ def _one_grid_to_points(
     axes = _to_grid_points(axes)
 
     if len(axes) != dim_domain:
-        raise ValueError(
-            f"Length of axes should be {dim_domain}",
+        raise ValueError(  # noqa: TRY003
+            f"Length of axes should be {dim_domain}",  # noqa: EM102
         )
 
     cartesian, shape = _cartesian_product(axes, return_shape=True)
@@ -267,12 +267,12 @@ class EvaluateMethod(Protocol):
 
     def __call__(
         self,
-        __eval_points: NDArrayFloat,  # noqa: WPS112
-        extrapolation: Optional[ExtrapolationLike],
-        aligned: bool,
+        __eval_points: NDArrayFloat,  # noqa: PYI063, WPS112
+        extrapolation: Optional[ExtrapolationLike],  # noqa: UP007
+        aligned: bool,  # noqa: FBT001
     ) -> NDArrayFloat:
         """Evaluate a function."""
-        pass
+        pass  # noqa: PIE790
 
 
 @overload
@@ -283,7 +283,7 @@ def _evaluate_grid(
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
     aligned: Literal[True] = True,
 ) -> NDArrayFloat:
     pass
@@ -297,7 +297,7 @@ def _evaluate_grid(
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
     aligned: Literal[False],
 ) -> NDArrayFloat:
     pass
@@ -305,26 +305,26 @@ def _evaluate_grid(
 
 @overload
 def _evaluate_grid(
-    axes: Union[GridPointsLike, Iterable[GridPointsLike]],
+    axes: Union[GridPointsLike, Iterable[GridPointsLike]],  # noqa: UP007
     *,
     evaluate_method: EvaluateMethod,
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
     aligned: bool,
 ) -> NDArrayFloat:
     pass
 
 
 def _evaluate_grid(  # noqa: WPS234
-    axes: Union[GridPointsLike, Iterable[GridPointsLike]],
+    axes: Union[GridPointsLike, Iterable[GridPointsLike]],  # noqa: UP007
     *,
     evaluate_method: EvaluateMethod,
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
+    extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
     aligned: bool = True,
 ) -> NDArrayFloat:
     """
@@ -372,22 +372,22 @@ def _evaluate_grid(  # noqa: WPS234
         ValueError: If there are a different number of axes than the domain
             dimension.
 
-    """
+    """  # noqa: D202
 
     # Compute intersection points and resulting shapes
     if aligned:
 
-        axes = cast(GridPointsLike, axes)
+        axes = cast(GridPointsLike, axes)  # noqa: TC006
 
         eval_points, shape = _one_grid_to_points(axes, dim_domain=dim_domain)
 
     else:
 
-        axes_per_sample = cast(Iterable[GridPointsLike], axes)
+        axes_per_sample = cast(Iterable[GridPointsLike], axes)  # noqa: TC006
 
         axes_per_sample = list(axes_per_sample)
 
-        eval_points_tuple, shape_tuple = zip(
+        eval_points_tuple, shape_tuple = zip(  # noqa: B905
             *[
                 _one_grid_to_points(a, dim_domain=dim_domain)
                 for a in axes_per_sample
@@ -395,8 +395,8 @@ def _evaluate_grid(  # noqa: WPS234
         )
 
         if len(eval_points_tuple) != n_samples:
-            raise ValueError(
-                "Should be provided a list of axis per sample",
+            raise ValueError(  # noqa: TRY003
+                "Should be provided a list of axis per sample",  # noqa: EM101
             )
 
         eval_points = np.asarray(eval_points_tuple)
@@ -412,14 +412,14 @@ def _evaluate_grid(  # noqa: WPS234
     if aligned:
 
         res = evaluated.reshape(
-            [n_samples] + list(shape) + [dim_codomain],
+            [n_samples] + list(shape) + [dim_codomain],  # noqa: RUF005
         )
 
     else:
 
         res = np.asarray([
-            r.reshape(list(s) + [dim_codomain])
-            for r, s in zip(evaluated, shape_tuple)
+            r.reshape(list(s) + [dim_codomain])  # noqa: RUF005
+            for r, s in zip(evaluated, shape_tuple)  # noqa: B905
         ])
 
     return res
@@ -427,12 +427,12 @@ def _evaluate_grid(  # noqa: WPS234
 
 def nquad_vec(
     func: Callable[[NDArrayFloat], NDArrayFloat],
-    ranges: Sequence[Tuple[float, float]],
+    ranges: Sequence[Tuple[float, float]],  # noqa: UP006
 ) -> NDArrayFloat:
     """Perform multiple integration of vector valued functions."""
     initial_depth = len(ranges) - 1
 
-    def integrate(*args: Any, depth: int) -> NDArrayFloat:  # noqa: WPS430
+    def integrate(*args: Any, depth: int) -> NDArrayFloat:  # noqa: ANN401, WPS430
 
         if depth == 0:
             f = functools.partial(func, *args)
@@ -449,10 +449,10 @@ def nquad_vec(
 
 def _map_in_batches(
     function: _MapFunction[_MapAcceptableT, P, np.typing.NDArray[ArrayDTypeT]],
-    arguments: Tuple[_MapAcceptableT, ...],
-    indexes: Tuple[NDArrayInt, ...],
-    memory_per_batch: Optional[int] = None,
-    *args: P.args,  # Should be empty
+    arguments: Tuple[_MapAcceptableT, ...],  # noqa: UP006
+    indexes: Tuple[NDArrayInt, ...],  # noqa: UP006
+    memory_per_batch: Optional[int] = None,  # noqa: UP007
+    *args: P.args,  # Should be empty  # noqa: ARG001
     **kwargs: P.kwargs,
 ) -> np.typing.NDArray[ArrayDTypeT]:
     """
@@ -469,18 +469,18 @@ def _map_in_batches(
     memory_per_element = sum(a.nbytes // len(a) for a in arguments)
     n_elements_per_batch_allowed = memory_per_batch // memory_per_element
     if n_elements_per_batch_allowed < 1:
-        raise ValueError("Too few memory allowed for the operation")
+        raise ValueError("Too few memory allowed for the operation")  # noqa: EM101, TRY003
 
     n_indexes = len(indexes[0])
 
     assert all(n_indexes == len(i) for i in indexes)
 
-    batches: List[np.typing.NDArray[ArrayDTypeT]] = []
+    batches: List[np.typing.NDArray[ArrayDTypeT]] = []  # noqa: UP006
 
     for pos in range(0, n_indexes, n_elements_per_batch_allowed):
         batch_args = tuple(
             a[i[pos:pos + n_elements_per_batch_allowed]]
-            for a, i in zip(arguments, indexes)
+            for a, i in zip(arguments, indexes)  # noqa: B905
         )
 
         batches.append(function(*batch_args, **kwargs))
@@ -495,9 +495,9 @@ def _pairwise_symmetric(
         np.typing.NDArray[ArrayDTypeT],
     ],
     arg1: _MapAcceptableT,
-    arg2: Optional[_MapAcceptableT] = None,
-    memory_per_batch: Optional[int] = None,
-    *args: P.args,  # Should be empty
+    arg2: Optional[_MapAcceptableT] = None,  # noqa: UP007
+    memory_per_batch: Optional[int] = None,  # noqa: UP007
+    *args: P.args,  # Should be empty  # noqa: ARG001
     **kwargs: P.kwargs,
 ) -> np.typing.NDArray[ArrayDTypeT]:
     """Compute pairwise a commutative function."""
@@ -544,16 +544,16 @@ def _pairwise_symmetric(
     return np.reshape(vec, (dim1, dim2))
 
 
-def _int_to_real(array: Union[NDArrayInt, NDArrayFloat]) -> NDArrayFloat:
+def _int_to_real(array: Union[NDArrayInt, NDArrayFloat]) -> NDArrayFloat:  # noqa: UP007
     """Convert integer arrays to floating point."""
     if np.issubdtype(array.dtype, np.integer):
         return array.astype(np.float64)
 
     assert np.issubdtype(array.dtype, np.floating)
-    return cast(NDArrayFloat, array)
+    return cast(NDArrayFloat, array)  # noqa: TC006
 
 
-def _check_array_key(array: NDArrayAny, key: Any) -> Any:
+def _check_array_key(array: NDArrayAny, key: Any) -> Any:  # noqa: ANN401
     """Check a getitem key."""
     key = check_array_indexer(array, key)
     if isinstance(key, tuple):
@@ -568,14 +568,14 @@ def _check_array_key(array: NDArrayAny, key: Any) -> Any:
             key = len(array) + key
 
         if not 0 <= key < len(array):
-            raise IndexError("index out of bounds")
+            raise IndexError("index out of bounds")  # noqa: EM101, TRY003
 
         return slice(key, key + 1)
 
     return key
 
 
-def _check_estimator(estimator: Type[BaseEstimator]) -> None:
+def _check_estimator(estimator: Type[BaseEstimator]) -> None:  # noqa: UP006
     from sklearn.utils.estimator_checks import (
         check_get_params_invariance,
         check_set_params,
@@ -589,7 +589,7 @@ def _check_estimator(estimator: Type[BaseEstimator]) -> None:
 
 def _classifier_get_classes(
     y: NDArrayStr | NDArrayInt,
-) -> Tuple[NDArrayStr | NDArrayInt, NDArrayInt]:
+) -> Tuple[NDArrayStr | NDArrayInt, NDArrayInt]:  # noqa: UP006
 
     check_classification_targets(y)
 
@@ -598,10 +598,10 @@ def _classifier_get_classes(
 
     classes = le.classes_
 
-    if classes.size < 2:
-        raise ValueError(
-            f'The number of classes has to be greater than'
-            f'one; got {classes.size} class',
+    if classes.size < 2:  # noqa: PLR2004
+        raise ValueError(  # noqa: TRY003
+            f'The number of classes has to be greater than'  # noqa: EM102, Q000
+            f'one; got {classes.size} class',  # noqa: Q000
         )
     return classes, y_ind
 

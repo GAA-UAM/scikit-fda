@@ -1,16 +1,16 @@
 """Tests for DiffusionMap."""
-from typing import Tuple
+from typing import Tuple  # noqa: I001, UP035
 
 import numpy as np
 import pytest
 from sklearn import datasets
 
-from skfda import FData, FDataBasis, FDataGrid
+from skfda import FData, FDataBasis, FDataGrid  # noqa: F401
 from skfda.misc.covariances import Gaussian
-from skfda.misc.metrics import PairwiseMetric, l1_distance, l2_distance
+from skfda.misc.metrics import PairwiseMetric, l1_distance, l2_distance  # noqa: F401
 from skfda.preprocessing.dim_reduction import DiffusionMap
 from skfda.representation.basis import MonomialBasis
-from skfda.typing._numpy import NDArrayFloat
+from skfda.typing._numpy import NDArrayFloat  # noqa: F401
 
 
 def _discretize_fdatabasis(fd_basis: FDataBasis) -> FDataGrid:
@@ -34,7 +34,7 @@ dummy_fdata = FDataGrid(data_matrix=[[0.9]])
 )
 def data_grid_param_check(
     request: DiffusionMap,
-) -> Tuple[DiffusionMap, FDataGrid]:
+) -> Tuple[DiffusionMap, FDataGrid]:  # noqa: UP006
     """Fixture for testing parameter checks."""
     return request.param, dummy_fdata
 
@@ -81,7 +81,7 @@ def precalculated_fdatagrid_example(
 )
 def precalculated_fdatabasis_example(
     request: FDataBasis,
-) -> Tuple[FDataBasis, FDataGrid, FDataBasis]:
+) -> Tuple[FDataBasis, FDataGrid, FDataBasis]:  # noqa: UP006
     """Load FDataBasis example.
 
     Fixture for loading a prealculated FDataBasis exmaple and discretizing
@@ -125,7 +125,7 @@ def moons_functional_dataset() -> FDataGrid:
 ##############################################################################
 
 
-def test_param_check(data_grid_param_check: Tuple[DiffusionMap, FDataGrid]) -> None:
+def test_param_check(data_grid_param_check: Tuple[DiffusionMap, FDataGrid]) -> None:  # noqa: E501, UP006
     """Check that invalid parameters in fit raise exception."""
     fdm, fd = data_grid_param_check
 
@@ -183,7 +183,7 @@ def test_precalculated_grid_example(
 
 
 def test_precalculated_basis_example(
-    precalculated_fdatabasis_example: Tuple[FDataBasis, FDataGrid, FDataBasis],
+    precalculated_fdatabasis_example: Tuple[FDataBasis, FDataGrid, FDataBasis],  # noqa: UP006
 ) -> None:
     """Compare the embedding in basis and grid against the fda package.
 
@@ -250,7 +250,7 @@ def test_precalculated_basis_example(
 
 
 def test_nystrom(
-    precalculated_fdatabasis_example: Tuple[FDataBasis, FDataGrid, FDataBasis],
+    precalculated_fdatabasis_example: Tuple[FDataBasis, FDataGrid, FDataBasis],  # noqa: UP006
 ) -> None:
     """Test Nystrom  method.
 
@@ -316,7 +316,7 @@ def test_moons_dataset(
     
     The embeddings were computing using this method. This test serves
     as a consistency test of the FDM method towards future dependency updates.
-    """
+    """  # noqa: W293
     fdata = moons_functional_dataset
     alpha, sigma = (1.0, 2.5)
     fdm = DiffusionMap(

@@ -1,7 +1,7 @@
 """Tests of compatibility between numpy ufuncs and FDataGrid."""
 
 import unittest
-from typing import Any, Callable, Protocol, TypeVar
+from typing import Any, Callable, Protocol, TypeVar  # noqa: UP035
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ T = TypeVar("T", "np.typing.NDArray[Any]", FDataGrid)
 
 class _MonaryUfuncProtocol(Protocol):
 
-    def __call__(self, __arg: T) -> T:  # noqa: WPS112
+    def __call__(self, __arg: T) -> T:  # noqa: PYI063, WPS112
         pass
 
 
@@ -27,7 +27,7 @@ class _MonaryUfuncProtocol(Protocol):
     np.log10,
     np.log2,
 ])
-def monary(request: Any) -> Any:
+def monary(request: Any) -> Any:  # noqa: ANN401
     """
     Fixture providing the monary function to validate.
 
@@ -87,7 +87,7 @@ class TestOperators(unittest.TestCase):
         X = FDataGrid([[1, 2, 3], [4, 5, 6]])
         arr = np.array([1, 2])
 
-        self.assertTrue((arr + X).equals((X + arr)))
+        self.assertTrue((arr + X).equals((X + arr)))  # noqa: PT009, UP034
 
     def test_commutativity_basis(self) -> None:
         """Test that operations with numpy arrays for basis commute."""
@@ -95,6 +95,6 @@ class TestOperators(unittest.TestCase):
         arr = np.array([1, 2])
         basis = FourierBasis(n_basis=5)
 
-        X_basis = X.to_basis(basis)
+        X_basis = X.to_basis(basis)  # noqa: N806
 
-        self.assertTrue((arr * X_basis).equals((X_basis * arr)))
+        self.assertTrue((arr * X_basis).equals((X_basis * arr)))  # noqa: PT009, UP034

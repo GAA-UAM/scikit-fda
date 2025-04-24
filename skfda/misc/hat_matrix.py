@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-  # noqa: UP009
 
 """Hat Matrix.
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import abc
 import math
-from typing import Callable, Final, TypeVar, Union, overload
+from typing import Callable, Final, TypeVar, Union, overload  # noqa: UP035
 
 import numpy as np
 
@@ -21,8 +21,8 @@ from ..representation.basis import FDataBasis
 from ..typing._numpy import NDArrayFloat
 from . import kernels
 
-Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
-Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])
+Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])  # noqa: UP007
+Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])  # noqa: UP007
 
 DEFAULT_BANDWIDTH_PERCENTILE: Final = 15
 
@@ -39,9 +39,9 @@ class HatMatrix(
         :class:`~skfda.misc.hat_matrix.NadarayaWatsonHatMatrix`
         :class:`~skfda.misc.hat_matrix.LocalLinearRegressionHatMatrix`
         :class:`~skfda.misc.hat_matrix.KNeighborsHatMatrix`
-    """
+    """  # noqa: D405
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
         kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.normal,
@@ -53,7 +53,7 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input,
+        X_train: Input,  # noqa: N803
         X: Input,
         y_train: None = None,
         weights: NDArrayFloat | None = None,
@@ -66,7 +66,7 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input,
+        X_train: Input,  # noqa: N803
         X: Input,
         y_train: Prediction | None = None,
         weights: NDArrayFloat | None = None,
@@ -78,8 +78,8 @@ class HatMatrix(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Input,
-        X: Input,
+        X_train: Input,  # noqa: ARG002, N803
+        X: Input,  # noqa: ARG002
         y_train: NDArrayFloat | FData | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
@@ -171,9 +171,9 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
         bandwidth: float | None = None,
@@ -266,9 +266,9 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
         bandwidth: float | None = None,
@@ -282,7 +282,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | NDArrayFloat,
+        X_train: FData | NDArrayFloat,  # noqa: N803
         X: FData | NDArrayFloat,
         y_train: None = None,
         weights: NDArrayFloat | None = None,
@@ -295,7 +295,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | NDArrayFloat,
+        X_train: FData | NDArrayFloat,  # noqa: N803
         X: FData | NDArrayFloat,
         y_train: Prediction | None = None,
         weights: NDArrayFloat | None = None,
@@ -307,7 +307,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | NDArrayFloat,
+        X_train: FData | NDArrayFloat,  # noqa: N803
         X: FData | NDArrayFloat,
         y_train: NDArrayFloat | FData | None = None,
         weights: NDArrayFloat | None = None,
@@ -346,7 +346,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
                 isinstance(X_train, FDataBasis)
                 and isinstance(X, FDataBasis)
             ):
-                raise ValueError("Only FDataBasis is supported for now.")
+                raise ValueError("Only FDataBasis is supported for now.")  # noqa: EM101, TRY003, TRY004
 
             m1 = X_train.coefficients
             m2 = X.coefficients
@@ -363,7 +363,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
         # Subtract previous matrices obtaining a 3D matrix
         # The i-th element contains the matrix X_train - X[i]
-        C = m1 - m2[:, np.newaxis]
+        C = m1 - m2[:, np.newaxis]  # noqa: N806
 
         # Inner product matrix only is applicable in regression
         if isinstance(X_train, FDataBasis):
@@ -371,11 +371,11 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
             # Calculate new coefficients taking into account cross-products
             # if the basis is orthonormal, C would not change
-            C = C @ inner_product_matrix  # noqa: WPS350
+            C = C @ inner_product_matrix  # noqa: N806, WPS350
 
         # Adding a column of ones in the first position of all matrices
         dims = (C.shape[0], C.shape[1], 1)
-        C = np.concatenate((np.ones(dims), C), axis=-1)
+        C = np.concatenate((np.ones(dims), C), axis=-1)  # noqa: N806
 
         return self._solve_least_squares(
             delta_x=delta_x,
@@ -393,20 +393,20 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         bandwidth: float,
     ) -> NDArrayFloat:
 
-        W = np.sqrt(self.kernel(delta_x / bandwidth))
+        W = np.sqrt(self.kernel(delta_x / bandwidth))  # noqa: N806
 
         # A x = b
         # Where x = (a, b_1, ..., b_J).
-        A = (coefs.T * W.T).T
-        b = np.einsum('ij, j... -> ij...', W, y_train)
+        A = (coefs.T * W.T).T  # noqa: N806
+        b = np.einsum('ij, j... -> ij...', W, y_train)  # noqa: Q000
 
         # For Ax = b calculates x that minimize the square error
         # From https://stackoverflow.com/questions/42534237/broadcasted-lstsq-least-squares  # noqa: E501
-        u, s, vT = np.linalg.svd(A, full_matrices=False)
+        u, s, vT = np.linalg.svd(A, full_matrices=False)  # noqa: N806
 
-        uTb = np.einsum('ijk, ij...->ik...', u, b)
-        uTbs = (uTb.T / s.T).T
-        x = np.einsum('ijk,ij...->ik...', vT, uTbs)
+        uTb = np.einsum('ijk, ij...->ik...', u, b)  # noqa: Q000, N806
+        uTbs = (uTb.T / s.T).T  # noqa: N806
+        x = np.einsum('ijk,ij...->ik...', vT, uTbs)  # noqa: Q000
 
         return x[:, 0]  # type: ignore[no-any-return]
 
@@ -426,7 +426,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         s2 = np.sum(k * delta_x ** 2, axis=1, keepdims=True)  # S_n_2
         b = (k * (s2 - delta_x * s1))  # b_i(x_j)
 
-        return b  # type: ignore[no-any-return] # noqa: WPS331
+        return b  # type: ignore[no-any-return]  # noqa: RET504, WPS331
 
 
 class KNeighborsHatMatrix(HatMatrix):
@@ -465,9 +465,9 @@ class KNeighborsHatMatrix(HatMatrix):
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
         n_neighbors: int | None = None,
@@ -496,7 +496,7 @@ class KNeighborsHatMatrix(HatMatrix):
         )
 
         if n_neighbors <= 0:
-            raise ValueError('h must be greater than 0')
+            raise ValueError('h must be greater than 0')  # noqa: EM101, Q000, TRY003
 
         # Tolerance to avoid points landing outside the kernel window due to
         # computation error

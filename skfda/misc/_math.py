@@ -5,8 +5,8 @@ package. FDataBasis and FDataGrid.
 
 """
 import warnings
-from builtins import isinstance
-from typing import Any, Callable, Optional, TypeVar, Union, cast
+from builtins import isinstance  # noqa: A004, UP029
+from typing import Any, Callable, Optional, TypeVar, Union, cast  # noqa: UP035
 
 import multimethod
 import numpy as np
@@ -21,7 +21,7 @@ from .validation import check_fdata_same_dimensions
 
 Vector = TypeVar(
     "Vector",
-    bound=Union[NDArrayFloat, Basis, Callable[[NDArrayFloat], NDArrayFloat]],
+    bound=Union[NDArrayFloat, Basis, Callable[[NDArrayFloat], NDArrayFloat]],  # noqa: UP007
 )
 
 
@@ -39,13 +39,13 @@ def sqrt(fdatagrid: FDataGrid) -> FDataGrid:
         FDataGrid object whose elements are the square roots of the original.
 
     """
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function sqrt is deprecated. Use numpy.sqrt with a FDataGrid "
         "parameter instead.",
         DeprecationWarning,
     )
 
-    return cast(FDataGrid, np.sqrt(fdatagrid))
+    return cast(FDataGrid, np.sqrt(fdatagrid))  # noqa: TC006
 
 
 def absolute(fdatagrid: FDataGrid) -> FDataGrid:
@@ -63,16 +63,16 @@ def absolute(fdatagrid: FDataGrid) -> FDataGrid:
             original.
 
     """
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function absolute is deprecated. Use numpy.absolute with a FDataGrid "
         "parameter instead.",
         DeprecationWarning,
     )
 
-    return cast(FDataGrid, np.absolute(fdatagrid))
+    return cast(FDataGrid, np.absolute(fdatagrid))  # noqa: TC006
 
 
-def round(  # noqa: WPS125
+def round(  # noqa: A001, WPS125
     fdatagrid: FDataGrid,
     decimals: int = 0,
 ) -> FDataGrid:
@@ -90,13 +90,13 @@ def round(  # noqa: WPS125
         FDataGrid object whose elements are rounded.
 
     """
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function round is deprecated. Use numpy.round with a FDataGrid "
         "parameter instead.",
         DeprecationWarning,
     )
 
-    return cast(FDataGrid, np.round(fdatagrid, decimals))
+    return cast(FDataGrid, np.round(fdatagrid, decimals))  # noqa: TC006
 
 
 def exp(fdatagrid: FDataGrid) -> FDataGrid:
@@ -114,13 +114,13 @@ def exp(fdatagrid: FDataGrid) -> FDataGrid:
             the elements of the original.
 
     """
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function exp is deprecated. Use numpy.exp with a FDataGrid "
         "parameter instead.",
         DeprecationWarning,
     )
 
-    return cast(FDataGrid, np.exp(fdatagrid))
+    return cast(FDataGrid, np.exp(fdatagrid))  # noqa: TC006
 
 
 def log(fdatagrid: FDataGrid) -> FDataGrid:
@@ -137,13 +137,13 @@ def log(fdatagrid: FDataGrid) -> FDataGrid:
         FDataGrid object whose elements are the logarithm of the original.
 
     """
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function log is deprecated. Use numpy.log with a FDataGrid "
         "parameter instead.",
         DeprecationWarning,
     )
 
-    return cast(FDataGrid, np.log(fdatagrid))
+    return cast(FDataGrid, np.log(fdatagrid))  # noqa: TC006
 
 
 def log10(fdatagrid: FDataGrid) -> FDataGrid:
@@ -161,13 +161,13 @@ def log10(fdatagrid: FDataGrid) -> FDataGrid:
             original.
 
     """
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function log10 is deprecated. Use numpy.log10 with a FDataGrid "
         "parameter instead.",
         DeprecationWarning,
     )
 
-    return cast(FDataGrid, np.log10(fdatagrid))
+    return cast(FDataGrid, np.log10(fdatagrid))  # noqa: TC006
 
 
 def log2(fdatagrid: FDataGrid) -> FDataGrid:
@@ -185,13 +185,13 @@ def log2(fdatagrid: FDataGrid) -> FDataGrid:
             original.
 
     """
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function log2 is deprecated. Use numpy.log2 with a FDataGrid "
         "parameter instead.",
         DeprecationWarning,
     )
 
-    return cast(FDataGrid, np.log2(fdatagrid))
+    return cast(FDataGrid, np.log2(fdatagrid))  # noqa: TC006
 
 
 def cumsum(fdatagrid: FDataGrid) -> FDataGrid:
@@ -216,8 +216,8 @@ def inner_product(
     arg2: Vector,
     *,
     _matrix: bool = False,
-    _domain_range: Optional[DomainRange] = None,
-    **kwargs: Any,
+    _domain_range: Optional[DomainRange] = None,  # noqa: UP007
+    **kwargs: Any,  # noqa: ANN401, ARG001
 ) -> NDArrayFloat:
     r"""
     Return the usual (:math:`L_2`) inner product.
@@ -326,14 +326,14 @@ def inner_product(
             _matrix=_matrix,
             _domain_range=_domain_range,
         )
-    elif isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
+    elif isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):  # noqa: RET505
         return (  # type: ignore[no-any-return]
-            np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
+            np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)  # noqa: Q000
             if _matrix else (arg1 * arg2).sum(axis=-1)
         )
 
-    raise ValueError(
-        "Cannot compute inner product between "
+    raise ValueError(  # noqa: TRY003
+        "Cannot compute inner product between "  # noqa: EM102
         f"{type(arg1)} and {type(arg2)}",
     )
 
@@ -350,7 +350,7 @@ def _inner_product_fdatagrid(
         arg1.grid_points,
         arg2.grid_points,
     ):
-        raise ValueError("Sample points for both objects must be equal")
+        raise ValueError("Sample points for both objects must be equal")  # noqa: EM101, TRY003
 
     d1 = arg1.data_matrix
     d2 = arg2.data_matrix
@@ -370,9 +370,9 @@ def _inner_product_fdatagrid(
 
         return np.einsum(  # type: ignore[call-overload, no-any-return]
             d1,
-            [0] + einsum_broadcast_list,
+            [0] + einsum_broadcast_list,  # noqa: RUF005
             d2,
-            [1] + einsum_broadcast_list,
+            [1] + einsum_broadcast_list,  # noqa: RUF005
             [0, 1],
         )
 
@@ -385,20 +385,20 @@ def _inner_product_fdatagrid(
 @inner_product.register(Basis, FDataBasis)
 @inner_product.register(Basis, Basis)
 def _inner_product_fdatabasis(
-    arg1: Union[FDataBasis, Basis],
-    arg2: Union[FDataBasis, Basis],
+    arg1: Union[FDataBasis, Basis],  # noqa: UP007
+    arg2: Union[FDataBasis, Basis],  # noqa: UP007
     *,
     _matrix: bool = False,
-    _domain_range: Optional[DomainRange] = None,
-    inner_product_matrix: Optional[NDArrayFloat] = None,
+    _domain_range: Optional[DomainRange] = None,  # noqa: UP007
+    inner_product_matrix: Optional[NDArrayFloat] = None,  # noqa: UP007
     force_numerical: bool = False,
 ) -> NDArrayFloat:
 
     if not _same_domain(arg1, arg2):
-        raise ValueError("Both Objects should have the same domain_range")
+        raise ValueError("Both Objects should have the same domain_range")  # noqa: EM101, TRY003
 
     if _domain_range and not np.array_equal(arg1.domain_range, _domain_range):
-        raise ValueError("_domain_range should be the same as arg objects")
+        raise ValueError("_domain_range should be the same as arg objects")  # noqa: EM101, TRY003
 
     if isinstance(arg1, Basis):
         arg1 = arg1.to_basis()
@@ -439,7 +439,7 @@ def _inner_product_fdatabasis(
 
         if _matrix:
             return np.einsum(  # type: ignore[no-any-return]
-                'nb,bc,mc->nm',
+                'nb,bc,mc->nm',  # noqa: Q000
                 coef1,
                 inner_product_matrix,
                 coef2,
@@ -459,7 +459,7 @@ def _inner_product_integrate(
     arg2: Callable[[NDArrayFloat], NDArrayFloat],
     *,
     _matrix: bool = False,
-    _domain_range: Optional[DomainRange] = None,
+    _domain_range: Optional[DomainRange] = None,  # noqa: UP007
 ) -> NDArrayFloat:
 
     domain_range: DomainRange
@@ -469,7 +469,7 @@ def _inner_product_integrate(
             arg1.domain_range,
             arg2.domain_range,
         ):
-            raise ValueError("Domain range for both objects must be equal")
+            raise ValueError("Domain range for both objects must be equal")  # noqa: EM101, TRY003
 
         domain_range = arg1.domain_range
         len_arg1 = len(arg1)
@@ -489,16 +489,16 @@ def _inner_product_integrate(
 
         try:
             f1 = arg1(f_args)[:, 0, :]
-        except Exception:
+        except Exception:  # noqa: BLE001
             f1 = arg1(f_args)
 
         try:
             f2 = arg2(f_args)[:, 0, :]
-        except Exception:
+        except Exception:  # noqa: BLE001
             f2 = arg2(f_args)
 
         if _matrix:
-            ret = np.einsum('n...,m...->nm...', f1, f2)
+            ret = np.einsum('n...,m...->nm...', f1, f2)  # noqa: Q000
             return ret.reshape(  # type: ignore[no-any-return]
                 (-1,) + ret.shape[2:],
             )
@@ -520,8 +520,8 @@ def _inner_product_integrate(
 
 def inner_product_matrix(
     arg1: Vector,
-    arg2: Optional[Vector] = None,
-    **kwargs: Any,
+    arg2: Optional[Vector] = None,  # noqa: UP007
+    **kwargs: Any,  # noqa: ANN401
 ) -> NDArrayFloat:
     """
     Return the inner product matrix between is arguments.
@@ -538,7 +538,7 @@ def inner_product_matrix(
     See also:
         :func:`inner_product`
 
-    """
+    """  # noqa: D405
     if isinstance(arg1, Basis):
         arg1 = arg1.to_basis()
     if isinstance(arg2, Basis):
@@ -663,7 +663,7 @@ def cosine_similarity(
 
 def cosine_similarity_matrix(
     arg1: Vector,
-    arg2: Optional[Vector] = None,
+    arg2: Optional[Vector] = None,  # noqa: UP007
 ) -> NDArrayFloat:
     """
     Return the cosine similarity matrix between is arguments.
@@ -679,7 +679,7 @@ def cosine_similarity_matrix(
     See also:
         :func:`cosine_similarity`
 
-    """
+    """  # noqa: D405
     inner_matrix = inner_product_matrix(arg1, arg2)
 
     if arg2 is None or arg2 is arg1:

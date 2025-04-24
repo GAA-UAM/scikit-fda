@@ -1,8 +1,8 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import warnings
 from abc import abstractmethod
-from typing import Any, Generic, Literal, Optional, Tuple, TypeVar, Union, cast
+from typing import Any, Generic, Literal, Optional, Tuple, TypeVar, Union, cast  # noqa: UP035
 
 import numpy as np
 import scipy
@@ -34,18 +34,18 @@ def _power_solver(
     return t
 
 
-def _calculate_weights(
+def _calculate_weights(  # noqa: PLR0913
     X: NDArrayFloat,
-    Y: NDArrayFloat,
-    G_ww: NDArrayFloat,
-    G_xw: NDArrayFloat,
-    G_cc: NDArrayFloat,
-    G_yc: NDArrayFloat,
-    L_X_inv: NDArrayFloat,
-    L_Y_inv: NDArrayFloat,
+    Y: NDArrayFloat,  # noqa: N803
+    G_ww: NDArrayFloat,  # noqa: N803
+    G_xw: NDArrayFloat,  # noqa: N803
+    G_cc: NDArrayFloat,  # noqa: N803
+    G_yc: NDArrayFloat,  # noqa: N803
+    L_X_inv: NDArrayFloat,  # noqa: N803
+    L_Y_inv: NDArrayFloat,  # noqa: N803
     tol: float,
     max_iter: int,
-) -> Tuple[NDArrayFloat, NDArrayFloat]:
+) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
     """
     Calculate the weights for the PLS algorithm.
 
@@ -85,10 +85,10 @@ def _calculate_weights(
             The X block weights.
         - c: (n_targets, 1)
             The Y block weights.
-    """
+    """  # noqa: D411
     X = X @ G_xw @ L_X_inv.T
-    Y = Y @ G_yc @ L_Y_inv.T
-    S = X.T @ Y
+    Y = Y @ G_yc @ L_Y_inv.T  # noqa: N806
+    S = X.T @ Y  # noqa: N806
     w = _power_solver(
         S @ S.T,
         tol=tol,
@@ -115,7 +115,7 @@ def _calculate_weights(
 
 BlockType = TypeVar(
     "BlockType",
-    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
+    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],  # noqa: UP007
 )
 
 
@@ -207,7 +207,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
         data: BlockType,
     ) -> NDArrayFloat:
         """Transform from the data space to the component space."""
-        pass
+        pass  # noqa: PIE790
 
     @abstractmethod
     def inverse_transform(
@@ -215,7 +215,7 @@ class _FPLSBlock(Generic[BlockType]):  # noqa: WPS230
         components: NDArrayFloat,
     ) -> BlockType:
         """Transform from the component space to the data space."""
-        pass
+        pass  # noqa: PIE790
 
     def get_penalty_matrix(self) -> NDArrayFloat:
         """Return the penalty matrix."""
@@ -250,7 +250,7 @@ class _FPLSBlockMultivariate(_FPLSBlock[NDArrayFloat]):
     def _to_block_type(
         self,
         nipals_matrix: NDArrayFloat,
-        title: str,
+        title: str,  # noqa: ARG002
     ) -> NDArrayFloat:
         return nipals_matrix.T
 
@@ -280,8 +280,8 @@ class _FPLSBlockBasis(_FPLSBlock[FDataBasis]):
         self,
         data: FDataBasis,
         label: str,
-        regularization: Optional[L2Regularization[Any]],
-        weights_basis: Optional[Basis],
+        regularization: Optional[L2Regularization[Any]],  # noqa: UP007
+        weights_basis: Optional[Basis],  # noqa: UP007
     ) -> None:
         """Initialize the data of a basis block."""
         self.label = label
@@ -366,8 +366,8 @@ class _FPLSBlockGrid(_FPLSBlock[FDataGrid]):
         self,
         data: FDataGrid,
         label: str,
-        integration_weights: Optional[np.ndarray],  # type: ignore[type-arg]
-        regularization: Optional[L2Regularization[Any]],
+        integration_weights: Optional[np.ndarray],  # type: ignore[type-arg]  # noqa: UP007
+        regularization: Optional[L2Regularization[Any]],  # noqa: UP007
     ) -> None:
         """Initialize the data of a grid block."""
         self.label = label
@@ -459,15 +459,15 @@ def _fpls_block_factory(
 ) -> _FPLSBlock[BlockType]:
     if isinstance(data, np.ndarray):
         return cast(
-            _FPLSBlock[BlockType],
+            _FPLSBlock[BlockType],  # noqa: TC006
             _FPLSBlockMultivariate(
                 data=data,
                 label=label,
             ),
         )
-    elif isinstance(data, FDataBasis):
+    elif isinstance(data, FDataBasis):  # noqa: RET505
         return cast(
-            _FPLSBlock[BlockType],
+            _FPLSBlock[BlockType],  # noqa: TC006
             _FPLSBlockBasis(
                 data=data,
                 label=label,
@@ -477,7 +477,7 @@ def _fpls_block_factory(
         )
     elif isinstance(data, FDataGrid):
         return cast(
-            _FPLSBlock[BlockType],
+            _FPLSBlock[BlockType],  # noqa: TC006
             _FPLSBlockGrid(
                 data=data,
                 label=label,
@@ -486,16 +486,16 @@ def _fpls_block_factory(
             ),
         )
 
-    raise TypeError("Invalid type for data")
+    raise TypeError("Invalid type for data")  # noqa: EM101, TRY003
 
 
 InputTypeX = TypeVar(
     "InputTypeX",
-    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
+    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],  # noqa: UP007
 )
 InputTypeY = TypeVar(
     "InputTypeY",
-    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
+    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],  # noqa: UP007
 )
 
 DeflationMode = Literal["reg", "can"]
@@ -554,15 +554,15 @@ class FPLS(  # noqa: WPS230
         self,
         n_components: int | None = None,
         *,
-        regularization_X: L2Regularization[InputTypeX] | None = None,
-        regularization_Y: L2Regularization[InputTypeY] | None = None,
-        component_basis_X: Basis | None = None,
-        component_basis_Y: Basis | None = None,
+        regularization_X: L2Regularization[InputTypeX] | None = None,  # noqa: N803
+        regularization_Y: L2Regularization[InputTypeY] | None = None,  # noqa: N803
+        component_basis_X: Basis | None = None,  # noqa: N803
+        component_basis_Y: Basis | None = None,  # noqa: N803
         tol: float = 1e-6,
         max_iter: int = 500,
         _deflation_mode: DeflationMode = "can",
-        _integration_weights_X: NDArrayFloat | None = None,
-        _integration_weights_Y: NDArrayFloat | None = None,
+        _integration_weights_X: NDArrayFloat | None = None,  # noqa: N803
+        _integration_weights_Y: NDArrayFloat | None = None,  # noqa: N803
     ) -> None:
         self.n_components = n_components
         self._integration_weights_X = _integration_weights_X
@@ -575,7 +575,7 @@ class FPLS(  # noqa: WPS230
         self.tol = tol
         self.max_iter = max_iter
 
-    def _initialize_blocks(self, X: InputTypeX, Y: InputTypeY) -> None:
+    def _initialize_blocks(self, X: InputTypeX, Y: InputTypeY) -> None:  # noqa: N803
         self._x_block = _fpls_block_factory(
             data=X,
             label="X",
@@ -594,21 +594,21 @@ class FPLS(  # noqa: WPS230
     # Ignore too many local variables
     def _perform_nipals(self) -> None:  # noqa: WPS210
         X = self._x_block.data_matrix
-        Y = self._y_block.data_matrix
+        Y = self._y_block.data_matrix  # noqa: N806
         X = X - np.mean(X, axis=0)
-        Y = Y - np.mean(Y, axis=0)
+        Y = Y - np.mean(Y, axis=0)  # noqa: N806
 
         if len(Y.shape) == 1:
-            Y = Y[:, np.newaxis]
+            Y = Y[:, np.newaxis]  # noqa: N806
 
         # Store the matrices as list of columns
-        W, C = [], []
-        T, U = [], []
-        P, Q = [], []
+        W, C = [], []  # noqa: N806
+        T, U = [], []  # noqa: N806
+        P, Q = [], []  # noqa: N806
 
         # Calculate the penalty matrices in advance
-        L_X_inv = self._x_block.get_cholesky_inv_penalty_matrix()
-        L_Y_inv = self._y_block.get_cholesky_inv_penalty_matrix()
+        L_X_inv = self._x_block.get_cholesky_inv_penalty_matrix()  # noqa: N806
+        L_Y_inv = self._y_block.get_cholesky_inv_penalty_matrix()  # noqa: N806
 
         # Determine some tolerances to stop the algorithm
         x_epsilon = (
@@ -665,7 +665,7 @@ class FPLS(  # noqa: WPS230
             )
 
             X = X - np.outer(t, p)
-            Y = Y - np.outer(y_proyection, q)
+            Y = Y - np.outer(y_proyection, q)  # noqa: N806
 
             W.append(w)
             C.append(c)
@@ -716,8 +716,8 @@ class FPLS(  # noqa: WPS230
                 )
 
             if self.n_components > range_upper_bound:
-                raise ValueError(
-                    f"n_components must be less or equal "
+                raise ValueError(  # noqa: TRY003
+                    f"n_components must be less or equal "  # noqa: EM102
                     f"than {range_upper_bound}",
                 )
 
@@ -756,7 +756,7 @@ class FPLS(  # noqa: WPS230
         self,
         X: InputTypeX,
         y: InputTypeY | None = None,
-    ) -> NDArrayFloat | Tuple[NDArrayFloat, NDArrayFloat]:
+    ) -> NDArrayFloat | Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         """
         Apply the dimension reduction learned on the train data.
 
@@ -802,7 +802,7 @@ class FPLS(  # noqa: WPS230
 
     def transform_y(
         self,
-        Y: InputTypeY,
+        Y: InputTypeY,  # noqa: N803
     ) -> NDArrayFloat:
         """
         Apply the dimension reduction learned on the train data.
@@ -822,8 +822,8 @@ class FPLS(  # noqa: WPS230
     def inverse_transform(
         self,
         X: NDArrayFloat,
-        Y: NDArrayFloat | None = None,
-    ) -> InputTypeX | Tuple[InputTypeX, InputTypeY]:
+        Y: NDArrayFloat | None = None,  # noqa: N803
+    ) -> InputTypeX | Tuple[InputTypeX, InputTypeY]:  # noqa: UP006
         """
         Transform data back to its original space.
 
@@ -869,7 +869,7 @@ class FPLS(  # noqa: WPS230
 
     def inverse_transform_y(
         self,
-        Y: NDArrayFloat,
+        Y: NDArrayFloat,  # noqa: N803
     ) -> InputTypeY:
         """
         Transform Y data back to its original space.

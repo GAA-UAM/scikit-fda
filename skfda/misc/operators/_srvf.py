@@ -7,8 +7,8 @@ import scipy.integrate
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation import FDataGrid
-from ...representation.basis import Basis
-from ...typing._numpy import ArrayLike
+from ...representation.basis import Basis  # noqa: TC001
+from ...typing._numpy import ArrayLike  # noqa: TC001
 from ..validation import check_fdata_dimensions
 from ._operators import Operator
 
@@ -98,23 +98,23 @@ class SRSF(
         >>> zero.data_matrix.flatten().round(3)
         array([ 0.,  0.,  0., ..., -0., -0., -0.], shape=(1500,))
 
-    """
+    """  # noqa: W291
 
     def __init__(
         self,
         *,
-        output_points: Optional[ArrayLike] = None,
-        initial_value: Optional[float] = None,
-        method: Optional[Basis] = None,
+        output_points: Optional[ArrayLike] = None,  # noqa: UP007
+        initial_value: Optional[float] = None,  # noqa: UP007
+        method: Optional[Basis] = None,  # noqa: UP007
     ) -> None:
         self.output_points = output_points
         self.initial_value = initial_value
         self.method = method
 
-    def __call__(self, vector: FDataGrid) -> FDataGrid:  # noqa: D102
+    def __call__(self, vector: FDataGrid) -> FDataGrid:  # noqa: D102, RUF100
         return self.fit_transform(vector)
 
-    def fit(self, X: FDataGrid, y: object = None) -> SRSF:
+    def fit(self, X: FDataGrid, y: object = None) -> SRSF:  # noqa: ARG002
         """
         Return self. This transformer does not need to be fitted.
 
@@ -128,7 +128,7 @@ class SRSF(
         """
         return self
 
-    def transform(self, X: FDataGrid, y: object = None) -> FDataGrid:
+    def transform(self, X: FDataGrid, y: object = None) -> FDataGrid:  # noqa: ARG002
         r"""
         Compute the square-root slope function (SRSF) transform.
 
@@ -151,7 +151,7 @@ class SRSF(
         Raises:
             ValueError: If functions are not univariate.
 
-        """
+        """  # noqa: W291
         check_fdata_dimensions(
             X,
             dim_domain=1,
@@ -181,7 +181,7 @@ class SRSF(
 
         return X.copy(data_matrix=data_matrix, grid_points=output_points)
 
-    def inverse_transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
+    def inverse_transform(self, X: FDataGrid, y: None = None) -> FDataGrid:  # noqa: ARG002
         r"""
         Compute the inverse SRSF transform.
 
@@ -206,18 +206,18 @@ class SRSF(
 
         Raises:
             ValueError: If functions are multidimensional.
-        """
+        """  # noqa: W291
         check_fdata_dimensions(
             X,
             dim_domain=1,
             dim_codomain=1,
         )
 
-        stored_initial_value = getattr(self, 'initial_value_', None)
+        stored_initial_value = getattr(self, 'initial_value_', None)  # noqa: Q000
 
         if self.initial_value is None and stored_initial_value is None:
-            raise AttributeError(
-                "When initial_value=None is expected a "
+            raise AttributeError(  # noqa: TRY003
+                "When initial_value=None is expected a "  # noqa: EM101
                 "previous transformation of the data to "
                 "store the initial values to apply in the "
                 "inverse transformation. Also it is possible "

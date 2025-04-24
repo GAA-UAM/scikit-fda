@@ -10,7 +10,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "multivariate",
     ],
     submod_attrs={
-        '_depth': [
+        '_depth': [  # noqa: Q000
             "BandDepth",
             "DistanceBasedDepth",
             "IntegratedDepth",

@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     )
 
 
-def __getattr__(name: str) -> Any:
+def __getattr__(name: str) -> Any:  # noqa: ANN401
     if name in {"projection", "feature_extraction"}:
         return importlib.import_module(f".{name}", __name__)
     return _normal_getattr(name)

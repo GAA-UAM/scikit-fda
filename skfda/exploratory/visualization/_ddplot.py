@@ -10,16 +10,16 @@ from typing import TypeVar
 
 import numpy as np
 from matplotlib.artist import Artist
-from matplotlib.axes import Axes
-from matplotlib.colors import ListedColormap
-from matplotlib.figure import Figure
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.colors import ListedColormap  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 
-from ...exploratory.depth.multivariate import Depth
+from ...exploratory.depth.multivariate import Depth  # noqa: TC001
 from ...representation._functional_data import FData
-from ...typing._numpy import NDArrayInt
+from ...typing._numpy import NDArrayInt  # noqa: TC001
 from ._baseplot import BasePlot
 
-T = TypeVar('T', bound=FData)
+T = TypeVar('T', bound=FData)  # noqa: Q000
 
 
 class DDPlot(BasePlot):
@@ -50,9 +50,9 @@ class DDPlot(BasePlot):
             first distribution (dist1).
         depth_dist2: result of the calculation of the depth_method into our
             second distribution (dist2).
-    """
+    """  # noqa: D410, D411
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         fdata: T,
         dist1: T,
@@ -93,7 +93,7 @@ class DDPlot(BasePlot):
 
     def _plot(
         self,
-        fig: Figure,
+        fig: Figure,  # noqa: ARG002
         axes: Axes,
     ) -> None:
         """
@@ -106,7 +106,7 @@ class DDPlot(BasePlot):
         Returns:
             fig (figure object): figure object in which the depths will be
             scattered.
-        """
+        """  # noqa: D411
         self.artists = np.zeros(
             (self.n_samples, 1),
             dtype=Artist,

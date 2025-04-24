@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     )
     from ._landmark_registration import (
         landmark_elastic_registration as landmark_elastic_registration,
-        landmark_elastic_registration_warping as landmark_elastic_registration_warping,
+        landmark_elastic_registration_warping as landmark_elastic_registration_warping,  # noqa: E501
         landmark_registration as landmark_registration,
         landmark_shift as landmark_shift,
         landmark_shift_deltas as landmark_shift_deltas,

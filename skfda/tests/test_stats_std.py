@@ -21,7 +21,7 @@ from skfda.representation.basis import (
 
 
 @pytest.fixture(params=[3, 5])
-def vv_n_basis1(request: Any) -> int:
+def vv_n_basis1(request: Any) -> int:  # noqa: ANN401
     """n_basis for 1st coordinate of vector valued basis."""
     return request.param  # type: ignore[no-any-return]
 
@@ -36,7 +36,7 @@ def vv_basis1(vv_n_basis1: int) -> Basis:
 
 
 @pytest.fixture(params=[FourierBasis, MonomialBasis])
-def vv_basis2(request: Any, vv_n_basis2: int = 3) -> Basis:
+def vv_basis2(request: Any, vv_n_basis2: int = 3) -> Basis:  # noqa: ANN401
     """1-dimensional basis to test for vector valued basis."""
     # First element of the basis is assumed to be the 1 function
     return request.param(  # type: ignore[no-any-return]
@@ -47,7 +47,7 @@ def vv_basis2(request: Any, vv_n_basis2: int = 3) -> Basis:
 # Fixtures for test_std_fdatabasis_tensor_basis
 
 @pytest.fixture(params=[FourierBasis])
-def t_basis1(request: Any, t_n_basis1: int = 3) -> Basis:
+def t_basis1(request: Any, t_n_basis1: int = 3) -> Basis:  # noqa: ANN401
     """1-dimensional basis to test for tensor basis."""
     # First element of the basis is assumed to be the 1 function
     return request.param(  # type: ignore[no-any-return]
@@ -56,7 +56,7 @@ def t_basis1(request: Any, t_n_basis1: int = 3) -> Basis:
 
 
 @pytest.fixture(params=[MonomialBasis])
-def t_basis2(request: Any, t_n_basis2: int = 5) -> Basis:
+def t_basis2(request: Any, t_n_basis2: int = 5) -> Basis:  # noqa: ANN401
     """1-dimensional basis to test for tensor basis."""
     # First element of the basis is assumed to be the 1 function
     return request.param(  # type: ignore[no-any-return]

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable  # noqa: UP035
 
 import scipy.integrate
 
@@ -25,7 +25,7 @@ class IntegralTransform(
     ) -> None:
         self.kernel_function = kernel_function
 
-    def __call__(  # noqa: D102
+    def __call__(  # noqa: D102, RUF100
         self,
         f: FData,
     ) -> Callable[[NDArrayFloat], NDArrayFloat]:

@@ -1,5 +1,5 @@
 """Utilities for norms and metrics."""
-from typing import Any, Callable, Generic, Optional, Tuple, TypeVar
+from typing import Any, Callable, Generic, Optional, Tuple, TypeVar  # noqa: I001, UP035
 
 import multimethod
 import numpy as np
@@ -21,18 +21,18 @@ def _check_compatible(fdata1: T, fdata2: T) -> None:
             fdata2.dim_codomain != fdata1.dim_codomain
             or fdata2.dim_domain != fdata1.dim_domain
         ):
-            raise ValueError("Objects should have the same dimensions")
+            raise ValueError("Objects should have the same dimensions")  # noqa: EM101, TRY003
 
         if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
-            raise ValueError("Domain ranges for both objects must be equal")
+            raise ValueError("Domain ranges for both objects must be equal")  # noqa: EM101, TRY003
 
 
 def _cast_to_grid(
     fdata1: FData,
     fdata2: FData,
-    eval_points: Optional[NDArrayFloat] = None,
-    _check: bool = True,
-) -> Tuple[FDataGrid, FDataGrid]:
+    eval_points: Optional[NDArrayFloat] = None,  # noqa: UP007
+    _check: bool = True,  # noqa: FBT001, FBT002
+) -> Tuple[FDataGrid, FDataGrid]:  # noqa: UP006
     """
     Convert fdata1 and fdata2 to FDatagrid.
 
@@ -77,8 +77,8 @@ def _cast_to_grid(
         fdata1.grid_points,
         fdata2.grid_points,
     ):
-        raise ValueError(
-            "Grid points for both objects must be equal or"
+        raise ValueError(  # noqa: TRY003
+            "Grid points for both objects must be equal or"  # noqa: EM101
             "a new list evaluation points must be specified",
         )
 
@@ -125,7 +125,7 @@ class NormInducedMetric(Metric[VectorType]):
 
     """
 
-    def __init__(self, norm: Norm[VectorType]):
+    def __init__(self, norm: Norm[VectorType]):  # noqa: ANN204
         self.norm = norm
 
     def __call__(self, elem1: VectorType, elem2: VectorType) -> NDArrayFloat:
@@ -138,9 +138,9 @@ class NormInducedMetric(Metric[VectorType]):
 
 @multimethod.multidispatch
 def pairwise_metric_optimization(
-    metric: Any,
-    elem1: Any,
-    elem2: Optional[Any],
+    metric: Any,  # noqa: ANN401, ARG001
+    elem1: Any,  # noqa: ANN401, ARG001
+    elem2: Optional[Any],  # noqa: ANN401, ARG001, UP007
 ) -> NDArrayFloat:
     """
     Optimized computation of a pairwise metric.
@@ -168,7 +168,7 @@ class PairwiseMetric(Generic[_MapAcceptableT]):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         metric: Metric[_MapAcceptableT],
     ):
@@ -177,7 +177,7 @@ class PairwiseMetric(Generic[_MapAcceptableT]):
     def __call__(
         self,
         elem1: _MapAcceptableT,
-        elem2: Optional[_MapAcceptableT] = None,
+        elem2: Optional[_MapAcceptableT] = None,  # noqa: UP007
     ) -> NDArrayFloat:
         """Evaluate the pairwise metric."""
         optimized = pairwise_metric_optimization(self.metric, elem1, elem2)
@@ -234,7 +234,7 @@ class TransformationMetric(Generic[Original, Transformed], Metric[Original]):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         transformation: Callable[[Original], Transformed],
         metric: Metric[Transformed],
@@ -263,7 +263,7 @@ class TransformationMetric(Generic[Original, Transformed], Metric[Original]):
 def _pairwise_metric_optimization_transformation_dist(
     metric: TransformationMetric[Any, Any],
     e1: T,
-    e2: Optional[T],
+    e2: Optional[T],  # noqa: UP007
 ) -> NDArrayFloat:
 
     e1_trans = metric.transformation(e1)
@@ -281,5 +281,5 @@ def _fit_metric(metric: Metric[T], X: T) -> None:
         metric: The metric to fit.
         X: FData with the training data.
     """
-    fit = getattr(metric, 'fit', lambda X: None)
+    fit = getattr(metric, 'fit', lambda X: None)  # noqa: Q000, ARG005
     fit(X)

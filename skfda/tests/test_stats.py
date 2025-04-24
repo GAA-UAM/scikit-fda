@@ -1,4 +1,4 @@
-import unittest
+import unittest  # noqa: D100
 
 import numpy as np
 
@@ -9,7 +9,7 @@ from skfda.exploratory.stats import geometric_median, modified_epigraph_index
 class TestGeometricMedian(unittest.TestCase):
     """Test the behavior of the geometric median."""
 
-    def test_R_comparison(self) -> None:
+    def test_R_comparison(self) -> None:  # noqa: N802
         """
         Compare the results with real-world dataset with those in R.
 

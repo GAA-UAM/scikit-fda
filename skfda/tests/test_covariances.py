@@ -12,7 +12,7 @@ from skfda.representation.basis import MonomialBasis
 
 
 def _test_compare_sklearn(
-    multivariate_data: Any,
+    multivariate_data: Any,  # noqa: ANN401
     cov: cov.Covariance,
 ) -> None:
     cov_sklearn = cov.to_sklearn()
@@ -55,7 +55,7 @@ def fetch_weather_subset() -> FDataGrid:
         cov.Matern(),
     ],
 )
-def covariances_fixture(request: Any) -> Any:
+def covariances_fixture(request: Any) -> Any:  # noqa: ANN401
     """Fixture for getting a covariance kernel function."""
     return request.param
 
@@ -66,7 +66,7 @@ def covariances_fixture(request: Any) -> Any:
         cov.WhiteNoise(),
     ],
 )
-def covariances_raise_fixture(request: Any) -> Any:
+def covariances_raise_fixture(request: Any) -> Any:  # noqa: ANN401
     """Fixture for getting a covariance kernel that raises a ValueError."""
     return request.param
 
@@ -102,7 +102,7 @@ def covariances_raise_fixture(request: Any) -> Any:
     ],
 )
 def precalc_example_data(
-    request: Any,
+    request: Any,  # noqa: ANN401
 ) -> list[FDataBasis, FDataBasis, cov.Covariance, np.array]:
     """Fixture for getting fdatabasis objects.
 
@@ -161,7 +161,7 @@ def multivariate_data() -> np.array:
         ],
     ],
 )
-def covariance_and_params(request: Any) -> Any:
+def covariance_and_params(request: Any) -> Any:  # noqa: ANN401
     """Fixture to load the covariance functions."""
     return request.param
 
@@ -192,7 +192,7 @@ def test_covariances(
 
 def test_raises(
     fetch_weather_subset: FDataGrid,
-    covariances_raise_fixture: Any,
+    covariances_raise_fixture: Any,  # noqa: ANN401
 ) -> None:
     """Check raises ValueError.
 
@@ -209,7 +209,7 @@ def test_raises(
     )
 
 
-def test_precalc_example(
+def test_precalc_example(  # noqa: ANN201
     precalc_example_data: list[  # noqa: WPS320
         FDataBasis, FDataBasis, cov.Covariance, np.array,
     ],
@@ -233,7 +233,7 @@ def test_precalc_example(
 
 def test_multivariate_covariance_kernel(
     multivariate_data: np.array,
-    covariance_and_params: Any,
+    covariance_and_params: Any,  # noqa: ANN401
 ) -> None:
     """Test general covariance kernel against scikit-learn's kernel."""
     cov_kernel, param_dict = covariance_and_params

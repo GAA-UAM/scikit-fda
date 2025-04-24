@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Iterable, Tuple, TypeVar, Union
+from typing import Any, Iterable, Tuple, TypeVar, Union  # noqa: UP035
 
 import numpy as np
 import scipy.linalg
 
-from ...typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ._basis import Basis
 
 T = TypeVar("T", bound="VectorValuedBasis")
@@ -71,8 +71,8 @@ class VectorValuedBasis(Basis):
         basis_list = tuple(basis_list)
 
         if not all(b.dim_codomain == 1 for b in basis_list):
-            raise ValueError(
-                "The basis functions must be scalar valued",
+            raise ValueError(  # noqa: TRY003
+                "The basis functions must be scalar valued",  # noqa: EM101
             )
 
         if any(
@@ -80,8 +80,8 @@ class VectorValuedBasis(Basis):
             or not _same_domain(b, basis_list[0])
             for b in basis_list
         ):
-            raise ValueError(
-                "The basis must all have the same domain "
+            raise ValueError(  # noqa: TRY003
+                "The basis must all have the same domain "  # noqa: EM101
                 "dimension and range",
             )
 
@@ -93,7 +93,7 @@ class VectorValuedBasis(Basis):
         )
 
     @property
-    def basis_list(self) -> Tuple[Basis, ...]:
+    def basis_list(self) -> Tuple[Basis, ...]:  # noqa: UP006
         return self._basis_list
 
     @property
@@ -118,11 +118,11 @@ class VectorValuedBasis(Basis):
 
         return matrix
 
-    def _derivative_basis_and_coefs(
+    def _derivative_basis_and_coefs(  # noqa: PYI019
         self: T,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
 
         n_basis_list = [b.n_basis for b in self.basis_list]
         indexes = np.cumsum(n_basis_list)
@@ -130,11 +130,11 @@ class VectorValuedBasis(Basis):
         coefs_per_basis = np.hsplit(coefs, indexes[:-1])
 
         basis_and_coefs = [
-            b._derivative_basis_and_coefs(c, order=order)  # noqa: WPS437
-            for b, c in zip(self.basis_list, coefs_per_basis)
+            b._derivative_basis_and_coefs(c, order=order)  # noqa: SLF001, WPS437
+            for b, c in zip(self.basis_list, coefs_per_basis)  # noqa: B905
         ]
 
-        new_basis_list, new_coefs_list = zip(*basis_and_coefs)
+        new_basis_list, new_coefs_list = zip(*basis_and_coefs)  # noqa: B905
 
         new_basis = type(self)(new_basis_list)
         new_coefs = np.hstack(new_coefs_list)
@@ -152,8 +152,8 @@ class VectorValuedBasis(Basis):
     def _coordinate_nonfull(
         self,
         coefs: NDArrayFloat,
-        key: Union[int, slice],
-    ) -> Tuple[Basis, NDArrayFloat]:
+        key: Union[int, slice],  # noqa: UP007
+    ) -> Tuple[Basis, NDArrayFloat]:  # noqa: UP006
 
         basis_sizes = [b.n_basis for b in self.basis_list]
         basis_indexes = np.cumsum(basis_sizes)
@@ -171,9 +171,9 @@ class VectorValuedBasis(Basis):
 
     def __repr__(self) -> str:
         """Representation of a Basis object."""
-        return f"{self.__class__.__name__}(" f"basis_list={self.basis_list})"
+        return f"{self.__class__.__name__}(" f"basis_list={self.basis_list})"  # noqa: ISC001
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         return super().__eq__(other) and self.basis_list == other.basis_list
 
     def __hash__(self) -> int:

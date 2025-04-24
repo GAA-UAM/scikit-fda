@@ -4,20 +4,20 @@ from __future__ import annotations
 import math
 import warnings
 from functools import singledispatch
-from typing import Callable, TypeVar, overload
+from typing import Callable, TypeVar, overload  # noqa: UP035
 
 import numpy as np
 import sklearn.metrics
-from typing_extensions import Literal, Protocol
+from typing_extensions import Literal, Protocol  # noqa: UP035
 
 from .._utils import nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid, FDataIrregular
-from ..representation._functional_data import EvalPointsType
+from ..representation._functional_data import EvalPointsType  # noqa: TC001
 from ..typing._numpy import NDArrayFloat
 
-DataType = TypeVar('DataType')
+DataType = TypeVar('DataType')  # noqa: Q000
 
-MultiOutputType = Literal['uniform_average', 'raw_values']
+MultiOutputType = Literal['uniform_average', 'raw_values']  # noqa: Q000
 
 
 class _InfiniteScoreError(Exception):
@@ -34,18 +34,18 @@ class ScoreFunction(Protocol):
         y_pred: DataType,
         *,
         sample_weight: NDArrayFloat | None = None,
-        multioutput: Literal['uniform_average'] = 'uniform_average',
+        multioutput: Literal['uniform_average'] = 'uniform_average',  # noqa: Q000
     ) -> float:
         pass  # noqa: WPS428
 
     @overload
-    def __call__(   # noqa: D102
+    def __call__(  # noqa: D102, RUF100
         self,
         y_true: DataType,
         y_pred: DataType,
         *,
         sample_weight: NDArrayFloat | None = None,
-        multioutput: Literal['raw_values'],
+        multioutput: Literal['raw_values'],  # noqa: Q000
     ) -> DataType:
         pass  # noqa: WPS428
 
@@ -55,7 +55,7 @@ class ScoreFunction(Protocol):
         y_pred: DataType,
         *,
         sample_weight: NDArrayFloat | None = None,
-        multioutput: MultiOutputType = 'uniform_average',
+        multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
     ) -> float | DataType:
         pass  # noqa: WPS428
 
@@ -89,8 +89,8 @@ def _multioutput_score_basis(
 ) -> float:
 
     if multioutput != "uniform_average":
-        raise ValueError(
-            f"Only \"uniform_average\" is supported for \"multioutput\" when "
+        raise ValueError(  # noqa: TRY003
+            f"Only \"uniform_average\" is supported for \"multioutput\" when "  # noqa: EM102
             f"the input is a FDatabasis: received {multioutput} instead",
         )
 
@@ -110,13 +110,13 @@ def _multioutput_score_basis(
 def _multioutput_score_grid(
     score: FDataGrid,
     multioutput: MultiOutputType,
-    squared: bool = True,
+    squared: bool = True,  # noqa: FBT001, FBT002
 ) -> float | FDataGrid:
 
     if not squared:
         score = np.sqrt(score)
 
-    if multioutput == 'raw_values':
+    if multioutput == 'raw_values':  # noqa: Q000
         return score
 
     # Score only contains 1 function
@@ -127,7 +127,7 @@ def _multioutput_score_grid(
 
 def _integral_average_fdatairregular(
     score: FDataIrregular,
-    squared: bool = True,
+    squared: bool = True,  # noqa: FBT001, FBT002
     weights: NDArrayFloat | None = None,
 ) -> float:
     """Calculate the weighted average of the normalized integrals of the score.
@@ -144,8 +144,8 @@ def _integral_average_fdatairregular(
         weights: Weights for the mean.
     """
     if score.dim_domain != 1:
-        raise ValueError(
-            "Only univariate FDataIrregular objects are supported",
+        raise ValueError(  # noqa: TRY003
+            "Only univariate FDataIrregular objects are supported",  # noqa: EM101
         )
     if not squared:
         score = np.sqrt(score)
@@ -167,7 +167,7 @@ def explained_variance_score(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    multioutput: Literal['uniform_average'] = 'uniform_average',  # noqa: Q000
 ) -> float:
     pass  # noqa: WPS428
 
@@ -178,7 +178,7 @@ def explained_variance_score(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['raw_values'],
+    multioutput: Literal['raw_values'],  # noqa: Q000
 ) -> DataType:
     pass  # noqa: WPS428
 
@@ -189,7 +189,7 @@ def explained_variance_score(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float | DataType:
     r"""Explained variance score for :class:`~skfda.representation.FData`.
 
@@ -275,14 +275,14 @@ def _explained_variance_score_fdatagrid(
     y_pred: FDataGrid,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float | FDataGrid:
 
     num = _var(y_true - y_pred, weights=sample_weight)
     den = _var(y_true, weights=sample_weight)
 
     # Divisions by zero allowed
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide='ignore', invalid='ignore'):  # noqa: Q000
         score = 1 - num / den
 
     # 0 / 0 divisions should be 0 in this context, and the score, 1
@@ -297,7 +297,7 @@ def _explained_variance_score_fdatabasis(
     y_pred: FDataBasis,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float:
 
     def _ev_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
@@ -324,7 +324,7 @@ def _explained_variance_score_fdatabasis(
         )
 
         # Divisions by zero allowed
-        with np.errstate(divide='ignore', invalid='ignore'):
+        with np.errstate(divide='ignore', invalid='ignore'):  # noqa: Q000
             score = 1 - num / den
 
         # 0/0 case, the score is 1.
@@ -347,7 +347,7 @@ def mean_absolute_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    multioutput: Literal['uniform_average'] = 'uniform_average',  # noqa: Q000
 ) -> float:
     pass  # noqa: WPS428
 
@@ -358,7 +358,7 @@ def mean_absolute_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['raw_values'],
+    multioutput: Literal['raw_values'],  # noqa: Q000
 ) -> DataType:
     pass  # noqa: WPS428
 
@@ -369,7 +369,7 @@ def mean_absolute_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float | DataType:
     r"""Mean Absolute Error for :class:`~skfda.representation.FData`.
 
@@ -443,7 +443,7 @@ def _mean_absolute_error_fdatagrid(
     y_pred: FDataGrid,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
@@ -457,7 +457,7 @@ def _mean_absolute_error_fdatairregular(
     y_pred: FDataIrregular,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000, ARG001
 ) -> float:
     return _integral_average_fdatairregular(
         np.abs(y_true - y_pred),
@@ -471,7 +471,7 @@ def _mean_absolute_error_fdatabasis(
     y_pred: FDataBasis,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float:
 
     def _mae_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
@@ -494,7 +494,7 @@ def mean_absolute_percentage_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    multioutput: Literal['uniform_average'] = 'uniform_average',  # noqa: Q000
 ) -> float:
     pass  # noqa: WPS428
 
@@ -505,7 +505,7 @@ def mean_absolute_percentage_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['raw_values'],
+    multioutput: Literal['raw_values'],  # noqa: Q000
 ) -> DataType:
     pass  # noqa: WPS428
 
@@ -516,7 +516,7 @@ def mean_absolute_percentage_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float | DataType:
     r"""Mean Absolute Percentage Error for :class:`~skfda.representation.FData`.
 
@@ -578,7 +578,7 @@ def mean_absolute_percentage_error(
         If both :math:`y\_pred` and :math:`y\_true` are ndarray and
         multioutput = 'raw_values', ndarray.
 
-    """
+    """  # noqa: E501
     return (  # type: ignore [no-any-return]
         sklearn.metrics.mean_absolute_percentage_error(
             y_true,
@@ -595,14 +595,14 @@ def _mean_absolute_percentage_error_fdatagrid(
     y_pred: FDataGrid,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
     epsilon = np.finfo(np.float64).eps
 
     if np.any(np.abs(y_true.data_matrix) < epsilon):
-        warnings.warn('Zero denominator', RuntimeWarning)
+        warnings.warn('Zero denominator', RuntimeWarning)  # noqa: B028, Q000
 
     mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
 
@@ -616,12 +616,12 @@ def _mean_absolute_percentage_error_fdatairregular(
     y_pred: FDataIrregular,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000, ARG001
 ) -> float:
     epsilon = np.finfo(np.float64).eps
 
     if np.any(np.abs(y_true.values) < epsilon):
-        warnings.warn('Zero denominator', RuntimeWarning)
+        warnings.warn('Zero denominator', RuntimeWarning)  # noqa: B028, Q000
 
     mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
     return _integral_average_fdatairregular(mape, weights=sample_weight)
@@ -633,14 +633,14 @@ def _mean_absolute_percentage_error_fdatabasis(
     y_pred: FDataBasis,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float:
 
     def _mape_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
 
         epsilon = np.finfo(np.float64).eps
         if np.any(np.abs(y_true(x)) < epsilon):
-            warnings.warn('Zero denominator', RuntimeWarning)
+            warnings.warn('Zero denominator', RuntimeWarning)  # noqa: B028, Q000
 
         error = np.average(
             (
@@ -664,7 +664,7 @@ def mean_squared_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    multioutput: Literal['uniform_average'] = 'uniform_average',  # noqa: Q000
     squared: bool = True,
 ) -> float:
     pass  # noqa: WPS428
@@ -676,7 +676,7 @@ def mean_squared_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['raw_values'],
+    multioutput: Literal['raw_values'],  # noqa: Q000
     squared: bool = True,
 ) -> DataType:
     pass  # noqa: WPS428
@@ -688,7 +688,7 @@ def mean_squared_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
     squared: bool = True,
 ) -> float | DataType:
     r"""Mean Squared Error for :class:`~skfda.representation.FData`.
@@ -770,7 +770,7 @@ def _mean_squared_error_fdatagrid(
     y_pred: FDataGrid,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
     squared: bool = True,
 ) -> float | FDataGrid:
     from ..exploratory.stats import mean
@@ -789,7 +789,7 @@ def _mean_squared_error_fdatairregular(
     y_pred: FDataIrregular,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000, ARG001
     squared: bool = True,
 ) -> float:
     return _integral_average_fdatairregular(
@@ -806,7 +806,7 @@ def _mean_squared_error_fdatabasis(
     *,
     sample_weight: NDArrayFloat | None = None,
     squared: bool = True,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float:
 
     def _mse_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
@@ -833,7 +833,7 @@ def mean_squared_log_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    multioutput: Literal['uniform_average'] = 'uniform_average',  # noqa: Q000
     squared: bool = True,
 ) -> float:
     pass  # noqa: WPS428
@@ -845,7 +845,7 @@ def mean_squared_log_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['raw_values'],
+    multioutput: Literal['raw_values'],  # noqa: Q000
     squared: bool = True,
 ) -> DataType:
     pass  # noqa: WPS428
@@ -857,7 +857,7 @@ def mean_squared_log_error(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
     squared: bool = True,
 ) -> float | DataType:
     r"""Mean Squared Log Error for :class:`~skfda.representation.FData`.
@@ -946,13 +946,13 @@ def _mean_squared_log_error_fdatagrid(
     y_pred: FDataGrid,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
     squared: bool = True,
 ) -> float | FDataGrid:
 
     if np.any(y_true.data_matrix < 0) or np.any(y_pred.data_matrix < 0):
-        raise ValueError(
-            "Mean Squared Logarithmic Error cannot be used when "
+        raise ValueError(  # noqa: TRY003
+            "Mean Squared Logarithmic Error cannot be used when "  # noqa: EM101
             "targets functions have negative values.",
         )
 
@@ -971,12 +971,12 @@ def _mean_squared_log_error_fdatairregular(
     y_pred: FDataIrregular,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
     squared: bool = True,
 ) -> float:
     if np.any(y_true.values < 0) or np.any(y_pred.values < 0):
-        raise ValueError(
-            "Mean Squared Logarithmic Error cannot be used when "
+        raise ValueError(  # noqa: TRY003
+            "Mean Squared Logarithmic Error cannot be used when "  # noqa: EM101
             "targets functions have negative values.",
         )
 
@@ -996,7 +996,7 @@ def _mean_squared_log_error_fdatabasis(
     *,
     sample_weight: NDArrayFloat | None = None,
     squared: bool = True,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float:
 
     def _msle_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
@@ -1005,8 +1005,8 @@ def _mean_squared_log_error_fdatabasis(
         y_pred_eval = y_pred(x)
 
         if np.any(y_true_eval < 0) or np.any(y_pred_eval < 0):
-            raise ValueError(
-                "Mean Squared Logarithmic Error cannot be used when "
+            raise ValueError(  # noqa: TRY003
+                "Mean Squared Logarithmic Error cannot be used when "  # noqa: EM101
                 "targets functions have negative values.",
             )
 
@@ -1032,7 +1032,7 @@ def r2_score(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['uniform_average'] = 'uniform_average',
+    multioutput: Literal['uniform_average'] = 'uniform_average',  # noqa: Q000
 ) -> float:
     pass  # noqa: WPS428
 
@@ -1043,7 +1043,7 @@ def r2_score(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: Literal['raw_values'],
+    multioutput: Literal['raw_values'],  # noqa: Q000
 ) -> DataType:
     pass  # noqa: WPS428
 
@@ -1054,7 +1054,7 @@ def r2_score(
     y_pred: DataType,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float | DataType:
     r"""R^2 score for :class:`~skfda.representation.FData`.
 
@@ -1128,13 +1128,13 @@ def _r2_score_fdatagrid(
     y_pred: FDataGrid,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float | FDataGrid:
     from ..exploratory.stats import mean
 
-    if y_pred.n_samples < 2:
-        raise ValueError(
-            'R^2 score is not well-defined with less than two samples.',
+    if y_pred.n_samples < 2:  # noqa: PLR2004
+        raise ValueError(  # noqa: TRY003
+            'R^2 score is not well-defined with less than two samples.',  # noqa: EM101, Q000
         )
 
     ss_res = mean(
@@ -1145,7 +1145,7 @@ def _r2_score_fdatagrid(
     ss_tot = _var(y_true, weights=sample_weight)
 
     # Divisions by zero allowed
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide='ignore', invalid='ignore'):  # noqa: Q000
         score: FDataGrid = 1 - ss_res / ss_tot
 
     # 0 / 0 divisions should be 0 in this context and the score, 1
@@ -1160,12 +1160,12 @@ def _r2_score_fdatabasis(
     y_pred: FDataBasis,
     *,
     sample_weight: NDArrayFloat | None = None,
-    multioutput: MultiOutputType = 'uniform_average',
+    multioutput: MultiOutputType = 'uniform_average',  # noqa: Q000
 ) -> float:
 
-    if y_pred.n_samples < 2:
-        raise ValueError(
-            'R^2 score is not well-defined with less than two samples.',
+    if y_pred.n_samples < 2:  # noqa: PLR2004
+        raise ValueError(  # noqa: TRY003
+            'R^2 score is not well-defined with less than two samples.',  # noqa: EM101, Q000
         )
 
     def _r2_func(x: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
@@ -1185,7 +1185,7 @@ def _r2_score_fdatabasis(
         )
 
         # Divisions by zero allowed
-        with np.errstate(divide='ignore', invalid='ignore'):
+        with np.errstate(divide='ignore', invalid='ignore'):  # noqa: Q000
             score = 1 - ss_res / ss_tot
 
         # 0/0 case, the score is 1.

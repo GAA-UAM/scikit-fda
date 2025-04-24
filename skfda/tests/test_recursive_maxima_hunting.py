@@ -38,12 +38,12 @@ class TestRMH(unittest.TestCase):
                 + np.abs(t - 0.75)
             )
 
-        X_0 = make_gaussian_process(
+        X_0 = make_gaussian_process(  # noqa: N806
             n_samples=n_samples // 2,
             n_features=n_features,
             random_state=0,
         )
-        X_1 = make_gaussian_process(
+        X_1 = make_gaussian_process(  # noqa: N806
             n_samples=n_samples // 2,
             n_features=n_features,
             mean=mean_1,
@@ -69,7 +69,7 @@ class TestRMH(unittest.TestCase):
         np.testing.assert_allclose(points, [0.25, 0.5, 0.75], rtol=1e-2)
 
     @pytest.mark.filterwarnings(
-        'ignore::sklearn.exceptions.ConvergenceWarning'
+        'ignore::sklearn.exceptions.ConvergenceWarning'  # noqa: COM812, Q000
     )
     def test_fit_exponential(self) -> None:
         """
@@ -95,13 +95,13 @@ class TestRMH(unittest.TestCase):
                 + np.abs(t - 0.75)
             )
 
-        X_0 = make_gaussian_process(
+        X_0 = make_gaussian_process(  # noqa: N806
             n_samples=n_samples // 2,
             n_features=n_features,
             cov=Exponential(length_scale=2),
             random_state=0,
         )
-        X_1 = make_gaussian_process(
+        X_1 = make_gaussian_process(  # noqa: N806
             n_samples=n_samples // 2,
             n_features=n_features,
             mean=mean_1,
@@ -132,5 +132,5 @@ class TestRMH(unittest.TestCase):
         np.testing.assert_allclose(points, [0.25, 0.5, 0.75], rtol=1e-2)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

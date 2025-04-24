@@ -5,17 +5,17 @@ from typing import Any, TypeVar, Union, overload
 
 from sklearn.base import OutlierMixin
 from sklearn.neighbors import LocalOutlierFactor as _LocalOutlierFactor
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils._neighbors_base import AlgorithmType, KNeighborsMixin
 from ...misc.metrics import PairwiseMetric, l2_distance
 from ...representation import FData
-from ...typing._metric import Metric
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType", bound="LocalOutlierFactor[Any]")
-InputBound = Union[NDArrayFloat, FData]
-Input = TypeVar("Input", contravariant=True, bound=InputBound)
+InputBound = Union[NDArrayFloat, FData]  # noqa: UP007
+Input = TypeVar("Input", contravariant=True, bound=InputBound)  # noqa: PLC0105
 
 
 class LocalOutlierFactor(
@@ -164,14 +164,14 @@ class LocalOutlierFactor(
         :class:`~skfda.ml.regression.KNeighborsRegressor`
         :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
         :class:`~skfda.ml.clustering.NearestNeighbors`
-    """
+    """  # noqa: D405
 
     @overload
     def __init__(
         self: LocalOutlierFactor[NDArrayFloat],
         *,
         n_neighbors: int = 20,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"],
         contamination: float | Literal["auto"] = "auto",
@@ -185,7 +185,7 @@ class LocalOutlierFactor(
         self: LocalOutlierFactor[InputBound],
         *,
         n_neighbors: int = 20,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         contamination: float | Literal["auto"] = "auto",
         novelty: bool = False,
@@ -198,7 +198,7 @@ class LocalOutlierFactor(
         self,
         *,
         n_neighbors: int = 20,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
         contamination: float | Literal["auto"] = "auto",
@@ -211,7 +211,7 @@ class LocalOutlierFactor(
         self,
         *,
         n_neighbors: int = 20,
-        algorithm: AlgorithmType = 'auto',
+        algorithm: AlgorithmType = 'auto',  # noqa: Q000
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
         contamination: float | Literal["auto"] = "auto",
@@ -247,7 +247,7 @@ class LocalOutlierFactor(
         self.n_neighbors_ = self._estimator.n_neighbors_
         self.offset_ = self._estimator.offset_
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, PYI019
         self: SelfType,
         X: Input,
         y: None = None,
@@ -281,7 +281,7 @@ class LocalOutlierFactor(
 
         """
         self._check_is_fitted()
-        X_dist = self._X_to_distances(X)
+        X_dist = self._X_to_distances(X)  # noqa: N806
 
         return self._estimator.predict(X_dist)  # type: ignore[no-any-return]
 
@@ -310,10 +310,10 @@ class LocalOutlierFactor(
         self._estimator = self._init_estimator()
         metric = self.metric
 
-        if metric == 'precomputed':
+        if metric == 'precomputed':  # noqa: Q000
             res = self._estimator.fit_predict(X, y)
         else:
-            X_dist = PairwiseMetric(metric)(X)
+            X_dist = PairwiseMetric(metric)(X)  # noqa: N806
             res = self._estimator.fit_predict(X_dist, y)
 
         self._store_fit_data()
@@ -347,7 +347,7 @@ class LocalOutlierFactor(
 
         """
         self._check_is_fitted()
-        X_dist = self._X_to_distances(X)
+        X_dist = self._X_to_distances(X)  # noqa: N806
 
         return (  # type: ignore[no-any-return]
             self._estimator.decision_function(X_dist)
@@ -382,7 +382,7 @@ class LocalOutlierFactor(
 
         """
         self._check_is_fitted()
-        X_dist = self._X_to_distances(X)
+        X_dist = self._X_to_distances(X)  # noqa: N806
 
         return (  # type: ignore[no-any-return]
             self._estimator.score_samples(X_dist)

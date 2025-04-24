@@ -1,13 +1,13 @@
 """Tests for the mixed effects to-basis-converter."""
-from typing import Any, Literal, Optional, Tuple, Type
+from typing import Any, Literal, Optional, Tuple, Type  # noqa: UP035
 
 import numpy as np
-import pytest
+import pytest  # noqa: F401
 
 from skfda import FDataBasis
 from skfda.datasets import irregular_sample
 from skfda.misc.scoring import r2_score
-from skfda.representation import FDataBasis, FDataIrregular
+from skfda.representation import FDataBasis, FDataIrregular  # noqa: F811
 from skfda.representation.basis import (
     Basis,
     BSplineBasis,
@@ -102,7 +102,7 @@ def test_loglikelihood() -> None:
     n_measurements_per_function = 5
     fdatairregular = FDataIrregular(
         start_indices=list(
-            range(0, n_measurements, n_measurements_per_function)
+            range(0, n_measurements, n_measurements_per_function)  # noqa: COM812
         ),
         values=list(range(n_measurements)),
         points=list(range(n_measurements)),
@@ -147,14 +147,14 @@ def test_loglikelihood() -> None:
             158.0143727, 134.23857669, 322.18021493, 301.73959783,
             125.22657664, 253.61467318, 216.16183012, 118.71750035,
             44.31516047, 125.05611915, 182.79165202, 263.57602809,
-            101.70300713, 256.44050348, 80.04944289, 263.04992221
+            101.70300713, 256.44050348, 80.04944289, 263.04992221  # noqa: COM812
         ]), -1231.9562787796967),
         (np.array([
             311.31568618, 311.83935944, 244.13126128, 123.60013941,
             279.09396301, 343.84731829, 250.1295031, 392.96313184,
             390.60005081, 66.67765248, 9.27125459, 64.2978194,
             369.3987301, 381.41993995, 84.39136749, 144.21010033,
-            219.75010465, 108.73233967, 184.24064843, 278.46462593
+            219.75010465, 108.73233967, 184.24064843, 278.46462593  # noqa: COM812
         ]), -1437.3441872940807),
     ]
 
@@ -167,11 +167,11 @@ def test_loglikelihood() -> None:
         assert np.allclose(mixedlm_loglikelihood, model_loglikelihood)
 
 
-def _create_irregular_samples_with_noise(
+def _create_irregular_samples_with_noise(  # noqa: D417
     fdatabasis_original: FDataBasis,
     *,
     noise_generate_std: float,
-    n_points_range: Tuple[int],
+    n_points_range: Tuple[int],  # noqa: UP006
     random_state: np.random.RandomState,
 ) -> FDataIrregular:
     """Generate samples of functions at random points with Gaussian noise.
@@ -189,7 +189,7 @@ def _create_irregular_samples_with_noise(
         n_points_per_curve=n_points_per_sample,
         random_state=random_state,
     )
-    noise_values = np.random.normal(
+    noise_values = np.random.normal(  # noqa: NPY002
         0, noise_generate_std, fdatairregular_no_noise.values.shape,
     )
     return FDataIrregular(
@@ -219,7 +219,7 @@ def _cmp_estimation_with_original(
 
     assert converter.result_.success, "Optimization failed"
     if check in ("r2_score", "both"):
-        assert r2_score(fdatabasis_estimated, fdatabasis_original) > 0.9
+        assert r2_score(fdatabasis_estimated, fdatabasis_original) > 0.9  # noqa: PLR2004
     if check in ("r2_score", "both"):
         np.allclose(
             fdatabasis_estimated.coefficients,
@@ -252,8 +252,8 @@ def _get_fdatabasis_original(
 
 
 def _test_cmp_with_original_bsplines(
-    converter_cls: Type[MixedEffectsConverter],
-    fit_kwargs: Optional[dict[str, Any]] = None,
+    converter_cls: Type[MixedEffectsConverter],  # noqa: UP006
+    fit_kwargs: Optional[dict[str, Any]] = None,  # noqa: UP007
 ) -> None:
     random_state = np.random.RandomState(238953274)
     if fit_kwargs is None:
@@ -283,7 +283,7 @@ def test_cmp_minimize_with_original() -> None:
         converter_cls=MinimizeMixedEffectsConverter,
         fit_kwargs={
             "minimization_method": "Powell",
-        }
+        }  # noqa: COM812
     )
 
 
@@ -292,18 +292,18 @@ def test_cmp_minimize_with_original() -> None:
 # def test_compare_em_with_original_bsplines() -> None:
 #     """Compare the EM conversion with the original data."""
 #     _test_cmp_with_original_bsplines(
-#         converter_cls=EMMixedEffectsConverter,
-#         fit_kwargs={
-#             "maxiter": 500,
-#             "convergence_criterion": "params",
-#             "rtol": 1e-3,
-#         }
-#     )
+#         converter_cls=EMMixedEffectsConverter,  # noqa: ERA001
+#         fit_kwargs={  # noqa: ERA001, RUF100
+#             "maxiter": 500,  # noqa: ERA001
+#             "convergence_criterion": "params",  # noqa: ERA001
+#             "rtol": 1e-3,  # noqa: ERA001
+#         }  # noqa: ERA001, RUF100
+#     )  # noqa: ERA001, RUF100
 
 
 def _test_cmp_with_original_multidimensional_data(
-    converter_cls: Type[MixedEffectsConverter],
-    fit_kwargs: Optional[dict[str, Any]] = None,
+    converter_cls: Type[MixedEffectsConverter],  # noqa: UP006
+    fit_kwargs: Optional[dict[str, Any]] = None,  # noqa: UP007
 ) -> None:
     """Compare the conversion with the original data.
 
@@ -349,5 +349,5 @@ def test_cmp_em_with_original_multidimensional_data() -> None:
             "maxiter": 300,
             "convergence_criterion": "params",
             "rtol": 1e-1,
-        }
+        }  # noqa: COM812
     )

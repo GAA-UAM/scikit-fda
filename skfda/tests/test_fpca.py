@@ -18,38 +18,38 @@ class FPCATestCase(unittest.TestCase):
     def test_basis_fpca_fit_exceptions(self) -> None:
         """Check that invalid arguments in fit raise exception for basis."""
         fpca = FPCA(n_components=3)
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError):  # noqa: PT027
             fpca.fit(None)  # type: ignore[arg-type]
 
         basis = FourierBasis(n_basis=1)
         # Check that if n_components is bigger than the number of samples then
         # an exception should be thrown
         fd = FDataBasis(basis, [[0.9]])
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError):  # noqa: PT027
             fpca.fit(fd)
 
         # Check that n_components must be smaller than the number of elements
         # of target basis
         fd = FDataBasis(basis, [[0.9], [0.7], [0.5]])
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError):  # noqa: PT027
             fpca.fit(fd)
 
     def test_discretized_fpca_fit_exceptions(self) -> None:
         """Check that invalid arguments in fit raise exception for grid."""
         fpca = FPCA(n_components=3)
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError):  # noqa: PT027
             fpca.fit(None)  # type: ignore[arg-type]
 
         # Check that if n_components is bigger than the number of samples then
         # an exception should be thrown
         fd = FDataGrid([[0.5], [0.1]], grid_points=[0])
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError):  # noqa: PT027
             fpca.fit(fd)
 
         # Check that n_components must be smaller than the number of attributes
         # in the FDataGrid object
         fd = FDataGrid([[0.9], [0.7], [0.5]], grid_points=[0])
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(AttributeError):  # noqa: PT027
             fpca.fit(fd)
 
     def test_basis_fpca_fit_result(self) -> None:
@@ -57,7 +57,7 @@ class FPCATestCase(unittest.TestCase):
         n_basis = 9
         n_components = 3
 
-        fd_data = fetch_weather()['data'].coordinates[0]
+        fd_data = fetch_weather()['data'].coordinates[0]  # noqa: Q000
 
         # Initialize basis data
         basis = FourierBasis(n_basis=n_basis, domain_range=(0, 365))
@@ -111,7 +111,7 @@ class FPCATestCase(unittest.TestCase):
         n_basis = 9
         n_components = 3
 
-        fd_data = fetch_weather()['data'].coordinates[0]
+        fd_data = fetch_weather()['data'].coordinates[0]  # noqa: Q000
 
         # Initialize basis data
         basis = FourierBasis(n_basis=n_basis, domain_range=(0, 365))
@@ -198,7 +198,7 @@ class FPCATestCase(unittest.TestCase):
         n_basis = 9
         n_components = 3
 
-        fd_data = fetch_weather()['data'].coordinates[0]
+        fd_data = fetch_weather()['data'].coordinates[0]  # noqa: Q000
 
         # Initialize basis data
         basis = FourierBasis(n_basis=n_basis, domain_range=(0, 365))
@@ -252,7 +252,7 @@ class FPCATestCase(unittest.TestCase):
         """Compare the components in grid against the multivariate case."""
         n_components = 3
 
-        fd_data = fetch_weather()['data'].coordinates[0]
+        fd_data = fetch_weather()['data'].coordinates[0]  # noqa: Q000
 
         fpca = FPCA(n_components=n_components, _weights=[1] * 365)
         fpca.fit(fd_data)
@@ -298,7 +298,7 @@ class FPCATestCase(unittest.TestCase):
         """
         n_components = 1
 
-        fd_data = fetch_weather()['data'].coordinates[0]
+        fd_data = fetch_weather()['data'].coordinates[0]  # noqa: Q000
 
         fpca = FPCA(n_components=n_components, _weights=[1] * 365)
         fpca.fit(fd_data)
@@ -411,7 +411,7 @@ class FPCATestCase(unittest.TestCase):
         """
         n_components = 1
 
-        fd_data = fetch_weather()['data'].coordinates[0]
+        fd_data = fetch_weather()['data'].coordinates[0]  # noqa: Q000
 
         fpca = FPCA(n_components=n_components, _weights=[1] * 365)
         fpca.fit(fd_data)
@@ -421,7 +421,7 @@ class FPCATestCase(unittest.TestCase):
         weights = np.ones(len(fd_data.grid_points[0]))
         weights[0] = 0.5
         weights[-1] = 0.5
-        fpca._weights = weights  # noqa: WPS437 (protected access)
+        fpca._weights = weights  # noqa: SLF001, WPS437
         scores = fpca.transform(fd_data)
 
         # results obtained
@@ -446,7 +446,7 @@ class FPCATestCase(unittest.TestCase):
         """Compare the components in grid against the fda.usc package."""
         n_components = 1
 
-        fd_data = fetch_weather()['data'].coordinates[0]
+        fd_data = fetch_weather()['data'].coordinates[0]  # noqa: Q000
 
         fpca = FPCA(
             n_components=n_components,
@@ -703,5 +703,5 @@ class FPCATestCase(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

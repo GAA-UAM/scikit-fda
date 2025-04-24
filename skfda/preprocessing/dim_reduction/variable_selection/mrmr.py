@@ -1,8 +1,8 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: D100
 
 import operator
 from dataclasses import dataclass
-from typing import (
+from typing import (  # noqa: UP035
     Any,
     Callable,
     Dict,
@@ -19,19 +19,19 @@ from sklearn.feature_selection import (
     mutual_info_classif,
     mutual_info_regression,
 )
-from typing_extensions import Final, Literal
+from typing_extensions import Final, Literal  # noqa: UP035
 
 from ...._utils._sklearn_adapter import (
     BaseEstimator,
     InductiveTransformerMixin,
 )
 from ....representation.grid import FDataGrid
-from ....typing._base import RandomStateLike
+from ....typing._base import RandomStateLike  # noqa: TC001
 from ....typing._numpy import NDArrayFloat, NDArrayInt, NDArrayReal
 from ._base import _compute_dependence, _DependenceMeasure
 
 _Criterion = Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]
-_CriterionLike = Union[
+_CriterionLike = Union[  # noqa: UP007
     _Criterion,
     Literal["difference", "quotient"],
 ]
@@ -41,10 +41,10 @@ SelfType = TypeVar(
     bound="MinimumRedundancyMaximumRelevance[Any]",
 )
 
-dtype_X_T = TypeVar("dtype_X_T", bound=np.float64, covariant=True)
-dtype_y_T = TypeVar(
+dtype_X_T = TypeVar("dtype_X_T", bound=np.float64, covariant=True)  # noqa: N816, PLC0105
+dtype_y_T = TypeVar(  # noqa: N816, PLC0105
     "dtype_y_T",
-    bound=Union[np.int_, np.float64],
+    bound=Union[np.int_, np.float64],  # noqa: UP007
     covariant=True,
 )
 
@@ -79,9 +79,9 @@ def mutual_information(
         else mutual_info_classif
     )
 
-    extra_args: Dict[str, Any] = {}
+    extra_args: Dict[str, Any] = {}  # noqa: UP006
     if n_neighbors is not None:
-        extra_args['n_neighbors'] = n_neighbors
+        extra_args['n_neighbors'] = n_neighbors  # noqa: Q000
 
     return method(  # type: ignore[no-any-return]
         x,
@@ -108,16 +108,16 @@ MIQ: Final = Method(
 MethodName = Literal["MID", "MIQ"]
 
 
-def _parse_method(name: MethodName) -> Method[Union[np.int_, np.float64]]:
-    if name == "MID":
+def _parse_method(name: MethodName) -> Method[Union[np.int_, np.float64]]:  # noqa: UP007
+    if name == "MID":  # noqa: RET503
         return MID
-    elif name == "MIQ":
+    elif name == "MIQ":  # noqa: RET505
         return MIQ
 
 
 def _mrmr(
     X: np.typing.NDArray[dtype_X_T],
-    Y: np.typing.NDArray[dtype_y_T],
+    Y: np.typing.NDArray[dtype_y_T],  # noqa: N803
     n_features_to_select: int = 1,
     relevance_dependence_measure: _DependenceMeasure[
         np.typing.NDArray[dtype_X_T],
@@ -128,7 +128,7 @@ def _mrmr(
         np.typing.NDArray[dtype_X_T],
     ] = mutual_information,
     criterion: _Criterion = operator.truediv,
-) -> Tuple[NDArrayInt, NDArrayFloat, NDArrayFloat]:
+) -> Tuple[NDArrayInt, NDArrayFloat, NDArrayFloat]:  # noqa: UP006
     indexes = list(range(X.shape[1]))
 
     selected_features = []
@@ -149,7 +149,7 @@ def _mrmr(
 
     indexes.remove(max_index)
 
-    # TODO: Vectorize
+    # TODO: Vectorize  # noqa: FIX002, TD002, TD003
     for i in range(1, n_features_to_select):
 
         # Calculate redundancies of the last selected variable
@@ -163,7 +163,7 @@ def _mrmr(
                 ).item()
                 redundancies[j, last_selected] = redundancies[last_selected, j]
 
-        W = np.mean(
+        W = np.mean(  # noqa: N806
             redundancies[np.ix_(selected_features[:i], indexes)],
             axis=0,
         )
@@ -188,7 +188,7 @@ class MinimumRedundancyMaximumRelevance(
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
-        Union[NDArrayInt, NDArrayFloat],
+        Union[NDArrayInt, NDArrayFloat],  # noqa: UP007
     ],
     BaseEstimator,
     Generic[dtype_y_T],
@@ -311,7 +311,7 @@ class MinimumRedundancyMaximumRelevance(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
 
     @overload
     def __init__(
@@ -404,8 +404,8 @@ class MinimumRedundancyMaximumRelevance(
                 or self.redundancy_dependence_measure
                 or self.criterion
             ):
-                raise ValueError(
-                    "The 'method' parameter and the parameters "
+                raise ValueError(  # noqa: TRY003
+                    "The 'method' parameter and the parameters "  # noqa: EM101
                     "'dependency_measure', 'relevance_dependence_measure' "
                     "'redundancy_dependence_measure' and 'criterion' are "
                     "incompatible",
@@ -429,8 +429,8 @@ class MinimumRedundancyMaximumRelevance(
 
         else:
             if self.criterion is None:
-                raise ValueError(
-                    "You must specify a criterion parameter",
+                raise ValueError(  # noqa: TRY003
+                    "You must specify a criterion parameter",  # noqa: EM101
                 )
 
             if self.criterion == "difference":
@@ -445,8 +445,8 @@ class MinimumRedundancyMaximumRelevance(
                     self.relevance_dependence_measure
                     or self.redundancy_dependence_measure
                 ):
-                    raise ValueError(
-                        "The 'dependency_measure' parameter and the "
+                    raise ValueError(  # noqa: TRY003
+                        "The 'dependency_measure' parameter and the "  # noqa: EM101
                         "parameters 'relevance_dependence_measure' "
                         "and 'redundancy_dependence_measure' "
                         "are incompatible",
@@ -460,12 +460,12 @@ class MinimumRedundancyMaximumRelevance(
                 )
             else:
                 if not self.relevance_dependence_measure:
-                    raise ValueError(
-                        "Missing parameter 'relevance_dependence_measure'",
+                    raise ValueError(  # noqa: TRY003
+                        "Missing parameter 'relevance_dependence_measure'",  # noqa: EM101
                     )
                 if not self.redundancy_dependence_measure:
-                    raise ValueError(
-                        "Missing parameter 'redundancy_dependence_measure'",
+                    raise ValueError(  # noqa: TRY003
+                        "Missing parameter 'redundancy_dependence_measure'",  # noqa: EM101
                     )
                 self.relevance_dependence_measure_ = (
                     self.relevance_dependence_measure
@@ -474,7 +474,7 @@ class MinimumRedundancyMaximumRelevance(
                     self.redundancy_dependence_measure
                 )
 
-    def fit(  # type: ignore[override] # noqa: D102
+    def fit(  # type: ignore[override]  # noqa: D102, PYI019
         self: SelfType,
         X: FDataGrid,
         y: np.typing.NDArray[dtype_y_T],
@@ -482,9 +482,9 @@ class MinimumRedundancyMaximumRelevance(
 
         self._validate_parameters()
 
-        X_array = X.data_matrix[..., 0]
+        X_array = X.data_matrix[..., 0]  # noqa: N806
 
-        X_array, y = sklearn.utils.validation.check_X_y(X_array, y)
+        X_array, y = sklearn.utils.validation.check_X_y(X_array, y)  # noqa: N806
 
         self.features_shape_ = X_array.shape[1:]
 
@@ -499,27 +499,27 @@ class MinimumRedundancyMaximumRelevance(
 
         return self
 
-    def transform(
+    def transform(  # noqa: D102
         self,
         X: FDataGrid,
-        y: NDArrayInt | NDArrayFloat | None = None,
+        y: NDArrayInt | NDArrayFloat | None = None,  # noqa: ARG002
     ) -> NDArrayFloat:
 
-        X_array = X.data_matrix[..., 0]
+        X_array = X.data_matrix[..., 0]  # noqa: N806
 
         sklearn.utils.validation.check_is_fitted(self)
 
-        X_array = sklearn.utils.validation.check_array(X_array)
+        X_array = sklearn.utils.validation.check_array(X_array)  # noqa: N806
 
         if X_array.shape[1:] != self.features_shape_:
-            raise ValueError(
-                "The trajectories have a different number of "
+            raise ValueError(  # noqa: TRY003
+                "The trajectories have a different number of "  # noqa: EM101
                 "points than the ones fitted",
             )
 
         return X_array[:, self.results_]
 
-    def get_support(self, indices: bool = False) -> NDArrayInt:
+    def get_support(self, indices: bool = False) -> NDArrayInt:  # noqa: FBT001, FBT002, D102
         indexes_unraveled = self.results_
         if indices:
             return indexes_unraveled

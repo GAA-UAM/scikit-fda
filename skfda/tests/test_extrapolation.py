@@ -30,44 +30,44 @@ class TestExtrapolation(unittest.TestCase):
         basis = FourierBasis(n_basis=3)
 
         a = FDataBasis(basis, coeff)
-        self.assertEqual(a.extrapolation, None)
+        self.assertEqual(a.extrapolation, None)  # noqa: PT009
 
         a = FDataBasis(basis, coeff, extrapolation="periodic")
-        self.assertEqual(a.extrapolation, PeriodicExtrapolation())
+        self.assertEqual(a.extrapolation, PeriodicExtrapolation())  # noqa: PT009
 
-        self.assertNotEqual(a.extrapolation, BoundaryExtrapolation())
+        self.assertNotEqual(a.extrapolation, BoundaryExtrapolation())  # noqa: PT009
 
         a = FDataBasis(basis, coeff, extrapolation=BoundaryExtrapolation())
-        self.assertEqual(a.extrapolation, BoundaryExtrapolation())
+        self.assertEqual(a.extrapolation, BoundaryExtrapolation())  # noqa: PT009
 
         a = FDataBasis(basis, coeff, extrapolation="exception")
-        self.assertEqual(a.extrapolation, ExceptionExtrapolation())
+        self.assertEqual(a.extrapolation, ExceptionExtrapolation())  # noqa: PT009
 
         a = FDataBasis(basis, coeff, extrapolation=FillExtrapolation(0))
-        self.assertEqual(a.extrapolation, FillExtrapolation(0))
-        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))
+        self.assertEqual(a.extrapolation, FillExtrapolation(0))  # noqa: PT009
+        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))  # noqa: PT009
 
     def test_constructor_fdatagrid_setting(self) -> None:
         """Check argument normalization in constructor for FDataGrid."""
         data = self.dummy_data
 
         a = FDataGrid(data)
-        self.assertEqual(a.extrapolation, None)
+        self.assertEqual(a.extrapolation, None)  # noqa: PT009
 
         a = FDataGrid(data, extrapolation="periodic")
-        self.assertEqual(a.extrapolation, PeriodicExtrapolation())
+        self.assertEqual(a.extrapolation, PeriodicExtrapolation())  # noqa: PT009
 
         a = FDataGrid(data, extrapolation=BoundaryExtrapolation())
-        self.assertEqual(a.extrapolation, BoundaryExtrapolation())
+        self.assertEqual(a.extrapolation, BoundaryExtrapolation())  # noqa: PT009
 
-        self.assertNotEqual(a.extrapolation, ExceptionExtrapolation())
+        self.assertNotEqual(a.extrapolation, ExceptionExtrapolation())  # noqa: PT009
 
         a = FDataGrid(data, extrapolation="exception")
-        self.assertEqual(a.extrapolation, ExceptionExtrapolation())
+        self.assertEqual(a.extrapolation, ExceptionExtrapolation())  # noqa: PT009
 
         a = FDataGrid(data, extrapolation=FillExtrapolation(0))
-        self.assertEqual(a.extrapolation, FillExtrapolation(0))
-        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))
+        self.assertEqual(a.extrapolation, FillExtrapolation(0))  # noqa: PT009
+        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))  # noqa: PT009
 
     def test_setting(self) -> None:
         """Check argument in setter."""
@@ -75,18 +75,18 @@ class TestExtrapolation(unittest.TestCase):
         a = FDataGrid(data)
 
         a.extrapolation = PeriodicExtrapolation()
-        self.assertEqual(a.extrapolation, PeriodicExtrapolation())
+        self.assertEqual(a.extrapolation, PeriodicExtrapolation())  # noqa: PT009
 
         a.extrapolation = "bounds"  # type: ignore[assignment]
-        self.assertEqual(a.extrapolation, BoundaryExtrapolation())
+        self.assertEqual(a.extrapolation, BoundaryExtrapolation())  # noqa: PT009
 
         a.extrapolation = ExceptionExtrapolation()
-        self.assertEqual(a.extrapolation, ExceptionExtrapolation())
+        self.assertEqual(a.extrapolation, ExceptionExtrapolation())  # noqa: PT009
 
         a.extrapolation = "zeros"  # type: ignore[assignment]
-        self.assertEqual(a.extrapolation, FillExtrapolation(0))
+        self.assertEqual(a.extrapolation, FillExtrapolation(0))  # noqa: PT009
 
-        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))
+        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))  # noqa: PT009
 
     def test_periodic(self) -> None:
         """Test periodic extrapolation."""
@@ -205,5 +205,5 @@ class TestExtrapolation(unittest.TestCase):
         )
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

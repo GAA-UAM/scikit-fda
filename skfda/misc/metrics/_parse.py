@@ -1,9 +1,9 @@
 """Typing for norms and metrics."""
 import enum
-from builtins import isinstance
+from builtins import isinstance  # noqa: A004, UP029
 from typing import Any, TypeVar, Union, overload
 
-from typing_extensions import Final, Literal
+from typing_extensions import Final, Literal  # noqa: UP035
 
 from ...typing._metric import Metric
 
@@ -21,7 +21,7 @@ _PrecomputedTypes = Literal[
 
 _NonStringMetric = TypeVar(
     "_NonStringMetric",
-    bound=Union[
+    bound=Union[  # noqa: UP007
         Metric[Any],
         _MetricSingletons,
     ],
@@ -43,7 +43,7 @@ def _parse_metric(
 
 
 def _parse_metric(
-    metric: Union[Metric[Any], _MetricSingletons, str],
-) -> Union[Metric[Any], _MetricSingletons]:
+    metric: Union[Metric[Any], _MetricSingletons, str],  # noqa: UP007
+) -> Union[Metric[Any], _MetricSingletons]:  # noqa: UP007
 
     return _MetricSingletons(metric) if isinstance(metric, str) else metric

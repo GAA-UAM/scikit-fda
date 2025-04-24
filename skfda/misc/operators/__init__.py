@@ -20,10 +20,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._identity import Identity as Identity
+    from ._identity import Identity as Identity  # noqa: I001
     from ._integral_transform import IntegralTransform as IntegralTransform
     from ._linear_differential_operator import (
-        LinearDifferentialOperator as LinearDifferentialOperator
+        LinearDifferentialOperator as LinearDifferentialOperator  # noqa: COM812
     )
     from ._operators import (
         MatrixOperator as MatrixOperator,

@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from skfda._utils._sklearn_adapter import ClassifierMixin
+from skfda._utils._sklearn_adapter import ClassifierMixin  # noqa: TC001
 from skfda.datasets import make_gaussian_process
 from skfda.exploratory.depth import ModifiedBandDepth
 from skfda.exploratory.stats.covariance import ParametricGaussianCovariance
@@ -23,9 +23,9 @@ from skfda.ml.classification import (
     QuadraticDiscriminantAnalysis,
     RadiusNeighborsClassifier,
 )
-from skfda.representation import FData
+from skfda.representation import FData  # noqa: TC001
 
-from ..typing._numpy import NDArrayAny
+from ..typing._numpy import NDArrayAny  # noqa: TC001
 
 
 @pytest.fixture(
@@ -49,7 +49,7 @@ from ..typing._numpy import NDArrayAny
     ],
     ids=lambda clf: type(clf).__name__,
 )
-def classifier(request: Any) -> Any:
+def classifier(request: Any) -> Any:  # noqa: ANN401
     """Fixture for classifiers to test."""
     return request.param
 
@@ -61,7 +61,7 @@ def classifier(request: Any) -> Any:
     ],
     ids=["int", "str"],
 )
-def classes(request: Any) -> Any:
+def classes(request: Any) -> Any:  # noqa: ANN401
     """Fixture for classes to test."""
     return request.param
 

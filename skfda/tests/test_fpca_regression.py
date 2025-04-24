@@ -40,9 +40,9 @@ class FPCARegressionTestCase(unittest.TestCase):
             )
         """
         X, y = skfda.datasets.fetch_tecator(return_X_y=True, as_frame=True)
-        X_train = X.iloc[:129, 0].values
+        X_train = X.iloc[:129, 0].values  # noqa: N806
         y_train = y["fat"][:129].values
-        X_test = X.iloc[129:, 0].values
+        X_test = X.iloc[129:, 0].values  # noqa: N806
 
         fpca_regression = FPCARegression(n_components=10)
 
@@ -96,9 +96,9 @@ class FPCARegressionTestCase(unittest.TestCase):
             )
         """
         X, y = skfda.datasets.fetch_tecator(return_X_y=True, as_frame=True)
-        X_train = X.iloc[:129, 0].values
+        X_train = X.iloc[:129, 0].values  # noqa: N806
         y_train = y["fat"][:129].values
-        X_test = X.iloc[129:, 0].values
+        X_test = X.iloc[129:, 0].values  # noqa: N806
         pen_order = 2
 
         # Two correction factors are needed to obtain the same results as
@@ -165,7 +165,7 @@ class FPCARegressionTestCase(unittest.TestCase):
         # a different method, and the quadrature used is different.
         np.testing.assert_allclose(r_predictions, predictions, rtol=2e-2)
 
-    def test_fpca_reg_basis_vs_grid(self):
+    def test_fpca_reg_basis_vs_grid(self):  # noqa: ANN201
         """
         Compare results between grid and basis.
 
@@ -173,14 +173,14 @@ class FPCARegressionTestCase(unittest.TestCase):
         basis representation of the data.
         """
         X, y = fetch_tecator(return_X_y=True)
-        X_basis = X.to_basis(BSplineBasis(n_basis=20))
+        X_basis = X.to_basis(BSplineBasis(n_basis=20))  # noqa: N806
 
         n_train = 129
 
         y_train = y[:n_train, 0]
 
-        X_basis_train = X_basis[:n_train]
-        X_basis_test = X_basis[n_train:]
+        X_basis_train = X_basis[:n_train]  # noqa: N806
+        X_basis_test = X_basis[n_train:]  # noqa: N806
 
         sampling_grid = np.linspace(
             X_basis.domain_range[0][0],
@@ -188,9 +188,9 @@ class FPCARegressionTestCase(unittest.TestCase):
             100,
         )
 
-        X_grid = X_basis.to_grid(grid_points=sampling_grid)
-        X_grid_train = X_grid[:n_train]
-        X_grid_test = X_grid[n_train:]
+        X_grid = X_basis.to_grid(grid_points=sampling_grid)  # noqa: N806
+        X_grid_train = X_grid[:n_train]  # noqa: N806
+        X_grid_test = X_grid[n_train:]  # noqa: N806
 
         n_components = 10
 

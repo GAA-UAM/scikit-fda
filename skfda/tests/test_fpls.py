@@ -1,6 +1,6 @@
 """Test the FPLS class."""
 
-from typing import Tuple
+from typing import Tuple  # noqa: UP035
 
 import numpy as np
 import pytest
@@ -38,7 +38,7 @@ class LatentVariablesModel:
         self,
         n_features: int,
         noise: float = 0,
-    ) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    ) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         """Create observed multivariate variable for testing."""
         rotations = self.rng.uniform(
             low=0,
@@ -57,8 +57,8 @@ class LatentVariablesModel:
     def create_observed_functional_variable(
         self,
         noise: float = 0,
-        discretized: bool = False,
-    ) -> Tuple[FData, FData]:
+        discretized: bool = False,  # noqa: FBT001, FBT002
+    ) -> Tuple[FData, FData]:  # noqa: UP006
         """Create observed functional variable for testing."""
         n_basis = 20
         basis = BSplineBasis(n_basis=n_basis)
@@ -162,7 +162,7 @@ class TestFPLS(LatentVariablesModel):
         self.create_latent_variables(n_latent=n_components, n_samples=100)
 
         # Create the observed variable as basis variables
-        X_observed, X_rotations = self.create_observed_functional_variable(
+        X_observed, X_rotations = self.create_observed_functional_variable(  # noqa: N806
             discretized=False,
             noise=0,
         )
@@ -177,7 +177,7 @@ class TestFPLS(LatentVariablesModel):
 
         # Convert the observed variables to grid
         grid_points = np.linspace(0, 1, 2000)
-        X_observed_grid = X_observed.to_grid(
+        X_observed_grid = X_observed.to_grid(  # noqa: N806
             grid_points=grid_points,
         )
 
@@ -230,9 +230,9 @@ class TestFPLS(LatentVariablesModel):
             rtol=0.13,
         )
 
-    def _generate_random_matrix_by_rank(self, n_samples, n_features, rank):
+    def _generate_random_matrix_by_rank(self, n_samples, n_features, rank):  # noqa: ANN001, ANN202
 
-        random_data = np.random.random(n_samples * rank).reshape(
+        random_data = np.random.random(n_samples * rank).reshape(  # noqa: NPY002
             n_samples,
             rank,
         )
@@ -253,7 +253,7 @@ class TestFPLS(LatentVariablesModel):
         """Check that the behaviour is correct with collinear matrices."""
         n_samples = 100
         n_features = 10
-        np.random.seed(0)
+        np.random.seed(0)  # noqa: NPY002
 
         X = self._generate_random_matrix_by_rank(
             n_samples=n_samples,
@@ -273,7 +273,7 @@ class TestFPLS(LatentVariablesModel):
 
         # Check that a warning is raised when the rank is lower than the
         # number of components
-        if rank < 5:
+        if rank < 5:  # noqa: PLR2004
             with pytest.warns(UserWarning):
                 fpls.fit(X, y)
         else:
@@ -294,7 +294,7 @@ class TestFPLS(LatentVariablesModel):
         """Check error when number of components is too large."""
         n_samples = 100
         n_features = 10
-        np.random.seed(0)
+        np.random.seed(0)  # noqa: NPY002
 
         X = self._generate_random_matrix_by_rank(
             n_samples=n_samples,
@@ -307,5 +307,5 @@ class TestFPLS(LatentVariablesModel):
             rank=n_features,
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             FPLS(n_components=n_features + 1).fit(X, y)

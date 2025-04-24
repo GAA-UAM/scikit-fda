@@ -83,7 +83,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
         )
 
         # Check erroneous axis
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             f((t, t), grid=True)
 
     def test_evaluation_linear_unaligned(self) -> None:
@@ -185,7 +185,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
         )
 
         # Check erroneous axis
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             f((t, t), grid=True)
 
     def test_evaluation_cubic_unaligned(self) -> None:
@@ -240,7 +240,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
 
     def test_error_degree(self) -> None:
         """Check unsupported spline degrees."""
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             interpolation = SplineInterpolation(7)
             f = FDataGrid(
                 self.data_matrix_1_1,
@@ -249,7 +249,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
             )
             f(1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             interpolation = SplineInterpolation(0)
             f = FDataGrid(
                 self.data_matrix_1_1,
@@ -359,7 +359,7 @@ class TestEvaluationSplineArbitraryImage(unittest.TestCase):
         np.testing.assert_allclose(f([t], grid=True), res)
 
         # Check erroneous axis
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             f((t, t), grid=True)
 
     def test_evaluation_unaligned(self) -> None:
@@ -429,7 +429,7 @@ class TestEvaluationSplineArbitraryDim(unittest.TestCase):
                 [1] * dim_domain,
             ])
 
-            self.assertEqual(evaluation.shape, (n_samples, 3, dim_codomain))
+            self.assertEqual(evaluation.shape, (n_samples, 3, dim_codomain))  # noqa: PT009
 
             for i in range(n_samples):
                 for j in range(dim_codomain):
@@ -439,5 +439,5 @@ class TestEvaluationSplineArbitraryDim(unittest.TestCase):
                     )
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

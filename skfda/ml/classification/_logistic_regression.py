@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Callable, Tuple
+from typing import Callable, Tuple  # noqa: UP035
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression as mvLogisticRegression
 from sklearn.utils.validation import check_is_fitted
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils import _classifier_get_classes
 from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
@@ -95,14 +95,14 @@ class LogisticRegression(
         References:
             .. footbibliography::
 
-    """
+    """  # noqa: D214
 
     def __init__(
         self,
         max_features: int = 5,
         penalty: Literal["l1", "l2", "elasticnet", None] = None,
-        C: float = 1,
-        solver: Solver = 'lbfgs',
+        C: float = 1,  # noqa: N803
+        solver: Solver = 'lbfgs',  # noqa: Q000
         max_iter: int = 100,
     ) -> None:
 
@@ -112,7 +112,7 @@ class LogisticRegression(
         self.solver = solver
         self.max_iter = max_iter
 
-    def fit(  # noqa: D102, WPS210
+    def fit(  # noqa: D102, RUF100, WPS210
         self,
         X: FDataGrid,
         y: NDArrayAny,
@@ -151,7 +151,7 @@ class LogisticRegression(
                 mvlr.fit(selected_values[:, :n_selected + 1], y_ind)
 
                 # log-likelihood function at t
-                with np.errstate(divide='ignore'):
+                with np.errstate(divide='ignore'):  # noqa: Q000
                     log_probs = mvlr.predict_log_proba(
                         selected_values[:, :n_selected + 1],
                     )
@@ -194,15 +194,15 @@ class LogisticRegression(
 
         return self
 
-    def predict(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
+    def predict(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102, RUF100
         check_is_fitted(self)
         return self._wrapper(self._mvlr.predict, X)
 
-    def predict_log_proba(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
+    def predict_log_proba(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102, RUF100
         check_is_fitted(self)
         return self._wrapper(self._mvlr.predict_log_proba, X)
 
-    def predict_proba(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
+    def predict_proba(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102, RUF100
         check_is_fitted(self)
         return self._wrapper(self._mvlr.predict_proba, X)
 
@@ -212,9 +212,9 @@ class LogisticRegression(
     ) -> FDataGrid:
 
         if X.dim_domain > 1:
-            raise ValueError(
-                f'The dimension of the domain has to be one'
-                f'; got {X.dim_domain} dimensions',
+            raise ValueError(  # noqa: TRY003
+                f'The dimension of the domain has to be one'  # noqa: EM102, Q000
+                f'; got {X.dim_domain} dimensions',  # noqa: Q000
             )
 
         return X
@@ -223,21 +223,21 @@ class LogisticRegression(
         self,
         X: FDataGrid,
         y: NDArrayAny,
-    ) -> Tuple[FDataGrid, NDArrayAny, NDArrayAny]:
+    ) -> Tuple[FDataGrid, NDArrayAny, NDArrayAny]:  # noqa: UP006
 
         X = self._argcheck_X(X)
 
         classes, y_ind = _classifier_get_classes(y)
 
-        if classes.size > 2:
-            raise ValueError(
-                f'The number of classes has to be two'
-                f'; got {classes.size} classes',
+        if classes.size > 2:  # noqa: PLR2004
+            raise ValueError(  # noqa: TRY003
+                f'The number of classes has to be two'  # noqa: EM102, Q000
+                f'; got {classes.size} classes',  # noqa: Q000
             )
 
         if (len(y) != len(X)):
-            raise ValueError(
-                "The number of samples on independent variables"
+            raise ValueError(  # noqa: TRY003
+                "The number of samples on independent variables"  # noqa: EM101
                 " and classes should be the same",
             )
 

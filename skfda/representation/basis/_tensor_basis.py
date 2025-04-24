@@ -1,7 +1,7 @@
 import itertools
 import math
 import warnings
-from typing import Any, Iterable, Tuple
+from typing import Any, Iterable, Tuple  # noqa: UP035
 
 import numpy as np
 
@@ -62,15 +62,15 @@ class TensorBasis(Basis):
 
     """
 
-    def __init__(self, basis_list: Iterable[Basis]):
+    def __init__(self, basis_list: Iterable[Basis]):  # noqa: ANN204
 
         self._basis_list = tuple(basis_list)
 
         if not all(
             b.dim_domain == 1 and b.dim_codomain == 1 for b in self._basis_list
         ):
-            raise ValueError(
-                "The basis functions must be univariate and scalar valued",
+            raise ValueError(  # noqa: TRY003
+                "The basis functions must be univariate and scalar valued",  # noqa: EM101
             )
 
         super().__init__(
@@ -79,7 +79,7 @@ class TensorBasis(Basis):
         )
 
     @property
-    def basis_list(self) -> Tuple[Basis, ...]:
+    def basis_list(self) -> Tuple[Basis, ...]:  # noqa: UP006
         return self._basis_list
 
     def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
@@ -110,7 +110,7 @@ class TensorBasis(Basis):
 
         return gram
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         return super().__eq__(other) and self.basis_list == other.basis_list
 
     def __hash__(self) -> int:
@@ -172,7 +172,7 @@ class Tensor(TensorBasis):
 
     """
 
-    def __init__(self, basis_list: Iterable[Basis]):
+    def __init__(self, basis_list: Iterable[Basis]):  # noqa: ANN204
 
         super().__init__(
             basis_list=basis_list,

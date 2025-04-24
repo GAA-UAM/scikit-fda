@@ -1,12 +1,12 @@
 """Implementation of Lp norms."""
 
-import math
-from builtins import isinstance
+import math  # noqa: I001
+from builtins import isinstance  # noqa: A004, UP029
 from typing import Union
 
 import numpy as np
-import scipy.integrate
-from typing_extensions import Final
+import scipy.integrate  # noqa: F401
+from typing_extensions import Final  # noqa: UP035
 
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
@@ -89,20 +89,20 @@ class LpNorm:
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,  # noqa: UP007
     ) -> None:
 
         # Checks that the lp normed is well defined
         if not np.isinf(p) and p < 1:
-            raise ValueError(f"p (={p}) must be equal or greater than 1.")
+            raise ValueError(f"p (={p}) must be equal or greater than 1.")  # noqa: EM102, TRY003
 
         self.p = p
         self.vector_norm = vector_norm
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(" f"p={self.p}, vector_norm={self.vector_norm})"
+        return f"{type(self).__name__}(" f"p={self.p}, vector_norm={self.vector_norm})"  # noqa: ISC001, E501
 
-    def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:
+    def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:  # noqa: C901, UP007
         """Compute the Lp norm of a functional data object."""
         from ...misc import inner_product
 
@@ -119,7 +119,7 @@ class LpNorm:
             vector_norm = self.p
 
         # Special case, the inner product is heavily optimized
-        if self.p == vector_norm == 2:
+        if self.p == vector_norm == 2:  # noqa: PLR2004
             return np.sqrt(inner_product(vector, vector))
 
         if isinstance(vector, FDataBasis):
@@ -131,7 +131,7 @@ class LpNorm:
 
                 try:
                     f1 = call(f_args)[:, 0, :]
-                except Exception:
+                except Exception:  # noqa: BLE001
                     f1 = call(f_args)
 
                 return np.power(np.abs(f1), self.p)
@@ -177,7 +177,7 @@ class LpNorm:
                 res = integrand.integrate().ravel() ** (1 / self.p)
         else:
             raise NotImplementedError(
-                f"LpNorm not implemented for type {type(vector)}",
+                f"LpNorm not implemented for type {type(vector)}",  # noqa: EM102
             )
 
         if len(res) == 1:
@@ -192,10 +192,10 @@ linf_norm: Final = LpNorm(math.inf)
 
 
 def lp_norm(
-    vector: Union[NDArrayFloat, FData],
+    vector: Union[NDArrayFloat, FData],  # noqa: UP007
     *,
     p: float,
-    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,  # noqa: UP007
 ) -> NDArrayFloat:
     r"""Calculate the norm of all the observations in a FDataGrid object.
 
@@ -278,5 +278,5 @@ def lp_norm(
     See also:
         :class:`LpNorm`
 
-    """
+    """  # noqa: D405
     return LpNorm(p=p, vector_norm=vector_norm)(vector)

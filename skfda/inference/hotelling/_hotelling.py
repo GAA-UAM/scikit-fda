@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import itertools
-from typing import Tuple, overload
+from typing import Tuple, overload  # noqa: UP035
 
 import numpy as np
 import scipy.special
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ...misc.validation import validate_random_state
 from ...representation import FData, FDataBasis, FDataGrid
-from ...typing._base import RandomStateLike
-from ...typing._numpy import NDArrayFloat
+from ...typing._base import RandomStateLike  # noqa: TC001
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 
 
 def hotelling_t2(
@@ -76,10 +76,10 @@ def hotelling_t2(
 
     """
     if not isinstance(fd1, FData):
-        raise TypeError("Argument type must inherit FData.")
+        raise TypeError("Argument type must inherit FData.")  # noqa: EM101, TRY003
 
     if not isinstance(fd2, type(fd1)):
-        raise TypeError("Both samples must be instances of the same type.")
+        raise TypeError("Both samples must be instances of the same type.")  # noqa: EM101, TRY003
 
     n1, n2 = fd1.n_samples, fd2.n_samples  # Size of each sample
     n = n1 + n2  # Size of full sample
@@ -87,8 +87,8 @@ def hotelling_t2(
 
     if isinstance(fd1, FDataBasis) and isinstance(fd2, FDataBasis):
         if fd1.basis != fd2.basis:
-            raise ValueError(
-                "Both FDataBasis objects must share the same basis.",
+            raise ValueError(  # noqa: TRY003
+                "Both FDataBasis objects must share the same basis.",  # noqa: EM101
             )
         # When working on basis representation we use the coefficients
         m = m.coefficients[0]
@@ -135,7 +135,7 @@ def hotelling_test_ind(
     n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: Literal[False] = False,
-) -> Tuple[float, float]:
+) -> Tuple[float, float]:  # noqa: UP006
     pass
 
 
@@ -147,7 +147,7 @@ def hotelling_test_ind(
     n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: Literal[True],
-) -> Tuple[float, float, NDArrayFloat]:
+) -> Tuple[float, float, NDArrayFloat]:  # noqa: UP006
     pass
 
 
@@ -158,7 +158,7 @@ def hotelling_test_ind(
     n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: bool = False,
-) -> Tuple[float, float] | Tuple[float, float, NDArrayFloat]:
+) -> Tuple[float, float] | Tuple[float, float, NDArrayFloat]:  # noqa: UP006
     """
     Compute Hotelling :math:`T^2`-test.
 
@@ -216,13 +216,13 @@ def hotelling_test_ind(
 
     """
     if not isinstance(fd1, FData):
-        raise TypeError("Argument type must inherit FData.")
+        raise TypeError("Argument type must inherit FData.")  # noqa: EM101, TRY003
 
     if not isinstance(fd2, type(fd1)):
-        raise TypeError("Both samples must be instances of the same type.")
+        raise TypeError("Both samples must be instances of the same type.")  # noqa: EM101, TRY003
 
     if n_reps is not None and n_reps < 1:
-        raise ValueError("Number of repetitions must be positive.")
+        raise ValueError("Number of repetitions must be positive.")  # noqa: EM101, TRY003
 
     n1 = fd1.n_samples
     t2_0 = hotelling_t2(fd1, fd2)

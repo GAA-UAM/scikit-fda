@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Tuple  # noqa: UP035
 
 import numpy as np
-import numpy.linalg as linalg
+import numpy.linalg as linalg  # noqa: PLR0402
 import sklearn.utils.validation
 
 from ...._utils import _classifier_get_classes
@@ -17,9 +17,9 @@ from ....typing._numpy import NDArrayFloat, NDArrayInt
 
 def _rkhs_vs(
     X: NDArrayFloat,
-    Y: NDArrayInt,
+    Y: NDArrayInt,  # noqa: N803
     n_features_to_select: int = 1,
-) -> Tuple[NDArrayInt, NDArrayFloat]:
+) -> Tuple[NDArrayInt, NDArrayFloat]:  # noqa: UP006
     """
     RKHS-VS implementation.
 
@@ -36,7 +36,7 @@ def _rkhs_vs(
     assert n_features_to_select >= 1
     assert n_features_to_select <= X.shape[1]
 
-    _, Y = _classifier_get_classes(Y)
+    _, Y = _classifier_get_classes(Y)  # noqa: N806
 
     selected_features = np.zeros(n_features_to_select, dtype=int)
     score = np.zeros(n_features_to_select)
@@ -77,7 +77,7 @@ def _rkhs_vs(
     for i in range(1, n_features_to_select):
         aux = np.zeros_like(indexes, dtype=np.float64)
 
-        for j in range(0, indexes.shape[0]):
+        for j in range(0, indexes.shape[0]):  # noqa: PIE808
             new_selection = np.concatenate([
                 selected_features[:i],
                 [indexes[j]],
@@ -196,22 +196,22 @@ class RKHSVariableSelection(
     def __init__(self, n_features_to_select: int = 1) -> None:
         self.n_features_to_select = n_features_to_select
 
-    def fit(  # type: ignore[override] # noqa: D102
+    def fit(  # type: ignore[override]  # noqa: D102, RUF100
         self,
         X: FDataGrid,
         y: NDArrayInt,
     ) -> RKHSVariableSelection:
 
         n_unique_labels = len(np.unique(y))
-        if n_unique_labels != 2:
-            raise ValueError(
-                f"RK-VS can only be used when there are only "
+        if n_unique_labels != 2:  # noqa: PLR2004
+            raise ValueError(  # noqa: TRY003
+                f"RK-VS can only be used when there are only "  # noqa: EM102
                 f"two different labels, but there are "
                 f"{n_unique_labels}",
             )
 
         if X.dim_domain != 1 or X.dim_codomain != 1:
-            raise ValueError("Domain and codomain dimensions must be 1")
+            raise ValueError("Domain and codomain dimensions must be 1")  # noqa: EM101, TRY003
 
         X, y = sklearn.utils.validation.check_X_y(X.data_matrix[..., 0], y)
 
@@ -228,25 +228,25 @@ class RKHSVariableSelection(
 
         return self
 
-    def transform(  # noqa: D102
+    def transform(  # noqa: D102, RUF100
         self,
         X: FDataGrid,
-        Y: None = None,
+        Y: None = None,  # noqa: ARG002, N803
     ) -> NDArrayFloat:
 
         sklearn.utils.validation.check_is_fitted(self)
 
-        X_matrix = sklearn.utils.validation.check_array(X.data_matrix[..., 0])
+        X_matrix = sklearn.utils.validation.check_array(X.data_matrix[..., 0])  # noqa: N806
 
         if X_matrix.shape[1:] != self._features_shape_:
-            raise ValueError(
-                "The trajectories have a different number of "
+            raise ValueError(  # noqa: TRY003
+                "The trajectories have a different number of "  # noqa: EM101
                 "points than the ones fitted",
             )
 
         return X_matrix[:, self._features_]  # type: ignore[no-any-return]
 
-    def get_support(self, indices: bool = False) -> NDArrayInt:
+    def get_support(self, indices: bool = False) -> NDArrayInt:  # noqa: FBT001, FBT002
         """
         Get a mask, or integer index, of the features selected.
 

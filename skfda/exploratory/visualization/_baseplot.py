@@ -7,19 +7,19 @@ common to all of them.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple  # noqa: UP035
 
 import matplotlib.pyplot as plt
-from matplotlib.artist import Artist
-from matplotlib.axes import Axes
-from matplotlib.backend_bases import LocationEvent, MouseEvent
+from matplotlib.artist import Artist  # noqa: TC002
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.backend_bases import LocationEvent, MouseEvent  # noqa: TC002
 from matplotlib.collections import PathCollection
-from matplotlib.colors import ListedColormap
-from matplotlib.figure import Figure
+from matplotlib.colors import ListedColormap  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 from matplotlib.text import Annotation
 
-from ...representation import FData
-from ...typing._numpy import NDArrayInt, NDArrayObject
+from ...representation import FData  # noqa: TC001
+from ...typing._numpy import NDArrayInt, NDArrayObject  # noqa: TC001
 from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
 
@@ -36,7 +36,7 @@ class BasePlot(ABC):
     """
 
     @abstractmethod
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         chart: Figure | Axes | None = None,
         *,
@@ -61,7 +61,7 @@ class BasePlot(ABC):
         self.x_label = x_label
         self.y_label = y_label
 
-    def _plot(
+    def _plot(  # noqa: B027
         self,
         fig: Figure,
         axes: Sequence[Axes],
@@ -98,7 +98,7 @@ class BasePlot(ABC):
         self._plot(fig, axes)
 
         self._hover_event_id = fig.canvas.mpl_connect(
-            'motion_notify_event',
+            'motion_notify_event',  # noqa: Q000
             self.hover,
         )
 
@@ -125,7 +125,7 @@ class BasePlot(ABC):
         *,
         fig: Figure | None = None,
         axes: Axes | Sequence[Axes] | None = None,
-    ) -> Tuple[Figure, Sequence[Axes]]:
+    ) -> Tuple[Figure, Sequence[Axes]]:  # noqa: UP006
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout(
             fig=fig,
@@ -164,20 +164,20 @@ class BasePlot(ABC):
             clip_on=False,
         )
 
-        tag.get_bbox_patch().set_facecolor(color='khaki')
+        tag.get_bbox_patch().set_facecolor(color='khaki')  # noqa: Q000
         intensity = 0.8
         tag.get_bbox_patch().set_alpha(intensity)
 
         return tag
 
-    def _update_annotation(
+    def _update_annotation(  # noqa: D417
         self,
         tag: Annotation,
         *,
         axes: Axes,
         sample_number: int,
         fdata: FData | None,
-        position: Tuple[float, float],
+        position: Tuple[float, float],  # noqa: UP006
     ) -> None:
         """
         Auxiliary method used to update the hovering annotations.
@@ -189,7 +189,7 @@ class BasePlot(ABC):
             tag: Annotation to update.
             axes: Axes were the annotation belongs.
             sample_number: Number of the current sample.
-        """
+        """  # noqa: D411
         xdata_graph, ydata_graph = position
 
         tag.xy = (xdata_graph, ydata_graph)
@@ -229,7 +229,7 @@ class BasePlot(ABC):
     def _sample_artist_from_event(
         self,
         event: LocationEvent,
-    ) -> Tuple[int, FData | None, Artist] | None:
+    ) -> Tuple[int, FData | None, Artist] | None:  # noqa: UP006
         """Get the number, fdata and artist under a location event."""
         if self.artists is None:
             return None

@@ -1,12 +1,12 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import math
-from typing import Tuple
+from typing import Tuple  # noqa: UP035
 
 import numpy as np
 
-from ...representation import FDataGrid
-from ...typing._numpy import NDArrayBool, NDArrayFloat, NDArrayInt
+from ...representation import FDataGrid  # noqa: TC001
+from ...typing._numpy import NDArrayBool, NDArrayFloat, NDArrayInt  # noqa: TC001
 
 
 def compute_region(
@@ -21,7 +21,7 @@ def compute_region(
     return fdatagrid[indices_samples]
 
 
-def compute_envelope(region: FDataGrid) -> Tuple[NDArrayFloat, NDArrayFloat]:
+def compute_envelope(region: FDataGrid) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
     """Compute curves comprising a region."""
     max_envelope = np.max(region.data_matrix, axis=0)
     min_envelope = np.min(region.data_matrix, axis=0)
@@ -31,7 +31,7 @@ def compute_envelope(region: FDataGrid) -> Tuple[NDArrayFloat, NDArrayFloat]:
 
 def predict_outliers(
     fdatagrid: FDataGrid,
-    non_outlying_threshold: Tuple[NDArrayFloat, NDArrayFloat],
+    non_outlying_threshold: Tuple[NDArrayFloat, NDArrayFloat],  # noqa: UP006
 ) -> NDArrayBool:
     """
     Predict outliers given a threshold.
@@ -57,9 +57,9 @@ def predict_outliers(
 
 
 def non_outlying_threshold(
-    central_envelope: Tuple[NDArrayFloat, NDArrayFloat],
+    central_envelope: Tuple[NDArrayFloat, NDArrayFloat],  # noqa: UP006
     factor: float,
-) -> Tuple[NDArrayFloat, NDArrayFloat]:
+) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
     """Compute a non outlying threshold."""
     iqr = central_envelope[1] - central_envelope[0]
     non_outlying_threshold_max = central_envelope[1] + iqr * factor

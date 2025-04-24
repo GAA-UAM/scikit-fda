@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Sequence, Tuple, Type, TypeVar
+from typing import Any, Sequence, Tuple, Type, TypeVar  # noqa: UP035
 
 import numpy as np
 from numpy import polyint, polymul, polyval
 from scipy.interpolate import BSpline as SciBSpline, PPoly
 
-from ...typing._base import DomainRangeLike
-from ...typing._numpy import NDArrayFloat
+from ...typing._base import DomainRangeLike  # noqa: TC001
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ._basis import Basis
 
 T = TypeVar("T", bound="BSplineBasis")
@@ -105,7 +105,7 @@ class BSplineBasis(Basis):
             domain_range = validate_domain_range(domain_range)
 
             if len(domain_range) != 1:
-                raise ValueError("Domain range should be unidimensional.")
+                raise ValueError("Domain range should be unidimensional.")  # noqa: EM101, TRY003
 
             domain_range = domain_range[0]
 
@@ -116,23 +116,23 @@ class BSplineBasis(Basis):
             if domain_range is None:
                 domain_range = (knots[0], knots[-1])
             elif domain_range[0] != knots[0] or domain_range[1] != knots[-1]:
-                raise ValueError(
-                    "The ends of the knots must be the same "
+                raise ValueError(  # noqa: TRY003
+                    "The ends of the knots must be the same "  # noqa: EM101
                     "as the domain_range.",
                 )
 
         # n_basis default to number of knots + order of the splines - 2
         if n_basis is None:
             if knots is None:
-                raise ValueError(
-                    "Must provide either a list of knots or the"
+                raise ValueError(  # noqa: TRY003
+                    "Must provide either a list of knots or the"  # noqa: EM101
                     "number of basis.",
                 )
             n_basis = len(knots) + order - 2
 
         if n_basis < order:
-            raise ValueError(
-                f"The number of basis ({n_basis}) should not be smaller "
+            raise ValueError(  # noqa: TRY003
+                f"The number of basis ({n_basis}) should not be smaller "  # noqa: EM102
                 f"than the order of the bspline ({order}).",
             )
 
@@ -142,14 +142,14 @@ class BSplineBasis(Basis):
 
         # Checks
         if self.n_basis != self.order + len(self.knots) - 2:
-            raise ValueError(
-                f"The number of basis ({self.n_basis}) has to "
+            raise ValueError(  # noqa: TRY003
+                f"The number of basis ({self.n_basis}) has to "  # noqa: EM102
                 f"equal the order ({self.order}) plus the "
                 f"number of knots ({len(self.knots)}) minus 2.",
             )
 
     @property
-    def knots(self) -> Tuple[float, ...]:
+    def knots(self) -> Tuple[float, ...]:  # noqa: UP006
         if self._knots is None:
             return tuple(
                 np.linspace(
@@ -164,7 +164,7 @@ class BSplineBasis(Basis):
     def order(self) -> int:
         return self._order
 
-    def _evaluation_knots(self) -> Tuple[float, ...]:
+    def _evaluation_knots(self) -> Tuple[float, ...]:  # noqa: UP006
         """
         Get the knots adding m knots to the boundary.
 
@@ -187,11 +187,11 @@ class BSplineBasis(Basis):
             np.eye(self.n_basis),
         )(eval_points).T
 
-    def _derivative_basis_and_coefs(
+    def _derivative_basis_and_coefs(  # noqa: PYI019
         self: T,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
 
         if order >= self.order:
             return (
@@ -202,7 +202,7 @@ class BSplineBasis(Basis):
         deriv_splines = self._to_scipy_bspline(coefs).derivative(order)
         return self._from_scipy_bspline(deriv_splines)
 
-    def rescale(  # noqa: D102
+    def rescale(  # noqa: D102, PYI019, RUF100
         self: T,
         domain_range: DomainRangeLike | None = None,
     ) -> T:
@@ -223,7 +223,7 @@ class BSplineBasis(Basis):
             knots[-1] = domain_range[1]
 
         else:
-            # TODO: Allow multiple dimensions
+            # TODO: Allow multiple dimensions  # noqa: FIX002, TD002, TD003
             domain_range = self.domain_range[0]
 
         return type(self)(domain_range, self.n_basis, self.order, tuple(knots))
@@ -339,9 +339,9 @@ class BSplineBasis(Basis):
 
     @classmethod
     def _from_scipy_bspline(
-        cls: Type[T],
+        cls: Type[T],  # noqa: UP006
         bspline: SciBSpline,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
         order = bspline.k
         knots = bspline.t
 
@@ -357,7 +357,7 @@ class BSplineBasis(Basis):
 
         return cls(domain_range, order=order + 1, knots=knots), coefs
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         return (
             super().__eq__(other)
             and self.order == other.order

@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import functools
-from builtins import isinstance
-from typing import Callable, TypeVar, Union
+from builtins import isinstance  # noqa: A004, UP029
+from typing import Callable, TypeVar, Union  # noqa: UP035
 
 import numpy as np
 from scipy.stats import rankdata
@@ -12,12 +12,12 @@ from skfda._utils.ndfunction import average_function_value
 
 from ...misc.metrics._lp_distances import l2_distance
 from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
-from ...typing._metric import Metric
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
 
-F = TypeVar('F', bound=FData)
-T = TypeVar('T', bound=Union[NDArrayFloat, FData])
+F = TypeVar('F', bound=FData)  # noqa: Q000
+T = TypeVar('T', bound=Union[NDArrayFloat, FData])  # noqa: Q000, UP007
 
 
 def mean(
@@ -122,7 +122,7 @@ def std(X: F, correction: int = 0) -> F:
         :term:`functional data object` with just one sample.
 
     """
-    raise NotImplementedError("Not implemented for this type")
+    raise NotImplementedError("Not implemented for this type")  # noqa: EM101
 
 
 @std.register
@@ -141,7 +141,7 @@ def std_fdatairregular(
     X: FDataIrregular, correction: int = 0,
 ) -> FDataIrregular:
     """Compute the standard deviation of a FDataIrregular."""
-    common_points, common_values = X._get_common_points_and_values()
+    common_points, common_values = X._get_common_points_and_values()  # noqa: SLF001
     std_values = np.std(
         common_values, axis=0, ddof=correction,
     )
@@ -191,7 +191,7 @@ def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:
     num_functions_above = X.copy(
         data_matrix=rankdata(
             -X.data_matrix,
-            method='max',
+            method='max',  # noqa: Q000
             axis=0,
         ) - 1,
     )
@@ -225,7 +225,7 @@ def depth_based_median(
     See also:
         :func:`geometric_median`
 
-    """
+    """  # noqa: D405
     depth_method_used: Depth[T]
 
     if depth_method is None:
@@ -296,7 +296,7 @@ def geometric_median(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: D405, D412
     weights = np.full(len(X), 1 / len(X))
     median = _weighted_average(X, weights)
     distances = metric(X, median)

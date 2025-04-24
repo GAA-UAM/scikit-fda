@@ -8,11 +8,11 @@ from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
 from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
 from ...misc.metrics import PairwiseMetric, l2_distance
 from ...representation._functional_data import FData
-from ...typing._metric import Metric
+from ...typing._metric import Metric  # noqa: TC001
 from ...typing._numpy import NDArrayFloat
 
-Input = TypeVar("Input", bound=Union[NDArrayFloat, FData], contravariant=True)
-Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])
+Input = TypeVar("Input", bound=Union[NDArrayFloat, FData], contravariant=True)  # noqa: PLC0105, UP007
+Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])  # noqa: UP007
 
 
 class KernelRegression(
@@ -68,7 +68,7 @@ class KernelRegression(
 
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         *,
         kernel_estimator: HatMatrix | None = None,
@@ -78,7 +78,7 @@ class KernelRegression(
         self.kernel_estimator = kernel_estimator
         self.metric = metric
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, RUF100
         self,
         X: Input,
         y: Prediction,
@@ -97,7 +97,7 @@ class KernelRegression(
 
         return self
 
-    def predict(  # noqa: D102
+    def predict(  # noqa: D102, RUF100
         self,
         X: Input,
     ) -> Prediction:

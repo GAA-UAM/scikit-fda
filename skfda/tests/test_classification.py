@@ -19,7 +19,7 @@ from skfda.ml.classification import (
     RadiusNeighborsClassifier,
 )
 from skfda.ml.classification._depth_classifiers import _ArgMaxClassifier
-from skfda.representation import FData
+from skfda.representation import FData  # noqa: TC001
 
 
 class TestClassifiers(unittest.TestCase):
@@ -28,7 +28,7 @@ class TestClassifiers(unittest.TestCase):
     def setUp(self) -> None:
         """Establish train and test data sets."""
         X, y = fetch_growth(return_X_y=True)
-        X_train, X_test, y_train, y_test = train_test_split(
+        X_train, X_test, y_train, y_test = train_test_split(  # noqa: N806
             X,
             y,
             test_size=0.25,
@@ -186,5 +186,5 @@ class TestClassifiers(unittest.TestCase):
             clf.predict(self._X_test)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

@@ -3,13 +3,13 @@ from __future__ import annotations
 import copy
 import itertools
 from functools import partial
-from typing import Generator, List, Sequence, Tuple, Type, cast
+from typing import Generator, List, Sequence, Tuple, Type, cast  # noqa: UP035
 
 import numpy as np
-from matplotlib.artist import Artist
-from matplotlib.axes import Axes
-from matplotlib.backend_bases import Event
-from matplotlib.figure import Figure
+from matplotlib.artist import Artist  # noqa: TC002
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.backend_bases import Event  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 from matplotlib.widgets import Slider, Widget
 
 from ._baseplot import BasePlot
@@ -54,13 +54,13 @@ class MultipleDisplay:
         clicked: Boolean indicating whether a point has being clicked.
         selected_sample: Index of the function selected with the interactive
             module or widgets.
-    """
+    """  # noqa: D410, D411
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         displays: BasePlot | Sequence[BasePlot],
         criteria: Sequence[float] | Sequence[Sequence[float]] = (),
-        sliders: Type[Widget] | Sequence[Type[Widget]] = (),
+        sliders: Type[Widget] | Sequence[Type[Widget]] = (),  # noqa: UP006
         label_sliders: str | Sequence[str] | None = None,
         chart: Figure | Axes | None = None,
         fig: Figure | None = None,
@@ -76,14 +76,14 @@ class MultipleDisplay:
             for d in self.displays
             if d.n_samples is not None
         )
-        self.sliders: List[Widget] = []
+        self.sliders: List[Widget] = []  # noqa: UP006
         self.selected_sample: int | None = None
 
         if len(criteria) != 0 and not isinstance(criteria[0], Sequence):
-            criteria = cast(Sequence[float], criteria)
+            criteria = cast(Sequence[float], criteria)  # noqa: TC006
             criteria = (criteria,)
 
-        criteria = cast(Sequence[Sequence[float]], criteria)
+        criteria = cast(Sequence[Sequence[float]], criteria)  # noqa: TC006
         self.criteria = criteria
 
         if not isinstance(sliders, Sequence):
@@ -93,8 +93,8 @@ class MultipleDisplay:
             label_sliders = (label_sliders,)
 
         if len(criteria) != len(sliders):
-            raise ValueError(
-                f"Size of criteria, and sliders should be equal "
+            raise ValueError(  # noqa: TRY003
+                f"Size of criteria, and sliders should be equal "  # noqa: EM102
                 f"(have {len(criteria)} and {len(sliders)}).",
             )
 
@@ -137,7 +137,7 @@ class MultipleDisplay:
         widget_aspect = 1 / 8
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         if len(axes) not in {0, self._n_graphs + extra}:
-            raise ValueError("Invalid number of axes.")
+            raise ValueError("Invalid number of axes.")  # noqa: EM101, TRY003
 
         n_rows, n_cols = _get_axes_shape(self._n_graphs + extra)
 
@@ -169,7 +169,7 @@ class MultipleDisplay:
         self,
         *,
         criteria: Sequence[Sequence[float]],
-        sliders: Sequence[Type[Widget]],
+        sliders: Sequence[Type[Widget]],  # noqa: UP006
         label_sliders: Sequence[str] | None = None,
     ) -> None:
         """
@@ -183,8 +183,8 @@ class MultipleDisplay:
         """
         for c in criteria:
             if len(c) != self.length_data:
-                raise ValueError(
-                    "Slider criteria should be of the same size as data",
+                raise ValueError(  # noqa: TRY003
+                    "Slider criteria should be of the same size as data",  # noqa: EM101
                 )
 
         for k, criterion in enumerate(criteria):
@@ -208,15 +208,15 @@ class MultipleDisplay:
         Returns:
             fig: figure object in which the displays and
                 widgets will be plotted.
-        """
+        """  # noqa: D411
         if self._n_graphs > 1:
             for d in self.displays[1:]:
                 if (
                     d.n_samples is not None
                     and d.n_samples != self.length_data
                 ):
-                    raise ValueError(
-                        "Length of some data sets are not equal ",
+                    raise ValueError(  # noqa: TRY003
+                        "Length of some data sets are not equal ",  # noqa: EM101
                     )
 
         for ax in self.axes[:self._n_graphs]:
@@ -226,11 +226,11 @@ class MultipleDisplay:
         for disp in self.displays:
             axes_needed = disp.n_subplots
             end_index = axes_needed + int_index
-            disp._set_figure_and_axes(axes=self.axes[int_index:end_index])
+            disp._set_figure_and_axes(axes=self.axes[int_index:end_index])  # noqa: SLF001
             disp.plot()
             int_index = end_index
 
-        self.fig.canvas.mpl_connect('pick_event', self.pick)
+        self.fig.canvas.mpl_connect('pick_event', self.pick)  # noqa: Q000
 
         self.fig.suptitle("Multiple display")
         self.fig.tight_layout()
@@ -250,7 +250,7 @@ class MultipleDisplay:
         Args:
             event: event object containing the artist of the point
                 picked.
-        """
+        """  # noqa: D411
         selected_sample = self._sample_from_artist(event.artist)
 
         if selected_sample is not None:
@@ -272,14 +272,14 @@ class MultipleDisplay:
                         return np.where(  # type: ignore[no-any-return]
                             d.artists == artist,
                         )[0][0]
-                    else:
+                    else:  # noqa: RET505
                         return np.where(  # type: ignore[no-any-return]
                             d.artists[:, i] == artist,
                         )[0][0]
 
         return None
 
-    def _visit_artists(self) -> Generator[Tuple[int, Artist], None, None]:
+    def _visit_artists(self) -> Generator[Tuple[int, Artist], None, None]:  # noqa: UP006
         for i in range(self.length_data):
             for d in self.displays:
                 if d.artists is None:
@@ -292,7 +292,7 @@ class MultipleDisplay:
         for i, artist in self._visit_artists():
             artist.set_alpha(1.0 if i == selected_sample else 0.1)
 
-        for criterion, slider in zip(self.criteria, self.sliders):
+        for criterion, slider in zip(self.criteria, self.sliders):  # noqa: B905
             val_widget = criterion[selected_sample]
             _set_val_noevents(slider, val_widget)
 
@@ -311,7 +311,7 @@ class MultipleDisplay:
         self,
         axes: Axes,
         criterion: Sequence[float],
-        widget_class: Type[Widget] = Slider,
+        widget_class: Type[Widget] = Slider,  # noqa: UP006
         label: str | None = None,
     ) -> None:
         """
@@ -325,8 +325,8 @@ class MultipleDisplay:
         """
         full_desc = "" if label is None else label
 
-        ordered_criterion_values, ordered_criterion_indexes = zip(
-            *sorted(zip(criterion, range(self.length_data))),
+        ordered_criterion_values, ordered_criterion_indexes = zip(  # noqa: B905
+            *sorted(zip(criterion, range(self.length_data))),  # noqa: B905
         )
 
         widget = widget_class(
@@ -344,14 +344,14 @@ class MultipleDisplay:
         axes.annotate(
             f"{ordered_criterion_values[0]:.3g}",
             xy=(0, -0.5),
-            xycoords='axes fraction',
+            xycoords='axes fraction',  # noqa: Q000
             annotation_clip=False,
         )
 
         axes.annotate(
             f"{ordered_criterion_values[-1]:.3g}",
             xy=(0.95, -0.5),
-            xycoords='axes fraction',
+            xycoords='axes fraction',  # noqa: Q000
             annotation_clip=False,
         )
 

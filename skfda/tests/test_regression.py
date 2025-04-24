@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import Sequence
+from typing import Sequence  # noqa: UP035
 
 import numpy as np
 import pandas as pd
@@ -21,17 +21,17 @@ from skfda.representation.basis import (
     FourierBasis,
     MonomialBasis,
 )
-from skfda.representation.grid import FDataGrid
+from skfda.representation.grid import FDataGrid  # noqa: TC001
 
 
 def _test_linear_regression_common(
-    X_train,
-    y_train,
-    expected_coefs,
-    X_test,
-    y_test,
-    coef_basis=None,
-    regularization=None,
+    X_train,  # noqa: ANN001, N803
+    y_train,  # noqa: ANN001
+    expected_coefs,  # noqa: ANN001
+    X_test,  # noqa: ANN001, N803
+    y_test,  # noqa: ANN001
+    coef_basis=None,  # noqa: ANN001
+    regularization=None,  # noqa: ANN001
 ) -> None:
     """Execute a test of linear regression, given the parameters."""
     linear_regression = LinearRegression(
@@ -41,7 +41,7 @@ def _test_linear_regression_common(
     )
     linear_regression.fit(X_train, y_train)
 
-    for coef, expected in zip(linear_regression.coef_, expected_coefs):
+    for coef, expected in zip(linear_regression.coef_, expected_coefs):  # noqa: B905
         assert isinstance(coef, FDataBasis)
         assert coef.basis == expected.basis
         np.testing.assert_allclose(
@@ -169,7 +169,7 @@ class TestScalarLinearRegression(unittest.TestCase):
 
         X = [multivariate, x_fd]
 
-        # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E800
+        # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E501, ERA001, RUF100
         intercept = 2
         coefs_multivariate = np.array([3, 1])
         coefs_functions = FDataBasis(
@@ -246,7 +246,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         """
         multivariate1 = [0, 2, 1, 3, 4, 2, 3]
         multivariate2 = [0, 7, 7, 9, 16, 14, 5]
-        multivariate = [list(obs) for obs in zip(multivariate1, multivariate2)]
+        multivariate = [list(obs) for obs in zip(multivariate1, multivariate2)]  # noqa: B905
 
         x_basis = MonomialBasis(n_basis=3)
         x_fd = FDataBasis(x_basis, [
@@ -261,9 +261,9 @@ class TestScalarLinearRegression(unittest.TestCase):
 
         cov_dict = {"fd": x_fd, "mult1": multivariate1, "mult2": multivariate2}
 
-        df = pd.DataFrame(cov_dict)
+        df = pd.DataFrame(cov_dict)  # noqa: PD901
 
-        # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E800
+        # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E501, ERA001, RUF100
         intercept = 2
         coefs_multivariate = np.array([3, 1])
         coefs_functions = FDataBasis(
@@ -321,7 +321,7 @@ class TestScalarLinearRegression(unittest.TestCase):
             np.typing.NDArray[np.float64] | FDataBasis,
         ] = [multivariate, x_fd]
 
-        # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E800
+        # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E501, ERA001, RUF100
         intercept = 2
         coefs_multivariate = np.array([3, 1])
         y_integral = np.array([3, 3 / 2, 1, 4, 3, 3 / 2, 1])
@@ -469,7 +469,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         """Number of response samples and explanatory samples are not different.
 
         Raises ValueError when response is scalar.
-        """
+        """  # noqa: E501
         x_fd = FDataBasis(MonomialBasis(n_basis=7), np.identity(7))
         y = [1 for _ in range(8)]
         beta = FourierBasis(n_basis=5)
@@ -517,10 +517,10 @@ class TestFunctionalLinearRegression(unittest.TestCase):
     def test_multivariate_covariates_constant_basic(self) -> None:
         """
         Univariate with functional response and constant coefficient one.
-        """
+        """  # noqa: D200
         y_basis = ConstantBasis()
 
-        X_train = pd.DataFrame({
+        X_train = pd.DataFrame({  # noqa: N806
             "covariate": [1, 3, 5],
         })
         y_train = FDataBasis(
@@ -536,10 +536,10 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             FDataBasis(
                 basis=y_basis,
                 coefficients=[[1]],
-            )
+            )  # noqa: COM812
         ]
 
-        X_test = pd.DataFrame({
+        X_test = pd.DataFrame({  # noqa: N806
             "covariate": [2, 4, 6],
         })
         y_test = FDataBasis(
@@ -571,10 +571,10 @@ class TestFunctionalLinearRegression(unittest.TestCase):
     def test_multivariate_covariates_monomial_basic(self) -> None:
         """
         Multivariate with functional response and identity coefficients.
-        """
+        """  # noqa: D200
         y_basis = MonomialBasis(n_basis=2)
 
-        X_train = pd.DataFrame({
+        X_train = pd.DataFrame({  # noqa: N806
             "covariate_1": [1, 3, 5],
             "covariate_2": [2, 4, 6],
         })
@@ -598,7 +598,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             ),
         ]
 
-        X_test = pd.DataFrame({
+        X_test = pd.DataFrame({  # noqa: N806
             "covariate_1": [2, 4, 6],
             "covariate_2": [1, 3, 5],
         })
@@ -633,18 +633,18 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         # Currently broken.
 
         # _test_linear_regression_common(
-        #     X_train=X_train.to_numpy(),
-        #     y_train=y_train,
-        #     expected_coefs=expected_coefs,
-        #     X_test=X_test.to_numpy(),
-        #     y_test=y_test,
-        # )
+        #     X_train=X_train.to_numpy(),  # noqa: ERA001
+        #     y_train=y_train,  # noqa: ERA001
+        #     expected_coefs=expected_coefs,  # noqa: ERA001
+        #     X_test=X_test.to_numpy(),  # noqa: ERA001
+        #     y_test=y_test,  # noqa: ERA001
+        # )  # noqa: ERA001, RUF100
 
     def test_multivariate_3_covariates(self) -> None:
         """Test a more complex example involving 3 covariates."""
         y_basis = MonomialBasis(n_basis=3)
 
-        X_train = pd.DataFrame({
+        X_train = pd.DataFrame({  # noqa: N806
             "covariate_1": [3, 5, 3],
             "covariate_2": [4, 1, 2],
             "covariate_3": [1, 6, 8],
@@ -673,7 +673,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             ),
         ]
 
-        X_test = pd.DataFrame({
+        X_test = pd.DataFrame({  # noqa: N806
             "covariate_1": [3],
             "covariate_2": [2],
             "covariate_3": [1],
@@ -699,7 +699,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         """
         y_basis = MonomialBasis(n_basis=3)
 
-        X_train = pd.DataFrame({
+        X_train = pd.DataFrame({  # noqa: N806
             "covariate_1": [3, 5, 3],
             "covariate_2": [4, 1, 2],
             "covariate_3": [1, 6, 8],
@@ -728,7 +728,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             ),
         ]
 
-        X_test = pd.DataFrame({
+        X_test = pd.DataFrame({  # noqa: N806
             "covariate_1": [3],
             "covariate_2": [2],
             "covariate_3": [1],
@@ -779,23 +779,23 @@ class TestFunctionalLinearRegression(unittest.TestCase):
                     digits=4)),
                 file="", sep = ",", col.names = FALSE, row.names = FALSE)
         """
-        X_weather, y_weather = fetch_weather(
+        X_weather, y_weather = fetch_weather(  # noqa: N806
             return_X_y=True, as_frame=True,
         )
-        fd = X_weather.iloc[:, 0].values
+        fd = X_weather.iloc[:, 0].values  # noqa: PD011
 
         y_basis = FourierBasis(n_basis=65)
         y_fd = fd.coordinates[0].to_basis(y_basis)
 
-        enc = OneHotEncoder(handle_unknown='ignore')
-        enc.fit([['Atlantic'], ['Continental'], ['Pacific']])
+        enc = OneHotEncoder(handle_unknown='ignore')  # noqa: Q000
+        enc.fit([['Atlantic'], ['Continental'], ['Pacific']])  # noqa: Q000
         X = np.array(y_weather).reshape(-1, 1)
         X = enc.transform(X).toarray()
 
         cov_dict = {"mult1": X[:, 0], "mult2": X[:, 1], "mult3": X[:, 2]}
-        df = pd.DataFrame(cov_dict)
+        df = pd.DataFrame(cov_dict)  # noqa: PD901
 
-        beta_const_R = [  # noqa: WPS317
+        beta_const_R = [  # noqa: N806, WPS317
             -225.5085, -110.817, -243.4708, 4.6815, 21.4488, 10.3784, 2.6317,
             1.7571, 2.4812, -1.5179, 1.4451, -0.6581, 2.8287, 0.4106, 1.5839,
             -1.711, 0.5587, -2.2268, 2.4745, -0.5179, -0.8376, -3.1504,
@@ -807,7 +807,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             -0.9949, -0.709, -0.4588, -0.5694,
         ]
 
-        beta_atlantic_R = [  # noqa: WPS317
+        beta_atlantic_R = [  # noqa: N806, WPS317
             312.966, 35.9273, 67.7156, -12.9111, -27.3945, -18.3422,
             -6.6074, -0.0203, -4.5716, 3.3142, -1.8419, 2.2008, -3.1554,
             -0.8167, -1.6248, 1.4791, -0.8676, 2.9854, -2.5819, -0.239, 0.6418,
@@ -819,7 +819,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             -0.6397, 3.2471, 0.4686, 1.3593, 0.9434,
         ]
 
-        beta_continental_R = [  # noqa: WPS317
+        beta_continental_R = [  # noqa: N806, WPS317
             214.8319, 41.1702, 6.2763, -11.5837, -40.6003, -10.9865, -6.6548,
             4.2589, -3.5174, 0.9494, 1.5624, -3.1435, -1.3242, -1.6431,
             -1.0234, 2.0606, -1.1042, -0.1723, -4.2717, -0.9321, 1.2331,
@@ -831,7 +831,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             -0.7447, 1.4645, 1.5654, -0.3106, 0.7647,
         ]
 
-        beta_pacific_R = [  # noqa: WPS317
+        beta_pacific_R = [  # noqa: N806, WPS317
             375.1732, 78.6384, 127.8782, 6.0014, -29.3124, -11.4446, -5.3623,
             -1.1054, -5.4936, 0.5137, 0.0086, -0.7174, -5.2713, -1.2635,
             -1.6654, -0.5359, -2.4626, 1.8152, -4.0212, 0.8431, -1.7737,
@@ -850,17 +850,17 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             linear_regression.basis_coefs[0].ravel(), beta_const_R, atol=0.001,
         )
         np.testing.assert_allclose(
-            linear_regression.basis_coefs[1].ravel(), beta_atlantic_R, atol=0.001,
+            linear_regression.basis_coefs[1].ravel(), beta_atlantic_R, atol=0.001,  # noqa: E501
         )
         np.testing.assert_allclose(
-            linear_regression.basis_coefs[2].ravel(), beta_continental_R, atol=0.001,
+            linear_regression.basis_coefs[2].ravel(), beta_continental_R, atol=0.001,  # noqa: E501
         )
         np.testing.assert_allclose(
-            linear_regression.basis_coefs[3].ravel(), beta_pacific_R, atol=0.001,
+            linear_regression.basis_coefs[3].ravel(), beta_pacific_R, atol=0.001,  # noqa: E501
         )
         np.testing.assert_equal(linear_regression.coef_[0].basis, y_fd.basis)
 
-    def test_functional_covariates_concurrent(self) -> None:  # noqa: N802
+    def test_functional_covariates_concurrent(self) -> None:  # noqa: N802, RUF100
         """
         Test a example of concurrent functional regression.
 
@@ -870,7 +870,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         y_basis = MonomialBasis(n_basis=2)
         x_basis = MonomialBasis(n_basis=3)
 
-        X_train = pd.DataFrame({
+        X_train = pd.DataFrame({  # noqa: N806
             "covariate_1": FDataBasis(
                 basis=x_basis,
                 coefficients=[
@@ -906,7 +906,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
             ),
         ]
 
-        X_test = pd.DataFrame({
+        X_test = pd.DataFrame({  # noqa: N806
             "covariate_1": FDataBasis(
                 basis=x_basis,
                 coefficients=[
@@ -940,7 +940,7 @@ class TestFunctionalLinearRegression(unittest.TestCase):
         """Number of response samples and explanatory samples are not different.
 
         Raises ValueError when response is functional.
-        """
+        """  # noqa: E501
         y_basis = MonomialBasis(n_basis=2)
         X = [[1, 2], [3, 4], [5, 6], [1, 0]]
 
@@ -1097,5 +1097,5 @@ class TestHistoricalLinearRegression(unittest.TestCase):
         # an ill-posed problem
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

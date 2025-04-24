@@ -1,7 +1,7 @@
 """Test for scoring module."""
 import math
 import unittest
-from typing import Any, Optional, Sequence, Tuple
+from typing import Any, Optional, Sequence, Tuple  # noqa: UP035
 
 import numpy as np
 import pytest
@@ -41,7 +41,7 @@ irregular_score_functions: Sequence[ScoreFunction] = (
 )
 
 
-def _create_data_basis() -> Tuple[FDataBasis, FDataBasis]:
+def _create_data_basis() -> Tuple[FDataBasis, FDataBasis]:  # noqa: UP006
     coef_true = [[1, 2, 3], [4, 5, 6]]
     coef_pred = [[1, 2, 3], [4, 6, 5]]
 
@@ -64,7 +64,7 @@ def _create_data_basis() -> Tuple[FDataBasis, FDataBasis]:
     return y_true, y_pred
 
 
-def _create_data_grid() -> Tuple[FDataGrid, FDataGrid]:
+def _create_data_grid() -> Tuple[FDataGrid, FDataGrid]:  # noqa: UP006
 
     y_true, y_pred = _create_data_basis()
     grid = np.linspace(*y_true.domain_range[0], 100)
@@ -78,15 +78,15 @@ class TestScoreFunctionsGrid(unittest.TestCase):
     def _test_generic_grid(
         self,
         function: ScoreFunction,
-        weight: Optional[NDArrayFloat] = None,
-        **kwargs: Any,
+        weight: Optional[NDArrayFloat] = None,  # noqa: UP007
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         y_true, y_pred = _create_data_grid()
 
         score = function(
             y_true,
             y_pred,
-            multioutput='raw_values',
+            multioutput='raw_values',  # noqa: Q000
             sample_weight=weight,
             **kwargs,
         )
@@ -94,7 +94,7 @@ class TestScoreFunctionsGrid(unittest.TestCase):
         score_sklearn = function(
             y_true.data_matrix.squeeze(),
             y_pred.data_matrix.squeeze(),
-            multioutput='raw_values',
+            multioutput='raw_values',  # noqa: Q000
             sample_weight=weight,
             **kwargs,
         )
@@ -111,7 +111,7 @@ class TestScoreFunctionsGrid(unittest.TestCase):
 
                 self._test_generic_grid(score_function)
 
-                try:
+                try:  # noqa: SIM105
                     self._test_generic_grid(
                         score_function,
                         squared=False,
@@ -131,8 +131,8 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
     def _test_grid_basis_generic(
         self,
         score_function: ScoreFunction,
-        weight: Optional[NDArrayFloat] = None,
-        **kwargs: Any,
+        weight: Optional[NDArrayFloat] = None,  # noqa: UP007
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         y_true_grid, y_pred_grid = _create_data_grid()
 
@@ -156,7 +156,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
             **kwargs,
         )
 
-        self.assertAlmostEqual(score_basis, score_grid, places=precision)
+        self.assertAlmostEqual(score_basis, score_grid, places=precision)  # noqa: PT009
 
     def test_all(self) -> None:
         """Test all score functions."""
@@ -165,7 +165,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
 
                 self._test_grid_basis_generic(score_function)
 
-                try:
+                try:  # noqa: SIM105
                     self._test_grid_basis_generic(
                         score_function,
                         squared=False,
@@ -191,7 +191,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         # integrate 1 - num/den
         # where     num = (1/2x -1/2x^2)^2
         # and       den = (1.5 + 1.5x + 1.5x^2)^2
-        self.assertAlmostEqual(ev, 0.992968, places=6)
+        self.assertAlmostEqual(ev, 0.992968, places=6)  # noqa: PT009
 
     def test_mean_absolut_error_basis(self) -> None:
         """Test Mean Absolute Error for FDataBasis."""
@@ -200,7 +200,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         mae = mean_absolute_error(y_true, y_pred)
 
         # integrate 1/2 * | -x + x^2|
-        self.assertAlmostEqual(mae, 0.8055555555)
+        self.assertAlmostEqual(mae, 0.8055555555)  # noqa: PT009
 
     def test_mean_absolute_percentage_error_basis(self) -> None:
         """Test Mean Absolute Percentage Error for FDataBasis."""
@@ -209,7 +209,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         mape = mean_absolute_percentage_error(y_true, y_pred)
 
         # integrate |1/2 * (-x  + x^2) / (4 + 5x + 6x^2)|
-        self.assertAlmostEqual(mape, 0.0199192187)
+        self.assertAlmostEqual(mape, 0.0199192187)  # noqa: PT009
 
     def test_mean_squared_error_basis(self) -> None:
         """Test Mean Squared Error for FDataBasis."""
@@ -218,7 +218,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         mse = mean_squared_error(y_true, y_pred)
 
         # integrate 1/2 * (-x + x^2)^2
-        self.assertAlmostEqual(mse, 2.85)
+        self.assertAlmostEqual(mse, 2.85)  # noqa: PT009
 
     def test_mean_squared_log_error_basis(self) -> None:
         """Test Mean Squared Log Error for FDataBasis."""
@@ -227,7 +227,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         msle = mean_squared_log_error(y_true, y_pred)
 
         # integrate 1/2*(log(1 + 4 + 5x + 6x^2) - log(1 + 4 + 6x + 5x^2))^2
-        self.assertAlmostEqual(msle, 0.00107583)
+        self.assertAlmostEqual(msle, 0.00107583)  # noqa: PT009
 
     def test_r2_score_basis(self) -> None:
         """Test R2 Score for FDataBasis."""
@@ -238,7 +238,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         # integrate 1 - num/den
         # where     num = 1/2*(-x + x^2)^2,
         # and       den = (1.5 + 1.5x + 1.5x^2)^2
-        self.assertAlmostEqual(r2, 0.9859362)
+        self.assertAlmostEqual(r2, 0.9859362)  # noqa: PT009
 
 
 class TestScoreZeroDenominator(unittest.TestCase):
@@ -272,17 +272,17 @@ class TestScoreZeroDenominator(unittest.TestCase):
             r2_score(
                 y_true_grid,
                 y_pred_grid,
-                multioutput='raw_values',
+                multioutput='raw_values',  # noqa: Q000
             ).data_matrix.squeeze(),
             sklearn.metrics.r2_score(
                 y_true_grid.data_matrix.squeeze(),
                 y_pred_grid.data_matrix.squeeze(),
-                multioutput='raw_values',
+                multioutput='raw_values',  # noqa: Q000
             ),
         )
 
         # 0/0 for FDataBasis
-        self.assertAlmostEqual(
+        self.assertAlmostEqual(  # noqa: PT009
             r2_score(y_true_basis, y_pred_basis),
             -16.5,
         )
@@ -303,13 +303,13 @@ class TestScoreZeroDenominator(unittest.TestCase):
             r2_score(
                 y_true_grid,
                 y_pred_grid,
-                multioutput='raw_values',
+                multioutput='raw_values',  # noqa: Q000
             )(1),
             [[[-math.inf]]],
         )
 
         # r/0 for FDataBasis (r != 0)
-        self.assertAlmostEqual(
+        self.assertAlmostEqual(  # noqa: PT009
             r2_score(
                 y_true_basis,
                 y_pred_basis,
@@ -346,17 +346,17 @@ class TestScoreZeroDenominator(unittest.TestCase):
             explained_variance_score(
                 y_true_grid,
                 y_pred_grid,
-                multioutput='raw_values',
+                multioutput='raw_values',  # noqa: Q000
             ).data_matrix.flatten(),
             sklearn.metrics.explained_variance_score(
                 y_true_grid.data_matrix.squeeze(),
                 y_pred_grid.data_matrix.squeeze(),
-                multioutput='raw_values',
+                multioutput='raw_values',  # noqa: Q000
             ),
         )
 
         # 0/0 for FDataBasis
-        self.assertAlmostEqual(
+        self.assertAlmostEqual(  # noqa: PT009
             explained_variance_score(y_true_basis, y_pred_basis),
             -3,
         )
@@ -374,13 +374,13 @@ class TestScoreZeroDenominator(unittest.TestCase):
             explained_variance_score(
                 y_true_grid,
                 y_pred_grid,
-                multioutput='raw_values',
+                multioutput='raw_values',  # noqa: Q000
             )(1),
             [[[-math.inf]]],
         )
 
         # r/0 for FDataBasis (r != 0)
-        self.assertAlmostEqual(
+        self.assertAlmostEqual(  # noqa: PT009
             explained_variance_score(
                 y_true_basis,
                 y_pred_basis,
@@ -451,7 +451,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
             coefficients=basis_coef_pred,
         )
 
-        self.assertRaises(
+        self.assertRaises(  # noqa: PT027
             ValueError,
             mean_squared_log_error,
             y_true_basis,
@@ -463,7 +463,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
         y_true_grid = y_true_basis.to_grid(grid_points=grid_points)
         y_pred_grid = y_pred_basis.to_grid(grid_points=grid_points)
 
-        self.assertRaises(
+        self.assertRaises(  # noqa: PT027
             ValueError,
             mean_squared_log_error,
             y_true_grid,
@@ -475,7 +475,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
 
 
 @pytest.fixture(params=irregular_score_functions)
-def irregular_score_function(request) -> ScoreFunction:
+def irregular_score_function(request) -> ScoreFunction:  # noqa: ANN001
     """Fixture to test score functions with irregular data."""
     return request.param
 

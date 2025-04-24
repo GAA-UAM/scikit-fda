@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Tuple, Union
+from typing import Tuple, Union  # noqa: UP035
 
 import numpy as np
 import scipy.integrate
@@ -15,9 +15,9 @@ from ...representation.basis import (
     FiniteElementBasis,
     VectorValuedBasis,
 )
-from ...typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 
-_MeanType = Union[FDataGrid, float]
+_MeanType = Union[FDataGrid, float]  # noqa: UP007
 
 
 def _pairwise_fem_inner_product(
@@ -49,7 +49,7 @@ def _pairwise_fem_inner_product(
 def _inner_product_matrix(
     basis: Basis,
     fd: FData,
-    limits: Tuple[float, float],
+    limits: Tuple[float, float],  # noqa: UP006
     y_val: float,
 ) -> NDArrayFloat:
     """
@@ -323,17 +323,17 @@ class HistoricalLinearRegression(
         self.fit_intercept = fit_intercept
         self.lag = lag
 
-    def _center_X_y(
+    def _center_X_y(  # noqa: N802
         self,
         X: FDataGrid,
         y: FDataGrid,
-    ) -> Tuple[FDataGrid, FDataGrid, _MeanType, _MeanType]:
+    ) -> Tuple[FDataGrid, FDataGrid, _MeanType, _MeanType]:  # noqa: UP006
 
-        X_mean: Union[FDataGrid, float] = (
+        X_mean: Union[FDataGrid, float] = (  # noqa: N806, UP007
             X.mean() if self.fit_intercept else 0
         )
-        X_centered = X - X_mean
-        y_mean: Union[FDataGrid, float] = (
+        X_centered = X - X_mean  # noqa: N806
+        y_mean: Union[FDataGrid, float] = (  # noqa: UP007
             y.mean() if self.fit_intercept else 0
         )
         y_centered = y - y_mean
@@ -344,9 +344,9 @@ class HistoricalLinearRegression(
         self,
         X: FDataGrid,
         y: FDataGrid,
-    ) -> Tuple[NDArrayFloat, _MeanType]:
+    ) -> Tuple[NDArrayFloat, _MeanType]:  # noqa: UP006
 
-        X_centered, y_centered, X_mean, y_mean = self._center_X_y(X, y)
+        X_centered, y_centered, X_mean, y_mean = self._center_X_y(X, y)  # noqa: N806
 
         self._pred_points = y_centered.grid_points[0]
         self._pred_domain_range = y_centered.domain_range[0]
@@ -412,7 +412,7 @@ class HistoricalLinearRegression(
             domain_range=self._pred_domain_range,
         )
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, RUF100
         self,
         X: FDataGrid,
         y: FDataGrid,
@@ -421,7 +421,7 @@ class HistoricalLinearRegression(
         self._fit_and_return_centered_matrix(X, y)
         return self
 
-    def fit_predict(  # noqa: D102
+    def fit_predict(  # noqa: D102, RUF100
         self,
         X: FDataGrid,
         y: FDataGrid,
@@ -444,7 +444,7 @@ class HistoricalLinearRegression(
 
         return self._prediction_from_matrix(design_matrix)
 
-    def predict(self, X: FDataGrid) -> FDataGrid:  # noqa: D102
+    def predict(self, X: FDataGrid) -> FDataGrid:  # noqa: D102, RUF100
 
         check_is_fitted(self)
 

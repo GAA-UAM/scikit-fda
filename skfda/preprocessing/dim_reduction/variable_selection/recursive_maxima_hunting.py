@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import abc
 import math
-from typing import (
+from typing import (  # noqa: UP035
     TYPE_CHECKING,
     Any,
     Callable,
     Iterable,
     List,
-    Mapping,
+    Mapping,  # noqa: F401
     Optional,
     Sequence,
     Tuple,
@@ -19,12 +19,12 @@ from typing import (
 
 import dcor
 import numpy as np
-import numpy.linalg as linalg
-import numpy.ma as ma
+import numpy.linalg as linalg  # noqa: PLR0402
+import numpy.ma as ma  # noqa: PLR0402
 import scipy.stats
 import sklearn.utils
 from sklearn.base import clone
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from skfda.exploratory.stats.covariance import (
     CovarianceEstimator,
@@ -47,9 +47,9 @@ def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
     t = np.asarray(t, dtype=np.float64)
 
     dim = t.ndim
-    assert dim <= 2
+    assert dim <= 2  # noqa: PLR2004
 
-    if dim < 2:
+    if dim < 2:  # noqa: PLR2004
         t = np.atleast_2d(t).T
 
     return t
@@ -59,7 +59,7 @@ def _absolute_argmax(
     function: FDataGrid,
     *,
     mask: NDArrayBool,
-) -> Tuple[int, ...]:
+) -> Tuple[int, ...]:  # noqa: UP006
     """
     Compute the absolute maximum of a discretized function.
 
@@ -100,14 +100,14 @@ class Correction(BaseEstimator):
         The initial parameters of Recursive Maxima Hunting can be used there.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     def conditioned(
         self,
         *,
-        X: NDArrayFloat,
-        T: NDArrayFloat,
-        t_0: float,
+        X: NDArrayFloat,  # noqa: ARG002
+        T: NDArrayFloat,  # noqa: ARG002, N803
+        t_0: float,  # noqa: ARG002
     ) -> Correction:
         """
         Return a correction object conditioned to the value of a point.
@@ -122,7 +122,7 @@ class Correction(BaseEstimator):
     def correct(
         self,
         X: FDataGrid,
-        selected_index: Tuple[int, ...],
+        selected_index: Tuple[int, ...],  # noqa: UP006
     ) -> FDataGrid:
         """
         Correct the trajectories.
@@ -136,9 +136,9 @@ class Correction(BaseEstimator):
                 in the ``data_matrix``.
 
         """
-        pass
+        pass  # noqa: PIE790
 
-    def __call__(self, *args: Any, **kwargs: Any) -> FDataGrid:
+    def __call__(self, *args: Any, **kwargs: Any) -> FDataGrid:  # noqa: ANN401, D102
         return self.correct(*args, **kwargs)
 
 
@@ -157,7 +157,7 @@ class ConditionalMeanCorrection(Correction):
     def conditional_mean(
         self,
         X: FDataGrid,
-        selected_index: Tuple[int, ...],
+        selected_index: Tuple[int, ...],  # noqa: UP006
     ) -> FDataGrid:
         """
         Mean of the process conditioned to the value observed.
@@ -168,12 +168,12 @@ class ConditionalMeanCorrection(Correction):
                 in the ``data_matrix``.
 
         """
-        pass
+        pass  # noqa: PIE790
 
-    def correct(
+    def correct(  # noqa: D102
         self,
         X: FDataGrid,
-        selected_index: Tuple[int, ...],
+        selected_index: Tuple[int, ...],  # noqa: UP006
     ) -> FDataGrid:
 
         return X - self.conditional_mean(
@@ -206,8 +206,8 @@ class GaussianCorrection(ConditionalMeanCorrection):
     def __init__(
         self,
         *,
-        mean: Union[float, Callable[[NDArrayFloat], NDArrayFloat]] = 0,
-        cov: Union[float, CovarianceLike] = 1,
+        mean: Union[float, Callable[[NDArrayFloat], NDArrayFloat]] = 0,  # noqa: UP007
+        cov: Union[float, CovarianceLike] = 1,  # noqa: UP007
     ) -> None:
         super().__init__()
 
@@ -236,11 +236,11 @@ class GaussianCorrection(ConditionalMeanCorrection):
 
         return _execute_covariance(cov, t_0, t_1)
 
-    def conditioned(
+    def conditioned(  # noqa: D102
         self,
         *,
-        X: NDArrayFloat,
-        T: NDArrayFloat,
+        X: NDArrayFloat,  # noqa: ARG002
+        T: NDArrayFloat,  # noqa: ARG002, N803
         t_0: float,
     ) -> Correction:
         # If the point makes the matrix singular, don't change the correction
@@ -255,28 +255,28 @@ class GaussianCorrection(ConditionalMeanCorrection):
                 conditioning_points=np.asarray(t_0),
             )
 
-            correction._covariance_matrix_inv()
+            correction._covariance_matrix_inv()  # noqa: SLF001
 
-            return correction
+            return correction  # noqa: TRY300
 
         except linalg.LinAlgError:
 
             return self
 
-    def conditional_mean(
+    def conditional_mean(  # noqa: D102
         self,
         X: FDataGrid,
-        selected_index: Tuple[int, ...],
+        selected_index: Tuple[int, ...],  # noqa: UP006
     ) -> FDataGrid:
 
-        T = X.grid_points[0]
+        T = X.grid_points[0]  # noqa: N806
 
         t_0 = T[selected_index]
 
-        x_index = (slice(None),) + tuple(selected_index) + (np.newaxis,)
+        x_index = (slice(None),) + tuple(selected_index) + (np.newaxis,)  # noqa: RUF005
         x_0 = X.data_matrix[x_index]
 
-        T = _transform_to_2d(T)
+        T = _transform_to_2d(T)  # noqa: N806
 
         var = self._evaluate_cov(t_0, t_0)
 
@@ -285,7 +285,7 @@ class GaussianCorrection(ConditionalMeanCorrection):
 
         t_0_expectation = expectation[selected_index]
 
-        b_T = self._evaluate_cov(T, t_0)
+        b_T = self._evaluate_cov(T, t_0)  # noqa: N806
         assert b_T.shape == T.shape
 
         cond_expectation = (
@@ -325,7 +325,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
         self,
         conditioning_points: NDArrayFloat,
         *,
-        mean: Union[float, Callable[[NDArrayFloat], NDArrayFloat]] = 0,
+        mean: Union[float, Callable[[NDArrayFloat], NDArrayFloat]] = 0,  # noqa: UP007
         cov: CovarianceLike = 1,
     ) -> None:
 
@@ -355,11 +355,11 @@ class GaussianConditionedCorrection(GaussianCorrection):
     def _conditioning_points(self) -> NDArrayFloat:
         return _transform_to_2d(self.conditioning_points)
 
-    def conditioned(
+    def conditioned(  # noqa: D102
         self,
         *,
-        X: NDArrayFloat,
-        T: NDArrayFloat,
+        X: NDArrayFloat,  # noqa: ARG002
+        T: NDArrayFloat,  # noqa: ARG002, N803
         t_0: float,
     ) -> Correction:
 
@@ -376,7 +376,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
             correction._covariance_matrix_inv()
 
-            return correction
+            return correction  # noqa: TRY300
 
         except linalg.LinAlgError:
 
@@ -386,9 +386,9 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
         cond_points = self._conditioning_points()
 
-        A_inv = self._covariance_matrix_inv()
+        A_inv = self._covariance_matrix_inv()  # noqa: N806
 
-        b_T = super()._evaluate_cov(t, cond_points)
+        b_T = super()._evaluate_cov(t, cond_points)  # noqa: N806
 
         c = -super()._evaluate_mean(cond_points)
         assert c.shape == np.shape(cond_points)
@@ -412,9 +412,9 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
         cond_points = self._conditioning_points()
 
-        A_inv = self._covariance_matrix_inv()
+        A_inv = self._covariance_matrix_inv()  # noqa: N806
 
-        b_t_0_T = super()._evaluate_cov(t_0, cond_points)
+        b_t_0_T = super()._evaluate_cov(t_0, cond_points)  # noqa: N806
 
         b_t_1 = super()._evaluate_cov(cond_points, t_1)
 
@@ -436,13 +436,13 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
         cov_estimator: CovarianceEstimator[FDataGrid] | None = None,
     ):
         self.cov_estimator = cov_estimator
 
-    def fit(self, X: FDataGrid, y: NDArrayFloat) -> None:
+    def fit(self, X: FDataGrid, y: NDArrayFloat) -> None:  # noqa: D102
 
         self.cov_estimator_ = (
             EmpiricalCovariance()
@@ -450,7 +450,7 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
             else clone(self.cov_estimator)
         )
 
-        X_matrix_copy = np.copy(X.data_matrix[..., 0])
+        X_matrix_copy = np.copy(X.data_matrix[..., 0])  # noqa: N806
 
         y = np.ravel(y)
         for class_label in np.unique(y):
@@ -460,18 +460,18 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
             mean = np.mean(trajectories, axis=0)
             X_matrix_copy[class_index] -= mean
 
-        X_copy = X.copy(data_matrix=X_matrix_copy)
+        X_copy = X.copy(data_matrix=X_matrix_copy)  # noqa: N806
 
         self.cov_estimator_.fit(X_copy)
         self.gaussian_correction_ = GaussianCorrection(
             cov=self.cov_estimator_.covariance_,
         )
 
-    def conditioned(
+    def conditioned(  # noqa: D102
         self,
         *,
         X: NDArrayFloat,
-        T: NDArrayFloat,
+        T: NDArrayFloat,  # noqa: N803
         t_0: float,
     ) -> Correction:
         self.gaussian_correction_ = self.gaussian_correction_.conditioned(
@@ -481,10 +481,10 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
         )
         return self
 
-    def conditional_mean(
+    def conditional_mean(  # noqa: D102
         self,
         X: FDataGrid,
-        selected_index: Tuple[int, ...],
+        selected_index: Tuple[int, ...],  # noqa: UP006
     ) -> FDataGrid:
 
         return self.gaussian_correction_.conditional_mean(
@@ -507,22 +507,22 @@ class UniformCorrection(Correction):
 
     """
 
-    def conditioned(
+    def conditioned(  # noqa: D102
         self,
-        X: NDArrayFloat,
-        T: NDArrayFloat,
+        X: NDArrayFloat,  # noqa: ARG002
+        T: NDArrayFloat,  # noqa: ARG002, N803
         t_0: float,
     ) -> Correction:
         from ....misc.covariances import Brownian
 
         return GaussianCorrection(cov=Brownian(origin=t_0))
 
-    def correct(
+    def correct(  # noqa: D102
         self,
         X: FDataGrid,
-        selected_index: Tuple[int, ...],
+        selected_index: Tuple[int, ...],  # noqa: UP006
     ) -> FDataGrid:
-        x_index = (slice(None),) + selected_index
+        x_index = (slice(None),) + selected_index  # noqa: RUF005
         x_0 = X.data_matrix[x_index]
 
         return X - x_0
@@ -541,7 +541,7 @@ class StoppingCondition(BaseEstimator):
     def __call__(
         self,
         *,
-        selected_index: Tuple[int, ...],
+        selected_index: Tuple[int, ...],  # noqa: UP006
         dependences: FDataGrid,
         selected_variable: NDArrayFloat,
         X: FDataGrid,
@@ -574,15 +574,15 @@ class ScoreThresholdStop(StoppingCondition):
         super().__init__()
         self.threshold = threshold
 
-    def __call__(
+    def __call__(  # noqa: D102
         self,
         *,
-        selected_index: Tuple[int, ...],
+        selected_index: Tuple[int, ...],  # noqa: UP006
         dependences: FDataGrid,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401, ARG002
     ) -> bool:
 
-        score = float(dependences.data_matrix[(0,) + selected_index + (0,)])
+        score = float(dependences.data_matrix[(0,) + selected_index + (0,)])  # noqa: RUF005
 
         return score < self.threshold
 
@@ -620,7 +620,7 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
         super().__init__()
         self.significance = significance
 
-    def chi_bound(
+    def chi_bound(  # noqa: D102
         self,
         x: NDArrayFloat,
         y: NDArrayFloat,
@@ -636,12 +636,12 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
 
         return float(chi_quant * t2 / x_dist.shape[0])
 
-    def __call__(
+    def __call__(  # noqa: D102
         self,
         *,
         selected_variable: NDArrayFloat,
         y: NDArrayFloat,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401, ARG002
     ) -> bool:
 
         bound = self.chi_bound(selected_variable, y, self.significance)
@@ -661,12 +661,12 @@ class RedundancyCondition(BaseEstimator):
     """
 
     @abc.abstractmethod
-    def __call__(
+    def __call__(  # noqa: D102
         self,
         *,
         max_point: NDArrayFloat,
         test_point: NDArrayFloat,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> bool:
         pass
 
@@ -701,21 +701,21 @@ class DependenceThresholdRedundancy(RedundancyCondition):
         self.threshold = threshold
         self.dependence_measure = dependence_measure
 
-    def __call__(
+    def __call__(  # noqa: D102
         self,
         *,
         max_point: NDArrayFloat,
         test_point: NDArrayFloat,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401, ARG002
     ) -> bool:
         return bool(
             self.dependence_measure(max_point, test_point) > self.threshold,
         )
 
 
-def _get_influence_mask(
+def _get_influence_mask(  # noqa: C901
     X: NDArrayFloat,
-    t_max_index: Tuple[int, ...],
+    t_max_index: Tuple[int, ...],  # noqa: UP006
     redundancy_condition: RedundancyCondition,
     old_mask: NDArrayBool,
 ) -> NDArrayBool:
@@ -723,11 +723,11 @@ def _get_influence_mask(
     sl = slice(None)
 
     def get_index(
-        index: Tuple[int, ...],
-    ) -> Tuple[Union[slice, int, None], ...]:
-        return (sl,) + tuple(index) + (np.newaxis,)
+        index: Tuple[int, ...],  # noqa: UP006
+    ) -> Tuple[Union[slice, int, None], ...]:  # noqa: UP006, UP007
+        return (sl,) + tuple(index) + (np.newaxis,)  # noqa: RUF005
 
-    def is_redundant(index: Tuple[int, ...]) -> bool:
+    def is_redundant(index: Tuple[int, ...]) -> bool:  # noqa: UP006
 
         max_point = np.squeeze(X[get_index(t_max_index)], axis=1)
         test_point = np.squeeze(X[get_index(index)], axis=1)
@@ -737,7 +737,7 @@ def _get_influence_mask(
             test_point=test_point,
         )
 
-    def adjacent_indexes(index: Tuple[int, ...]) -> Iterable[Tuple[int, ...]]:
+    def adjacent_indexes(index: Tuple[int, ...]) -> Iterable[Tuple[int, ...]]:  # noqa: UP006
         for i, coord in enumerate(index):
             # Out of bounds right check
             if coord < (X.shape[i + 1] - 1):
@@ -752,7 +752,7 @@ def _get_influence_mask(
 
     def update_mask(
         new_mask: NDArrayBool,
-        index: Tuple[int, ...],
+        index: Tuple[int, ...],  # noqa: UP006
     ) -> None:
         indexes = [index]
 
@@ -765,7 +765,7 @@ def _get_influence_mask(
             ):
                 new_mask[index] = True
                 for i in adjacent_indexes(index):
-                    indexes.append(i)
+                    indexes.append(i)  # noqa: PERF402
 
     new_mask = np.zeros_like(old_mask)
 
@@ -781,7 +781,7 @@ class RecursiveMaximaHunting(
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
-        Union[NDArrayInt, NDArrayFloat],
+        Union[NDArrayInt, NDArrayFloat],  # noqa: UP007
     ],
     BaseEstimator,
 ):
@@ -886,10 +886,10 @@ class RecursiveMaximaHunting(
             NDArrayFloat,
             NDArrayFloat,
         ] = dcor.u_distance_correlation_sqr,
-        max_features: Optional[int] = None,
-        correction: Optional[Correction] = None,
-        redundancy_condition: Optional[RedundancyCondition] = None,
-        stopping_condition: Optional[StoppingCondition] = None,
+        max_features: Optional[int] = None,  # noqa: UP007
+        correction: Optional[Correction] = None,  # noqa: UP007
+        redundancy_condition: Optional[RedundancyCondition] = None,  # noqa: UP007
+        stopping_condition: Optional[StoppingCondition] = None,  # noqa: UP007
         _get_intermediate_results: bool = False,
     ) -> None:
         self.dependence_measure = dependence_measure
@@ -899,10 +899,10 @@ class RecursiveMaximaHunting(
         self.stopping_condition = stopping_condition
         self._get_intermediate_results = _get_intermediate_results
 
-    def fit(  # type: ignore[override] # noqa: D102
+    def fit(  # type: ignore[override]  # noqa: D102, RUF100
         self,
         X: FDataGrid,
-        y: Union[NDArrayInt, NDArrayFloat],
+        y: Union[NDArrayInt, NDArrayFloat],  # noqa: UP007
     ) -> RecursiveMaximaHunting:
         """Recursive maxima hunting algorithm."""
         self.features_shape_ = X.data_matrix.shape[1:]
@@ -934,7 +934,7 @@ class RecursiveMaximaHunting(
         )
 
         mask = np.zeros([len(t) for t in X.grid_points], dtype=bool)
-        indexes: List[Tuple[int, ...]] = []
+        indexes: List[Tuple[int, ...]] = []  # noqa: UP006
         corrected_functions = []
         relevances = []
         first_pass = True
@@ -961,7 +961,7 @@ class RecursiveMaximaHunting(
                 selected_index=t_max_index,
                 dependences=dependences,
                 selected_variable=X.data_matrix[
-                    (slice(None),) + tuple(t_max_index)
+                    (slice(None),) + tuple(t_max_index)  # noqa: RUF005
                 ],
                 X=X,
                 y=y,
@@ -1005,19 +1005,19 @@ class RecursiveMaximaHunting(
 
             first_pass = False
 
-    def transform(self, X: FDataGrid) -> NDArrayFloat:
+    def transform(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102
 
-        X_matrix = X.data_matrix
+        X_matrix = X.data_matrix  # noqa: N806
 
         sklearn.utils.validation.check_is_fitted(self)
 
         if X_matrix.shape[1:] != self.features_shape_:
-            raise ValueError(
-                "The trajectories have a different number of "
+            raise ValueError(  # noqa: TRY003
+                "The trajectories have a different number of "  # noqa: EM101
                 "points than the ones fitted",
             )
 
-        output = X_matrix[(slice(None),) + self.indexes_]
+        output = X_matrix[(slice(None),) + self.indexes_]  # noqa: RUF005
 
         return output.reshape(
             X.n_samples,
@@ -1028,20 +1028,20 @@ class RecursiveMaximaHunting(
     def get_support(
         self,
         indices: Literal[True],
-    ) -> Sequence[Tuple[int, ...]]:
+    ) -> Sequence[Tuple[int, ...]]:  # noqa: UP006
         pass
 
     @overload
     def get_support(
         self,
-        indices: Literal[False] = False,
+        indices: Literal[False] = False,  # noqa: FBT002
     ) -> NDArrayBool:
         pass
 
-    def get_support(
+    def get_support(  # noqa: D102
         self,
-        indices: bool = False,
-    ) -> Union[Sequence[Tuple[int, ...]], NDArrayBool]:
+        indices: bool = False,  # noqa: FBT001, FBT002
+    ) -> Union[Sequence[Tuple[int, ...]], NDArrayBool]:  # noqa: UP006, UP007
 
         if indices:
             return self.indexes_

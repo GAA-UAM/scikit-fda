@@ -1,7 +1,7 @@
 """Functional Diffusion Maps Module."""
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable  # noqa: UP035
 
 import numpy as np
 import scipy
@@ -98,7 +98,7 @@ class DiffusionMap(
     def fit(  # noqa: WPS238
         self,
         X: FData,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> Self:
         """
         Compute the transition matrix and save it.
@@ -113,27 +113,27 @@ class DiffusionMap(
         """
         # Parameter validation
         if self.n_components < 1:
-            raise ValueError(
-                f'Embedding dimension ({self.n_components}) cannot '
-                'be less than 1. ',
+            raise ValueError(  # noqa: TRY003
+                f'Embedding dimension ({self.n_components}) cannot '  # noqa: EM102, Q000
+                'be less than 1. ',  # noqa: Q000
             )
 
         if self.n_components >= X.n_samples:
-            raise ValueError(
-                f'Embedding dimension ({self.n_components}) cannot be '
-                f'greater or equal to the number of samples ({X.n_samples}).',
+            raise ValueError(  # noqa: TRY003
+                f'Embedding dimension ({self.n_components}) cannot be '  # noqa: EM102, Q000
+                f'greater or equal to the number of samples ({X.n_samples}).',  # noqa: Q000
             )
 
         if self.alpha < 0 or self.alpha > 1:
-            raise ValueError(
-                f'Parameter alpha (= {self.alpha}) must '
-                'be in the interval [0, 1].',
+            raise ValueError(  # noqa: TRY003
+                f'Parameter alpha (= {self.alpha}) must '  # noqa: EM102, Q000
+                'be in the interval [0, 1].',  # noqa: Q000
             )
 
         if self.n_steps < 0:
-            raise ValueError(
-                f'Parameter n_steps (= {self.n_steps}) must ',
-                'be a greater than 0.',
+            raise ValueError(  # noqa: TRY003
+                f'Parameter n_steps (= {self.n_steps}) must ',  # noqa: EM102, Q000
+                'be a greater than 0.',  # noqa: Q000
             )
 
         # Construct the weighted graph

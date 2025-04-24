@@ -1,12 +1,12 @@
 """Functional Transformers Module."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import itertools
-from typing import Optional, Sequence, Tuple, TypeVar, Union, cast
+from typing import Optional, Sequence, Tuple, TypeVar, Union, cast  # noqa: UP035
 
 import numpy as np
-from typing_extensions import Literal, TypeGuard
+from typing_extensions import Literal, TypeGuard  # noqa: UP035
 
 from ..._utils.ndfunction._functions import (
     _average_function_ufunc,
@@ -17,7 +17,7 @@ from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 
-T = TypeVar("T", bound=Union[NDArrayFloat, FDataGrid])
+T = TypeVar("T", bound=Union[NDArrayFloat, FDataGrid])  # noqa: UP007
 
 
 def _sequence_of_ints(data: Sequence[object]) -> TypeGuard[Sequence[int]]:
@@ -99,7 +99,7 @@ def local_averages(
                 [ 158.]],
                [[ 107.],
                 [ 155.]]])
-    """
+    """  # noqa: D405
     if isinstance(domains, int):
         domains = [domains] * data.dim_domain
 
@@ -111,17 +111,17 @@ def local_averages(
                 domain_range[1],
                 num=n_intervals + 1,
             )
-            for n_intervals, domain_range in zip(domains, data.domain_range)
+            for n_intervals, domain_range in zip(domains, data.domain_range)  # noqa: B905
         ]
 
         # Get all combinations of intervals as ranges
         domains = list(
             itertools.product(
-                *[zip(p, p[1:]) for p in interval_endpoints],
+                *[zip(p, p[1:]) for p in interval_endpoints],  # noqa: B905, RUF007
             ),
         )
 
-    domains = cast(Sequence[DomainRangeLike], domains)
+    domains = cast(Sequence[DomainRangeLike], domains)  # noqa: TC006
 
     integrated_data = [
         unconditional_expected_value(
@@ -137,14 +137,14 @@ def local_averages(
 def _calculate_curves_occupation(
     curve_y_coordinates: NDArrayFloat,
     curve_x_coordinates: NDArrayFloat,
-    intervals: Sequence[Tuple[float, float]],
+    intervals: Sequence[Tuple[float, float]],  # noqa: UP006
 ) -> NDArrayFloat:
 
     y1, y2 = np.asarray(intervals).T
 
     if any(np.greater(y1, y2)):
-        raise ValueError(
-            "Interval limits (a,b) should satisfy a <= b.",
+        raise ValueError(  # noqa: TRY003
+            "Interval limits (a,b) should satisfy a <= b.",  # noqa: EM101
         )
 
     # Reshape original curves so they have one dimension less
@@ -175,9 +175,9 @@ def _calculate_curves_occupation(
 
 def occupation_measure(
     data: FData,
-    intervals: Sequence[Tuple[float, float]],
+    intervals: Sequence[Tuple[float, float]],  # noqa: UP006
     *,
-    n_points: Optional[int] = None,
+    n_points: Optional[int] = None,  # noqa: UP007
 ) -> NDArrayFloat:
     r"""
     Calculate the occupation measure of functional data.
@@ -250,7 +250,7 @@ def occupation_measure(
     """
     if isinstance(data, FDataBasis) and n_points is None:
         raise ValueError(
-            "Number of points to consider, should be given "
+            "Number of points to consider, should be given "  # noqa: ISC003
             + " as an argument for a FDataBasis. Instead None was passed.",
         )
 
@@ -350,7 +350,7 @@ def number_crossings(
 
         >>> number_crossings(fd_grid, levels=0, direction="up")
         array([[ 2]])
-    """
+    """  # noqa: D214
     # This is only defined for univariate functions
     check_fdata_dimensions(fd, dim_domain=1, dim_codomain=1)
 
@@ -438,7 +438,7 @@ def unconditional_central_moment(
                [ 0.02,  0.01],
                [ 0.01,  0.01]])
 
-    """
+    """  # noqa: D214
     mean = unconditional_expected_value(
         data,
         lambda x: x,
@@ -453,7 +453,7 @@ def unconditional_central_moment(
 
 
 def unconditional_moment(
-    data: Union[FDataBasis, FDataGrid],
+    data: Union[FDataBasis, FDataGrid],  # noqa: UP007
     n: int,
     *,
     domain: DomainRangeLike | None = None,
@@ -500,7 +500,7 @@ def unconditional_moment(
                [ 6.82,  3.44],
                [ 5.25,  3.29]])
 
-    """
+    """  # noqa: D214
     return unconditional_expected_value(
         data,
         lambda x: np.power(x, n),

@@ -5,24 +5,24 @@ This module contains methods to perform the landmark registration.
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union  # noqa: UP035
 
 import numpy as np
 
 from ...representation import FData, FDataGrid
-from ...representation.extrapolation import ExtrapolationLike
+from ...representation.extrapolation import ExtrapolationLike  # noqa: TC001
 from ...representation.interpolation import SplineInterpolation
-from ...typing._base import GridPointsLike
-from ...typing._numpy import ArrayLike, NDArrayFloat
+from ...typing._base import GridPointsLike  # noqa: TC001
+from ...typing._numpy import ArrayLike, NDArrayFloat  # noqa: TC001
 
-_FixedLocation = Union[float, Sequence[float]]
+_FixedLocation = Union[float, Sequence[float]]  # noqa: UP007
 _LocationCallable = Callable[[np.ndarray], _FixedLocation]
 
 
 def landmark_shift_deltas(
     fd: FData,
     landmarks: ArrayLike,
-    location: Union[_FixedLocation, _LocationCallable, None] = None,
+    location: Union[_FixedLocation, _LocationCallable, None] = None,  # noqa: UP007
 ) -> NDArrayFloat:
     r"""Return the corresponding shifts to align the landmarks of the curves.
 
@@ -79,12 +79,12 @@ def landmark_shift_deltas(
     landmarks = np.atleast_1d(landmarks)
 
     if len(landmarks) != fd.n_samples:
-        raise ValueError(
-            f"landmark list ({len(landmarks)}) must have the same"
+        raise ValueError(  # noqa: TRY003
+            f"landmark list ({len(landmarks)}) must have the same"  # noqa: EM102
             f" length than the number of samples ({fd.n_samples})",
         )
 
-    loc_array: Union[float, Sequence[float], NDArrayFloat]
+    loc_array: Union[float, Sequence[float], NDArrayFloat]  # noqa: UP007
 
     # Parses location
     if location is None:
@@ -100,11 +100,11 @@ def landmark_shift_deltas(
 
 
 def landmark_shift(
-    *args: Any,
-    **kwargs: Any,
+    *args: Any,  # noqa: ANN401
+    **kwargs: Any,  # noqa: ANN401
 ) -> FDataGrid:
 
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function 'landmark_shift' has been renamed. "
         "Use 'landmark_shift_registration' instead.",
         DeprecationWarning,
@@ -116,11 +116,11 @@ def landmark_shift(
 def landmark_shift_registration(
     fd: FData,
     landmarks: ArrayLike,
-    location: Union[_FixedLocation, _LocationCallable, None] = None,
+    location: Union[_FixedLocation, _LocationCallable, None] = None,  # noqa: UP007
     *,
     restrict_domain: bool = False,
-    extrapolation: Optional[ExtrapolationLike] = None,
-    grid_points: Optional[GridPointsLike] = None,
+    extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+    grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
 ) -> FDataGrid:
     r"""
     Perform a shift of the curves to align the landmarks.
@@ -192,8 +192,8 @@ def landmark_elastic_registration_warping(
     fd: FData,
     landmarks: ArrayLike,
     *,
-    location: Optional[ArrayLike] = None,
-    grid_points: Optional[GridPointsLike] = None,
+    location: Optional[ArrayLike] = None,  # noqa: UP007
+    grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
 ) -> FDataGrid:
     r"""Calculate the transformation used in landmark registration.
 
@@ -258,13 +258,13 @@ def landmark_elastic_registration_warping(
 
     if fd.dim_domain > 1:
         raise NotImplementedError(
-            "Method only implemented for objects with "
+            "Method only implemented for objects with "  # noqa: EM101
             "domain dimension up to 1.",
         )
 
     if len(landmarks) != fd.n_samples:
-        raise ValueError(
-            "The number of list of landmarks should be equal to "
+        raise ValueError(  # noqa: TRY003
+            "The number of list of landmarks should be equal to "  # noqa: EM101
             "the number of samples",
         )
 
@@ -293,8 +293,8 @@ def landmark_elastic_registration_warping(
             grid_points[1:-1] = location
 
     else:
-        raise ValueError(
-            f"Number of landmark locations should be equal than "
+        raise ValueError(  # noqa: TRY003
+            f"Number of landmark locations should be equal than "  # noqa: EM102
             f"the number of landmarks ({len(location)}) != ({n_landmarks})",
         )
 
@@ -304,7 +304,7 @@ def landmark_elastic_registration_warping(
         data_matrix=data_matrix,
         grid_points=grid_points,
         interpolation=interpolation,
-        extrapolation='bounds',
+        extrapolation='bounds',  # noqa: Q000
     )
 
     try:
@@ -316,11 +316,11 @@ def landmark_elastic_registration_warping(
 
 
 def landmark_registration(
-    *args: Any,
-    **kwargs: Any,
+    *args: Any,  # noqa: ANN401
+    **kwargs: Any,  # noqa: ANN401
 ) -> FDataGrid:
 
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "Function 'landmark_registration' has been renamed. "
         "Use 'landmark_elastic_registration' instead.",
         DeprecationWarning,
@@ -333,8 +333,8 @@ def landmark_elastic_registration(
     fd: FData,
     landmarks: ArrayLike,
     *,
-    location: Optional[ArrayLike] = None,
-    grid_points: Optional[GridPointsLike] = None,
+    location: Optional[ArrayLike] = None,  # noqa: UP007
+    grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
 ) -> FDataGrid:
     r"""
     Perform landmark registration of the curves.

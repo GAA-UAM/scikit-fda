@@ -1,5 +1,5 @@
 from functools import singledispatch
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, TypeVar  # noqa: UP035
 
 import numpy as np
 
@@ -8,11 +8,11 @@ from ....typing._numpy import NDArrayAny, NDArrayFloat
 
 dtype_bound = np.number
 X_T = TypeVar("X_T")
-dtype_X_T = TypeVar("dtype_X_T", bound="dtype_bound[Any]")
-dtype_y_T = TypeVar("dtype_y_T", bound="dtype_bound[Any]")
+dtype_X_T = TypeVar("dtype_X_T", bound="dtype_bound[Any]")  # noqa: N816
+dtype_y_T = TypeVar("dtype_y_T", bound="dtype_bound[Any]")  # noqa: N816
 
-depX_T = TypeVar("depX_T", bound=NDArrayAny)
-depy_T = TypeVar("depy_T", bound=NDArrayAny)
+depX_T = TypeVar("depX_T", bound=NDArrayAny)  # noqa: N816
+depy_T = TypeVar("depy_T", bound=NDArrayAny)  # noqa: N816
 
 _DependenceMeasure = Callable[
     [depX_T, depy_T],
@@ -40,22 +40,22 @@ def _compute_dependence(
     from dcor import rowwise
 
     assert isinstance(X, np.ndarray)
-    X_ndarray = X
+    X_ndarray = X  # noqa: N806
 
     # Shape without number of samples and codomain dimension
     input_shape = X_ndarray.shape[1:-1]
 
     # Move n_samples to the end
     # The shape is now input_shape + n_samples + n_output
-    X_ndarray = np.moveaxis(X_ndarray, 0, -2)
+    X_ndarray = np.moveaxis(X_ndarray, 0, -2)  # noqa: N806
 
     # Join input in a list for rowwise
-    X_ndarray = X_ndarray.reshape(-1, X_ndarray.shape[-2], X_ndarray.shape[-1])
+    X_ndarray = X_ndarray.reshape(-1, X_ndarray.shape[-2], X_ndarray.shape[-1])  # noqa: N806
 
     if y.ndim == 1:
         y = np.atleast_2d(y).T
 
-    Y = np.array([y] * len(X_ndarray))
+    Y = np.array([y] * len(X_ndarray))  # noqa: N806
 
     dependence_results = rowwise(  # type: ignore[no-untyped-call]
         dependence_measure,

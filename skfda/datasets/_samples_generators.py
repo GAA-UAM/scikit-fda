@@ -1,7 +1,7 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import itertools
-from typing import Any, Callable, Literal, Sequence, Union
+from typing import Any, Callable, Literal, Sequence, Union  # noqa: UP035
 
 import numpy as np
 import scipy.integrate
@@ -13,13 +13,13 @@ from ..misc.covariances import Brownian, CovarianceLike, _execute_covariance
 from ..misc.validation import validate_random_state
 from ..representation import FDataGrid
 from ..representation.interpolation import SplineInterpolation
-from ..typing._base import DomainRangeLike, GridPointsLike, RandomStateLike
+from ..typing._base import DomainRangeLike, GridPointsLike, RandomStateLike  # noqa: TC001
 from ..typing._numpy import ArrayLike, NDArrayFloat
 
 MeanCallable = Callable[[np.ndarray], np.ndarray]
 CovarianceCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
-MeanLike = Union[float, NDArrayFloat, MeanCallable]
+MeanLike = Union[float, NDArrayFloat, MeanCallable]  # noqa: UP007
 SDETerm = Callable[[float, NDArrayFloat], NDArrayFloat]
 EMTermCalculation = Callable[[float, NDArrayFloat, NDArrayFloat], NDArrayFloat]
 
@@ -47,14 +47,14 @@ def _sde_initial_condition_preprocessing(
 
     if n_samples is None:
         if callable(initial_condition):
-            raise ValueError(
-                "Invalid initial conditions. If a function is given, the "
+            raise ValueError(  # noqa: TRY003
+                "Invalid initial conditions. If a function is given, the "  # noqa: EM101
                 "n_samples argument must be included.",
             )
 
         initial_values = np.atleast_1d(initial_condition)
         n_samples = len(initial_values)
-    else:
+    else:  # noqa: PLR5501
         if callable(initial_condition):
             initial_values = initial_condition(
                 size=n_samples,
@@ -70,9 +70,9 @@ def _sde_initial_condition_preprocessing(
 
     if initial_values.ndim == 1:
         initial_values = initial_values[:, np.newaxis]
-    elif initial_values.ndim > 2:
-        raise ValueError(
-            "Invalid initial conditions. Each of the starting points "
+    elif initial_values.ndim > 2:  # noqa: PLR2004
+        raise ValueError(  # noqa: TRY003
+            "Invalid initial conditions. Each of the starting points "  # noqa: EM101
             "must be a flat array.",
         )
     (n_samples, dim_codomain) = initial_values.shape
@@ -84,7 +84,7 @@ def _sde_initial_condition_preprocessing(
     )
 
 
-def _sde_drift_diffusion_preprocessing(
+def _sde_drift_diffusion_preprocessing(  # noqa: C901
     drift: SDETerm | ArrayLike | None,
     diffusion: SDETerm | ArrayLike | None,
     dim_codomain: int,
@@ -99,8 +99,8 @@ def _sde_drift_diffusion_preprocessing(
         formatted_drift = drift
     else:
         def constant_drift(  # noqa: WPS430 -- We need internal functions
-            t: float,
-            x: NDArrayFloat,
+            t: float,  # noqa: ARG001
+            x: NDArrayFloat,  # noqa: ARG001
         ) -> NDArrayFloat:
             return np.atleast_1d(drift)
 
@@ -113,8 +113,8 @@ def _sde_drift_diffusion_preprocessing(
         formatted_diffusion = diffusion
     else:
         def constant_diffusion(  # noqa: WPS430 -- We need internal functions
-            t: float,
-            x: NDArrayFloat,
+            t: float,  # noqa: ARG001
+            x: NDArrayFloat,  # noqa: ARG001
         ) -> NDArrayFloat:
             return np.atleast_1d(diffusion)
 
@@ -131,9 +131,9 @@ def _sde_drift_diffusion_preprocessing(
         t_n: float,
         x_n: NDArrayFloat,
         noise: NDArrayFloat,
-    ) -> Any:
+    ) -> Any:  # noqa: ANN401
         return np.einsum(
-            '...dj, ...j -> ...d',
+            '...dj, ...j -> ...d',  # noqa: Q000
             formatted_diffusion(t_n, x_n),
             noise,
         )
@@ -144,9 +144,9 @@ def _sde_drift_diffusion_preprocessing(
         formatted_diffusion(start, diffusion_test_values),
     ).shape
 
-    if len(diffusion_shape) == 3:
+    if len(diffusion_shape) == 3:  # noqa: PLR2004
         diffusion_matricial_term = True
-    elif len(diffusion_shape) == 2:
+    elif len(diffusion_shape) == 2:  # noqa: PLR2004
         diffusion_matricial_term = diffusion_shape[0] != dim_codomain + 1
     else:
         diffusion_matricial_term = False
@@ -168,13 +168,13 @@ def _sde_drift_diffusion_preprocessing(
     )
 
 
-def make_sde_trajectories(  # noqa: WPS211
+def make_sde_trajectories(  # noqa: PLR0913, WPS211
     *,
     initial_condition: ArrayLike | InitialValueGenerator,
     drift: SDETerm | ArrayLike | None = None,
     diffusion: SDETerm | ArrayLike | None = None,
     diffusion_derivative: SDETerm | None = None,
-    n_L0_discretization_points: int | None = None,
+    n_L0_discretization_points: int | None = None,  # noqa: N803
     method: Literal["euler-maruyama", "milstein"] = "euler-maruyama",
     n_grid_points: int = 100,
     n_samples: int | None = None,
@@ -383,10 +383,10 @@ def make_sde_trajectories(  # noqa: WPS211
             times,
             random_state,
         )
-    elif method == "milstein":
+    elif method == "milstein":  # noqa: RET505
         if diffusion_derivative is None:
-            raise ValueError(
-                "The diffusion derivative must be included for the Milstein"
+            raise ValueError(  # noqa: TRY003
+                "The diffusion derivative must be included for the Milstein"  # noqa: EM101
                 "method.",
             )
 
@@ -406,10 +406,10 @@ def make_sde_trajectories(  # noqa: WPS211
             random_state,
         )
 
-    raise ValueError(f"Method \"{method}\" for computing SDEs not implemented")
+    raise ValueError(f"Method \"{method}\" for computing SDEs not implemented")  # noqa: EM102, TRY003
 
 
-def _euler_maruyama(
+def _euler_maruyama(  # noqa: PLR0913
     initial_values: NDArrayFloat,
     n_samples: int,
     n_grid_points: int,
@@ -493,7 +493,7 @@ def _euler_maruyama(
     )
 
 
-def _milstein(  # noqa: WPS211
+def _milstein(  # noqa: PLR0913, WPS211
     initial_values: NDArrayFloat,
     n_samples: int,
     n_grid_points: int,
@@ -502,9 +502,9 @@ def _milstein(  # noqa: WPS211
     formatted_drift: SDETerm,
     formatted_diffusion: SDETerm,
     diffusion_derivative: SDETerm,
-    n_L0_discretization_points: int | None,
+    n_L0_discretization_points: int | None,  # noqa: N803
     diffusion_times_noise: EMTermCalculation,
-    diffusion_matricial_term: bool,
+    diffusion_matricial_term: bool,  # noqa: FBT001
     times: NDArrayFloat,
     random_state: np.random.RandomState,
 ) -> FDataGrid:
@@ -598,14 +598,14 @@ def _milstein(  # noqa: WPS211
         x_n: NDArrayFloat,
         n: int,
     ) -> NDArrayFloat:
-        L_j = np.einsum(
-            '...kj, ...ilk -> ...ijl',
+        L_j = np.einsum(  # noqa: N806
+            '...kj, ...ilk -> ...ijl',  # noqa: Q000
             formatted_diffusion(t_n, x_n),
             diffusion_derivative(t_n, x_n),
         )
 
         return np.einsum(
-            '...ijl, ...jl -> ...i',
+            '...ijl, ...jl -> ...i',  # noqa: Q000
             L_j,
             double_ito_integral[:, n, :, :],
         )
@@ -616,7 +616,7 @@ def _milstein(  # noqa: WPS211
         n: int,
     ) -> NDArrayFloat:
         return np.einsum(
-            '...j, ...ij, ...ji -> ...i',
+            '...j, ...ij, ...ji -> ...i',  # noqa: Q000
             formatted_diffusion(t_n, x_n),
             diffusion_derivative(t_n, x_n),
             double_ito_integral[:, n, :, :],
@@ -628,10 +628,10 @@ def _milstein(  # noqa: WPS211
         milstein_term = vector_milstein_term
 
     if initial_values.shape[1] == 1:
-        n_L0_discretization_points = 1
+        n_L0_discretization_points = 1  # noqa: N806
     elif n_L0_discretization_points is None:
-        raise ValueError(
-            "Invalid n_L0_discretization_points. When the process is "
+        raise ValueError(  # noqa: TRY003
+            "Invalid n_L0_discretization_points. When the process is "  # noqa: EM101
             "multidimensional it must have an integer value.",
         )
 
@@ -652,7 +652,7 @@ def _milstein(  # noqa: WPS211
     # quantity. These simulations are equivalent to computing the
     # dot product of two vectors.
     double_ito_integral = np.einsum(
-        '...ik, ...jk -> ...ij',
+        '...ik, ...jk -> ...ij',  # noqa: Q000
         wiener_process_differences - noise / 2,
         noise,
     )
@@ -720,7 +720,7 @@ def make_gaussian(
         :func:`make_gaussian_process`: Simpler function for generating
         Gaussian processes.
 
-    """
+    """  # noqa: D405
     random_state = validate_random_state(random_state)
 
     if cov is None:
@@ -762,7 +762,7 @@ def make_gaussian(
     )
 
 
-def make_gaussian_process(
+def make_gaussian_process(  # noqa: PLR0913
     n_samples: int = 100,
     n_features: int = 100,
     *,
@@ -798,7 +798,7 @@ def make_gaussian_process(
         select the points of evaluation and to
         generate data in higer dimensions.
 
-    """
+    """  # noqa: D405
     t = np.linspace(start, stop, n_features)
 
     return make_gaussian(
@@ -811,7 +811,7 @@ def make_gaussian_process(
     )
 
 
-def make_sinusoidal_process(  # noqa: WPS211
+def make_sinusoidal_process(  # noqa: PLR0913, WPS211
     n_samples: int = 15,
     n_features: int = 100,
     *,
@@ -877,7 +877,7 @@ def make_sinusoidal_process(  # noqa: WPS211
     return FDataGrid(grid_points=t, data_matrix=y)
 
 
-def make_multimodal_landmarks(
+def make_multimodal_landmarks(  # noqa: PLR0913
     n_samples: int = 15,
     *,
     n_modes: int = 1,
@@ -936,7 +936,7 @@ def make_multimodal_landmarks(
     return modes_location + variation
 
 
-def make_multimodal_samples(  # noqa: WPS211
+def make_multimodal_samples(  # noqa: PLR0913, WPS211
     n_samples: int = 15,
     *,
     n_modes: int = 1,
@@ -1022,7 +1022,7 @@ def make_multimodal_samples(  # noqa: WPS211
 
         meshgrid = np.meshgrid(*grid_points)
 
-        evaluation_grid = np.empty(meshgrid[0].shape + (dim_domain,))
+        evaluation_grid = np.empty(meshgrid[0].shape + (dim_domain,))  # noqa: RUF005
 
         for i in range(dim_domain):
             evaluation_grid[..., i] = meshgrid[i]
@@ -1053,7 +1053,7 @@ def make_multimodal_samples(  # noqa: WPS211
     return FDataGrid(grid_points=grid_points, data_matrix=data_matrix)
 
 
-def make_random_warping(
+def make_random_warping(  # noqa: PLR0913
     n_samples: int = 15,
     n_features: int = 100,
     *,

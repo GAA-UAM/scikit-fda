@@ -1,6 +1,6 @@
 """Test kernel regression method."""
 import unittest
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple  # noqa: UP035
 
 import numpy as np
 import sklearn.model_selection
@@ -27,7 +27,7 @@ def _nw_alt(
     y_train: FloatArray,
     *,
     bandwidth: float,
-    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,
+    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,  # noqa: UP007
 ) -> FloatArray:
     if kernel is None:
         kernel = normal
@@ -46,7 +46,7 @@ def _knn_alt(
     y_train: FloatArray,
     *,
     bandwidth: int,
-    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,
+    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,  # noqa: UP007
 ) -> FloatArray:
     if kernel is None:
         kernel = uniform
@@ -69,7 +69,7 @@ def _llr_alt(
     y_train: FloatArray,
     *,
     bandwidth: float,
-    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,
+    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,  # noqa: UP007
 ) -> FloatArray:
     if kernel is None:
         kernel = normal
@@ -78,9 +78,9 @@ def _llr_alt(
 
     for i in range(fd_test.n_samples):
         d = l2_distance(fd_train, fd_test[i])
-        W = np.diag(kernel(d / bandwidth))
+        W = np.diag(kernel(d / bandwidth))  # noqa: N806
 
-        C = np.concatenate(
+        C = np.concatenate(  # noqa: N806
             (
                 np.ones(fd_train.n_samples)[:, np.newaxis],
                 (fd_train - fd_test[i]).coefficients,
@@ -88,17 +88,17 @@ def _llr_alt(
             axis=1,
         )
 
-        M = np.linalg.inv(np.linalg.multi_dot([C.T, W, C]))
+        M = np.linalg.inv(np.linalg.multi_dot([C.T, W, C]))  # noqa: N806
         y[i] = np.linalg.multi_dot([M, C.T, W, y_train])[0]
 
     return y
 
 
 def _create_data_basis(
-) -> Tuple[FDataBasis, FDataBasis, FloatArray]:
+) -> Tuple[FDataBasis, FDataBasis, FloatArray]:  # noqa: UP006
     X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
-    fat = y['fat'].values
+    fat = y['fat'].values  # noqa: Q000
 
     basis = FourierBasis(
         n_basis=10,
@@ -117,10 +117,10 @@ def _create_data_basis(
 
 
 def _create_data_grid(
-) -> Tuple[FDataGrid, FDataGrid, FloatArray]:
+) -> Tuple[FDataGrid, FDataGrid, FloatArray]:  # noqa: UP006
     X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
-    fat = y['fat'].values
+    fat = y['fat'].values  # noqa: Q000
 
     fd_train, fd_test, y_train, _ = sklearn.model_selection.train_test_split(
         fd,
@@ -133,10 +133,10 @@ def _create_data_grid(
 
 
 def _create_data_r(
-) -> Tuple[FDataGrid, FDataGrid, FloatArray]:
+) -> Tuple[FDataGrid, FDataGrid, FloatArray]:  # noqa: UP006
     X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
-    fat = y['fat'].values
+    fat = y['fat'].values  # noqa: Q000
 
     return fd[:100], fd[100:110], fat[:100]
 
@@ -192,7 +192,7 @@ class TestKernelRegression(unittest.TestCase):
 
         # Test KNN method with basis representation, n_neighbours=3 and
         # uniform kernel
-        knn_basis = KernelRegression[FDataBasis, np.typing.NDArray[np.float64]](
+        knn_basis = KernelRegression[FDataBasis, np.typing.NDArray[np.float64]](  # noqa: E501
             kernel_estimator=KNeighborsHatMatrix(n_neighbors=3),
         )
         knn_basis.fit(fd_train_basis, y_train_basis)
@@ -253,7 +253,7 @@ class TestKernelRegression(unittest.TestCase):
         # Creating data
         fd_train_basis, fd_test_basis, y_train_basis = _create_data_basis()
 
-        llr_basis = KernelRegression[FDataBasis, np.typing.NDArray[np.float64]](
+        llr_basis = KernelRegression[FDataBasis, np.typing.NDArray[np.float64]](  # noqa: E501
             kernel_estimator=LocalLinearRegressionHatMatrix(bandwidth=1),
         )
         llr_basis.fit(fd_train_basis, y_train_basis)
@@ -271,7 +271,7 @@ class TestKernelRegression(unittest.TestCase):
 
     def test_nw_r(self) -> None:
         """Comparison of NW's results with results from fda.usc."""
-        X_train, X_test, y_train = _create_data_r()
+        X_train, X_test, y_train = _create_data_r()  # noqa: N806
 
         nw = KernelRegression[FDataGrid, np.typing.NDArray[np.float64]](
             kernel_estimator=NadarayaWatsonHatMatrix(bandwidth=1),
@@ -279,7 +279,7 @@ class TestKernelRegression(unittest.TestCase):
         nw.fit(X_train, y_train)
 
         y = nw.predict(X_test)
-        result_R = [
+        result_R = [  # noqa: N806
             18.245093,
             22.976695,
             9.429236,
@@ -296,7 +296,7 @@ class TestKernelRegression(unittest.TestCase):
 
     def test_knn_r(self) -> None:
         """Comparison of NW's results with results from fda.usc."""
-        X_train, X_test, y_train = _create_data_r()
+        X_train, X_test, y_train = _create_data_r()  # noqa: N806
 
         knn = KernelRegression[FDataGrid, np.typing.NDArray[np.float64]](
             kernel_estimator=KNeighborsHatMatrix(n_neighbors=3),
@@ -304,7 +304,7 @@ class TestKernelRegression(unittest.TestCase):
         knn.fit(X_train, y_train)
 
         y = knn.predict(X_test)
-        result_R = [
+        result_R = [  # noqa: N806
             20.400000,
             24.166667,
             10.900000,
@@ -329,7 +329,7 @@ class TestNonOthonormalBasisLLR(unittest.TestCase):
         coef2 = [[6, 3, 5]]
         basis = MonomialBasis(n_basis=3, domain_range=(0, 3))
 
-        X_train = FDataBasis(coefficients=coef1, basis=basis)
+        X_train = FDataBasis(coefficients=coef1, basis=basis)  # noqa: N806
         X = FDataBasis(coefficients=coef2, basis=basis)
         y_train = np.array([8, 6, 1])
 

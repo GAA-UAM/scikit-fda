@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numbers
-from typing import Callable, Sequence, Tuple, Union
+from typing import Callable, Sequence, Tuple, Union  # noqa: UP035
 
 import findiff
 import numpy as np
@@ -19,14 +19,14 @@ from ...representation.basis import (
     MonomialBasis,
     _GridBasis,
 )
-from ...typing._base import DomainRangeLike
+from ...typing._base import DomainRangeLike  # noqa: TC001
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ._operators import Operator, gram_matrix, gram_matrix_optimization
 
 Order = int
 
 WeightSequence = Sequence[
-    Union[
+    Union[  # noqa: UP007
         float,
         Callable[[NDArrayFloat], NDArrayFloat],
     ],
@@ -34,7 +34,7 @@ WeightSequence = Sequence[
 
 
 class LinearDifferentialOperator(
-    Operator[Union[FData, Basis], Callable[[NDArrayFloat], NDArrayFloat]],
+    Operator[Union[FData, Basis], Callable[[NDArrayFloat], NDArrayFloat]],  # noqa: UP007
 ):
     r"""
     Defines the structure of a linear differential operator function system.
@@ -110,7 +110,7 @@ class LinearDifferentialOperator(
 
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         order_or_weights: Order | WeightSequence | None = None,
         *,
@@ -124,8 +124,8 @@ class LinearDifferentialOperator(
         )
 
         if num_args > 1:
-            raise ValueError(
-                "You have to provide the order or the weights, not both.",
+            raise ValueError(  # noqa: TRY003
+                "You have to provide the order or the weights, not both.",  # noqa: EM101
             )
 
         if order_or_weights is not None:
@@ -140,7 +140,7 @@ class LinearDifferentialOperator(
 
         elif order is not None:
             if order < 0:
-                raise ValueError("Order should be an non-negative integer.")
+                raise ValueError("Order should be an non-negative integer.")  # noqa: EM101, TRY003
 
             weights = tuple(
                 0 if (i < order) else 1
@@ -149,7 +149,7 @@ class LinearDifferentialOperator(
 
         assert weights is not None
         if len(weights) == 0:
-            raise ValueError("You have to provide one weight at least.")
+            raise ValueError("You have to provide one weight at least.")  # noqa: EM101, TRY003
 
         # Check domain ranges
         for w in weights:
@@ -159,8 +159,8 @@ class LinearDifferentialOperator(
                 if domain_range is None:
                     domain_range = w_domain_range
                 elif not np.array_equal(w_domain_range, domain_range):
-                    raise ValueError(
-                        "Weights with wrong domain range.",
+                    raise ValueError(  # noqa: TRY003
+                        "Weights with wrong domain range.",  # noqa: EM101
                     )
         self.weights = tuple(weights)
 
@@ -170,7 +170,7 @@ class LinearDifferentialOperator(
             f"{self.__class__.__name__}(\n"
             f"\tweights={self.weights},\n"
             f")"
-        ).replace('\n', '\n    ')
+        ).replace('\n', '\n    ')  # noqa: Q000
 
     def __eq__(self, other: object) -> bool:
 
@@ -345,7 +345,7 @@ def monomial_penalty_matrix_optimized(
             (0, 0),
             (0, 1),
         ),
-        mode='constant',
+        mode='constant',  # noqa: Q000
     )
 
     # Now, apply Barrow's rule
@@ -422,7 +422,7 @@ def _fourier_penalty_matrix_optimized_orthonormal(
             (1, 0),
             (1, 0),
         ),
-        mode='constant',
+        mode='constant',  # noqa: Q000
     )
 
     penalty_matrix[0, 0] = weights[0]**2
@@ -449,7 +449,7 @@ def fourier_penalty_matrix_optimized(
 
 
 @gram_matrix_optimization.register
-def bspline_penalty_matrix_optimized(
+def bspline_penalty_matrix_optimized(  # noqa: C901
     linear_operator: LinearDifferentialOperator,
     basis: BSplineBasis,
 ) -> NDArrayFloat:
@@ -495,7 +495,7 @@ def bspline_penalty_matrix_optimized(
     # representation of splines
 
     # Places m knots at the boundaries
-    knots = np.array(basis._evaluation_knots())
+    knots = np.array(basis._evaluation_knots())  # noqa: SLF001
 
     # c is used the select which spline the function
     # PPoly.from_spline below computes
@@ -533,7 +533,7 @@ def bspline_penalty_matrix_optimized(
     penalty_matrix = np.zeros((basis.n_basis, basis.n_basis))
     for interval, _ in enumerate(no_0_intervals):
         for i in range(basis.n_basis):
-            poly_i = np.trim_zeros(ppoly_lst[i][:, interval], 'f')
+            poly_i = np.trim_zeros(ppoly_lst[i][:, interval], 'f')  # noqa: Q000
             if len(poly_i) <= derivative_degree:
                 # if the order of the polynomial is lesser or
                 # equal to the derivative the result of the
@@ -554,7 +554,7 @@ def bspline_penalty_matrix_optimized(
             )[0]
 
             for j in range(i + 1, basis.n_basis):
-                poly_j = np.trim_zeros(ppoly_lst[j][:, interval], 'f')
+                poly_j = np.trim_zeros(ppoly_lst[j][:, interval], 'f')  # noqa: Q000
                 if len(poly_j) <= derivative_degree:
                     # if the order of the polynomial is lesser
                     # or equal to the derivative the result of
@@ -583,7 +583,7 @@ def _optimized_operator_evaluation_in_grid(
     linear_operator: LinearDifferentialOperator,
     grid_points: NDArrayFloat,
     findiff_accuracy: int,
-) -> Tuple[NDArrayFloat, NDArrayInt]:
+) -> Tuple[NDArrayFloat, NDArrayInt]:  # noqa: UP006
     """
     Compute the linear operator applied to the delta basis of the grid.
 

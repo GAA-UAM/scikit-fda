@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple  # noqa: UP035
 
-import matplotlib
+import matplotlib  # noqa: ICN001
 import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: F401
 import numpy as np
 from matplotlib.artist import Artist
-from matplotlib.axes import Axes
+from matplotlib.axes import Axes  # noqa: TC002
 from matplotlib.collections import PatchCollection
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure  # noqa: TC002
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import MaxNLocator
 from sklearn.exceptions import NotFittedError
@@ -19,40 +19,40 @@ from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Protocol
 
 from ...misc.validation import check_fdata_same_dimensions
-from ...representation import FData, FDataGrid
-from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ...representation import FData, FDataGrid  # noqa: TC001
+from ...typing._numpy import NDArrayFloat, NDArrayInt  # noqa: TC001
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _darken, _set_labels
 
 
-class ClusteringEstimator(Protocol):
+class ClusteringEstimator(Protocol):  # noqa: D101
 
     @property
-    def n_clusters(self) -> int:
-        pass
-
-    @property
-    def cluster_centers_(self) -> FDataGrid:
+    def n_clusters(self) -> int:  # noqa: D102
         pass
 
     @property
-    def labels_(self) -> NDArrayInt:
+    def cluster_centers_(self) -> FDataGrid:  # noqa: D102
         pass
 
-    def fit(self, X: FDataGrid) -> ClusteringEstimator:
+    @property
+    def labels_(self) -> NDArrayInt:  # noqa: D102
         pass
 
-    def predict(self, X: FDataGrid) -> NDArrayInt:
+    def fit(self, X: FDataGrid) -> ClusteringEstimator:  # noqa: D102
+        pass
+
+    def predict(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
         pass
 
 
-class FuzzyClusteringEstimator(ClusteringEstimator, Protocol):
+class FuzzyClusteringEstimator(ClusteringEstimator, Protocol):  # noqa: D101
 
-    def predict_proba(self, X: FDataGrid) -> NDArrayFloat:
+    def predict_proba(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102
         pass
 
 
-def _plot_clustering_checks(
+def _plot_clustering_checks(  # noqa: PLR0913
     estimator: ClusteringEstimator,
     fdata: FData,
     sample_colors: Sequence[ColorLike] | None,
@@ -67,48 +67,48 @@ def _plot_clustering_checks(
         sample_colors is not None
         and len(sample_colors) != fdata.n_samples
     ):
-        raise ValueError(
-            "sample_colors must contain a color for each sample.",
+        raise ValueError(  # noqa: TRY003
+            "sample_colors must contain a color for each sample.",  # noqa: EM101
         )
 
     if (
         sample_labels is not None
         and len(sample_labels) != fdata.n_samples
     ):
-        raise ValueError(
-            "sample_labels must contain a label for each sample.",
+        raise ValueError(  # noqa: TRY003
+            "sample_labels must contain a label for each sample.",  # noqa: EM101
         )
 
     if (
         cluster_colors is not None
         and len(cluster_colors) != estimator.n_clusters
     ):
-        raise ValueError(
-            "cluster_colors must contain a color for each cluster.",
+        raise ValueError(  # noqa: TRY003
+            "cluster_colors must contain a color for each cluster.",  # noqa: EM101
         )
 
     if (
         cluster_labels is not None
         and len(cluster_labels) != estimator.n_clusters
     ):
-        raise ValueError(
-            "cluster_labels must contain a label for each cluster.",
+        raise ValueError(  # noqa: TRY003
+            "cluster_labels must contain a label for each cluster.",  # noqa: EM101
         )
 
     if (
         center_colors is not None
         and len(center_colors) != estimator.n_clusters
     ):
-        raise ValueError(
-            "center_colors must contain a color for each center.",
+        raise ValueError(  # noqa: TRY003
+            "center_colors must contain a color for each center.",  # noqa: EM101
         )
 
     if (
         center_labels is not None
         and len(center_labels) != estimator.n_clusters
     ):
-        raise ValueError(
-            "centers_labels must contain a label for each center.",
+        raise ValueError(  # noqa: TRY003
+            "centers_labels must contain a label for each center.",  # noqa: EM101
         )
 
 
@@ -117,7 +117,7 @@ def _get_labels(
     y_label: str | None,
     title: str | None,
     xlabel_str: str,
-) -> Tuple[str, str, str]:
+) -> Tuple[str, str, str]:  # noqa: UP006
     """
     Get the axes labels.
 
@@ -191,7 +191,7 @@ class ClusterPlot(BasePlot):
             taken. Defaults to `rainbow`.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         estimator: ClusteringEstimator,
         fdata: FDataGrid,
@@ -210,7 +210,7 @@ class ClusterPlot(BasePlot):
     ) -> None:
 
         if colormap is None:
-            colormap = matplotlib.colormaps['rainbow']
+            colormap = matplotlib.colormaps['rainbow']  # noqa: Q000
 
         super().__init__(
             chart,
@@ -230,11 +230,11 @@ class ClusterPlot(BasePlot):
         self.colormap = colormap
 
     @property
-    def n_subplots(self) -> int:
+    def n_subplots(self) -> int:  # noqa: D102
         return self.fdata.dim_codomain
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return self.fdata.n_samples
 
     def _plot_clusters(
@@ -256,7 +256,7 @@ class ClusterPlot(BasePlot):
 
         if self.sample_labels is None:
             self.sample_labels = [
-                f'$SAMPLE: {i}$' for i in range(self.fdata.n_samples)
+                f'$SAMPLE: {i}$' for i in range(self.fdata.n_samples)  # noqa: Q000
             ]
 
         if self.cluster_colors is None:
@@ -267,7 +267,7 @@ class ClusterPlot(BasePlot):
 
         if self.cluster_labels is None:
             self.cluster_labels = [
-                f'$CLUSTER: {i}$' for i in range(self.estimator.n_clusters)
+                f'$CLUSTER: {i}$' for i in range(self.estimator.n_clusters)  # noqa: Q000
             ]
 
         if self.center_colors is None:
@@ -275,7 +275,7 @@ class ClusterPlot(BasePlot):
 
         if self.center_labels is None:
             self.center_labels = [
-                f'$CENTER: {i}$' for i in range(self.estimator.n_clusters)
+                f'$CENTER: {i}$' for i in range(self.estimator.n_clusters)  # noqa: Q000
             ]
 
         colors_by_cluster = np.asarray(self.cluster_colors)[self.labels]
@@ -367,7 +367,7 @@ class ClusterMembershipLinesPlot(BasePlot):
             Defaults to "Degrees of membership of the samples to each cluster".
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         estimator: FuzzyClusteringEstimator,
         fdata: FDataGrid,
@@ -385,7 +385,7 @@ class ClusterMembershipLinesPlot(BasePlot):
     ) -> None:
 
         if colormap is None:
-            colormap = matplotlib.colormaps['rainbow']
+            colormap = matplotlib.colormaps['rainbow']  # noqa: Q000
 
         super().__init__(
             chart,
@@ -403,7 +403,7 @@ class ClusterMembershipLinesPlot(BasePlot):
         self.colormap = colormap
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return self.fdata.n_samples
 
     def _plot(
@@ -451,13 +451,13 @@ class ClusterMembershipLinesPlot(BasePlot):
 
         if self.sample_labels is None:
             self.sample_labels = [
-                f'$SAMPLE: {i}$'
+                f'$SAMPLE: {i}$'  # noqa: Q000
                 for i in range(self.fdata.n_samples)
             ]
 
         if self.cluster_labels is None:
             self.cluster_labels = [
-                f'${i}$'
+                f'${i}$'  # noqa: Q000
                 for i in range(self.estimator.n_clusters)
             ]
 
@@ -510,7 +510,7 @@ class ClusterMembershipPlot(BasePlot):
             Defaults to "Degrees of membership of the samples to each cluster".
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         estimator: FuzzyClusteringEstimator,
         fdata: FData,
@@ -529,7 +529,7 @@ class ClusterMembershipPlot(BasePlot):
     ) -> None:
 
         if colormap is None:
-            colormap = matplotlib.colormaps['rainbow']
+            colormap = matplotlib.colormaps['rainbow']  # noqa: Q000
 
         super().__init__(
             chart,
@@ -552,7 +552,7 @@ class ClusterMembershipPlot(BasePlot):
         self.sort = sort
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return self.fdata.n_samples
 
     def _plot(
@@ -579,8 +579,8 @@ class ClusterMembershipPlot(BasePlot):
         membership = self.estimator.predict_proba(self.fdata)
 
         if self.sort < -1 or self.sort >= self.estimator.n_clusters:
-            raise ValueError(
-                "The sorting number must belong to "
+            raise ValueError(  # noqa: TRY003
+                "The sorting number must belong to "  # noqa: EM101
                 "the interval [-1, n_clusters)",
             )
 
@@ -619,7 +619,7 @@ class ClusterMembershipPlot(BasePlot):
 
         if self.cluster_labels is None:
             self.cluster_labels = [
-                f'$CLUSTER: {i}$'
+                f'$CLUSTER: {i}$'  # noqa: Q000
                 for i in range(self.estimator.n_clusters)
             ]
 

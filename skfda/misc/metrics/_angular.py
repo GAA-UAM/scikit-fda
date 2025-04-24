@@ -3,17 +3,17 @@ from __future__ import annotations
 from typing import Optional, TypeVar, Union
 
 import numpy as np
-from typing_extensions import Final
+from typing_extensions import Final  # noqa: UP035
 
 from ...representation import FData
 from ...typing._numpy import NDArrayFloat
 from .._math import cosine_similarity, cosine_similarity_matrix
 from ._utils import pairwise_metric_optimization
 
-T = TypeVar("T", bound=Union[NDArrayFloat, FData])
+T = TypeVar("T", bound=Union[NDArrayFloat, FData])  # noqa: UP007
 
 
-class AngularDistance():
+class AngularDistance():  # noqa: UP039
     r"""
     Calculate the angular distance between two objects.
 
@@ -75,9 +75,9 @@ angular_distance: Final = AngularDistance()
 
 @pairwise_metric_optimization.register
 def _pairwise_metric_optimization_angular(
-    metric: AngularDistance,
-    elem1: Union[NDArrayFloat, FData],
-    elem2: Optional[Union[NDArrayFloat, FData]],
+    metric: AngularDistance,  # noqa: ARG001
+    elem1: Union[NDArrayFloat, FData],  # noqa: UP007
+    elem2: Optional[Union[NDArrayFloat, FData]],  # noqa: UP007
 ) -> NDArrayFloat:
 
     return np.arccos(cosine_similarity_matrix(elem1, elem2)) / np.pi

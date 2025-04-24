@@ -1,15 +1,15 @@
 """Elastic metrics."""
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, TypeVar
+from typing import Any, Optional, Tuple, TypeVar  # noqa: UP035
 
 import numpy as np
 import scipy.integrate
-from typing_extensions import Final
+from typing_extensions import Final  # noqa: UP035
 
 from ..._utils import normalize_scale, normalize_warping
 from ...representation import FData, FDataGrid
-from ...typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from ..operators import SRSF
 from ._lp_distances import l2_distance
 from ._utils import PairwiseMetric, _cast_to_grid, pairwise_metric_optimization
@@ -23,7 +23,7 @@ def _transformation_for_fisher_rao(
     *,
     eval_points: NDArrayFloat | None = None,
     _check: bool = True,
-) -> Tuple[FDataGrid, FDataGrid]:
+) -> Tuple[FDataGrid, FDataGrid]:  # noqa: UP006
     fdata1, fdata2 = _cast_to_grid(
         fdata1,
         fdata2,
@@ -51,7 +51,7 @@ def _transformation_for_fisher_rao(
     return fdata1_srsf, fdata2_srsf
 
 
-class FisherRaoDistance():
+class FisherRaoDistance():  # noqa: UP039
     r"""
     Compute the Fisher-Rao distance between two functional objects.
 
@@ -116,9 +116,9 @@ fisher_rao_distance: Final = FisherRaoDistance()
 
 @pairwise_metric_optimization.register
 def _pairwise_metric_optimization_fisher_rao(
-    metric: FisherRaoDistance,
+    metric: FisherRaoDistance,  # noqa: ARG001
     elem1: T,
-    elem2: Optional[T],
+    elem2: Optional[T],  # noqa: UP007
 ) -> NDArrayFloat:
 
     new_elem2 = elem1.copy() if elem2 is None else elem2
@@ -140,7 +140,7 @@ def fisher_rao_amplitude_distance(
     lam: float = 0,
     eval_points: NDArrayFloat | None = None,
     _check: bool = True,
-    **kwargs: Any,
+    **kwargs: Any,  # noqa: ANN401
 ) -> NDArrayFloat:
     r"""
     Compute the Fisher-Rao amplitude distance between two functional objects.
@@ -190,7 +190,7 @@ def fisher_rao_amplitude_distance(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
     from ...preprocessing.registration import FisherRaoElasticRegistration
 
     fdata1, fdata2 = _cast_to_grid(
@@ -228,7 +228,7 @@ def fisher_rao_amplitude_distance(
     distance = l2_distance(fdata1_reg_srsf, fdata2_srsf)
 
     if lam != 0:
-        # L2 norm || sqrt(Dh) - 1 ||^2
+        # L2 norm || sqrt(Dh) - 1 ||^2  # noqa: RUF003
         warping_deriv = elastic_registration.warping_.derivative()
         penalty = warping_deriv(eval_points_normalized)[0, ..., 0]
         penalty = np.sqrt(penalty, out=penalty)
@@ -286,7 +286,7 @@ def fisher_rao_phase_distance(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
     from ...preprocessing.registration import FisherRaoElasticRegistration
 
     fdata1, fdata2 = _cast_to_grid(
@@ -368,7 +368,7 @@ def _fisher_rao_warping_distance(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
     warping1, warping2 = _cast_to_grid(
         warping1,
         warping2,

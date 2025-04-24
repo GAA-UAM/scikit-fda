@@ -1,6 +1,6 @@
 """Test the math module."""
 import unittest
-from typing import Sequence
+from typing import Sequence  # noqa: UP035
 
 import numpy as np
 
@@ -153,15 +153,15 @@ class InnerProductTest(unittest.TestCase):
             cov=Gaussian(),
             random_state=0,
         )
-        Y = make_gaussian_process(
+        Y = make_gaussian_process(  # noqa: N806
             n_samples=10,
             n_features=20,
             cov=Gaussian(),
             random_state=1,
         )
 
-        X_basis = X.to_basis(basis)
-        Y_basis = Y.to_basis(basis)
+        X_basis = X.to_basis(basis)  # noqa: N806
+        Y_basis = Y.to_basis(basis)  # noqa: N806
 
         gram = skfda.misc.inner_product_matrix(X, Y)
         gram_basis = skfda.misc.inner_product_matrix(X_basis, Y_basis)

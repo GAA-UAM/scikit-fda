@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from ..typing._base import EvaluationPoints
-from ..typing._numpy import ArrayLike, NDArrayFloat
+from ..typing._base import EvaluationPoints  # noqa: TC001
+from ..typing._numpy import ArrayLike, NDArrayFloat  # noqa: TC001
 
 if TYPE_CHECKING:
     from ._functional_data import FData
@@ -47,7 +47,7 @@ class Evaluator(ABC):
         Must be overriden in subclasses.
 
         """
-        pass
+        pass  # noqa: PIE790
 
     def __call__(
         self,
@@ -98,7 +98,7 @@ class Evaluator(ABC):
     def __repr__(self) -> str:
         return f"{type(self)}()"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         """Equality operator between evaluators."""
         return isinstance(other, type(self))
 
@@ -137,7 +137,7 @@ class EvaluateFunction(Protocol):
             j-th evaluation point.
 
         """
-        pass
+        pass  # noqa: PIE790
 
 
 class GenericEvaluator(Evaluator):
@@ -152,7 +152,7 @@ class GenericEvaluator(Evaluator):
     def __init__(self, evaluate_function: EvaluateFunction) -> None:
         self.evaluate_function = evaluate_function
 
-    def _evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102, RUF100
         self,
         fdata: FData,
         eval_points: EvaluationPoints,

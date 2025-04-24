@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Optional, Sequence, Tuple, TypeVar
+from typing import Any, Optional, Sequence, Tuple, TypeVar  # noqa: UP035
 
 import numpy as np
 from typing_extensions import Protocol
@@ -14,7 +14,7 @@ T = TypeVar("T", bound="FourierBasis")
 class _SinCos(Protocol):
     def __call__(
         self,
-        __array: NDArrayFloat,  # noqa: WPS112
+        __array: NDArrayFloat,  # noqa: PYI063, WPS112
         out: NDArrayFloat,
     ) -> NDArrayFloat:
         pass
@@ -88,9 +88,9 @@ class FourierBasis(Basis):
 
     def __init__(
         self,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
         n_basis: int = 3,
-        period: Optional[float] = None,
+        period: Optional[float] = None,  # noqa: UP007
     ) -> None:
         """
         Construct a FourierBasis object.
@@ -112,7 +112,7 @@ class FourierBasis(Basis):
             domain_range = validate_domain_range(domain_range)
 
             if len(domain_range) != 1:
-                raise ValueError("Domain range should be unidimensional.")
+                raise ValueError("Domain range should be unidimensional.")  # noqa: EM101, TRY003
 
             domain_range = domain_range[0]
 
@@ -159,11 +159,11 @@ class FourierBasis(Basis):
 
         return np.concatenate((constant_basis, res))
 
-    def _derivative_basis_and_coefs(
+    def _derivative_basis_and_coefs(  # noqa: PYI019
         self: T,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, NDArrayFloat]:
+    ) -> Tuple[T, NDArrayFloat]:  # noqa: UP006
 
         omega = 2 * np.pi / self.period
         deriv_factor = (np.arange(1, (self.n_basis + 1) / 2) * omega) ** order
@@ -193,9 +193,9 @@ class FourierBasis(Basis):
 
         return super()._gram_matrix()
 
-    def rescale(  # noqa: D102
+    def rescale(  # noqa: D102, PYI019, RUF100
         self: T,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
         *,
         rescale_period: bool = False,
     ) -> T:
@@ -207,7 +207,7 @@ class FourierBasis(Basis):
             domain_rescaled = rescale_basis.domain_range[0]
             domain = self.domain_range[0]
 
-            rescale_basis._period = (  # noqa: WPS437
+            rescale_basis._period = (  # noqa: SLF001, WPS437
                 self.period
                 * (domain_rescaled[1] - domain_rescaled[0])
                 / (domain[1] - domain[0])
@@ -234,7 +234,7 @@ class FourierBasis(Basis):
             f"period={self.period})"
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         return super().__eq__(other) and self.period == other.period
 
     def __hash__(self) -> int:
@@ -312,9 +312,9 @@ class Fourier(FourierBasis):
 
     def __init__(
         self,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
         n_basis: int = 3,
-        period: Optional[float] = None,
+        period: Optional[float] = None,  # noqa: UP007
     ) -> None:
         warnings.warn(
             "The Fourier class is deprecated. Use FourierBasis instead.",

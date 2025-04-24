@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections import defaultdict
 from contextlib import suppress
 from itertools import combinations
-from typing import (
+from typing import (  # noqa: UP035
     DefaultDict,
     Dict,
     Mapping,
@@ -33,7 +33,7 @@ from ...representation import FData
 from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
 Input = TypeVar("Input", bound=FData)
-Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])
+Target = TypeVar("Target", bound=Union[NDArrayInt, NDArrayStr])  # noqa: UP007
 
 
 def _classifier_get_depth_methods(
@@ -53,7 +53,7 @@ def _classifier_fit_depth_methods(
     X: Input,
     y: NDArrayInt | NDArrayStr,
     depth_methods: Sequence[Depth[Input]],
-) -> Tuple[NDArrayStr | NDArrayInt, Sequence[Depth[Input]]]:
+) -> Tuple[NDArrayStr | NDArrayInt, Sequence[Depth[Input]]]:  # noqa: UP006
     classes, y_ind = _classifier_get_classes(y)
 
     class_depth_methods_ = _classifier_get_depth_methods(
@@ -121,12 +121,12 @@ class DDClassifier(
 
     References:
         .. footbibliography::
-    """
+    """  # noqa: D405
 
     def __init__(
         self,
         degree: int,
-        depth_method: Optional[Depth[Input]] = None,
+        depth_method: Optional[Depth[Input]] = None,  # noqa: UP007
     ) -> None:
         self.depth_method = depth_method
         self.degree = degree
@@ -151,8 +151,8 @@ class DDClassifier(
         self.classes_ = classes
         self.class_depth_methods_ = class_depth_methods
 
-        if (len(self.classes_) != 2):
-            raise ValueError("DDClassifier only accepts two classes.")
+        if (len(self.classes_) != 2):  # noqa: PLR2004
+            raise ValueError("DDClassifier only accepts two classes.")  # noqa: EM101, TRY003
 
         dd_coordinates = [
             depth_method.transform(X)
@@ -312,7 +312,7 @@ class DDGClassifier(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: D405
 
     def __init__(  # noqa: WPS234
         self,
@@ -322,13 +322,13 @@ class DDGClassifier(
             NDArrayInt,
         ] | None = None,
         depth_method: Depth[Input] | Sequence[
-            Tuple[str, Depth[Input]]
+            Tuple[str, Depth[Input]]  # noqa: UP006
         ] | None = None,
     ) -> None:
         self.multivariate_classifier = multivariate_classifier
         self.depth_method = depth_method
 
-    def get_params(self, deep: bool = True) -> Mapping[str, object]:
+    def get_params(self, deep: bool = True) -> Mapping[str, object]:  # noqa: FBT001, FBT002
         params = BaseEstimator.get_params(self, deep=deep)
         if deep and isinstance(self.depth_method, Sequence):
             for name, depth in self.depth_method:
@@ -356,10 +356,10 @@ class DDGClassifier(
             # `zip` raises a TypeError when `items` does not contains
             # elements of length 2
             with suppress(TypeError):
-                item_names, _ = zip(*items)
-                item_params: DefaultDict[
+                item_names, _ = zip(*items)  # noqa: B905
+                item_params: DefaultDict[  # noqa: UP006
                     str,
-                    Dict[str, object],
+                    Dict[str, object],  # noqa: UP006
                 ] = defaultdict(dict)
                 for name in list(params.keys()):
                     if name.startswith(f"{attr}__"):
@@ -478,7 +478,7 @@ class _ArgMaxClassifier(
         array([ 1, 0, 0])
     """
 
-    def fit(self, X: NDArrayFloat, y: Target) -> _ArgMaxClassifier[Target]:
+    def fit(self, X: NDArrayFloat, y: Target) -> _ArgMaxClassifier[Target]:  # noqa: ARG002
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -492,7 +492,7 @@ class _ArgMaxClassifier(
         self.classes_ = classes
         return self
 
-    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> Target:
+    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> Target:  # noqa: UP007
         """Predict the class labels for the provided data.
 
         Args:
@@ -558,7 +558,7 @@ class MaximumDepthClassifier(DDGClassifier[Input, Target]):
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: D405
 
     def __init__(self, depth_method: Depth[Input] | None = None) -> None:
         super().__init__(

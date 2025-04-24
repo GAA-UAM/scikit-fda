@@ -17,8 +17,8 @@ from ..._utils.ndfunction import average_function_value
 from ...misc.metrics import l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData, FDataGrid
-from ...typing._metric import Metric
-from ...typing._numpy import NDArrayFloat
+from ...typing._metric import Metric  # noqa: TC001
+from ...typing._numpy import NDArrayFloat  # noqa: TC001
 from .multivariate import Depth, SimplicialDepth, _UnivariateFraimanMuniz
 
 T = TypeVar("T", bound=FData)
@@ -53,7 +53,7 @@ class IntegratedDepth(Depth[FDataGrid]):
         data. Test, 10(2), 419–440. https://doi.org/10.1007/BF02595706
 
 
-    """
+    """  # noqa: RUF002
 
     def __init__(
         self,
@@ -62,10 +62,10 @@ class IntegratedDepth(Depth[FDataGrid]):
     ) -> None:
         self.multivariate_depth = multivariate_depth
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, RUF100
         self,
         X: FDataGrid,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> IntegratedDepth:
 
         self.multivariate_depth_: Depth[NDArrayFloat]
@@ -80,7 +80,7 @@ class IntegratedDepth(Depth[FDataGrid]):
         self.multivariate_depth_.fit(X.data_matrix)
         return self
 
-    def transform(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102
+    def transform(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102, RUF100
 
         pointwise_depth = X.copy(
             data_matrix=self.multivariate_depth_.transform(X.data_matrix),
@@ -132,7 +132,7 @@ class ModifiedBandDepth(IntegratedDepth):
         Depth for Functional Data. Journal of the American Statistical
         Association, 104(486), 718–734.
         https://doi.org/10.1198/jasa.2009.0108
-    """
+    """  # noqa: RUF002
 
     def __init__(self) -> None:
         super().__init__(multivariate_depth=SimplicialDepth())
@@ -167,19 +167,19 @@ class BandDepth(Depth[FDataGrid]):
         Association, 104(486), 718–734.
         https://doi.org/10.1198/jasa.2009.0108
 
-    """
+    """  # noqa: RUF002
 
-    def fit(self, X: FDataGrid, y: object = None) -> BandDepth:  # noqa: D102
+    def fit(self, X: FDataGrid, y: object = None) -> BandDepth:  # noqa: ARG002, D102, RUF100
 
         if X.dim_codomain != 1:
             raise NotImplementedError(
-                "Band depth not implemented for vector valued functions",
+                "Band depth not implemented for vector valued functions",  # noqa: EM101
             )
 
         self._distribution = X
         return self
 
-    def transform(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102
+    def transform(self, X: FDataGrid) -> NDArrayFloat:  # noqa: D102, RUF100
 
         num_in = np.zeros(shape=len(X), dtype=X.data_matrix.dtype)
         n_total = 0
@@ -243,10 +243,10 @@ class DistanceBasedDepth(Depth[FDataGrid], BaseEstimator):
     ) -> None:
         self.metric = metric
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, RUF100
         self,
         X: T,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> DistanceBasedDepth:
         """Fit the model using X as training data.
 
@@ -264,7 +264,7 @@ class DistanceBasedDepth(Depth[FDataGrid], BaseEstimator):
 
         return self
 
-    def transform(self, X: T) -> NDArrayFloat:  # noqa: D102
+    def transform(self, X: T) -> NDArrayFloat:  # noqa: D102, RUF100
         """Compute the depth of given observations.
 
         Args:

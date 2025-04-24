@@ -1,14 +1,14 @@
 """Feature extraction union for dimensionality reduction."""
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence, Tuple, Union
+from typing import Any, Mapping, Sequence, Tuple, Union  # noqa: UP035
 
 import pandas as pd
 from sklearn.pipeline import FeatureUnion
 
-from ..._utils._sklearn_adapter import TransformerMixin
+from ..._utils._sklearn_adapter import TransformerMixin  # noqa: TC001
 from ...representation import FData
-from ...typing._numpy import NDArrayAny
+from ...typing._numpy import NDArrayAny  # noqa: TC001
 
 
 class FDAFeatureUnion(FeatureUnion):  # type: ignore[misc]
@@ -93,7 +93,7 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore[misc]
     def __init__(
         self,
         transformer_list: Sequence[
-            Tuple[str, TransformerMixin[Any, Any, Any]],
+            Tuple[str, TransformerMixin[Any, Any, Any]],  # noqa: UP006
         ],
         *,
         n_jobs: int = 1,
@@ -109,13 +109,13 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore[misc]
             verbose=verbose,
         )
 
-    def _hstack(self, Xs: NDArrayAny) -> Union[pd.DataFrame, NDArrayAny]:
+    def _hstack(self, Xs: NDArrayAny) -> Union[pd.DataFrame, NDArrayAny]:  # noqa: N803, UP007
 
         if self.array_output:
             for i in Xs:
                 if isinstance(i, FData):
-                    raise TypeError(
-                        "There are transformed instances of FDataGrid or "
+                    raise TypeError(  # noqa: TRY003
+                        "There are transformed instances of FDataGrid or "  # noqa: EM101
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )

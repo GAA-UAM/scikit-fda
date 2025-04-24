@@ -1,6 +1,6 @@
-import warnings
+import warnings  # noqa: D104
 
-from .. import FPCA
+from .. import FPCA  # noqa: F401
 
 warnings.warn(
     'The module "projection" is deprecated. Please use "dim_reduction"',

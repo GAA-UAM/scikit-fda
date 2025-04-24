@@ -18,16 +18,16 @@ class OnewayAnovaTests(unittest.TestCase):
 
     def test_oneway_anova_args(self) -> None:
         """Check behavior of test with invalid args."""
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             oneway_anova(FDataGrid([0]), n_reps=-2)
 
     def test_v_stats_args(self) -> None:
         """Check behavior of statistic with invalid args."""
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             v_sample_stat(FDataGrid([0]), [0, 1])
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             v_asymptotic_stat(FDataGrid([0]), weights=[0, 1])
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             v_asymptotic_stat(
                 FDataGrid([[1, 1, 1], [1, 1, 1]]),
                 weights=[0, 0],
@@ -42,8 +42,8 @@ class OnewayAnovaTests(unittest.TestCase):
         m2 = [2 for _ in range(n_features)]
         m3 = [3 for _ in range(n_features)]
         fd = FDataGrid([m1, m2, m3], grid_points=t)
-        self.assertEqual(v_sample_stat(fd, weights), 7.0)
-        self.assertAlmostEqual(
+        self.assertEqual(v_sample_stat(fd, weights), 7.0)  # noqa: PT009
+        self.assertAlmostEqual(  # noqa: PT009
             v_sample_stat(
                 fd.to_basis(FourierBasis(n_basis=5)),
                 weights,
@@ -55,8 +55,8 @@ class OnewayAnovaTests(unittest.TestCase):
             + (1 - 3 * np.sqrt(1 / 3)) ** 2
             + (2 - 3 * np.sqrt(2 / 3)) ** 2
         )
-        self.assertAlmostEqual(v_asymptotic_stat(fd, weights=weights), res)
-        self.assertAlmostEqual(
+        self.assertAlmostEqual(v_asymptotic_stat(fd, weights=weights), res)  # noqa: PT009
+        self.assertAlmostEqual(  # noqa: PT009
             v_asymptotic_stat(
                 fd.to_basis(FourierBasis(n_basis=5)),
                 weights=weights,
@@ -67,7 +67,7 @@ class OnewayAnovaTests(unittest.TestCase):
     def test_asymptotic_behaviour(self) -> None:
         """Test asymptotic behaviour."""
         dataset = fetch_gait()
-        fd = dataset['data'].coordinates[1]
+        fd = dataset['data'].coordinates[1]  # noqa: Q000
         fd1 = fd[:5]
         fd2 = fd[5:10]
         fd3 = fd[10:15]
@@ -86,7 +86,7 @@ class OnewayAnovaTests(unittest.TestCase):
         ])
         little_sim = np.mean(sims)
         big_sim = oneway_anova(fd1, fd2, fd3, n_reps=2000, random_state=100)[1]
-        self.assertAlmostEqual(little_sim, big_sim, delta=0.05)
+        self.assertAlmostEqual(little_sim, big_sim, delta=0.05)  # noqa: PT009
 
         fd = fd.to_basis(FourierBasis(n_basis=5))
         fd1 = fd[:5]
@@ -103,8 +103,8 @@ class OnewayAnovaTests(unittest.TestCase):
         ])
         little_sim = np.mean(sims)
         big_sim = oneway_anova(fd1, fd2, n_reps=2000, random_state=100)[1]
-        self.assertAlmostEqual(little_sim, big_sim, delta=0.05)
+        self.assertAlmostEqual(little_sim, big_sim, delta=0.05)  # noqa: PT009
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

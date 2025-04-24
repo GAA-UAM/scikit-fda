@@ -5,11 +5,11 @@ in which the observations may be made in different grid points in each
 data function, and the overall density of the observations may be low
 
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import itertools
 import numbers
-from typing import (
+from typing import (  # noqa: UP035
     Any,
     Literal,
     Optional,
@@ -23,25 +23,25 @@ from typing import (
 import numpy as np
 import pandas.api.extensions
 import scipy
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure  # noqa: TC002
 
 from .._utils import _cartesian_product, _check_array_key, _to_grid_points
 from ..typing._base import (
-    DomainRange,
-    DomainRangeLike,
-    GridPoints,
-    GridPointsLike,
-    LabelTupleLike,
+    DomainRange,  # noqa: TC001
+    DomainRangeLike,  # noqa: TC001
+    GridPoints,  # noqa: TC001
+    GridPointsLike,  # noqa: TC001
+    LabelTupleLike,  # noqa: TC001
 )
-from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt  # noqa: TC001
 from ._functional_data import FData
 from .basis import Basis, FDataBasis
-from .evaluator import Evaluator
-from .extrapolation import ExtrapolationLike
+from .evaluator import Evaluator  # noqa: TC001
+from .extrapolation import ExtrapolationLike  # noqa: TC001
 from .grid import FDataGrid
 from .interpolation import SplineInterpolation
 
-T = TypeVar("T", bound='FDataIrregular')
+T = TypeVar("T", bound='FDataIrregular')  # noqa: Q000
 IrregularToBasisConversionType = Literal[
     "function-wise", "mixed-effects", "mixed-effects-minimize",
 ]
@@ -51,15 +51,15 @@ IrregularToBasisConversionType = Literal[
 ######################
 
 
-def _reduceat(
-    ufunc,
+def _reduceat(  # noqa: ANN202
+    ufunc,  # noqa: ANN001
     array: ArrayLike,
     indices: ArrayLike,
     axis: int = 0,
-    dtype=None,
-    out=None,
+    dtype=None,  # noqa: ANN001
+    out=None,  # noqa: ANN001
     *,
-    value_empty,
+    value_empty,  # noqa: ANN001
 ):
     """
     Wrapped `np.ufunc.reduceat` to manage some edge cases.
@@ -91,7 +91,7 @@ def _reduceat(
     good_idx = tuple(good_idx)
 
     reduceat_out = ufunc.reduceat(
-        array, indices[good_axis_idx], axis=axis, dtype=dtype
+        array, indices[good_axis_idx], axis=axis, dtype=dtype  # noqa: COM812
     )
 
     out_shape = list(array.shape)
@@ -155,7 +155,7 @@ def _get_domain_range_from_sample_range(
     sample_range_array = np.asarray(sample_range)
     min_arguments = np.nanmin(sample_range_array[..., 0], axis=0)
     max_arguments = np.nanmax(sample_range_array[..., 1], axis=0)
-    return tuple(zip(min_arguments, max_arguments))
+    return tuple(zip(min_arguments, max_arguments))  # noqa: B905
 
 
 ######################
@@ -269,19 +269,19 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     """
 
-    def __init__(  # noqa:  WPS211
+    def __init__(  # noqa: ANN204, PLR0913, WPS211
         self,
         start_indices: ArrayLike,
         points: ArrayLike,
         values: ArrayLike,
         *,
-        domain_range: Optional[DomainRangeLike] = None,
-        dataset_name: Optional[str] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        interpolation: Optional[Evaluator] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
+        dataset_name: Optional[str] = None,  # noqa: UP007
+        sample_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+        interpolation: Optional[Evaluator] = None,  # noqa: UP007
+        argument_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        coordinate_names: Optional[LabelTupleLike] = None,  # noqa: UP007
     ):
         """Construct a FDataIrregular object."""
         self.start_indices = np.asarray(start_indices)
@@ -293,16 +293,16 @@ class FDataIrregular(FData):  # noqa: WPS214
             self.values = self.values.reshape(-1, 1)
 
         if len(self.points) != len(self.values):
-            raise ValueError("Dimension mismatch in points and values")
+            raise ValueError("Dimension mismatch in points and values")  # noqa: EM101, TRY003
 
         if self.start_indices[0] != 0:
-            raise ValueError("Array start_indices must start with 0")
+            raise ValueError("Array start_indices must start with 0")  # noqa: EM101, TRY003
 
         if np.any(np.diff(self.start_indices) < 0):
-            raise ValueError("Array start_indices must be non-decreasing")
+            raise ValueError("Array start_indices must be non-decreasing")  # noqa: EM101, TRY003
 
         if self.start_indices[-1] > len(self.points):
-            raise ValueError("Index in start_indices out of bounds")
+            raise ValueError("Index in start_indices out of bounds")  # noqa: EM101, TRY003
 
         # Ensure arguments are in order within each function
         sorted_arguments, sorted_values = self._sort_by_arguments()
@@ -346,7 +346,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         id_column: str,
         argument_columns: Sequence[str | None],
         coordinate_columns: Sequence[str | None],
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> FDataIrregular:
         """Create a FDataIrregular object from a pandas dataframe.
 
@@ -397,17 +397,17 @@ class FDataIrregular(FData):  # noqa: WPS214
             num_values = f_values.shape[0]
 
             # Insert in order
-            f_values = f_values.sort_values(argument_columns)
+            f_values = f_values.sort_values(argument_columns)  # noqa: PLW2901
 
-            new_args = f_values[argument_columns].values
+            new_args = f_values[argument_columns].values  # noqa: PD011
             points[head:head + num_values, :] = new_args
 
-            new_coords = f_values[coordinate_columns].values
+            new_coords = f_values[coordinate_columns].values  # noqa: PD011
             values[head:head + num_values, :] = new_coords
 
             # Update head and index
             head += num_values
-            index += 1
+            index += 1  # noqa: SIM113
 
         return cls(
             start_indices,
@@ -418,9 +418,9 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     @classmethod
     def from_fdatagrid(
-        cls: Type[T],
+        cls: Type[T],  # noqa: UP006
         f_data: FDataGrid,
-        **kwargs,
+        **kwargs,  # noqa: ANN003
     ) -> FDataIrregular:
         """Create a FDataIrregular object from a source FDataGrid.
 
@@ -461,7 +461,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             **kwargs,
         )
 
-    def _sort_by_arguments(self) -> Tuple[ArrayLike, ArrayLike]:
+    def _sort_by_arguments(self) -> Tuple[ArrayLike, ArrayLike]:  # noqa: UP006
         """Sort the arguments lexicographically functionwise.
 
         Additionally, sort the values accordingly.
@@ -484,7 +484,7 @@ class FDataIrregular(FData):  # noqa: WPS214
     def round(
         self,
         decimals: int = 0,
-        out: Optional[FDataIrregular] = None,
+        out: Optional[FDataIrregular] = None,  # noqa: UP007
     ) -> FDataIrregular:
         """Evenly round values to the given number of decimals.
 
@@ -516,19 +516,19 @@ class FDataIrregular(FData):  # noqa: WPS214
         return self.copy(values=rounded_values)
 
     @property
-    def dim_domain(self) -> int:
+    def dim_domain(self) -> int:  # noqa: D102
         return self.points.shape[1]
 
     @property
-    def dim_codomain(self) -> int:
+    def dim_codomain(self) -> int:  # noqa: D102
         return self.values.shape[1]
 
     @property
-    def coordinates(self) -> _IrregularCoordinateIterator[T]:
+    def coordinates(self) -> _IrregularCoordinateIterator[T]:  # noqa: D102
         return _IrregularCoordinateIterator(self)
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return len(self.start_indices)
 
     @property
@@ -559,7 +559,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         return self._interpolation
 
     @interpolation.setter
-    def interpolation(self, new_interpolation: Optional[Evaluator]) -> None:
+    def interpolation(self, new_interpolation: Optional[Evaluator]) -> None:  # noqa: UP007
 
         if new_interpolation is None:
             new_interpolation = SplineInterpolation()
@@ -574,15 +574,15 @@ class FDataIrregular(FData):  # noqa: WPS214
     ) -> NDArrayFloat:
 
         return self.interpolation(
-            self.to_grid(),  # TODO Create native interpolation for irregular
+            self.to_grid(),  # TODO Create native interpolation for irregular  # noqa: E501, FIX002, TD002, TD003, TD004
             eval_points,
             aligned=aligned,
         )
 
-    def derivative(
+    def derivative(  # noqa: PYI019
         self: T,
         order: int = 1,
-        method: Optional[Basis] = None,
+        method: Optional[Basis] = None,  # noqa: UP007
     ) -> T:
         """Differentiate the FDataIrregular object.
 
@@ -594,9 +594,9 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             FDataIrregular with the derivative of the dataset.
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # noqa: RSE102
 
-    def integrate(
+    def integrate(  # noqa: PYI019
         self: T,
         *,
         domain: DomainRange | None = None,
@@ -628,10 +628,10 @@ class FDataIrregular(FData):  # noqa: WPS214
         """
         if self.dim_domain != 1:
             raise NotImplementedError(
-                "Integration only implemented for 1D domains.",
+                "Integration only implemented for 1D domains.",  # noqa: EM101
             )
 
-        if domain is not None:
+        if domain is not None:  # noqa: SIM108
             data = self.restrict(domain)
         else:
             data = self
@@ -640,10 +640,10 @@ class FDataIrregular(FData):  # noqa: WPS214
         points_list = np.split(data.points, data.start_indices[1:])
         return np.array([
             scipy.integrate.simpson(y, x=x, axis=0)
-            for y, x in zip(values_list, points_list)
+            for y, x in zip(values_list, points_list)  # noqa: B905
         ])
 
-    def check_same_dimensions(self: T, other: T) -> None:
+    def check_same_dimensions(self: T, other: T) -> None:  # noqa: PYI019
         """Ensure that other FDataIrregular object has compatible dimensions.
 
         Args:
@@ -655,19 +655,19 @@ class FDataIrregular(FData):  # noqa: WPS214
             ValueError: Dimension mismatch in arguments.
         """
         if self.dim_codomain != other.dim_codomain:
-            raise ValueError("Dimension mismatch in coordinates")
+            raise ValueError("Dimension mismatch in coordinates")  # noqa: EM101, TRY003
         if self.dim_domain != other.dim_domain:
-            raise ValueError("Dimension mismatch in arguments")
+            raise ValueError("Dimension mismatch in arguments")  # noqa: EM101, TRY003
 
-    def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: PYI019, UP006
         return (self.points, self.values)
 
-    def _get_input_points(self: T) -> GridPoints:
+    def _get_input_points(self: T) -> GridPoints:  # noqa: PYI019
         return self.points  # type: ignore[return-value]
 
-    def _get_common_points_and_values(
+    def _get_common_points_and_values(  # noqa: PYI019
         self: T,
-    ) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    ) -> Tuple[NDArrayFloat, NDArrayFloat]:  # noqa: UP006
         unique_points, counts = (
             np.unique(self.points, axis=0, return_counts=True)
         )
@@ -682,14 +682,14 @@ class FDataIrregular(FData):  # noqa: WPS214
         )
         return common_points, common_points_values
 
-    def sum(  # noqa: WPS125
+    def sum(  # noqa: PYI019, WPS125
         self: T,
         *,
-        axis: Optional[int] = None,
+        axis: Optional[int] = None,  # noqa: UP007
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
-        min_count: int = 0,
+        min_count: int = 0,  # noqa: ARG002
     ) -> T:
         """Compute the sum of all the samples.
 
@@ -717,7 +717,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         common_points, common_values = self._get_common_points_and_values()
 
         if len(common_points) == 0:
-            raise ValueError("No common points in FDataIrregular object")
+            raise ValueError("No common points in FDataIrregular object")  # noqa: EM101, TRY003
 
         sum_function = np.nansum if skipna else np.sum
         sum_values = sum_function(common_values, axis=0)
@@ -729,7 +729,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(self: T, correction: int = 0) -> T:
+    def var(self: T, correction: int = 0) -> T:  # noqa: PYI019
         """Compute the variance of all the samples.
 
         Args:
@@ -756,7 +756,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def cov(
+    def cov(  # noqa: PYI019
         self: T,
         /,
         correction: int = 0,
@@ -766,8 +766,8 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             FDataIrregular with the covariance function.
         """
-        # TODO Implementation to be decided
-        raise NotImplementedError()
+        # TODO Implementation to be decided  # noqa: E501, FIX002, TD002, TD003, TD004
+        raise NotImplementedError()  # noqa: RSE102
 
     def equals(self, other: object) -> bool:
         """Comparison of FDataIrregular objects."""
@@ -784,36 +784,36 @@ class FDataIrregular(FData):  # noqa: WPS214
         if not np.array_equal(self.domain_range, other.domain_range):
             return False
 
-        if self.interpolation != other.interpolation:
+        if self.interpolation != other.interpolation:  # noqa: SIM103
             return False
 
         return True
 
-    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
+    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:  # noqa: PYI019
         """Elementwise equality of FDataIrregular."""
         return np.all(
             [
                 (self.start_indices == other.start_indices).all(),
                 (self.points == other.points).all(),
-                (self.values == other.values).all(),
+                (self.values == other.values).all(),  # noqa: PD011
             ],
         )
 
     def __eq__(self, other: object) -> NDArrayBool:
         return np.array([
-            f.equals(o) for f, o in zip(self, other)
+            f.equals(o) for f, o in zip(self, other)  # noqa: B905
         ])
 
     def _get_op_matrix(  # noqa: WPS212
         self,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
-    ) -> Union[None, float, NDArrayFloat, NDArrayInt]:
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
+    ) -> Union[None, float, NDArrayFloat, NDArrayInt]:  # noqa: UP007
         if isinstance(other, numbers.Real):
             return float(other)
-        elif isinstance(other, np.ndarray):
+        elif isinstance(other, np.ndarray):  # noqa: RET505
             if other.shape in {(), (1,)}:
                 return other
-            elif other.shape == (self.n_samples,):
+            elif other.shape == (self.n_samples,):  # noqa: RET505
                 other_index = (
                     (slice(None),)
                     + (np.newaxis,) * (self.values.ndim - 1)
@@ -848,20 +848,20 @@ class FDataIrregular(FData):  # noqa: WPS214
                 # as values inside the curve
                 return np.repeat(other_vector, values_curve, axis=0)
 
-            raise ValueError(
-                f"Invalid dimensions in operator between FDataIrregular and "
+            raise ValueError(  # noqa: TRY003
+                f"Invalid dimensions in operator between FDataIrregular and "  # noqa: EM102
                 f"Numpy array: {other.shape}",
             )
 
         elif isinstance(other, FDataIrregular):
-            # TODO What to do with different argument and value sizes?
-            return other.values
+            # TODO What to do with different argument and value sizes?  # noqa: E501, FIX002, TD002, TD003, TD004
+            return other.values  # noqa: PD011
 
         return None
 
-    def __add__(
+    def __add__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         values = self._get_op_matrix(other)
         if values is None:
@@ -872,15 +872,15 @@ class FDataIrregular(FData):  # noqa: WPS214
             values=self.values + values,
         )
 
-    def __radd__(
+    def __radd__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         return self.__add__(other)
 
-    def __sub__(
+    def __sub__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         values = self._get_op_matrix(other)
         if values is None:
@@ -891,9 +891,9 @@ class FDataIrregular(FData):  # noqa: WPS214
             values=self.values - values,
         )
 
-    def __rsub__(
+    def __rsub__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         values = self._get_op_matrix(other)
         if values is None:
@@ -904,9 +904,9 @@ class FDataIrregular(FData):  # noqa: WPS214
             values=values - self.values,
         )
 
-    def __mul__(
+    def __mul__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         values = self._get_op_matrix(other)
         if values is None:
@@ -917,15 +917,15 @@ class FDataIrregular(FData):  # noqa: WPS214
             values=self.values * values,
         )
 
-    def __rmul__(
+    def __rmul__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         return self.__mul__(other)
 
-    def __truediv__(
+    def __truediv__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         values = self._get_op_matrix(other)
         if values is None:
@@ -936,9 +936,9 @@ class FDataIrregular(FData):  # noqa: WPS214
             values=self.values / values,
         )
 
-    def __rtruediv__(
+    def __rtruediv__(  # noqa: PYI019
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         values = self._get_op_matrix(other)
         if values is None:
@@ -949,11 +949,11 @@ class FDataIrregular(FData):  # noqa: WPS214
             values=values / self.values,
         )
 
-    def __neg__(self: T) -> T:
+    def __neg__(self: T) -> T:  # noqa: PYI019
         """Negation of FDataIrregular object."""
         return self.copy(values=-self.values)
 
-    def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
+    def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:  # noqa: PYI019
         """Join samples from a similar FDataIrregular object.
 
         Joins samples from another FDataIrregular object if it has the same
@@ -1003,21 +1003,21 @@ class FDataIrregular(FData):  # noqa: WPS214
                 domain_range=((0.0, 9.0),),
                 ...)
         """
-        # TODO As coordinates
+        # TODO As coordinates  # noqa: FIX002, TD002, TD003, TD004
         if as_coordinates:
             raise NotImplementedError(
-                "Not implemented for as_coordinates = True",
+                "Not implemented for as_coordinates = True",  # noqa: EM101
             )
         # Verify that dimensions are compatible
         assert others, "No objects to concatenate"
-        all_objects = (self,) + others
+        all_objects = (self,) + others  # noqa: RUF005
         start_indices_split = []
         total_points = 0
         points_split = []
         values_split = []
         total_sample_names_split = []
         domain_range_split = []
-        for x, y in itertools.pairwise(all_objects + (self,)):
+        for x, y in itertools.pairwise(all_objects + (self,)):  # noqa: RUF005
             x.check_same_dimensions(y)
             start_indices_split.append(x.start_indices + total_points)
             total_points += len(x.points)
@@ -1044,7 +1044,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             sample_names=total_sample_names,
         )
 
-    def plot(self, *args: Any, **kwargs: Any) -> Figure:
+    def plot(self, *args: Any, **kwargs: Any) -> Figure:  # noqa: ANN401
         """Plot the functional data of FDataIrregular with a lines plot.
 
         Args:
@@ -1062,7 +1062,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         return LinearPlotIrregular(self, *args, **kwargs).plot()
 
-    def scatter(self, *args: Any, **kwargs: Any) -> Figure:
+    def scatter(self, *args: Any, **kwargs: Any) -> Figure:  # noqa: ANN401
         """Plot the functional data of FDataIrregular with a scatter plot.
 
         Args:
@@ -1085,7 +1085,7 @@ class FDataIrregular(FData):  # noqa: WPS214
         basis: Basis,
         *,
         conversion_type: IrregularToBasisConversionType = "function-wise",
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> FDataBasis:
         """Return the basis representation of the object.
 
@@ -1153,17 +1153,17 @@ class FDataIrregular(FData):  # noqa: WPS214
                 temp_irregular[k].scatter(axes=axes, color=f"C{k}")
                 plt.legend()
             plt.show()
-        """
+        """  # noqa: E501
         if self.dim_domain != basis.dim_domain:
-            raise ValueError(
-                f"The domain of the function has "
+            raise ValueError(  # noqa: TRY003
+                f"The domain of the function has "  # noqa: EM102
                 f"dimension {self.dim_domain} "
                 f"but the domain of the basis has "
                 f"dimension {basis.dim_domain}",
             )
-        elif self.dim_codomain != basis.dim_codomain:
-            raise ValueError(
-                f"The codomain of the function has "
+        elif self.dim_codomain != basis.dim_codomain:  # noqa: RET506
+            raise ValueError(  # noqa: TRY003
+                f"The codomain of the function has "  # noqa: EM102
                 f"dimension {self.dim_codomain} "
                 f"but the codomain of the basis has "
                 f"dimension {basis.dim_codomain}",
@@ -1186,7 +1186,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             return converter.fit_transform(self, **kwargs)
 
         if conversion_type != "function-wise":
-            raise ValueError(f"Invalid conversion type: {conversion_type}")
+            raise ValueError(f"Invalid conversion type: {conversion_type}")  # noqa: EM102, TRY003
 
         from ..preprocessing.smoothing import BasisSmoother
         smoother = BasisSmoother(
@@ -1224,25 +1224,25 @@ class FDataIrregular(FData):  # noqa: WPS214
         grid_points = list(map(np.unique, self.points.T))
 
         unified_matrix = np.full(
-            (self.n_samples, *map(len, grid_points), self.dim_codomain), np.nan
+            (self.n_samples, *map(len, grid_points), self.dim_codomain), np.nan  # noqa: COM812
         )
 
         points_pos = tuple(
-            np.searchsorted(*arg) for arg in zip(grid_points, self.points.T)
+            np.searchsorted(*arg) for arg in zip(grid_points, self.points.T)  # noqa: B905
         )
 
         sample_idx = (
             np.searchsorted(
-                self.start_indices, np.arange(len(self.points)), "right"
+                self.start_indices, np.arange(len(self.points)), "right"  # noqa: COM812
             )
             - 1
         )
 
-        unified_matrix[(sample_idx,) + points_pos] = self.values
+        unified_matrix[(sample_idx,) + points_pos] = self.values  # noqa: RUF005
 
         return unified_matrix, grid_points
 
-    def to_grid(  # noqa: D102
+    def to_grid(  # noqa: D102, PYI019, RUF100
         self: T,
     ) -> FDataGrid:
         """Convert FDataIrregular to FDataGrid.
@@ -1263,19 +1263,19 @@ class FDataIrregular(FData):  # noqa: WPS214
             extrapolation=self.extrapolation,
         )
 
-    def copy(  # noqa: WPS211
+    def copy(  # noqa: C901, PLR0913, PYI019, WPS211
         self: T,
-        start_indices: Optional[ArrayLike] = None,
-        points: Optional[ArrayLike] = None,
-        values: Optional[ArrayLike] = None,
-        deep: bool = False,  # For Pandas compatibility
-        domain_range: Optional[DomainRangeLike] = None,
-        dataset_name: Optional[str] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        interpolation: Optional[Evaluator] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
+        start_indices: Optional[ArrayLike] = None,  # noqa: UP007
+        points: Optional[ArrayLike] = None,  # noqa: UP007
+        values: Optional[ArrayLike] = None,  # noqa: UP007
+        deep: bool = False,  # For Pandas compatibility  # noqa: ARG002, E501, FBT001, FBT002
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
+        dataset_name: Optional[str] = None,  # noqa: UP007
+        sample_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+        interpolation: Optional[Evaluator] = None,  # noqa: UP007
+        argument_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        coordinate_names: Optional[LabelTupleLike] = None,  # noqa: UP007
     ) -> T:
         """
         Return a copy of the FDataIrregular.
@@ -1330,7 +1330,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             interpolation=interpolation,
         )
 
-    def restrict(  # noqa: WPS210
+    def restrict(  # noqa: PYI019, WPS210
         self: T,
         domain_range: DomainRangeLike,
         *,
@@ -1349,7 +1349,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         """
         if with_bounds:  # To do
-            raise NotImplementedError('Not yet implemented for FDataIrregular')
+            raise NotImplementedError('Not yet implemented for FDataIrregular')  # noqa: EM101, Q000
 
         from ..misc.validation import validate_domain_range
 
@@ -1375,10 +1375,10 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def shift(
         self,
-        shifts: Union[ArrayLike, float],
+        shifts: Union[ArrayLike, float],  # noqa: UP007
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
     ) -> FDataIrregular:
         r"""
         Perform a shift of the curves.
@@ -1410,13 +1410,13 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             Shifted functions.
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # noqa: RSE102
 
-    def compose(
+    def compose(  # noqa: PYI019
         self: T,
         fd: T,
         *,
-        eval_points: Optional[GridPointsLike] = None,
+        eval_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> T:
         """Composition of functions.
 
@@ -1431,7 +1431,7 @@ class FDataIrregular(FData):  # noqa: WPS214
             Function representing the composition.
 
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # noqa: RSE102
 
     def __str__(self) -> str:
         """Return str(self)."""
@@ -1456,13 +1456,13 @@ class FDataIrregular(FData):  # noqa: WPS214
             f"\nextrapolation={self.extrapolation!r},"
             f"\ninterpolation={self.interpolation!r})"
         ).replace(
-            '\n',
-            '\n    ',
+            '\n',  # noqa: Q000
+            '\n    ',  # noqa: Q000
         )
 
-    def __getitem__(
+    def __getitem__(  # noqa: PYI019
         self: T,
-        key: Union[int, slice, NDArrayInt, NDArrayBool],
+        key: Union[int, slice, NDArrayInt, NDArrayBool],  # noqa: UP007
     ) -> T:
         required_slices = []
         key = _check_array_key(self.start_indices, key)
@@ -1511,11 +1511,11 @@ class FDataIrregular(FData):  # noqa: WPS214
 
     def __array_ufunc__(
         self,
-        ufunc: Any,
+        ufunc: Any,  # noqa: ANN401
         method: str,
-        *inputs: Any,
-        **kwargs: Any,
-    ) -> Any:
+        *inputs: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> Any:  # noqa: ANN401
 
         for i in inputs:
             if (
@@ -1531,13 +1531,13 @@ class FDataIrregular(FData):  # noqa: WPS214
             self._get_op_matrix(input_) for input_ in inputs
         ]
 
-        outputs = kwargs.pop('out', None)
+        outputs = kwargs.pop('out', None)  # noqa: Q000
         if outputs:
             new_outputs = [
-                o.values if isinstance(o, FDataIrregular)
+                o.values if isinstance(o, FDataIrregular)  # noqa: PD011
                 else o for o in outputs
             ]
-            kwargs['out'] = tuple(new_outputs)
+            kwargs['out'] = tuple(new_outputs)  # noqa: Q000
         else:
             new_outputs = (None,) * ufunc.nout
 
@@ -1550,7 +1550,7 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         results = tuple(
             (result if output is None else output)
-            for result, output in zip(results, new_outputs)
+            for result, output in zip(results, new_outputs)  # noqa: B905
         )
 
         results = [self.copy(values=r) for r in results]
@@ -1561,7 +1561,7 @@ class FDataIrregular(FData):  # noqa: WPS214
     # Pandas ExtensionArray methods
     #####################################################################
 
-    def _take_allow_fill(
+    def _take_allow_fill(  # noqa: PYI019
         self: T,
         indices: NDArrayInt,
         fill_value: T,
@@ -1573,19 +1573,19 @@ class FDataIrregular(FData):  # noqa: WPS214
         )
 
         positive_mask = indices >= 0
-        result.values[positive_mask] = self.values[
+        result.values[positive_mask] = self.values[  # noqa: PD011
             indices[positive_mask]
         ]
 
         if fill_value is not self.dtype.na_value:
-            fill_value_ = fill_value.values[0]
-            result.values[~positive_mask] = fill_value_
+            fill_value_ = fill_value.values[0]  # noqa: PD011
+            result.values[~positive_mask] = fill_value_  # noqa: PD011
 
         return result
 
     @property
     def dtype(self) -> FDataIrregularDType:
-        """The dtype for this extension array, FDataIrregularDType"""
+        """The dtype for this extension array, FDataIrregularDType"""  # noqa: D415
         return FDataIrregularDType(
             start_indices=self.start_indices,
             points=self.points,
@@ -1597,7 +1597,7 @@ class FDataIrregular(FData):  # noqa: WPS214
     def nbytes(self) -> int:
         """
         The number of bytes needed to store this object in memory.
-        """
+        """  # noqa: D200
         array_nbytes = [
             self.start_indices.nbytes,
             self.points.nbytes,
@@ -1622,8 +1622,8 @@ class FDataIrregularDType(
 ):
     """DType corresponding to FDataIrregular in Pandas."""
 
-    name = 'FDataIrregular'
-    kind = 'O'
+    name = 'FDataIrregular'  # noqa: Q000
+    kind = 'O'  # noqa: Q000
     type = FDataIrregular  # noqa: WPS125
     na_value = pandas.NA
 
@@ -1632,7 +1632,7 @@ class FDataIrregularDType(
         start_indices: ArrayLike,
         points: ArrayLike,
         dim_codomain: int,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
     ) -> None:
         from ..misc.validation import validate_domain_range
         self.start_indices = start_indices
@@ -1641,7 +1641,7 @@ class FDataIrregularDType(
 
         if domain_range is None:
             sample_range = _get_sample_range_from_data(
-                self.start_indices, self.points
+                self.start_indices, self.points  # noqa: COM812
             )
             domain_range = _get_domain_range_from_sample_range(sample_range)
 
@@ -1649,13 +1649,13 @@ class FDataIrregularDType(
         self.dim_codomain = dim_codomain
 
     @classmethod
-    def construct_array_type(cls) -> Type[FDataIrregular]:  # noqa: D102
+    def construct_array_type(cls) -> Type[FDataIrregular]:  # noqa: D102, UP006
         return FDataIrregular
 
     def _na_repr(self) -> FDataIrregular:
 
         shape = (
-            (len(self.points),)
+            (len(self.points),)  # noqa: RUF005
             + (self.dim_codomain,)
         )
 
@@ -1668,7 +1668,7 @@ class FDataIrregularDType(
             domain_range=self.domain_range,
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         """
         Compare dtype equality.
 
@@ -1680,7 +1680,7 @@ class FDataIrregularDType(
         """
         if isinstance(other, str):
             return other == self.name
-        elif other is self:
+        elif other is self:  # noqa: RET505
             return True
         elif not isinstance(other, FDataIrregularDType):
             return False
@@ -1712,7 +1712,7 @@ class _IrregularCoordinateIterator(Sequence[T]):
 
     def __getitem__(
         self,
-        key: Union[int, slice, NDArrayInt, NDArrayBool],
+        key: Union[int, slice, NDArrayInt, NDArrayBool],  # noqa: UP007
     ) -> T:
         """Get a specific coordinate."""
         s_key = key
@@ -1723,7 +1723,7 @@ class _IrregularCoordinateIterator(Sequence[T]):
             self._fdatairregular.coordinate_names,
         )[s_key]
 
-        coordinate_values = self._fdatairregular.values[..., key]
+        coordinate_values = self._fdatairregular.values[..., key]  # noqa: PD011
 
         return self._fdatairregular.copy(
             values=coordinate_values.reshape(-1, 1),

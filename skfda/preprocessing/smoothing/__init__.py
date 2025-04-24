@@ -1,5 +1,5 @@
 """Smoothing."""
-import warnings
+import warnings  # noqa: F401
 from typing import TYPE_CHECKING, Any
 
 import lazy_loader as lazy
@@ -22,8 +22,8 @@ if TYPE_CHECKING:
 __kernel_smoothers__imported__ = False
 
 
-def __getattr__(name: str) -> Any:
-    global __kernel_smoothers__imported__
+def __getattr__(name: str) -> Any:  # noqa: ANN401
+    global __kernel_smoothers__imported__  # noqa: PLW0603
     if name == "kernel_smoothers" and not __kernel_smoothers__imported__:
         __kernel_smoothers__imported__ = True
         from . import kernel_smoothers

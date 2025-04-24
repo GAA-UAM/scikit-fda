@@ -7,19 +7,19 @@ detection method is implemented.
 """
 from __future__ import annotations
 
-from typing import Any, Sequence
+from typing import Any, Sequence  # noqa: UP035
 
-import matplotlib
+import matplotlib  # noqa: ICN001
 import numpy as np
 from matplotlib.artist import Artist
-from matplotlib.axes import Axes
-from matplotlib.colors import Colormap
-from matplotlib.figure import Figure
+from matplotlib.axes import Axes  # noqa: TC002
+from matplotlib.colors import Colormap  # noqa: TC002
+from matplotlib.figure import Figure  # noqa: TC002
 from matplotlib.patches import Ellipse
 
-from ...representation import FDataGrid
-from ...typing._numpy import NDArrayFloat, NDArrayInt
-from ..depth import Depth
+from ...representation import FDataGrid  # noqa: TC001
+from ...typing._numpy import NDArrayFloat, NDArrayInt  # noqa: TC001
+from ..depth import Depth  # noqa: TC001
 from ..outliers import MSPlotOutlierDetector
 from ._baseplot import BasePlot
 
@@ -127,7 +127,7 @@ class MagnitudeShapePlot(BasePlot):
         fig: Figure | None = None,
         axes: Sequence[Axes] | None = None,
         ellipsoid: bool = True,
-        **kwargs: Any,
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
 
         BasePlot.__init__(
@@ -138,7 +138,7 @@ class MagnitudeShapePlot(BasePlot):
         )
         if fdata.dim_codomain > 1:
             raise NotImplementedError(
-                "Only support 1 dimension on the codomain.")
+                "Only support 1 dimension on the codomain.")  # noqa: EM101
 
         self.outlier_detector = MSPlotOutlierDetector(**kwargs)
 
@@ -150,11 +150,11 @@ class MagnitudeShapePlot(BasePlot):
 
         self._fdata = fdata
         self._outliers = outliers
-        self._colormap = matplotlib.colormaps['seismic']
+        self._colormap = matplotlib.colormaps['seismic']  # noqa: Q000
         self._color = 0.2
         self._outliercol = 0.8
-        self.xlabel = 'MO'
-        self.ylabel = 'VO'
+        self.xlabel = 'MO'  # noqa: Q000
+        self.ylabel = 'VO'  # noqa: Q000
         self.title = (
             "" if self.fdata.dataset_name is None else self.fdata.dataset_name
         )
@@ -190,8 +190,8 @@ class MagnitudeShapePlot(BasePlot):
     @colormap.setter
     def colormap(self, value: Colormap) -> None:
         if not isinstance(value, matplotlib.colors.Colormap):
-            raise ValueError(
-                "colormap must be of type "
+            raise ValueError(  # noqa: TRY003, TRY004
+                "colormap must be of type "  # noqa: EM101
                 "matplotlib.colors.Colormap",
             )
         self._colormap = value
@@ -203,8 +203,8 @@ class MagnitudeShapePlot(BasePlot):
     @color.setter
     def color(self, value: float) -> None:
         if value < 0 or value > 1:
-            raise ValueError(
-                "color must be a number between 0 and 1.")
+            raise ValueError(  # noqa: TRY003
+                "color must be a number between 0 and 1.")  # noqa: EM101
 
         self._color = value
 
@@ -215,8 +215,8 @@ class MagnitudeShapePlot(BasePlot):
     @outliercol.setter
     def outliercol(self, value: float) -> None:
         if value < 0 or value > 1:
-            raise ValueError(
-                "outcol must be a number between 0 and 1.")
+            raise ValueError(  # noqa: TRY003
+                "outcol must be a number between 0 and 1.")  # noqa: EM101
         self._outliercol = value
 
     @property
@@ -225,7 +225,7 @@ class MagnitudeShapePlot(BasePlot):
 
     def _plot(
         self,
-        fig: Figure,
+        fig: Figure,  # noqa: ARG002
         axes: Axes,
     ) -> None:
 
@@ -243,7 +243,7 @@ class MagnitudeShapePlot(BasePlot):
             center = self.outlier_detector.cov_.location_
             prec = self.outlier_detector.cov_.get_precision()
 
-            K = (
+            K = (  # noqa: N806
                 self.outlier_detector.cutoff_value_
                 / self.outlier_detector.scaling_
             )
@@ -261,7 +261,7 @@ class MagnitudeShapePlot(BasePlot):
                 width=2 * a,
                 height=2 * b,
                 angle=angle,
-                facecolor='C0',
+                facecolor='C0',  # noqa: Q000
                 alpha=0.1,
             )
 
@@ -284,16 +284,16 @@ class MagnitudeShapePlot(BasePlot):
         """Return repr(self)."""
         return (
             f"MagnitudeShapePlot("
-            f"\nfdata={repr(self.fdata)},"
+            f"\nfdata={repr(self.fdata)},"  # noqa: RUF010
             f"\nmultivariate_depth={self.multivariate_depth},"
-            f"\npointwise_weights={repr(self.pointwise_weights)},"
-            f"\ncutoff_factor={repr(self.cutoff_factor)},"
-            f"\npoints={repr(self.points)},"
-            f"\noutliers={repr(self.outliers)},"
+            f"\npointwise_weights={repr(self.pointwise_weights)},"  # noqa: RUF010
+            f"\ncutoff_factor={repr(self.cutoff_factor)},"  # noqa: RUF010
+            f"\npoints={repr(self.points)},"  # noqa: RUF010
+            f"\noutliers={repr(self.outliers)},"  # noqa: RUF010
             f"\ncolormap={self.colormap.name},"
-            f"\ncolor={repr(self.color)},"
-            f"\noutliercol={repr(self.outliercol)},"
-            f"\nxlabel={repr(self.xlabel)},"
-            f"\nylabel={repr(self.ylabel)},"
-            f"\ntitle={repr(self.title)})"
-        ).replace('\n', '\n    ')
+            f"\ncolor={repr(self.color)},"  # noqa: RUF010
+            f"\noutliercol={repr(self.outliercol)},"  # noqa: RUF010
+            f"\nxlabel={repr(self.xlabel)},"  # noqa: RUF010
+            f"\nylabel={repr(self.ylabel)},"  # noqa: RUF010
+            f"\ntitle={repr(self.title)})"  # noqa: RUF010
+        ).replace('\n', '\n    ')  # noqa: Q000

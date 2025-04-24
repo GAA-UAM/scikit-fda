@@ -1,9 +1,9 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import copy
 import warnings
-from builtins import isinstance
-from typing import (
+from builtins import isinstance  # noqa: A004, UP029
+from typing import (  # noqa: UP035
     TYPE_CHECKING,
     Any,
     Callable,
@@ -20,17 +20,17 @@ import numpy as np
 import pandas.api.extensions
 
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
-from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
-from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike  # noqa: TC001
+from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt  # noqa: TC001
 from .. import grid
 from .._functional_data import FData
-from ..extrapolation import ExtrapolationLike
+from ..extrapolation import ExtrapolationLike  # noqa: TC001
 
 if TYPE_CHECKING:
     from .. import FDataGrid
     from . import Basis
 
-T = TypeVar('T', bound='FDataBasis')
+T = TypeVar('T', bound='FDataBasis')  # noqa: Q000
 
 
 class FDataBasis(FData):  # noqa: WPS214
@@ -84,17 +84,17 @@ class FDataBasis(FData):  # noqa: WPS214
         basis: Basis,
         coefficients: ArrayLike,
         *,
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        dataset_name: Optional[str] = None,  # noqa: UP007
+        argument_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        coordinate_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        sample_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
     ) -> None:
         """Construct a FDataBasis object."""
         coefficients = _int_to_real(np.atleast_2d(coefficients))
         if coefficients.shape[1] != basis.n_basis:
-            raise ValueError(
-                "The length or number of columns of coefficients "
+            raise ValueError(  # noqa: TRY003
+                "The length or number of columns of coefficients "  # noqa: EM101
                 "has to be the same equal to the number of "
                 "elements of the basis.",
             )
@@ -112,12 +112,12 @@ class FDataBasis(FData):  # noqa: WPS214
     @classmethod
     def from_data(
         cls,
-        data_matrix: Union[NDArrayFloat, NDArrayInt],
+        data_matrix: Union[NDArrayFloat, NDArrayInt],  # noqa: UP007
         *,
         basis: Basis,
-        grid_points: Optional[GridPointsLike] = None,
-        sample_points: Optional[GridPointsLike] = None,
-        method: str = 'cholesky',
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
+        sample_points: Optional[GridPointsLike] = None,  # noqa: UP007
+        method: str = 'cholesky',  # noqa: Q000
     ) -> FDataBasis:
         r"""Transform raw data to a smooth functional form.
 
@@ -195,7 +195,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         """
         if sample_points is not None:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "Parameter sample_points is deprecated. Use the "
                 "parameter grid_points instead.",
                 DeprecationWarning,
@@ -219,7 +219,7 @@ class FDataBasis(FData):  # noqa: WPS214
         return self.basis.dim_codomain
 
     @property
-    def coordinates(self: T) -> _CoordinateIterator[T]:
+    def coordinates(self: T) -> _CoordinateIterator[T]:  # noqa: PYI019
         r"""Return a component of the FDataBasis.
 
         If the functional object contains samples
@@ -261,18 +261,18 @@ class FDataBasis(FData):  # noqa: WPS214
 
         res_list = [
             np.sum((c * self.basis(np.asarray(p)).T).T, axis=0)
-            for c, p in zip(self.coefficients, eval_points)
+            for c, p in zip(self.coefficients, eval_points)  # noqa: B905
         ]
 
         return np.asarray(res_list)
 
     def shift(
         self,
-        shifts: Union[ArrayLike, float],
+        shifts: Union[ArrayLike, float],  # noqa: UP007
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        grid_points: Optional[GridPointsLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> FDataGrid:
         r"""
         Perform a shift of the curves.
@@ -322,10 +322,10 @@ class FDataBasis(FData):  # noqa: WPS214
             grid_points=grid_points,
         )
 
-    def derivative(self: T, *, order: int = 1) -> T:  # noqa: D102
+    def derivative(self: T, *, order: int = 1) -> T:  # noqa: D102, PYI019, RUF100
 
         if order < 0:
-            raise ValueError("order only takes non-negative integer values.")
+            raise ValueError("order only takes non-negative integer values.")  # noqa: EM101, TRY003
 
         if order == 0:
             return self.copy()
@@ -337,10 +337,10 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return self.copy(basis=basis, coefficients=coefficients)
 
-    def integrate(
+    def integrate(  # noqa: PYI019
         self: T,
         *,
-        domain: Optional[DomainRange] = None,
+        domain: Optional[DomainRange] = None,  # noqa: UP007
     ) -> NDArrayFloat:
         """
         Integration of the FData object.
@@ -386,10 +386,10 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return integrated[:, 0, :]
 
-    def sum(  # noqa: WPS125
+    def sum(  # noqa: PYI019, WPS125
         self: T,
         *,
-        axis: Optional[int] = None,
+        axis: Optional[int] = None,  # noqa: UP007
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
@@ -442,9 +442,9 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def var(
+    def var(  # noqa: PYI019
         self: T,
-        eval_points: Optional[NDArrayFloat] = None,
+        eval_points: Optional[NDArrayFloat] = None,  # noqa: UP007
         correction: int = 0,
     ) -> T:
         """Compute the variance of the functional data object.
@@ -490,13 +490,13 @@ class FDataBasis(FData):  # noqa: WPS214
     ) -> Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]:
         pass
 
-    def cov(  # noqa: WPS320, WPS451
+    def cov(  # noqa: PYI019, WPS320, WPS451
         self: T,
-        s_points: Optional[NDArrayFloat] = None,
-        t_points: Optional[NDArrayFloat] = None,
+        s_points: Optional[NDArrayFloat] = None,  # noqa: UP007
+        t_points: Optional[NDArrayFloat] = None,  # noqa: UP007
         /,
         correction: int = 0,
-    ) -> Union[
+    ) -> Union[  # noqa: UP007
         Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat],
         NDArrayFloat,
     ]:
@@ -534,9 +534,9 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def to_grid(
         self,
-        grid_points: Optional[GridPointsLike] = None,
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
         *,
-        sample_points: Optional[GridPointsLike] = None,
+        sample_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> FDataGrid:
         """Return the discrete representation of the object.
 
@@ -578,7 +578,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         """
         if sample_points is not None:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "Parameter sample_points is deprecated. Use the "
                 "parameter grid_points instead.",
                 DeprecationWarning,
@@ -596,9 +596,9 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def to_basis(
         self,
-        basis: Optional[Basis] = None,
-        eval_points: Optional[NDArrayFloat] = None,
-        **kwargs: Any,
+        basis: Optional[Basis] = None,  # noqa: UP007
+        eval_points: Optional[NDArrayFloat] = None,  # noqa: UP007
+        **kwargs: Any,  # noqa: ANN401
     ) -> FDataBasis:
         """
         Return the basis representation of the object.
@@ -620,17 +620,17 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return self.to_grid(grid_points=eval_points).to_basis(basis, **kwargs)
 
-    def copy(
+    def copy(  # noqa: PYI019, PLR0913
         self: T,
         *,
-        deep: bool = False,  # For Pandas compatibility
-        basis: Optional[Basis] = None,
-        coefficients: Optional[NDArrayFloat] = None,
-        dataset_name: Optional[str] = None,
-        argument_names: Optional[LabelTupleLike] = None,
-        coordinate_names: Optional[LabelTupleLike] = None,
-        sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[ExtrapolationLike] = None,
+        deep: bool = False,  # For Pandas compatibility  # noqa: ARG002
+        basis: Optional[Basis] = None,  # noqa: UP007
+        coefficients: Optional[NDArrayFloat] = None,  # noqa: UP007
+        dataset_name: Optional[str] = None,  # noqa: UP007
+        argument_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        coordinate_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        sample_names: Optional[LabelTupleLike] = None,  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
     ) -> T:
         """Copy the FDataBasis."""
         if basis is None:
@@ -679,13 +679,13 @@ class FDataBasis(FData):  # noqa: WPS214
         return (
             f"fd("  # noqa: WPS437
             f"coef = {self._array_to_R(self.coefficients, transpose=True)},"
-            f" basisobj = {self.basis._to_R()})"
+            f" basisobj = {self.basis._to_R()})"  # noqa: SLF001
         )
 
     def _array_to_R(  # noqa: N802
         self,
         coefficients: NDArrayFloat,
-        transpose: bool = False,
+        transpose: bool = False,  # noqa: FBT001, FBT002
     ) -> str:
         if coefficients.ndim == 1:
             coefficients = coefficients[None]
@@ -713,10 +713,10 @@ class FDataBasis(FData):  # noqa: WPS214
             f"\nbasis={self.basis},"
             f"\ncoefficients={self.coefficients},"
             f"\ndataset_name={self.dataset_name},"
-            f"\nargument_names={repr(self.argument_names)},"
-            f"\ncoordinate_names={repr(self.coordinate_names)},"
+            f"\nargument_names={repr(self.argument_names)},"  # noqa: RUF010
+            f"\ncoordinate_names={repr(self.coordinate_names)},"  # noqa: RUF010
             f"\nextrapolation={self.extrapolation})"
-        ).replace('\n', '\n    ')
+        ).replace('\n', '\n    ')  # noqa: Q000
 
     def __str__(self) -> str:
 
@@ -724,30 +724,30 @@ class FDataBasis(FData):  # noqa: WPS214
             f"{self.__class__.__name__}("
             f"\n_basis={self.basis},"
             f"\ncoefficients={self.coefficients})"
-        ).replace('\n', '\n    ')
+        ).replace('\n', '\n    ')  # noqa: Q000
 
     def equals(self, other: object) -> bool:
         """Equality of FDataBasis."""
-        # TODO check all other params
+        # TODO check all other params  # noqa: FIX002, TD002, TD003, TD004
 
         if not super().equals(other):
             return False
 
-        other = cast(grid.FDataGrid, other)
+        other = cast(grid.FDataGrid, other)  # noqa: TC006
 
         return (
             self.basis == other.basis
             and np.array_equal(self.coefficients, other.coefficients)
         )
 
-    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
+    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:  # noqa: PYI019
         """Elementwise equality of FDataBasis."""
         return np.all(  # type: ignore[no-any-return]
             self.coefficients == other.coefficients,
             axis=1,
         )
 
-    def concatenate(
+    def concatenate(  # noqa: PYI019
         self: T,
         *others: T,
         as_coordinates: bool = False,
@@ -773,14 +773,14 @@ class FDataBasis(FData):  # noqa: WPS214
             representation.
 
         """
-        # TODO: Change to support multivariate functions
+        # TODO: Change to support multivariate functions  # noqa: E501, FIX002, TD002, TD003
         #  in basis representation
         if as_coordinates:
             return NotImplemented
 
         for other in others:
             if other.basis != self.basis:
-                raise ValueError("The objects should have the same basis.")
+                raise ValueError("The objects should have the same basis.")  # noqa: EM101, TRY003
 
         data = [self.coefficients] + [other.coefficients for other in others]
 
@@ -791,12 +791,12 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=sum(sample_names, ()),
         )
 
-    def compose(
+    def compose(  # noqa: D417
         self,
         fd: FData,
         *,
-        eval_points: Optional[NDArrayFloat] = None,
-        **kwargs: Any,
+        eval_points: Optional[NDArrayFloat] = None,  # noqa: UP007
+        **kwargs: Any,  # noqa: ANN401
     ) -> FData:
         """
         Composition of functions.
@@ -820,14 +820,14 @@ class FDataBasis(FData):  # noqa: WPS214
             basis = self.basis.rescale(fd.domain_range[0])
             composition = fd_grid.to_basis(basis, **kwargs)
         else:
-            #  Cant be convertered to basis due to the dimensions
+            #  Cant be convertered to basis due to the dimensions  # noqa: E501, RUF003
             composition = fd_grid
 
         return composition
 
-    def __getitem__(
+    def __getitem__(  # noqa: PYI019
         self: T,
-        key: Union[int, slice, NDArrayInt, NDArrayBool],
+        key: Union[int, slice, NDArrayInt, NDArrayBool],  # noqa: UP007
     ) -> T:
         """Return self[key]."""
         key = _check_array_key(self.coefficients, key)
@@ -837,7 +837,7 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=list(np.array(self.sample_names)[key]),
         )
 
-    def __add__(
+    def __add__(  # noqa: PYI019
         self: T,
         other: T,
     ) -> T:
@@ -852,7 +852,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return NotImplemented
 
-    def __radd__(
+    def __radd__(  # noqa: PYI019
         self: T,
         other: T,
     ) -> T:
@@ -867,7 +867,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return NotImplemented
 
-    def __sub__(
+    def __sub__(  # noqa: PYI019
         self: T,
         other: T,
     ) -> T:
@@ -882,7 +882,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return NotImplemented
 
-    def __rsub__(
+    def __rsub__(  # noqa: PYI019
         self: T,
         other: T,
     ) -> T:
@@ -897,14 +897,14 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return NotImplemented
 
-    def _mul_scalar(
+    def _mul_scalar(  # noqa: PYI019
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Multiplication by scalar."""
         try:
             vector = _int_to_real(np.atleast_1d(other))
-        except Exception:
+        except Exception:  # noqa: BLE001
             return NotImplemented
 
         if vector.ndim > 1:
@@ -918,47 +918,47 @@ class FDataBasis(FData):  # noqa: WPS214
             coefficients=self.coefficients * vector,
         )
 
-    def __mul__(
+    def __mul__(  # noqa: PYI019
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Multiplication for FDataBasis object."""
         return self._mul_scalar(other)
 
-    def __rmul__(
+    def __rmul__(  # noqa: PYI019
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Multiplication for FDataBasis object."""
         return self._mul_scalar(other)
 
-    def __truediv__(
+    def __truediv__(  # noqa: PYI019
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Division for FDataBasis object."""
         try:
             other = 1 / np.asarray(other)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return NotImplemented
 
         return self._mul_scalar(other)
 
-    def __rtruediv__(
+    def __rtruediv__(  # noqa: PYI019
         self: T,
-        other: Union[NDArrayFloat, NDArrayInt, float],
+        other: Union[NDArrayFloat, NDArrayInt, float],  # noqa: UP007
     ) -> T:
         """Right division for FDataBasis object."""
         return NotImplemented
 
-    def __neg__(self: T) -> T:
+    def __neg__(self: T) -> T:  # noqa: PYI019
         """Negation of FData object."""
         return self.copy(coefficients=-self.coefficients)
 
     #####################################################################
     # Pandas ExtensionArray methods
     #####################################################################
-    def _take_allow_fill(
+    def _take_allow_fill(  # noqa: PYI019
         self: T,
         indices: NDArrayInt,
         fill_value: T,
@@ -981,14 +981,14 @@ class FDataBasis(FData):  # noqa: WPS214
 
     @property
     def dtype(self) -> FDataBasisDType:
-        """The dtype for this extension array, FDataGridDType"""
+        """The dtype for this extension array, FDataGridDType"""  # noqa: D415
         return FDataBasisDType(basis=self.basis)
 
     @property
     def nbytes(self) -> int:
         """
         The number of bytes needed to store this object in memory.
-        """
+        """  # noqa: D200
         return self.coefficients.nbytes
 
     def isna(self) -> NDArrayBool:
@@ -1009,9 +1009,9 @@ class FDataBasisDType(
 ):
     """DType corresponding to FDataBasis in Pandas."""
 
-    kind = 'O'
+    kind = 'O'  # noqa: Q000
     type = FDataBasis  # noqa: WPS125
-    name = 'FDataBasis'
+    name = 'FDataBasis'  # noqa: Q000
     na_value = pandas.NA
 
     _metadata = ("basis")
@@ -1020,7 +1020,7 @@ class FDataBasisDType(
         self.basis = basis
 
     @classmethod
-    def construct_array_type(cls) -> Type[FDataBasis]:  # noqa: D102
+    def construct_array_type(cls) -> Type[FDataBasis]:  # noqa: D102, RUF100, UP006
         return FDataBasis
 
     def _na_repr(self) -> FDataBasis:
@@ -1029,7 +1029,7 @@ class FDataBasisDType(
             coefficients=((np.nan,) * self.basis.n_basis,),
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         """
         Compare dtype equality.
 
@@ -1041,7 +1041,7 @@ class FDataBasisDType(
         """
         if isinstance(other, str):
             return other == self.name
-        elif other is self:
+        elif other is self:  # noqa: RET505
             return True
 
         return (
@@ -1064,7 +1064,7 @@ class _CoordinateIterator(Sequence[T]):
         """Create an iterator through the image coordinates."""
         self._fdatabasis = fdatabasis
 
-    def __getitem__(self, key: Union[int, slice]) -> T:
+    def __getitem__(self, key: Union[int, slice]) -> T:  # noqa: UP007
         """Get a specific coordinate."""
         basis, coefs = self._fdatabasis.basis.coordinate_basis_and_coefs(
             self._fdatabasis.coefficients,

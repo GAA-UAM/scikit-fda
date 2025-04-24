@@ -1,15 +1,15 @@
 """Test smoothing methods."""
 import unittest
-from typing import Tuple
+from typing import Tuple  # noqa: UP035
 
 import numpy as np
 import sklearn
 from sklearn.datasets import load_digits
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 import skfda
-import skfda.preprocessing.smoothing as smoothing
-import skfda.preprocessing.smoothing.validation as validation
+import skfda.preprocessing.smoothing as smoothing  # noqa: PLR0402
+import skfda.preprocessing.smoothing.validation as validation  # noqa: PLR0402
 from skfda._utils import _check_estimator
 from skfda.datasets import fetch_weather
 from skfda.misc.hat_matrix import (
@@ -45,7 +45,7 @@ class _LinearSmootherLeaveOneOutScorerAlternative:
         """Calculate Leave-One-Out score."""
         estimator_clone = sklearn.base.clone(estimator)
 
-        estimator_clone._cv = True  # noqa: WPS437
+        estimator_clone._cv = True  # noqa: SLF001, WPS437
         y_est = estimator_clone.fit_transform(X)
 
         return float(
@@ -59,7 +59,7 @@ class TestLeaveOneOut(unittest.TestCase):
     def _test_generic(
         self,
         estimator: KernelSmoother,
-        smoothing_param_name: str = 'kernel_estimator__bandwidth',
+        smoothing_param_name: str = 'kernel_estimator__bandwidth',  # noqa: Q000
     ) -> None:
         loo_scorer = validation.LinearSmootherLeaveOneOutScorer()
         loo_scorer_alt = _LinearSmootherLeaveOneOutScorerAlternative()
@@ -75,7 +75,7 @@ class TestLeaveOneOut(unittest.TestCase):
         )
 
         grid.fit(fd)
-        score = np.array(grid.cv_results_['mean_test_score'])
+        score = np.array(grid.cv_results_['mean_test_score'])  # noqa: Q000
 
         grid_alt = validation.SmoothingParameterSearch(
             estimator,
@@ -85,7 +85,7 @@ class TestLeaveOneOut(unittest.TestCase):
         )
 
         grid_alt.fit(fd)
-        score_alt = np.array(grid_alt.cv_results_['mean_test_score'])
+        score_alt = np.array(grid_alt.cv_results_['mean_test_score'])  # noqa: Q000
 
         np.testing.assert_array_almost_equal(score, score_alt)
 
@@ -109,7 +109,7 @@ class TestLeaveOneOut(unittest.TestCase):
             KernelSmoother(
                 kernel_estimator=KNeighborsHatMatrix(),
             ),
-            smoothing_param_name='kernel_estimator__n_neighbors',
+            smoothing_param_name='kernel_estimator__n_neighbors',  # noqa: Q000
         )
 
 
@@ -123,7 +123,7 @@ class TestKernelSmoother(unittest.TestCase):
         self,
         kernel_estimator: HatMatrix,
     ) -> np.typing.NDArray[np.float64]:
-        return KernelSmoother(  # noqa: WPS437
+        return KernelSmoother(  # noqa: SLF001, WPS437
             kernel_estimator=kernel_estimator,
         )._hat_matrix(
             input_points=[[1, 2, 3, 4, 5]],
@@ -224,7 +224,7 @@ class TestBasisSmoother(unittest.TestCase):
             regularization=L2Regularization(
                 LinearDifferentialOperator(2),
             ),
-            method='cholesky',
+            method='cholesky',  # noqa: Q000
             return_basis=True,
         )
 
@@ -249,7 +249,7 @@ class TestBasisSmoother(unittest.TestCase):
             regularization=L2Regularization(
                 LinearDifferentialOperator(2),
             ),
-            method='qr',
+            method='qr',  # noqa: Q000
             return_basis=True,
         )
 
@@ -299,10 +299,10 @@ class TestBasisSmoother(unittest.TestCase):
             [basis_dim] * 2,
         )
 
-        method_set: Tuple[Literal['cholesky', 'qr', 'svd'], ...] = (
-            'cholesky',
-            'qr',
-            'svd',
+        method_set: Tuple[Literal['cholesky', 'qr', 'svd'], ...] = (  # noqa: Q000, UP006
+            'cholesky',  # noqa: Q000
+            'qr',  # noqa: Q000
+            'svd',  # noqa: Q000
         )
         for method in method_set:
             with self.subTest(method=method):
@@ -327,11 +327,11 @@ class TestBasisSmoother(unittest.TestCase):
                     method=method,
                 )
 
-                X_basis = basis_smoother.fit_transform(X)
+                X_basis = basis_smoother.fit_transform(X)  # noqa: N806
 
-                self.assertEqual(X_basis.dim_codomain, 2)
+                self.assertEqual(X_basis.dim_codomain, 2)  # noqa: PT009
 
-                self.assertEqual(X_basis.coordinates[0].basis, basis_dim)
+                self.assertEqual(X_basis.coordinates[0].basis, basis_dim)  # noqa: PT009
                 np.testing.assert_allclose(
                     X_basis.coordinates[0].coefficients,
                     basis_smoother_dim.fit_transform(
@@ -339,7 +339,7 @@ class TestBasisSmoother(unittest.TestCase):
                     ).coefficients,
                 )
 
-                self.assertEqual(X_basis.coordinates[1].basis, basis_dim)
+                self.assertEqual(X_basis.coordinates[1].basis, basis_dim)  # noqa: PT009
                 np.testing.assert_allclose(
                     X_basis.coordinates[1].coefficients,
                     basis_smoother_dim.fit_transform(

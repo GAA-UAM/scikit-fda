@@ -2,19 +2,19 @@
 from __future__ import annotations
 
 import warnings
-from typing import Callable, Optional, Tuple, TypeVar, Union
+from typing import Callable, Optional, Tuple, TypeVar, Union  # noqa: UP035
 
 import numpy as np
 from sklearn.utils.validation import check_is_fitted
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ...misc._math import inner_product
 from ...misc.metrics._lp_norms import l2_norm
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FData, FDataGrid
-from ...representation.extrapolation import ExtrapolationLike
-from ...typing._base import GridPointsLike
-from ...typing._numpy import ArrayLike, NDArrayFloat
+from ...representation.extrapolation import ExtrapolationLike  # noqa: TC001
+from ...typing._base import GridPointsLike  # noqa: TC001
+from ...typing._numpy import ArrayLike, NDArrayFloat  # noqa: TC001
 from ._base import InductiveRegistrationTransformer
 
 SelfType = TypeVar("SelfType", bound="LeastSquaresShiftRegistration[FData]")
@@ -136,18 +136,18 @@ class LeastSquaresShiftRegistration(
     References:
         .. footbibliography::
 
-    """
+    """  # noqa: W291
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         max_iter: int = 5,
         tol: float = 1e-2,
-        template: Union[Literal["mean"], FData, TemplateFunction] = "mean",
-        extrapolation: Optional[ExtrapolationLike] = None,
+        template: Union[Literal["mean"], FData, TemplateFunction] = "mean",  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         step_size: float = 1,
-        restrict_domain: bool = False,
-        initial: Union[Literal["zeros"], ArrayLike] = "zeros",
-        grid_points: Optional[GridPointsLike] = None,
+        restrict_domain: bool = False,  # noqa: FBT001, FBT002
+        initial: Union[Literal["zeros"], ArrayLike] = "zeros",  # noqa: UP007
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> None:
         self.max_iter = max_iter
         self.tol = tol
@@ -161,8 +161,8 @@ class LeastSquaresShiftRegistration(
     def _compute_deltas(
         self,
         fd: FData,
-        template: Union[Literal["mean"], FData, TemplateFunction],
-    ) -> Tuple[NDArrayFloat, FDataGrid]:
+        template: Union[Literal["mean"], FData, TemplateFunction],  # noqa: UP007
+    ) -> Tuple[NDArrayFloat, FDataGrid]:  # noqa: UP006
         """Compute the shifts to perform the registration.
 
         Args:
@@ -191,8 +191,8 @@ class LeastSquaresShiftRegistration(
             delta = np.asarray(self.initial)
 
             if len(delta) != fd.n_samples:
-                raise ValueError(
-                    f"The length of the initial shift ({len(delta)}) must "
+                raise ValueError(  # noqa: TRY003
+                    f"The length of the initial shift ({len(delta)}) must "  # noqa: EM102
                     f"be the same than the number of samples ({fd.n_samples})",
                 )
 
@@ -261,7 +261,7 @@ class LeastSquaresShiftRegistration(
 
         return delta, template_iter
 
-    def fit_transform(self, X: T, y: object = None) -> T:
+    def fit_transform(self, X: T, y: object = None) -> T:  # noqa: ARG002
 
         deltas, template = self._compute_deltas(X, self.template)
 
@@ -277,10 +277,10 @@ class LeastSquaresShiftRegistration(
         shifted.argument_names = None  # type: ignore[assignment]
         return shifted
 
-    def fit(
+    def fit(  # noqa: PYI019
         self: SelfType,
         X: FData,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> SelfType:
 
         # If the template is an FData, fit doesnt learn anything
@@ -294,11 +294,11 @@ class LeastSquaresShiftRegistration(
 
         return self
 
-    def transform(self, X: FData, y: object = None) -> FDataGrid:
+    def transform(self, X: FData, y: object = None) -> FDataGrid:  # noqa: ARG002
 
         if self.restrict_domain:
-            raise AttributeError(
-                "transform is not available when "
+            raise AttributeError(  # noqa: TRY003
+                "transform is not available when "  # noqa: EM101
                 "restrict_domain=True, fitting and "
                 "transformation should be done together. Use "
                 "an extrapolation method with "
@@ -320,7 +320,7 @@ class LeastSquaresShiftRegistration(
         shifted.argument_names = None  # type: ignore[assignment]
         return shifted
 
-    def inverse_transform(self, X: FData, y: object = None) -> FDataGrid:
+    def inverse_transform(self, X: FData, y: object = None) -> FDataGrid:  # noqa: ARG002
         """
         Apply the inverse transformation.
 
@@ -358,13 +358,13 @@ class LeastSquaresShiftRegistration(
         deltas = getattr(self, "deltas_", None)
 
         if deltas is None:
-            raise AttributeError(
-                "Data must be previously transformed to learn"
+            raise AttributeError(  # noqa: TRY003
+                "Data must be previously transformed to learn"  # noqa: EM101
                 " the inverse transformation",
             )
-        elif len(X) != len(deltas):
-            raise ValueError(
-                "Data must contain the same number of samples "
+        elif len(X) != len(deltas):  # noqa: RET506
+            raise ValueError(  # noqa: TRY003
+                "Data must contain the same number of samples "  # noqa: EM101
                 "than the dataset previously transformed",
             )
 
@@ -379,18 +379,18 @@ class LeastSquaresShiftRegistration(
 class ShiftRegistration(LeastSquaresShiftRegistration[T]):
     """Deprecated name for LeastSquaresShiftRegistration."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         max_iter: int = 5,
         tol: float = 1e-2,
-        template: Union[Literal["mean"], FData, TemplateFunction] = "mean",
-        extrapolation: Optional[ExtrapolationLike] = None,
+        template: Union[Literal["mean"], FData, TemplateFunction] = "mean",  # noqa: UP007
+        extrapolation: Optional[ExtrapolationLike] = None,  # noqa: UP007
         step_size: float = 1,
-        restrict_domain: bool = False,
-        initial: Union[Literal["zeros"], ArrayLike] = "zeros",
-        grid_points: Optional[GridPointsLike] = None,
+        restrict_domain: bool = False,  # noqa: FBT001, FBT002
+        initial: Union[Literal["zeros"], ArrayLike] = "zeros",  # noqa: UP007
+        grid_points: Optional[GridPointsLike] = None,  # noqa: UP007
     ) -> None:
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             "ShiftRegistration has been renamed. "
             "Use LeastSquaresShiftRegistration instead.",
             DeprecationWarning,

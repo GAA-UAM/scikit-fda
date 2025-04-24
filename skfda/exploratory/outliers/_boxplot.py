@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
 from ...representation import FDataGrid
-from ...typing._numpy import NDArrayInt
+from ...typing._numpy import NDArrayInt  # noqa: TC001
 from ..depth import Depth, ModifiedBandDepth
 from . import _envelopes
 
@@ -48,10 +48,10 @@ class BoxplotOutlierDetector(
         self.depth_method = depth_method
         self.factor = factor
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, RUF100
         self,
         X: FDataGrid,
-        y: None = None,
+        y: None = None,  # noqa: ARG002
     ) -> BoxplotOutlierDetector:
 
         depth_method = (
@@ -78,7 +78,7 @@ class BoxplotOutlierDetector(
 
         return self
 
-    def predict(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
+    def predict(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102, RUF100
         outliers = _envelopes.predict_outliers(
             X,
             self.non_outlying_threshold_,

@@ -5,7 +5,7 @@ from typing import Any, TypeVar, Union
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
-from ...misc.regularization import L2Regularization
+from ...misc.regularization import L2Regularization  # noqa: TC001
 from ...preprocessing.dim_reduction import FPLS
 from ...representation import FDataGrid
 from ...representation.basis import Basis, FDataBasis
@@ -13,12 +13,12 @@ from ...typing._numpy import NDArrayFloat
 
 InputType = TypeVar(
     "InputType",
-    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
+    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],  # noqa: UP007
 )
 
 OutputType = TypeVar(
     "OutputType",
-    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],
+    bound=Union[FDataGrid, FDataBasis, NDArrayFloat],  # noqa: UP007
 )
 
 
@@ -59,11 +59,11 @@ class FPLSRegression(
     def __init__(
         self,
         n_components: int | None = None,
-        regularization_X: L2Regularization[Any] | None = None,
-        weight_basis_X: Basis | None = None,
-        weight_basis_Y: Basis | None = None,
-        _integration_weights_X: NDArrayFloat | None = None,
-        _integration_weights_Y: NDArrayFloat | None = None,
+        regularization_X: L2Regularization[Any] | None = None,  # noqa: N803
+        weight_basis_X: Basis | None = None,  # noqa: N803
+        weight_basis_Y: Basis | None = None,  # noqa: N803
+        _integration_weights_X: NDArrayFloat | None = None,  # noqa: N803
+        _integration_weights_Y: NDArrayFloat | None = None,  # noqa: N803
     ) -> None:
         self.n_components = n_components
         self._integration_weights_X = _integration_weights_X

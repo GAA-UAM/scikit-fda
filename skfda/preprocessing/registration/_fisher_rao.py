@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Callable, Optional, TypeVar, Union
+from typing import Callable, Optional, TypeVar, Union  # noqa: UP035
 
 import numpy as np
 from sklearn.utils.validation import check_is_fitted
@@ -13,9 +13,9 @@ from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions, check_fdata_same_kind
 from ...representation import FDataGrid
-from ...representation.basis import Basis
+from ...representation.basis import Basis  # noqa: TC001
 from ...representation.interpolation import SplineInterpolation
-from ...typing._numpy import ArrayLike
+from ...typing._numpy import ArrayLike  # noqa: TC001
 from ._base import InductiveRegistrationTransformer
 
 _MeanType = Callable[[FDataGrid], FDataGrid]
@@ -113,7 +113,7 @@ class FisherRaoElasticRegistration(
         >>> elastic_registration.transform(X_test)
         FDataGrid(...)
 
-    """
+    """  # noqa: W291
 
     template_: FDataGrid
     warping_: FDataGrid
@@ -121,11 +121,11 @@ class FisherRaoElasticRegistration(
     def __init__(
         self,
         *,
-        template: Union[FDataGrid, _MeanType] = fisher_rao_karcher_mean,
+        template: Union[FDataGrid, _MeanType] = fisher_rao_karcher_mean,  # noqa: UP007
         penalty: float = 0,
-        output_points: Optional[ArrayLike] = None,
+        output_points: Optional[ArrayLike] = None,  # noqa: UP007
         grid_dim: int = 7,
-        derivative_method: Optional[Basis] = None,
+        derivative_method: Optional[Basis] = None,  # noqa: UP007
     ) -> None:
         self.template = template
         self.penalty = penalty
@@ -133,7 +133,7 @@ class FisherRaoElasticRegistration(
         self.grid_dim = grid_dim
         self.derivative_method = derivative_method
 
-    def fit(self: SelfType, X: FDataGrid, y: object = None) -> SelfType:
+    def fit(self: SelfType, X: FDataGrid, y: object = None) -> SelfType:  # noqa: PYI019, ARG002
 
         # Points of discretization
         self._output_points = (
@@ -159,7 +159,7 @@ class FisherRaoElasticRegistration(
 
         return self
 
-    def transform(self, X: FDataGrid, y: object = None) -> FDataGrid:
+    def transform(self, X: FDataGrid, y: object = None) -> FDataGrid:  # noqa: ARG002
 
         check_is_fitted(self)
         check_fdata_dimensions(
@@ -174,8 +174,8 @@ class FisherRaoElasticRegistration(
             and len(X) != len(self._template_srsf)
         ):
 
-            raise ValueError(
-                "The template should contain one sample to align "
+            raise ValueError(  # noqa: TRY003
+                "The template should contain one sample to align "  # noqa: EM101
                 "all the curves to the same function or the "
                 "same number of samples than X.",
             )
@@ -225,7 +225,7 @@ class FisherRaoElasticRegistration(
 
         return X.compose(self.warping_, eval_points=output_points)
 
-    def inverse_transform(self, X: FDataGrid, y: object = None) -> FDataGrid:
+    def inverse_transform(self, X: FDataGrid, y: object = None) -> FDataGrid:  # noqa: ARG002
         r"""
         Reverse the registration procedure previosly applied.
 
@@ -276,17 +276,17 @@ class FisherRaoElasticRegistration(
         See also:
             :func:`invert_warping`
 
-        """
-        warping = getattr(self, 'warping_', None)
+        """  # noqa: D405
+        warping = getattr(self, 'warping_', None)  # noqa: Q000
 
         if warping is None:
-            raise ValueError(
-                "Data must be previosly transformed to apply the "
+            raise ValueError(  # noqa: TRY003
+                "Data must be previosly transformed to apply the "  # noqa: EM101
                 "inverse transform",
             )
-        elif len(X) != len(warping):
-            raise ValueError(
-                "Data must contain the same number of samples "
+        elif len(X) != len(warping):  # noqa: RET506
+            raise ValueError(  # noqa: TRY003
+                "Data must contain the same number of samples "  # noqa: EM101
                 "than the dataset previously transformed",
             )
 
@@ -300,12 +300,12 @@ class ElasticRegistration(FisherRaoElasticRegistration):
 
     def __init__(
         self,
-        template: Union[FDataGrid, _MeanType] = fisher_rao_karcher_mean,
+        template: Union[FDataGrid, _MeanType] = fisher_rao_karcher_mean,  # noqa: UP007
         penalty: float = 0,
-        output_points: Optional[ArrayLike] = None,
+        output_points: Optional[ArrayLike] = None,  # noqa: UP007
         grid_dim: int = 7,
     ) -> None:
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             "ElasticRegistration has been renamed. "
             "Use FisherRaoElasticRegistration instead.",
             DeprecationWarning,

@@ -17,7 +17,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "validation",
     ],
     submod_attrs={
-        '_math': [
+        '_math': [  # noqa: Q000
             "cosine_similarity",
             "cosine_similarity_matrix",
             "cumsum",

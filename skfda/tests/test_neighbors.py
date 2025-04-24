@@ -1,11 +1,11 @@
 """Test neighbors classifiers and regressors."""
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import unittest
-from typing import Any, Sequence
+from typing import Any, Sequence  # noqa: UP035
 
 import numpy as np
-from sklearn.neighbors._base import KNeighborsMixin, RadiusNeighborsMixin
+from sklearn.neighbors._base import KNeighborsMixin, RadiusNeighborsMixin  # noqa: TC002
 from sklearn.pipeline import Pipeline
 
 from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
@@ -86,7 +86,7 @@ class TestNeighbors(unittest.TestCase):
             np.testing.assert_array_equal(
                 pred,
                 self.y,
-                err_msg=f'fail in {type(neigh)}',
+                err_msg=f'fail in {type(neigh)}',  # noqa: Q000
             )
 
     def test_predict_classifier_transformer_knn(self) -> None:
@@ -135,13 +135,13 @@ class TestNeighbors(unittest.TestCase):
         # Dummy test, with weight = distance, only the sample with distance 0
         # will be returned, obtaining the exact location
         knnr = KNeighborsRegressor[FDataGrid, np.typing.NDArray[np.float64]](
-            weights='distance',
+            weights='distance',  # noqa: Q000
         )
         rnnr = RadiusNeighborsRegressor[
             FDataGrid,
             np.typing.NDArray[np.float64],
         ](
-            weights='distance',
+            weights='distance',  # noqa: Q000
             radius=0.1,
         )
 
@@ -188,8 +188,8 @@ class TestNeighbors(unittest.TestCase):
             np.testing.assert_allclose(dist[0, 1], dist_kneigh)
 
             for i in range(30):
-                self.assertEqual(graph[0, i] == 1, i in links[0])
-                self.assertEqual(graph[0, i] == 0, i not in links[0])
+                self.assertEqual(graph[0, i] == 1, i in links[0])  # noqa: PT009
+                self.assertEqual(graph[0, i] == 0, i not in links[0])  # noqa: PT009
 
     def test_radius_neighbors(self) -> None:
         """Test query with radius."""
@@ -222,8 +222,8 @@ class TestNeighbors(unittest.TestCase):
             graph = neigh.radius_neighbors_graph(self.X[:4])
 
             for i in range(30):
-                self.assertEqual(graph[0, i] == 1, i in links[0])
-                self.assertEqual(graph[0, i] == 0, i not in links[0])
+                self.assertEqual(graph[0, i] == 1, i in links[0])  # noqa: PT009
+                self.assertEqual(graph[0, i] == 0, i not in links[0])  # noqa: PT009
 
     def test_knn_functional_response(self) -> None:
         """Test prediction of functional response."""
@@ -244,7 +244,7 @@ class TestNeighbors(unittest.TestCase):
             np.typing.NDArray[np.float64],
             FDataGrid,
         ](
-            weights='distance',
+            weights='distance',  # noqa: Q000
         )
 
         knnr.fit(self.X, self.X)
@@ -255,8 +255,8 @@ class TestNeighbors(unittest.TestCase):
             np.typing.NDArray[np.float64],
             FDataGrid,
         ](
-            weights='distance',
-            metric='precomputed',
+            weights='distance',  # noqa: Q000
+            metric='precomputed',  # noqa: Q000
         )
         d = PairwiseMetric(l2_distance)
         distances = d(self.X, self.X)
@@ -280,7 +280,7 @@ class TestNeighbors(unittest.TestCase):
         """
         knnr = RadiusNeighborsRegressor[FDataGrid, FDataGrid](
             metric=l2_distance,
-            weights='distance',
+            weights='distance',  # noqa: Q000
             radius=1e-6,
         )
 
@@ -314,7 +314,7 @@ class TestNeighbors(unittest.TestCase):
             FDataGrid,
             FDataGrid,
         ](
-            weights='distance',
+            weights='distance',  # noqa: Q000
             n_neighbors=10,
         )
         knnr.fit(self.X[:10], self.X[:10])
@@ -336,7 +336,7 @@ class TestNeighbors(unittest.TestCase):
         knnr = KNeighborsRegressor[
             FDataGrid,
             FDataBasis,
-        ](weights='distance', n_neighbors=1)
+        ](weights='distance', n_neighbors=1)  # noqa: Q000
 
         response = self.X.to_basis(
             FourierBasis(domain_range=(-1, 1), n_basis=10),
@@ -381,7 +381,7 @@ class TestNeighbors(unittest.TestCase):
         d = PairwiseMetric(l2_distance)
         distances = d(self.X[:4], self.X[:4])
 
-        nn = NearestNeighbors(metric='precomputed', n_neighbors=2)
+        nn = NearestNeighbors(metric='precomputed', n_neighbors=2)  # noqa: Q000
         nn.fit(distances, self.y[:4])
 
         _, neighbors = nn.kneighbors(distances)
@@ -456,7 +456,7 @@ class TestNeighbors(unittest.TestCase):
         distances = d(self.fd_lof, self.fd_lof)
 
         # With precompute distances
-        lof3 = LocalOutlierFactor(metric='precomputed')
+        lof3 = LocalOutlierFactor(metric='precomputed')  # noqa: Q000
         res3 = lof3.fit_predict(distances)
         np.testing.assert_array_equal(expected, res3)
 
@@ -502,7 +502,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_allclose(
             lof.decision_function(self.fd_lof[:5]),
             score - lof.offset_,
-            err_msg='Error in LocalOutlierFactor.decision_function',
+            err_msg='Error in LocalOutlierFactor.decision_function',  # noqa: Q000
         )
 
     def test_lof_exceptions(self) -> None:
@@ -527,5 +527,5 @@ class TestNeighbors(unittest.TestCase):
         return np.array([w == np.min(weights) for w in weights], dtype=float)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

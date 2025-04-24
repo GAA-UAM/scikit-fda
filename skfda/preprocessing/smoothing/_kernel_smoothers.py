@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-  # noqa: UP009
 
 """Kernel Smoother.
 
@@ -110,12 +110,12 @@ class KernelSmoother(_LinearSmoother):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: ANN204
         self,
-        kernel_estimator: Optional[HatMatrix] = None,
+        kernel_estimator: Optional[HatMatrix] = None,  # noqa: UP007
         *,
-        weights: Optional[NDArrayFloat] = None,
-        output_points: Optional[GridPointsLike] = None,
+        weights: Optional[NDArrayFloat] = None,  # noqa: UP007
+        output_points: Optional[GridPointsLike] = None,  # noqa: UP007
         metric: Metric[NDArrayFloat] = l2_distance,
     ):
         self.kernel_estimator = kernel_estimator

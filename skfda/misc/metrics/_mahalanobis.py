@@ -1,19 +1,19 @@
 """Functional Mahalanobis Distance Module."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union  # noqa: UP035
 
 import numpy as np
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator
-from ...representation import FData
-from ...representation.basis import Basis
-from ...typing._numpy import ArrayLike, NDArrayFloat
+from ...representation import FData  # noqa: TC001
+from ...representation.basis import Basis  # noqa: TC001
+from ...typing._numpy import ArrayLike, NDArrayFloat  # noqa: TC001
 from .._math import inner_product_matrix
-from ..regularization._regularization import TikhonovRegularization
+from ..regularization._regularization import TikhonovRegularization  # noqa: TC001
 
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
@@ -63,16 +63,16 @@ class MahalanobisDistance(BaseEstimator):
         .. footbibliography::
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         n_components: int = 10,
-        centering: bool = True,
-        regularization: Optional[TikhonovRegularization[FData]] = None,
-        weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
-        components_basis: Optional[Basis] = None,
+        centering: bool = True,  # noqa: FBT001, FBT002
+        regularization: Optional[TikhonovRegularization[FData]] = None,  # noqa: UP007
+        weights: Optional[Union[ArrayLike, WeightsCallable]] = None,  # noqa: UP007
+        components_basis: Optional[Basis] = None,  # noqa: UP007
         alpha: float = 0.001,
-        eigenvalues: Optional[NDArrayFloat] = None,
-        eigenvectors: Optional[FData] = None,
+        eigenvalues: Optional[NDArrayFloat] = None,  # noqa: UP007
+        eigenvectors: Optional[FData] = None,  # noqa: UP007
     ) -> None:
         self.n_components = n_components
         self.centering = centering
@@ -86,7 +86,7 @@ class MahalanobisDistance(BaseEstimator):
     def fit(
         self,
         X: FData,
-        y: None = None,
+        y: None = None,  # noqa: ARG002
     ) -> MahalanobisDistance:
         """Fit the functional Mahalanobis distance to X.
 
@@ -133,7 +133,7 @@ class MahalanobisDistance(BaseEstimator):
 
         Returns:
             Squared functional Mahalanobis distance between two observations.
-        """
+        """  # noqa: E501
         try:
             check_is_fitted(self)
             eigenvalues = self.eigenvalues_

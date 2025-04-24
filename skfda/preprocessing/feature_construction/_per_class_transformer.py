@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
+from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union  # noqa: UP035
 
 import numpy as np
 import pandas as pd
@@ -16,18 +16,18 @@ from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
 from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
-Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
-Output = TypeVar("Output", bound=Union[pd.DataFrame, NDArrayFloat])
+Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])  # noqa: UP007
+Output = TypeVar("Output", bound=Union[pd.DataFrame, NDArrayFloat])  # noqa: UP007
 
-TransformerOutput = Union[FData, NDArrayFloat]
+TransformerOutput = Union[FData, NDArrayFloat]  # noqa: UP007
 
 
 def _fit_feature_transformer(  # noqa: WPS320 WPS234
     X: Input,
     y: NDArrayInt,
     transformer: TransformerMixin[Input, Output, object],
-) -> Tuple[
-    Union[NDArrayAny, NDArrayFloat],
+) -> Tuple[  # noqa: UP006
+    Union[NDArrayAny, NDArrayFloat],  # noqa: UP007
     Sequence[TransformerMixin[Input, Output, object]],
 ]:
 
@@ -167,16 +167,16 @@ class PerClassTransformer(
 
     def _more_tags(self) -> Mapping[str, Any]:
         parent_tags = super()._more_tags()
-        transformer_tags = self.transformer._get_tags()  # noqa: WPS437
+        transformer_tags = self.transformer._get_tags()  # noqa: SLF001, WPS437
 
         return {
             **parent_tags,
-            'allow_nan': transformer_tags['allow_nan'],
-            'non_deterministic': transformer_tags['non_deterministic'],
-            'pairwise': transformer_tags['pairwise'],
-            'requires_positive_X': transformer_tags['requires_positive_X'],
-            'requires_y': True,
-            'X_types': transformer_tags['X_types'],
+            'allow_nan': transformer_tags['allow_nan'],  # noqa: Q000
+            'non_deterministic': transformer_tags['non_deterministic'],  # noqa: Q000
+            'pairwise': transformer_tags['pairwise'],  # noqa: Q000
+            'requires_positive_X': transformer_tags['requires_positive_X'],  # noqa: Q000
+            'requires_y': True,  # noqa: Q000
+            'X_types': transformer_tags['X_types'],  # noqa: Q000
         }
 
     def _validate_transformer(
@@ -206,18 +206,18 @@ class PerClassTransformer(
                 " doesn't",
             )
 
-        tags = self.transformer._get_tags()  # noqa: WPS437
+        tags = self.transformer._get_tags()  # noqa: SLF001, WPS437
 
-        if tags['stateless']:
-            warnings.warn(
+        if tags['stateless']:  # noqa: Q000
+            warnings.warn(  # noqa: B028
                 f"Parameter 'transformer' with type "
                 f"{type(self.transformer)} should use the data for "
                 f" fitting."
                 f"It should have the 'stateless' tag set to 'False'",
             )
 
-        if tags['requires_y']:
-            warnings.warn(
+        if tags['requires_y']:  # noqa: Q000
+            warnings.warn(  # noqa: B028
                 f"Parameter 'transformer' with type "
                 f"{type(self.transformer)} should not use the class label."
                 f"It should have the 'requires_y' tag set to 'False'",
@@ -252,7 +252,7 @@ class PerClassTransformer(
 
         return self
 
-    def transform(self, X: Input, y: object = None) -> Output:
+    def transform(self, X: Input, y: object = None) -> Output:  # noqa: ARG002, D417
         """
         Transform the provided data using the already fitted transformer.
 
@@ -273,8 +273,8 @@ class PerClassTransformer(
         if self.array_output:
             for data in transformed_data:
                 if isinstance(data, (FDataGrid, FDataBasis)):
-                    raise TypeError(
-                        "There are transformed instances of FDataGrid or "
+                    raise TypeError(  # noqa: TRY003
+                        "There are transformed instances of FDataGrid or "  # noqa: EM101
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
@@ -283,7 +283,7 @@ class PerClassTransformer(
 
         return pd.concat(  # type: ignore[no-any-return]
             [
-                pd.DataFrame({'0': data})  # noqa: WPS441
+                pd.DataFrame({'0': data})  # noqa: Q000, WPS441
                 for data in transformed_data
             ],
             axis=1,

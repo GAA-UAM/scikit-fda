@@ -1,17 +1,17 @@
 """Methods to solve least squares problems."""
 from __future__ import annotations
 
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union  # noqa: UP035
 
 import numpy as np
 import scipy.linalg
-from typing_extensions import Final, Literal
+from typing_extensions import Final, Literal  # noqa: UP035
 
-from ..typing._numpy import NDArrayFloat
+from ..typing._numpy import NDArrayFloat  # noqa: TC001
 
 LstsqMethodCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 LstsqMethodName = Literal["cholesky", "qr", "svd"]
-LstsqMethod = Union[LstsqMethodCallable, LstsqMethodName]
+LstsqMethod = Union[LstsqMethodCallable, LstsqMethodName]  # noqa: UP007
 
 
 def lstsq_cholesky(
@@ -70,8 +70,8 @@ def solve_regularized_weighted_lstsq(
     coefs: NDArrayFloat,
     result: NDArrayFloat,
     *,
-    weights: Optional[NDArrayFloat] = None,
-    penalty_matrix: Optional[NDArrayFloat] = None,
+    weights: Optional[NDArrayFloat] = None,  # noqa: UP007
+    penalty_matrix: Optional[NDArrayFloat] = None,  # noqa: UP007
     lstsq_method: LstsqMethod = lstsq_svd,
 ) -> NDArrayFloat:
     """

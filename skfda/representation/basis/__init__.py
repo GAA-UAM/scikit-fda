@@ -6,10 +6,10 @@ import lazy_loader as lazy
 __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
     submod_attrs={
-        '_basis': ["Basis"],
+        '_basis': ["Basis"],  # noqa: Q000
         "_bspline_basis": ["BSplineBasis", "BSpline"],
         "_constant_basis": ["ConstantBasis", "Constant"],
-        '_custom_basis': ["CustomBasis"],
+        '_custom_basis': ["CustomBasis"],  # noqa: Q000
         "_fdatabasis": ["FDataBasis", "FDataBasisDType"],
         "_finite_element_basis": ["FiniteElementBasis", "FiniteElement"],
         "_fourier_basis": ["FourierBasis", "Fourier"],

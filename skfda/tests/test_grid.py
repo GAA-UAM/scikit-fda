@@ -1,6 +1,6 @@
 """Test FDataGrid behaviour."""
 import unittest
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple  # noqa: UP035
 
 import numpy as np
 import scipy.stats.mstats
@@ -28,7 +28,7 @@ class TestFDataGrid(unittest.TestCase):
     def test_copy_equals(self) -> None:
         """Test that copies compare equals."""
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
-        self.assertTrue(fd.equals(fd.copy()))
+        self.assertTrue(fd.equals(fd.copy()))  # noqa: PT009
 
     def test_mean(self) -> None:
         """Test aritmetic mean."""
@@ -84,9 +84,9 @@ class TestFDataGrid(unittest.TestCase):
         fd1.coordinate_names = ("y",)
         fd = fd1.concatenate(fd2)
 
-        self.assertEqual(fd.n_samples, 4)
-        self.assertEqual(fd.dim_codomain, 1)
-        self.assertEqual(fd.dim_domain, 1)
+        self.assertEqual(fd.n_samples, 4)  # noqa: PT009
+        self.assertEqual(fd.dim_codomain, 1)  # noqa: PT009
+        self.assertEqual(fd.dim_domain, 1)  # noqa: PT009
         np.testing.assert_array_equal(
             fd.data_matrix[..., 0],
             [
@@ -96,11 +96,11 @@ class TestFDataGrid(unittest.TestCase):
                 [4, 5, 6, 7, 8],
             ],
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             fd1.argument_names,
             fd.argument_names,
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             fd1.coordinate_names,
             fd.coordinate_names,
         )
@@ -121,9 +121,9 @@ class TestFDataGrid(unittest.TestCase):
         fd2.coordinate_names = ("t",)
         fd = fd1.concatenate(fd2, as_coordinates=True)
 
-        self.assertEqual(fd.n_samples, 2)
-        self.assertEqual(fd.dim_codomain, 2)
-        self.assertEqual(fd.dim_domain, 1)
+        self.assertEqual(fd.n_samples, 2)  # noqa: PT009
+        self.assertEqual(fd.dim_codomain, 2)  # noqa: PT009
+        self.assertEqual(fd.dim_domain, 1)  # noqa: PT009
 
         np.testing.assert_array_equal(
             fd.data_matrix,
@@ -134,13 +134,13 @@ class TestFDataGrid(unittest.TestCase):
         )
 
         # Testing labels
-        self.assertEqual(("y", "t"), fd.coordinate_names)
+        self.assertEqual(("y", "t"), fd.coordinate_names)  # noqa: PT009
         fd2.coordinate_names = None  # type: ignore[assignment]
         fd = fd1.concatenate(fd2, as_coordinates=True)
-        self.assertEqual(("y", None), fd.coordinate_names)
+        self.assertEqual(("y", None), fd.coordinate_names)  # noqa: PT009
         fd1.coordinate_names = None  # type: ignore[assignment]
         fd = fd1.concatenate(fd2, as_coordinates=True)
-        self.assertEqual((None, None), fd.coordinate_names)
+        self.assertEqual((None, None), fd.coordinate_names)  # noqa: PT009
 
     def test_concatenate_function(self) -> None:
         """Test the concatenate function (as opposed to method)."""
@@ -153,18 +153,18 @@ class TestFDataGrid(unittest.TestCase):
         fd1.coordinate_names = ("y",)
         fd = concatenate([fd1, fd2])
 
-        self.assertEqual(fd.n_samples, 2)
-        self.assertEqual(fd.dim_codomain, 1)
-        self.assertEqual(fd.dim_domain, 1)
+        self.assertEqual(fd.n_samples, 2)  # noqa: PT009
+        self.assertEqual(fd.dim_codomain, 1)  # noqa: PT009
+        self.assertEqual(fd.dim_domain, 1)  # noqa: PT009
         np.testing.assert_array_equal(
             fd.data_matrix[..., 0],
             [sample1, sample2],
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             fd1.argument_names,
             fd.argument_names,
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             fd1.coordinate_names,
             fd.coordinate_names,
         )
@@ -188,13 +188,13 @@ class TestFDataGrid(unittest.TestCase):
         )
 
         # Iteration
-        for fd_j, fd_i in zip([fd1, fd2], fd.coordinates):
+        for fd_j, fd_i in zip([fd1, fd2], fd.coordinates):  # noqa: B905
             np.testing.assert_array_equal(fd_j.data_matrix, fd_i.data_matrix)
 
         fd3 = fd1.concatenate(fd2, fd1, fd, as_coordinates=True)
 
         # Multiple indexation
-        self.assertEqual(fd3.dim_codomain, 5)
+        self.assertEqual(fd3.dim_codomain, 5)  # noqa: PT009
         np.testing.assert_array_equal(
             fd3.coordinates[:2].data_matrix,
             fd.data_matrix,
@@ -245,25 +245,25 @@ class TestFDataGrid(unittest.TestCase):
 
     def test_composition(self) -> None:
         """Test function composition."""
-        X, Y, Z = axes3d.get_test_data(1.2)
+        X, Y, Z = axes3d.get_test_data(1.2)  # noqa: N806
 
         data_matrix = [Z.T]
         grid_points = [X[0, :], Y[:, 0]]
 
         g = FDataGrid(data_matrix, grid_points)
-        self.assertEqual(g.dim_domain, 2)
-        self.assertEqual(g.dim_codomain, 1)
+        self.assertEqual(g.dim_domain, 2)  # noqa: PT009
+        self.assertEqual(g.dim_codomain, 1)  # noqa: PT009
 
         t = np.linspace(0, 2 * np.pi, 100)
 
         data_matrix = [10 * np.array([np.cos(t), np.sin(t)]).T]
         f = FDataGrid(data_matrix, t)
-        self.assertEqual(f.dim_domain, 1)
-        self.assertEqual(f.dim_codomain, 2)
+        self.assertEqual(f.dim_domain, 1)  # noqa: PT009
+        self.assertEqual(f.dim_codomain, 2)  # noqa: PT009
 
         gof = g.compose(f)
-        self.assertEqual(gof.dim_domain, 1)
-        self.assertEqual(gof.dim_codomain, 1)
+        self.assertEqual(gof.dim_domain, 1)  # noqa: PT009
+        self.assertEqual(gof.dim_codomain, 1)  # noqa: PT009
 
 
 class TestEvaluateFDataGrid(unittest.TestCase):
@@ -280,9 +280,9 @@ class TestEvaluateFDataGrid(unittest.TestCase):
         grid_points = [[0, 1], [0, 1]]
 
         fd = FDataGrid(data_matrix, grid_points=grid_points)
-        self.assertEqual(fd.n_samples, 2)
-        self.assertEqual(fd.dim_domain, 2)
-        self.assertEqual(fd.dim_codomain, 3)
+        self.assertEqual(fd.n_samples, 2)  # noqa: PT009
+        self.assertEqual(fd.dim_domain, 2)  # noqa: PT009
+        self.assertEqual(fd.dim_codomain, 3)  # noqa: PT009
 
         self.fd = fd
 
@@ -347,14 +347,14 @@ class TestEvaluateFDataGrid(unittest.TestCase):
         restricted_domain = ((0, 1), (0.5, 1.5), (0.5, 2))
         fd_restricted = fd.restrict(restricted_domain, with_bounds=True)
         res = fd_restricted.grid_points
-        expected: Tuple[Sequence[float], ...] = (
+        expected: Tuple[Sequence[float], ...] = (  # noqa: UP006
             [0, 1],
             [0.5, 1, 1.5],
             [0.5, 1, 2],
         )
-        for r, e in zip(res, expected):
+        for r, e in zip(res, expected):  # noqa: B905
             np.testing.assert_array_equal(r, e)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

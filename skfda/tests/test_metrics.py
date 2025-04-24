@@ -80,7 +80,7 @@ class TestLp(unittest.TestCase):
         )
 
     def test_lp_norm_basis_equivalent(self) -> None:
-        """Test that the Lp norms in basis are similar to FDataGrid"""
+        """Test that the Lp norms in basis are similar to FDataGrid"""  # noqa: D415
         np.testing.assert_allclose(
             l1_norm(self.fd_grid_in_basis),
             [16.0, 41.33333333],

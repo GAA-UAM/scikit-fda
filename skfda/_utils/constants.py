@@ -12,7 +12,7 @@ The following constants are defined:
 .. data:: N_POINTS_SURFACE_PLOT_AX
     Number of points per axis used in the evaluation of a surface to be
     plotted.
-"""
+"""  # noqa: D205
 
 N_POINTS_COARSE_MESH = 201
 

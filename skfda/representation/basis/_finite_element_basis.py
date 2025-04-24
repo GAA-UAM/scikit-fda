@@ -71,7 +71,7 @@ class FiniteElementBasis(Basis):
         self,
         vertices: ArrayLike,
         cells: ArrayLike,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
     ) -> None:
         vertices = np.asarray(vertices)
 
@@ -218,7 +218,7 @@ class FiniteElement(FiniteElementBasis):
         self,
         vertices: ArrayLike,
         cells: ArrayLike,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,  # noqa: UP007
     ) -> None:
         super().__init__(
             vertices=vertices,

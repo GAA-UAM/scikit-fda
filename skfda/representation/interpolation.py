@@ -1,10 +1,10 @@
 """
 Module to interpolate functional data objects.
-"""
+"""  # noqa: D200
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Sequence  # noqa: UP035
 
 import numpy as np
 from scipy.interpolate import (
@@ -13,8 +13,8 @@ from scipy.interpolate import (
     make_interp_spline,
 )
 
-from ..typing._base import EvaluationPoints
-from ..typing._numpy import ArrayLike, NDArrayFloat
+from ..typing._base import EvaluationPoints  # noqa: TC001
+from ..typing._numpy import ArrayLike, NDArrayFloat  # noqa: TC001
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ class _BaseInterpolation(Evaluator):
         eval_points: EvaluationPoints,
     ) -> NDArrayFloat:
         """Evaluate at aligned points."""
-        pass
+        pass  # noqa: PIE790
 
     def _evaluate_unaligned(
         self,
@@ -41,10 +41,10 @@ class _BaseInterpolation(Evaluator):
         """Evaluate at unaligned points."""
         return np.vstack([
             self._evaluate_aligned(f, e)
-            for f, e in zip(fdata, eval_points)
+            for f, e in zip(fdata, eval_points)  # noqa: B905
         ])
 
-    def _evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102, RUF100
         self,
         fdata: FDataGrid,
         eval_points: ArrayLike,
@@ -68,7 +68,7 @@ class _BaseInterpolation(Evaluator):
         )
 
 
-class _RegularGridInterpolatorWrapper():
+class _RegularGridInterpolatorWrapper():  # noqa: UP039
 
     def __init__(
         self,
@@ -79,16 +79,16 @@ class _RegularGridInterpolatorWrapper():
         self.interpolation_order = interpolation_order
 
         if self.interpolation_order == 0:
-            method = 'nearest'
+            method = 'nearest'  # noqa: Q000
         elif self.interpolation_order == 1:
-            method = 'linear'
-        elif self.interpolation_order == 3:
-            method = 'cubic'
-        elif self.interpolation_order == 5:
-            method = 'quintic'
+            method = 'linear'  # noqa: Q000
+        elif self.interpolation_order == 3:  # noqa: PLR2004
+            method = 'cubic'  # noqa: Q000
+        elif self.interpolation_order == 5:  # noqa: PLR2004
+            method = 'quintic'  # noqa: Q000
         else:
-            raise ValueError(
-                f"Invalid interpolation order: {self.interpolation_order}.",
+            raise ValueError(  # noqa: TRY003
+                f"Invalid interpolation order: {self.interpolation_order}.",  # noqa: EM102
             )
         self.interpolator = RegularGridInterpolator(
             self.fdatagrid.grid_points,
@@ -152,18 +152,18 @@ class SplineInterpolation(_BaseInterpolation):
     ) -> Callable[[EvaluationPoints], NDArrayFloat]:
         if (
             isinstance(self.interpolation_order, Sequence)
-            or not 1 <= self.interpolation_order <= 5
+            or not 1 <= self.interpolation_order <= 5  # noqa: PLR2004
         ):
-            raise ValueError(
-                f"Invalid degree of interpolation "
+            raise ValueError(  # noqa: TRY003
+                f"Invalid degree of interpolation "  # noqa: EM102
                 f"({self.interpolation_order}). Must be "
                 f"an integer greater than 0 and lower or "
                 f"equal than 5.",
             )
 
         if self.monotone and self.interpolation_order not in {1, 3}:
-            raise ValueError(
-                f"monotone interpolation of degree "
+            raise ValueError(  # noqa: TRY003
+                f"monotone interpolation of degree "  # noqa: EM102
                 f"{self.interpolation_order}"
                 f"not supported.",
             )
@@ -205,15 +205,15 @@ class SplineInterpolation(_BaseInterpolation):
         if fdatagrid.dim_domain == 1:
             return self._get_interpolator_1d(fdatagrid)
 
-        elif self.monotone:
-            raise ValueError(
-                "Monotone interpolation is only supported with "
+        elif self.monotone:  # noqa: RET505
+            raise ValueError(  # noqa: TRY003
+                "Monotone interpolation is only supported with "  # noqa: EM101
                 "domain dimension equal to 1.",
             )
 
         return self._get_interpolator_nd(fdatagrid)
 
-    def _evaluate_aligned(  # noqa: D102
+    def _evaluate_aligned(  # noqa: D102, RUF100
         self,
         fdata: FDataGrid,
         eval_points: EvaluationPoints,
@@ -232,7 +232,7 @@ class SplineInterpolation(_BaseInterpolation):
             f"monotone={self.monotone})"
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401, PYI032
         return (
             super().__eq__(other)
             and self.interpolation_order == other.interpolation_order

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-  # noqa: UP009
 """Registration methods base class.
 
 This module contains the abstract base class for all registration methods.
@@ -27,10 +27,10 @@ class RegistrationTransformer(
 ):
     """Base class for the registration methods."""
 
-    def fit(
+    def fit(  # noqa: PYI019
         self: SelfType,
-        X: Input,
-        y: object = None,
+        X: Input,  # noqa: ARG002
+        y: object = None,  # noqa: ARG002
     ) -> SelfType:
         """
         Fit the registration model.
@@ -77,7 +77,7 @@ class RegistrationTransformer(
             **fit_params,
         )
 
-    def score(self, X: Input, y: object = None) -> float:
+    def score(self, X: Input, y: object = None) -> float:  # noqa: ARG002
         r"""
         Return the percentage of total variation removed.
 
@@ -106,7 +106,7 @@ class RegistrationTransformer(
             :class:`~.validation.SobolevLeastSquares`
             :class:`~.validation.PairwiseCorrelation`
 
-        """
+        """  # noqa: D405
         from .validation import AmplitudePhaseDecomposition
 
         return AmplitudePhaseDecomposition()(self, X, X)
@@ -132,4 +132,4 @@ class InductiveRegistrationTransformer(
             Registered data.
 
         """
-        pass
+        pass  # noqa: PIE790

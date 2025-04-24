@@ -402,8 +402,8 @@ def test_drift_cases() -> None:
     random_state = np.random.RandomState(1)
 
     def base_drift(  # noqa: WPS430
-        t: float,
-        x: NDArrayFloat,
+        t: float,  # noqa: ARG001
+        x: NDArrayFloat,  # noqa: ARG001
     ) -> float:
         return 0
 
@@ -441,8 +441,8 @@ def test_drift_cases() -> None:
     random_state = np.random.RandomState(1)
 
     def vector_drift(  # noqa: WPS430
-        t: float,
-        x: NDArrayFloat,
+        t: float,  # noqa: ARG001
+        x: NDArrayFloat,  # noqa: ARG001
     ) -> NDArrayFloat:
         return np.array([0, 0])
 
@@ -689,7 +689,7 @@ def test_random_generator() -> None:
 
 
 def gbm_drift(
-    t: float,
+    t: float,  # noqa: ARG001
     x: NDArrayFloat,
     mu: float = 1,
 ) -> NDArrayFloat:
@@ -698,7 +698,7 @@ def gbm_drift(
 
 
 def gbm_diffusion(
-    t: float,
+    t: float,  # noqa: ARG001
     x: NDArrayFloat,
     sigma: float = 1,
 ) -> NDArrayFloat:
@@ -707,14 +707,14 @@ def gbm_diffusion(
 
 
 def gbm_diffusion_derivative(
-    t: float,
+    t: float,  # noqa: ARG001
     x: NDArrayFloat,
     sigma: float = 1,
 ) -> NDArrayFloat:
     """Spacial derivative of the diffusion term of a GBM."""
     dim_codomain = x.shape[1]
     gbm_diffusion_derivative = np.zeros(
-        x.shape + (dim_codomain,),
+        x.shape + (dim_codomain,),  # noqa: RUF005
     )
     for i in np.arange(dim_codomain):
         gbm_diffusion_derivative[:, i, i] = sigma
@@ -733,7 +733,7 @@ def test_milstein_one_initial_point() -> None:
     n_grid_points = 5
     random_state = np.random.RandomState(1)
     initial_float = 1
-    n_L0_discretization_points = 1
+    n_L0_discretization_points = 1  # noqa: N806
 
     expected_result = np.array([[
         [1],
@@ -779,7 +779,7 @@ def test_milstein_one_point_monodimensional() -> None:
     n_grid_points = 5
     random_state = np.random.RandomState(1)
     initial_float_in_list = [1]
-    n_L0_discretization_points = 1
+    n_L0_discretization_points = 1  # noqa: N806
 
     expected_result = np.array([[
         [1],
@@ -824,7 +824,7 @@ def test_milstein_one_point_multidimensional() -> None:
     n_grid_points = 5
     random_state = np.random.RandomState(1)
     initial_array = np.array([1, 2])
-    n_L0_discretization_points = 2
+    n_L0_discretization_points = 2  # noqa: N806
 
     expected_result = np.array([
         [[1, 2],
@@ -870,10 +870,10 @@ def test_milstein_matrix_diffusion() -> None:
     dim_codomain = 2
     random_state = np.random.RandomState(1)
     initial_array = np.array([1, 2])
-    n_L0_discretization_points = 2
+    n_L0_discretization_points = 2  # noqa: N806
 
     def gbm_matrix_diffusion(  # noqa: WPS430
-        t: float,
+        t: float,  # noqa: ARG001
         x: NDArrayFloat,
         sigma: float = 1,
     ) -> NDArrayFloat:
@@ -884,8 +884,8 @@ def test_milstein_matrix_diffusion() -> None:
         return diffusion
 
     def gbm_matrix_diffusion_derivative(  # noqa: WPS430
-        t: float,
-        x: NDArrayFloat,
+        t: float,  # noqa: ARG001
+        x: NDArrayFloat,  # noqa: ARG001
         sigma: float = 1,
     ) -> NDArrayFloat:
         """Diffusion term of a Geometric Brownian motion."""
@@ -938,7 +938,7 @@ def test_milstein_grid_points() -> None:
     start = 0
     stop = 10
     n_grid_points = 105
-    n_L0_discretization_points = 1
+    n_L0_discretization_points = 1  # noqa: N806
     expected_grid_points = np.atleast_2d(
         np.linspace(start, stop, n_grid_points),
     )
@@ -966,7 +966,7 @@ def test_milstein_random_generator() -> None:
     """Test using Generator instead of RandomState."""
     n_samples = 2
     n_grid_points = 5
-    n_L0_discretization_points = 1
+    n_L0_discretization_points = 1  # noqa: N806
     random_state = np.random.default_rng(seed=1)
     normal_distribution = norm().rvs
 

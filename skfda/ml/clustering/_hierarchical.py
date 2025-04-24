@@ -1,30 +1,30 @@
 from __future__ import annotations
 
 import enum
-from typing import Callable, TypeVar, Union
+from typing import Callable, TypeVar, Union  # noqa: UP035
 
-import joblib
+import joblib  # noqa: TC002
 import numpy as np
 import sklearn.cluster
-from typing_extensions import Literal
+from typing_extensions import Literal  # noqa: UP035
 
 from ..._utils._sklearn_adapter import BaseEstimator, ClusterMixin
 from ...misc.metrics import PRECOMPUTED, PairwiseMetric, l2_distance
 from ...misc.metrics._parse import _parse_metric, _PrecomputedTypes
 from ...representation import FData
 from ...typing._metric import Metric
-from ...typing._numpy import NDArrayInt
+from ...typing._numpy import NDArrayInt  # noqa: TC001
 
 kk = ["ward", "average", "complete"]
 
-MetricElementType = TypeVar(
+MetricElementType = TypeVar(  # noqa: PLC0105
     "MetricElementType",
     contravariant=True,
     bound=FData,
 )
 
-MetricOrPrecomputed = Union[Metric[MetricElementType], _PrecomputedTypes]
-Connectivity = Union[
+MetricOrPrecomputed = Union[Metric[MetricElementType], _PrecomputedTypes]  # noqa: UP007
+Connectivity = Union[  # noqa: UP007
     np.ndarray,
     Callable[[MetricElementType], np.ndarray],
     None,
@@ -41,7 +41,7 @@ class LinkageCriterion(enum.Enum):
     SINGLE = "single"
 
 
-LinkageCriterionLike = Union[
+LinkageCriterionLike = Union[  # noqa: UP007
     LinkageCriterion,
     Literal["ward", "complete", "average", "single"],
 ]
@@ -156,7 +156,7 @@ class AgglomerativeClustering(  # noqa: WPS230
         metric: MetricOrPrecomputed[MetricElementType] = l2_distance,
         memory: str | joblib.Memory | None = None,
         connectivity: Connectivity[MetricElementType] = None,
-        compute_full_tree: Literal['auto'] | bool = 'auto',
+        compute_full_tree: Literal['auto'] | bool = 'auto',  # noqa: Q000
         linkage: LinkageCriterionLike,
         distance_threshold: float | None = None,
     ) -> None:
@@ -173,7 +173,7 @@ class AgglomerativeClustering(  # noqa: WPS230
 
         self._estimator = sklearn.cluster.AgglomerativeClustering(
             n_clusters=self.n_clusters,
-            metric='precomputed',
+            metric='precomputed',  # noqa: Q000
             memory=self.memory,
             connectivity=self.connectivity,
             compute_full_tree=self.compute_full_tree,
@@ -190,7 +190,7 @@ class AgglomerativeClustering(  # noqa: WPS230
         )
         self.children_: NDArrayInt = self._estimator.children_
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, RUF100
         self,
         X: MetricElementType,
         y: None = None,
@@ -209,7 +209,7 @@ class AgglomerativeClustering(  # noqa: WPS230
 
         return self
 
-    def fit_predict(  # noqa: D102
+    def fit_predict(  # noqa: D102, RUF100
         self,
         X: MetricElementType,
         y: object = None,

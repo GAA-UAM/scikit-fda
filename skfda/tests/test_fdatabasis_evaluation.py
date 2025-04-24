@@ -319,7 +319,7 @@ class TestBasisEvaluationVectorValued(unittest.TestCase):
 
         fd = FDataBasis(basis=basis, coefficients=[[1, 2], [3, 4]])
 
-        self.assertEqual(fd.dim_codomain, 2)
+        self.assertEqual(fd.dim_codomain, 2)  # noqa: PT009
 
         res = np.array([[[1, 2]], [[3, 4]]])
 
@@ -343,7 +343,7 @@ class TestBasisEvaluationVectorValued(unittest.TestCase):
             ],
         )
 
-        self.assertEqual(fd.dim_codomain, 2)
+        self.assertEqual(fd.dim_codomain, 2)  # noqa: PT009
 
         np.testing.assert_allclose(fd.domain_range[0], (0, 5))
 
@@ -370,8 +370,8 @@ class TestBasisEvaluationTensor(unittest.TestCase):
             coefficients=[1, 1],
         )
 
-        self.assertEqual(fd.dim_domain, 2)
-        self.assertEqual(fd.dim_codomain, 1)
+        self.assertEqual(fd.dim_domain, 2)  # noqa: PT009
+        self.assertEqual(fd.dim_codomain, 1)  # noqa: PT009
 
         np.testing.assert_allclose(fd([0, 0]), [[[1]]])
 
@@ -389,5 +389,5 @@ class TestBasisEvaluationTensor(unittest.TestCase):
         np.testing.assert_allclose(fd.coefficients, fd2.coefficients)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: Q000
     unittest.main()

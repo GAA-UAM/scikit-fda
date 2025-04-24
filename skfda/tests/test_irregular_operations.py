@@ -1,5 +1,5 @@
 """Test the operations of the FDataIrregular structure."""
-from typing import Optional, Tuple
+from typing import Optional, Tuple  # noqa: UP035
 
 import numpy as np
 import pytest
@@ -33,12 +33,12 @@ random_state = np.random.default_rng(seed=SEED)
 ############
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def input_arrays(
-    num_curves: Optional[int] = NUM_CURVES,
-    max_values_per_curve: Optional[int] = MAX_VALUES_PER_CURVE,
-    dimensions: Optional[int] = 1,
-) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+    num_curves: Optional[int] = NUM_CURVES,  # noqa: UP007
+    max_values_per_curve: Optional[int] = MAX_VALUES_PER_CURVE,  # noqa: UP007
+    dimensions: Optional[int] = 1,  # noqa: UP007
+) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:  # noqa: UP006
     """Create undiimensional arrays for FDataIrregular.
 
     Generate three unidimensional arrays describing a
@@ -64,12 +64,12 @@ def input_arrays(
     return indices, values, arguments
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def input_arrays_2d(
-    num_curves: Optional[int] = NUM_CURVES,
-    max_values_per_curve: Optional[int] = MAX_VALUES_PER_CURVE,
-    dimensions: Optional[int] = DIMENSIONS,
-) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+    num_curves: Optional[int] = NUM_CURVES,  # noqa: UP007
+    max_values_per_curve: Optional[int] = MAX_VALUES_PER_CURVE,  # noqa: UP007
+    dimensions: Optional[int] = DIMENSIONS,  # noqa: UP007
+) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:  # noqa: UP006
     """Create multidimensional arrays for FDataIrregular.
 
     Generate three unidimensional arrays describing a
@@ -95,7 +95,7 @@ def input_arrays_2d(
     return indices, values, arguments
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def fdatagrid_1d(
 ) -> FDataGrid:
     """Generate FDataGrid."""
@@ -111,7 +111,7 @@ def fdatagrid_1d(
     )
 
 
-@pytest.fixture()
+@pytest.fixture()  # noqa: PT001
 def fdatagrid_2d(
 ) -> FDataGrid:
     """Generate multidimensional FDataGrid."""
@@ -144,16 +144,16 @@ def fdatagrid(
     fdatagrid_2d: FDataGrid,
 ) -> FDataIrregular:
     """Return 'fdatagrid_1d' or 'fdatagrid_2d'."""
-    if request.param == "fdatagrid_1d":
+    if request.param == "fdatagrid_1d":  # noqa: RET503
         return fdatagrid_1d
-    elif request.param == "fdatagrid_2d":
+    elif request.param == "fdatagrid_2d":  # noqa: RET505
         return fdatagrid_2d
 
 
 @pytest.fixture(params=["single_curve", "multiple_curves"])
 def fdatairregular_1d(
     request: Any,
-    input_arrays: Tuple[ArrayLike, ArrayLike, ArrayLike],
+    input_arrays: Tuple[ArrayLike, ArrayLike, ArrayLike],  # noqa: UP006
 ) -> FDataIrregular:
     """Return FDataIrregular with only 1 curve or NUM_CURVES as requested."""
     indices, arguments, values = input_arrays
@@ -163,16 +163,16 @@ def fdatairregular_1d(
         values=values,
     )
 
-    if request.param == "single_curve":
+    if request.param == "single_curve":  # noqa: RET503
         return f_data_irreg[0]
-    elif request.param == "multiple_curves":
+    elif request.param == "multiple_curves":  # noqa: RET505
         return f_data_irreg
 
 
 @pytest.fixture(params=["single_curve", "multiple_curves"])
 def fdatairregular_2d(
     request: Any,
-    input_arrays_2d: Tuple[ArrayLike, ArrayLike, ArrayLike],
+    input_arrays_2d: Tuple[ArrayLike, ArrayLike, ArrayLike],  # noqa: UP006
 ) -> FDataIrregular:
     """Return FDataIrregular with only 1 curve or NUM_CURVES as requested."""
     indices, arguments, values = input_arrays_2d
@@ -182,9 +182,9 @@ def fdatairregular_2d(
         values=values,
     )
 
-    if request.param == "single_curve":
+    if request.param == "single_curve":  # noqa: RET503
         return f_data_irreg[0]
-    elif request.param == "multiple_curves":
+    elif request.param == "multiple_curves":  # noqa: RET505
         return f_data_irreg
 
 
@@ -195,9 +195,9 @@ def fdatairregular(
     fdatairregular_2d: FDataIrregular,
 ) -> FDataIrregular:
     """Return 'fdatairregular_1d' or 'fdatairregular_2d'."""
-    if request.param == "fdatairregular_1d":
+    if request.param == "fdatairregular_1d":  # noqa: RET503
         return fdatairregular_1d
-    elif request.param == "fdatairregular_2d":
+    elif request.param == "fdatairregular_2d":  # noqa: RET505
         return fdatairregular_2d
 
 
@@ -207,7 +207,7 @@ def fdatairregular(
         "multidimensional",
     ],
 )
-def fdatairregular_and_sum(request: Any) -> FDataIrregular:
+def fdatairregular_and_sum(request: Any) -> FDataIrregular:  # noqa: D103
     if request.param == "unidimensional":
         return (
             FDataIrregular(
@@ -226,7 +226,7 @@ def fdatairregular_and_sum(request: Any) -> FDataIrregular:
                 values=[2446, 1940],
             ),
         )
-    if request.param == "multidimensional":
+    if request.param == "multidimensional":  # noqa: RET503
         return (
             FDataIrregular(
                 start_indices=[0, 3, 5],
@@ -255,7 +255,7 @@ def fdatairregular_and_sum(request: Any) -> FDataIrregular:
         "multidimensional",
     ],
 )
-def fdatairregular_common_points(request: Any) -> FDataIrregular:
+def fdatairregular_common_points(request: Any) -> FDataIrregular:  # noqa: D103
     if request.param == "unidimensional":
         return FDataIrregular(
             start_indices=[0, 3, 7],
@@ -267,7 +267,7 @@ def fdatairregular_common_points(request: Any) -> FDataIrregular:
                 866, 704, 757, 726,
             ],
         )
-    if request.param == "multidimensional":
+    if request.param == "multidimensional":  # noqa: RET503
         return FDataIrregular(
             start_indices=[0, 3, 5],
             points=[
@@ -283,8 +283,8 @@ def fdatairregular_common_points(request: Any) -> FDataIrregular:
         )
 
 
-@pytest.fixture()
-def fdatairregular_no_common_points() -> FDataIrregular:
+@pytest.fixture()  # noqa: PT001
+def fdatairregular_no_common_points() -> FDataIrregular:  # noqa: D103
     return FDataIrregular(
         start_indices=[0, 3, 5],
         points=[
@@ -306,9 +306,9 @@ def other_1d(
     fdatairregular_1d: FDataIrregular,
 ) -> FDataIrregular:
     """Return an operator for testing FDataIrregular operations."""
-    if request.param == "scalar":
+    if request.param == "scalar":  # noqa: RET503
         return 2
-    elif request.param == "vector":
+    elif request.param == "vector":  # noqa: RET505
         return 2 * np.ones(NUM_CURVES)
     elif request.param == "matrix":
         return 2 * np.ones((NUM_CURVES, 1))
@@ -322,9 +322,9 @@ def other_2d(
     fdatairregular_2d: FDataIrregular,
 ) -> FDataIrregular:
     """Return an operator for testing FDataIrregular operations."""
-    if request.param == "scalar":
+    if request.param == "scalar":  # noqa: RET503
         return 2
-    elif request.param == "vector":
+    elif request.param == "vector":  # noqa: RET505
         return 2 * np.ones(NUM_CURVES)
     elif request.param == "matrix":
         return 2 * np.ones((NUM_CURVES, DIMENSIONS))
@@ -378,20 +378,20 @@ class TestArithmeticOperations1D:
 
     def _take_first(
         self,
-        other,
+        other,  # noqa: ANN001
     ) -> float:
         if isinstance(other, np.ndarray):
             return other[0]
-        elif isinstance(other, FDataIrregular):
+        elif isinstance(other, FDataIrregular):  # noqa: RET505
             return other.values
         return other
 
     def _single_curve(
         self,
-        fdatairregular_1d,
-        other_1d,
+        fdatairregular_1d,  # noqa: ANN001
+        other_1d,  # noqa: ANN001
     ) -> np.ndarray:
-        if isinstance(other_1d, (np.ndarray, FDataIrregular)):
+        if isinstance(other_1d, (np.ndarray, FDataIrregular)):  # noqa: SIM102
             if len(fdatairregular_1d) == 1:
                 return other_1d[:1]
         return other_1d
@@ -598,20 +598,20 @@ class TestArithmeticOperations2D:
 
     def _take_first(
         self,
-        other,
+        other,  # noqa: ANN001
     ) -> float:
         if isinstance(other, np.ndarray):
             return other[0]
-        elif isinstance(other, FDataIrregular):
+        elif isinstance(other, FDataIrregular):  # noqa: RET505
             return other.values
         return other
 
     def _single_curve(
         self,
-        fdatairregular_2d,
-        other_2d,
+        fdatairregular_2d,  # noqa: ANN001
+        other_2d,  # noqa: ANN001
     ) -> np.ndarray:
-        if isinstance(other_2d, (np.ndarray, FDataIrregular)):
+        if isinstance(other_2d, (np.ndarray, FDataIrregular)):  # noqa: SIM102
             if len(fdatairregular_2d) == 1:
                 return other_2d[:1]
         return other_2d
@@ -843,7 +843,7 @@ class TestNumericReductions:
 
     def test_fdatairregular_sum(
         self,
-        fdatairregular_and_sum: Tuple[FDataIrregular, FDataIrregular],
+        fdatairregular_and_sum: Tuple[FDataIrregular, FDataIrregular],  # noqa: UP006
     ) -> None:
         """Test the sum function for FDataIrregular.
 
@@ -858,7 +858,7 @@ class TestNumericReductions:
 
     def test_fdatairregular_mean(
         self,
-        fdatairregular_and_sum: Tuple[FDataIrregular, FDataIrregular],
+        fdatairregular_and_sum: Tuple[FDataIrregular, FDataIrregular],  # noqa: UP006
     ) -> None:
         """Test the mean function for FDataIrregular.
 
@@ -881,7 +881,7 @@ class TestNumericReductions:
             fdatairregular_no_common_points: FDataIrregular object with no
                 common points.
         """
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             fdatairregular_no_common_points.sum()
 
 

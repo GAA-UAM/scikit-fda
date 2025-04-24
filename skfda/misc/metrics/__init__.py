@@ -36,11 +36,15 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "TransformationMetric",
             "pairwise_metric_optimization",
         ],
+        "_basis_based_distance": [
+            "BasisBasedDistance",
+        ],
     },
 )
 
 if TYPE_CHECKING:
     from ._angular import angular_distance as angular_distance
+    from ._basis_based_distance import BasisBasedDistance as BasisBasedDistance
     from ._fisher_rao import (
         _fisher_rao_warping_distance as _fisher_rao_warping_distance,
         fisher_rao_amplitude_distance as fisher_rao_amplitude_distance,

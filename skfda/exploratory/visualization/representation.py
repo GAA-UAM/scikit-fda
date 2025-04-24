@@ -790,6 +790,18 @@ class MixedDataPlot(BasePlot):
     """
     Class used to plot a Mixed Data object represented in DataFrames.
 
+    This class visualizes mixed-type datasets where each column of the
+    DataFrame represents a different variable, which can be either functional
+    data (`FData`) or classical numerical data (scalars). Each row
+    is treated as a separate sample.
+
+    Functional variables are plotted using their native `.plot()` method.
+    Vector valued functional data generate multiple subplots, one for each
+    component. Numerical data are shown as scatter plots.
+
+    Supports grouping samples by color using `group`, with optional custom
+    colors (`group_colors`) and labels (`group_names`) for legend display.
+
     Args:
         df: pd.DataFrame object that we want to plot.
         chart: figure over
@@ -944,7 +956,17 @@ def plot_mixed_data(  # noqa: PLR0913
     """
     Plot a DataFrame containing numerical and functional (FData) data.
 
-    Creates a grid of subplots based on the structure of the DataFrame.
+    Visualizes mixed-type datasets where each column of the
+    DataFrame represents a different variable, which can be either functional
+    data (`FData`) or classical numerical data (scalars). Each row
+    is treated as a separate sample.
+
+    Functional variables are plotted using their native `.plot()` method.
+    Vector valued functional data generate multiple subplots, one for each
+    component. Numerical data are shown as scatter plots.
+
+    Supports grouping samples by color using `group`, with optional custom
+    colors (`group_colors`) and labels (`group_names`) for legend display.
 
     Args:
         df: pd.DataFrame object that we want to plot.

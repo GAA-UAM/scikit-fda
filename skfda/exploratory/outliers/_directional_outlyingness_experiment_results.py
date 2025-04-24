@@ -1,5 +1,3 @@
-# flake8: noqa
-
 # This data is from a simulation program in [HaRo2005]_. The data was taken
 # from the supplementary material in [DaGe2018]_.
 #

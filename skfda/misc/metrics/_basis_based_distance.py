@@ -1,22 +1,21 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from ..._utils._sklearn_adapter import BaseEstimator
-from ...misc.regularization import TikhonovRegularization
-from ...preprocessing.dim_reduction import FPCA
-from ...representation import FData, FDataBasis, FDataGrid
-from ...representation.basis import Basis
-from ...representation.grid import FDataGrid
-from ...typing._numpy import NDArrayFloat
+if TYPE_CHECKING:
+    from ...representation import FDataBasis
+    from ...typing._numpy import NDArrayFloat
 
 
 class BasisBasedDistance:
     r"""
-    Class for computing the weighted distance between two functional observations 
-    represented as FDataBasis objects in the same basis.
+    Weighted distance between two FDataBasis observations.
 
-    Given two functional observations \(X_1, X_2\), their basis representations are:
+    This class computes the distance between two functional data objects
+    represented in the same basis. Given two functional observations
+    \(X_1, X_2\), their basis representations are:
 
     .. math::
         X_1(t) = \sum_{k=1}^{K} c_{1,k} \phi_k(t), \quad 
@@ -83,7 +82,7 @@ class BasisBasedDistance:
         >>> dist = BasisBasedDistance(fd1, fd2, weights)
         >>> dist.compute_distance()
         3.1622776601683795
-    """
+    """  # noqa: D412
 
     def __init__(self, weights: NDArrayFloat | None = None) -> None:
         self.weights = weights
@@ -115,10 +114,10 @@ class BasisBasedDistance:
             if c2.shape[0] == 1:
                 c2 = np.repeat(c2, c1.shape[0], axis=0)
             else:
-                msg = "fd1 and fd2 must have the same number of samples or fd2 must have one sample."
+                msg = ("fd1 and fd2 must have the same number"
+                       " of samples or fd2 must have one sample.")
                 raise ValueError(msg)
 
-        # Compute (c1 - c2) @ M
         delta = np.dot((c1 - c2), M)  # shape (n_samples, n_basis)
 
         # Weighted squared norm per sample

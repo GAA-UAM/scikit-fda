@@ -12,6 +12,7 @@ import pandas as pd  # type: ignore[import-untyped]
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
+from ..metrics._utils import pairwise_metric_optimization
 
 V = TypeVar("V", bound=FData | pd.DataFrame | NDArrayFloat)
 
@@ -236,8 +237,8 @@ def pproduct_metric(
     metric = PProductMetric(p, metrics=metrics, weights=weights)
     return metric(arg1, arg2)
 
-
-def pairwise_metric_optimization(
+@pairwise_metric_optimization.register
+def pairwise_metric_optimization_pproductmetric(
     metric: PProductMetric[V],
     arg1: V,
     arg2: V | None = None,

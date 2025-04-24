@@ -179,7 +179,7 @@ class GraphPlot(BasePlot):
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
         group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
-            group is shown with distict colors in the "Greys" colormap.
+            group is shown with distinct colors in the "Greys" colormap.
         group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
@@ -417,7 +417,7 @@ class ScatterPlot(BasePlot):
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
         group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
-            group is shown with distict colors in the "Greys" colormap.
+            group is shown with distinct colors in the "Greys" colormap.
         group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
@@ -592,7 +592,7 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
         group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
-            group is shown with distict colors in the "Greys" colormap.
+            group is shown with distinct colors in the "Greys" colormap.
         group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
@@ -787,7 +787,43 @@ def set_color_dict(
 
 
 class MixedDataPlot(BasePlot):
-    def __init__(
+    """
+    Class used to plot a Mixed Data object represented in DataFrames.
+
+    Args:
+        df: pd.DataFrame object that we want to plot.
+        chart: figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If None and ax is also None, the figure is
+            initialized.
+        fig: figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes: axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols: designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
+        group: contains integers from [0 to number of
+            labels) indicating to which group each sample belongs to. Then,
+            the samples with the same label are plotted in the same color.
+            If None, the default value, each sample is plotted in the color
+            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+        group_colors: colors in which groups are
+            represented, there must be one for each group. If None, each
+            group is shown with distinct colors in the "Greys" colormap.
+        group_names: name of each of the groups which appear
+            in a legend, there must be one for each one. Defaults to None
+            and the legend is not shown. Implies `legend=True`.
+        legend: if `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
+    """
+    def __init__(  # noqa: PLR0913
         self,
         df: pd.DataFrame,
         chart: Figure | Axes | None = None,
@@ -826,9 +862,9 @@ class MixedDataPlot(BasePlot):
 
     @property
     def n_subplots(self) -> int:
-        return self.count_total_plots(self.df)
+        return self._count_total_plots(self.df)
 
-    def count_total_plots(self, df: pd.DataFrame) -> int:
+    def _count_total_plots(self, df: pd.DataFrame) -> int:
         total_plots = 0
         for col in df.columns:
             val = df[col].iloc[0]
@@ -843,7 +879,7 @@ class MixedDataPlot(BasePlot):
 
         for col in self.df.columns:
             ax = axes[i]
-            data = self.df[col].values
+            data = self.df[col].values  # noqa: PD011
 
             if isinstance(data, FData):
                 fd_codim = data.dim_codomain
@@ -892,7 +928,7 @@ class MixedDataPlot(BasePlot):
             axes[0].legend(handles=self.patches)
 
 
-def plot_mixed_data(
+def plot_mixed_data(  # noqa: PLR0913
     df: pd.DataFrame,
     chart: Figure | Axes | None = None,
     *,
@@ -911,12 +947,37 @@ def plot_mixed_data(
     Creates a grid of subplots based on the structure of the DataFrame.
 
     Args:
-        df (pd.DataFrame): The DataFrame to be plotted.
-        n_rows (int, optional): Number of subplot rows.
-            Inferred if not provided.
-        n_cols (int, optional): Number of subplot columns.
-            Inferred if not provided.
-        figsize (float, optional): Size (in inches) of each subplot.
+        df: pd.DataFrame object that we want to plot.
+        chart: figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If None and ax is also None, the figure is
+            initialized.
+        fig: figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes: axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols: designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
+        group: contains integers from [0 to number of
+            labels) indicating to which group each sample belongs to. Then,
+            the samples with the same label are plotted in the same color.
+            If None, the default value, each sample is plotted in the color
+            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+        group_colors: colors in which groups are
+            represented, there must be one for each group. If None, each
+            group is shown with distinct colors in the "Greys" colormap.
+        group_names: name of each of the groups which appear
+            in a legend, there must be one for each one. Defaults to None
+            and the legend is not shown. Implies `legend=True`.
+        legend: if `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
 
     Returns:
         matplotlib.figure.Figure: The resulting figure object.

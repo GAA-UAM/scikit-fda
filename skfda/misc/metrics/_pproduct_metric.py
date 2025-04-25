@@ -13,6 +13,7 @@ from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..metrics._utils import pairwise_metric_optimization
+from ..validation import check_fdata_same_kind
 
 V = TypeVar("V", bound=FData | pd.DataFrame | NDArrayFloat)
 
@@ -23,16 +24,18 @@ def compute_p_product(
     arg1: V,
     arg2: V,
 ) -> NoReturn:
-    msg = (f"PProductMetric not implemented for type {type(arg1)} and "
-       f"{type(arg2)}.")
+    msg = (
+        f"PProductMetric not implemented for type {type(arg1)} and "
+        f"{type(arg2)}."
+    )
     raise NotImplementedError(msg)
 
 
 @compute_p_product.register
 def _(
     metric: PProductMetric[V],
-    arg1:  NDArrayFloat,
-    arg2:  NDArrayFloat,
+    arg1: NDArrayFloat,
+    arg2: NDArrayFloat,
 ) -> NDArrayFloat:
     from ..metrics import l2_distance
 
@@ -45,18 +48,19 @@ def _(
         msg = f"Shapes {arg1.shape} and {arg2.shape} do not match."
         raise ValueError(msg)
 
-    metric_computator = (
-        metric.metrics if metric.metrics else l2_distance
-    )
+    metric_computator = metric.metrics if metric.metrics else l2_distance
 
     if not isinstance(metric_computator, Metric):
-        msg = (f"Only one metric is supported for NDArrayFloat. "
-            f"Got {metric.metrics}.")
+        msg = (
+            f"Only one metric is supported for NDArrayFloat. "
+            f"Got {metric.metrics}."
+        )
         raise TypeError(msg)
 
     return (metric_computator(arg1, arg2) ** metric.p * weights) ** (
         1 / metric.p
     )
+
 
 @compute_p_product.register
 def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
@@ -79,15 +83,19 @@ def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
     if isinstance(metrics, Metric):
         metrics = [metrics] * D
     elif isinstance(metrics, list) and len(metrics) != D:
-        msg = (f"Number of metrics ({len(metrics)}) does not match the number"
-                f" of dimensions ({D}).")
+        msg = (
+            f"Number of metrics ({len(metrics)}) does not match the number"
+            f" of dimensions ({D})."
+        )
         raise ValueError(msg)
 
     if isinstance(weights, (float, int)):
         weights = np.full(D, weights)
     elif isinstance(weights, np.ndarray) and len(weights) != D:
-        msg = (f"Number of weights ({len(weights)}) does not match the"
-               f" number of dimensions ({D}).")
+        msg = (
+            f"Number of weights ({len(weights)}) does not match the"
+            f" number of dimensions ({D})."
+        )
         raise ValueError(msg)
 
     if isinstance(arg1, FDataBasis):
@@ -120,7 +128,7 @@ def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
         raise NotImplementedError(msg)
 
     res: NDArrayFloat = np.atleast_1d(
-        np.sum(np.power(value, metric.p) * weights, axis=0, dtype=np.float64)
+        np.sum(np.power(value, metric.p) * weights, axis=0, dtype=np.float64),
     )
     return res[0] if len(res) == 1 else res
 
@@ -130,22 +138,26 @@ def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
         return False
 
     for col in df1.columns:
-        s1, s2 = df1[col], df2[col]
-        sample = s1.iloc[0]
+        v1, v2 = df1[col].values, df2[col].values  # noqa: PD011
 
-        if pd.api.types.is_numeric_dtype(s1):
-            if s1.shape != s2.shape:
+        if pd.api.types.is_numeric_dtype(
+            df1[col]
+        ) and pd.api.types.is_numeric_dtype(df2[col]):
+            if v1.shape != v2.shape:
                 return False
 
-        elif isinstance(sample, FData):
-            if not all(a==b for a, b in zip(s1, s2, strict=False)):
-                return True
+        elif isinstance(v1, FData):
+            try:
+                check_fdata_same_kind(v1, v2)
+            except ValueError:
+                return False
+
+            return True
 
         else:
             return False  # unknown column type, reject for now
 
     return True
-
 
 
 @compute_p_product.register
@@ -171,13 +183,17 @@ def _(
         metrics = [metrics] * n_cols
     elif isinstance(metrics, Sequence):
         if len(metrics) != n_cols:
-            msg = (f"Number of metrics ({len(metrics)}) does not match the"
-                f" number of columns ({n_cols}).")
+            msg = (
+                f"Number of metrics ({len(metrics)}) does not match the"
+                f" number of columns ({n_cols})."
+            )
             raise ValueError(msg)
     elif isinstance(metrics, dict):
         if len(metrics) != n_cols:
-            msg = (f"Number of metrics ({len(metrics)}) does not match the"
-                f" number of columns ({n_cols}).")
+            msg = (
+                f"Number of metrics ({len(metrics)}) does not match the"
+                f" number of columns ({n_cols})."
+            )
             raise ValueError(msg)
         for col in metrics:
             if col not in arg1.columns:
@@ -188,17 +204,23 @@ def _(
     if isinstance(weights, (float, int)):
         weights = np.full(n_cols, weights)
     elif isinstance(weights, np.ndarray) and len(weights) != n_cols:
-        msg = (f"Number of weights ({len(weights)}) does not match the"
-            " number of columns ({n_cols}).")
+        msg = (
+            f"Number of weights ({len(weights)}) does not match the"
+            " number of columns ({n_cols})."
+        )
         raise ValueError(msg)
 
-    values = np.array([
-        [metrics[i](arg1.iloc[j, i], arg2.iloc[j, i]) for i in range(n_cols)]
-        for j in range(len(arg1))
-    ])
+    distances = np.array(
+        [
+            metrics[i](arg1[col].values, arg2[col].values)
+            for i, col in enumerate(arg1.columns)
+        ]
+    )
 
     res: NDArrayFloat = np.atleast_1d(
-        np.sum(np.power(values, metric.p) * weights, axis=0, dtype=np.float64),
+        np.sum(
+            np.power(distances, metric.p) * weights, axis=0, dtype=np.float64
+        ),
     )
     return res[0] if len(res) == 1 else res
 
@@ -237,6 +259,7 @@ def pproduct_metric(
     metric = PProductMetric(p, metrics=metrics, weights=weights)
     return metric(arg1, arg2)
 
+
 @pairwise_metric_optimization.register
 def pairwise_metric_optimization_pproductmetric(
     metric: PProductMetric[V],
@@ -245,4 +268,3 @@ def pairwise_metric_optimization_pproductmetric(
 ) -> NDArrayFloat:
     """Pairwise metric optimization for PProductMetric."""
     return compute_p_product(metric, arg1, arg2)
-

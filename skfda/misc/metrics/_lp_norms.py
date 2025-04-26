@@ -130,13 +130,13 @@ class LpNorm:
             domain = vector.basis.domain_range
             call = vector
 
-            def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+            def integrand(*args: NDArrayFloat) -> NDArrayFloat:
                 f_args = np.asarray(args)
-
+                val = call(f_args)
                 try:
-                    f1 = call(f_args)[:, 0, :]
-                except Exception:  # noqa: BLE001
-                    f1 = call(f_args)
+                    f1 = val[:, 0, :]
+                except IndexError:
+                    f1 = val
 
                 return np.power(np.abs(f1), self.p)
 

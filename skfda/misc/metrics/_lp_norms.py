@@ -104,7 +104,8 @@ class LpNorm:
         )
 
     def __call__(  # noqa: C901
-        self, vector: NDArrayFloat | FData,
+        self,
+        vector: NDArrayFloat | FData,
     ) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
         from ...misc import inner_product

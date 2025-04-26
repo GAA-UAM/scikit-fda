@@ -1,5 +1,5 @@
-
 """Implementation of Lp distances."""
+
 from __future__ import annotations
 
 import math
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 T = TypeVar("T", NDArrayFloat, FData)
 
 
-class LpDistance(NormInducedMetric[NDArrayFloat| FData]):
+class LpDistance(NormInducedMetric[NDArrayFloat | FData]):
     r"""
     Lp distance for functional data objects.
 

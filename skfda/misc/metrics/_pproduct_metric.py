@@ -14,6 +14,7 @@ from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..metrics._utils import pairwise_metric_optimization
 from ..validation import check_fdata_same_kind
+from ._utils import PairwiseMetric
 
 V = TypeVar("V", bound=FData | pd.DataFrame | NDArrayFloat)
 
@@ -133,31 +134,29 @@ def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
     return res[0] if len(res) == 1 else res
 
 
-def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
+def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
     if not df1.columns.equals(df2.columns):
-        return False
+        msg = "Columns must be the same in both DataFrames"
+        raise ValueError(msg)
 
     for col in df1.columns:
         v1, v2 = df1[col].values, df2[col].values  # noqa: PD011
+        sample = df1.iloc[0][col]
 
-        if pd.api.types.is_numeric_dtype(
-            df1[col]
-        ) and pd.api.types.is_numeric_dtype(df2[col]):
+        if isinstance(sample, (int, float, np.number, np.ndarray)):
             if v1.shape != v2.shape:
-                return False
+                msg = (
+                    f"The shape of the column {col} must be "
+                    f"the same for both DataFrames"
+                )
+                raise ValueError(msg)
 
-        elif isinstance(v1, FData):
-            try:
-                check_fdata_same_kind(v1, v2)
-            except ValueError:
-                return False
-
-            return True
+        elif isinstance(sample, FData):
+            check_fdata_same_kind(v1[0], v2[0])
 
         else:
-            return False  # unknown column type, reject for now
-
-    return True
+            msg = f"Distance not supported for sample type {type(sample)} in column {col}"
+            raise TypeError(msg)
 
 
 @compute_p_product.register
@@ -166,17 +165,11 @@ def _(
     arg1: pd.DataFrame,
     arg2: pd.DataFrame,
 ) -> NDArrayFloat:
-    from ..metrics import l2_distance
 
-    if not same_structure_and_data(arg1, arg2):
-        msg = (
-            "DataFrames must have the same structure and data to compute"
-            " p-product."
-        )
-        raise ValueError(msg)
+    same_structure_and_data(arg1, arg2)
 
     n_cols = arg1.shape[1]
-    metrics = metric.metrics if metric.metrics else [l2_distance] * n_cols
+    metrics = metric.metrics if metric.metrics else [default_metric] * n_cols
     weights = metric.weights if metric.weights else 1.0
 
     if isinstance(metrics, Metric):
@@ -206,24 +199,59 @@ def _(
     elif isinstance(weights, np.ndarray) and len(weights) != n_cols:
         msg = (
             f"Number of weights ({len(weights)}) does not match the"
-            " number of columns ({n_cols})."
+            f" number of columns ({n_cols})."
         )
         raise ValueError(msg)
 
-    distances = np.array(
-        [
-            metrics[i](arg1[col].values, arg2[col].values)
-            for i, col in enumerate(arg1.columns)
-        ]
-    )
+    distances = np.zeros((len(arg1.columns), len(arg1)))
+
+    for i, col in enumerate(arg1.columns):
+        sample = arg1.iloc[0][col]
+        if isinstance(sample, FData):
+            fdata1 = FData._from_sequence(arg1[col])
+            fdata2 = FData._from_sequence(arg2[col])
+            distances[i,:] += metrics[i](fdata1, fdata2)
+        else:
+            distances[i,:] += metrics[i](arg1[col].values, arg2[col].values)
 
     res: NDArrayFloat = np.atleast_1d(
         np.sum(
-            np.power(distances, metric.p) * weights, axis=0, dtype=np.float64
+            np.power(distances, metric.p) * weights[:, np.newaxis],
+            axis=0,
+            dtype=np.float64,
         ),
     )
     return res[0] if len(res) == 1 else res
 
+class DefaultMetric(Metric[V]):
+    """Default metric based on the input type."""
+
+    def __call__(
+        self,
+        arg1: NDArrayFloat | FData | pd.DataFrame,
+        arg2: NDArrayFloat | FData | pd.DataFrame,
+    ) -> NDArrayFloat:
+        """Compute the distance between `arg1` and `arg2`."""
+        if isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
+            diff = arg1- arg2
+            res = np.abs(diff).astype(np.float64)
+            return res[0] if len(res) == 1 else res
+
+        if isinstance(arg1, FData) and isinstance(arg2, FData):
+            from skfda.misc.metrics import l2_distance
+            return l2_distance(arg1, arg2)
+
+        if isinstance(arg1, pd.DataFrame) and isinstance(arg2, pd.DataFrame):
+            metric = PProductMetric(p=2)
+            return metric(arg1, arg2)
+
+        msg = f"Unsupported types {type(arg1)} and {type(arg2)} for DefaultMetric."
+        raise TypeError(msg)
+def default_metric(
+    arg1: NDArrayFloat | FData | pd.DataFrame,
+    arg2: NDArrayFloat | FData | pd.DataFrame,
+)-> NDArrayFloat:
+    return DefaultMetric()(arg1=arg1, arg2=arg2)
 
 class PProductMetric(Metric[V]):
     def __init__(
@@ -263,8 +291,55 @@ def pproduct_metric(
 @pairwise_metric_optimization.register
 def pairwise_metric_optimization_pproductmetric(
     metric: PProductMetric[V],
-    arg1: V,
-    arg2: V | None = None,
+    arg1: pd.DataFrame,
+    arg2: pd.DataFrame | None = None,
 ) -> NDArrayFloat:
     """Pairwise metric optimization for PProductMetric."""
-    return compute_p_product(metric, arg1, arg2)
+    same_structure_and_data(arg1, arg2 if arg2 is not None else arg1)
+
+    if arg2 is None:
+        arg2 = arg1
+
+    n_cols = arg1.shape[1]
+    metrics = metric.metrics if metric.metrics else [default_metric] * n_cols
+    weights = metric.weights if metric.weights else 1.0
+
+    if isinstance(metrics, Metric):
+        metrics = [metrics] * n_cols
+    elif isinstance(metrics, Sequence):
+        if len(metrics) != n_cols:
+            msg = f"Number of metrics ({len(metrics)}) does not match number of columns ({n_cols})."
+            raise ValueError(msg)
+    elif isinstance(metrics, dict):
+        if len(metrics) != n_cols:
+            msg = f"Number of metrics ({len(metrics)}) does not match number of columns ({n_cols})."
+            raise ValueError(msg)
+        for col in metrics:
+            if col not in arg1.columns:
+                msg = f"Column '{col}' not found in DataFrames."
+                raise ValueError(msg)
+        metrics = [metrics[col] for col in arg1.columns]
+
+    if isinstance(weights, (float, int)):
+        weights = np.full(n_cols, weights)
+    elif isinstance(weights, np.ndarray) and len(weights) != n_cols:
+        msg = f"Number of weights ({len(weights)}) does not match number of columns ({n_cols})."
+        raise ValueError(msg)
+
+    distances = np.zeros((len(arg1), len(arg2)), dtype=np.float64)
+
+    for i, col in enumerate(arg1.columns):
+        sample = arg1.iloc[0][col]
+
+        if isinstance(sample, FData):
+            fdata1 = FData._from_sequence(arg1[col])
+            fdata2 = FData._from_sequence(arg2[col])
+            col_distances = PairwiseMetric(metrics[i])(fdata1, fdata2)
+        else:
+            col_distances = PairwiseMetric(metrics[i])(arg1[col].values, arg2[col].values)
+
+        distances += weights[i] * np.power(col_distances, metric.p)
+
+    return np.power(distances, 1 / metric.p)
+
+

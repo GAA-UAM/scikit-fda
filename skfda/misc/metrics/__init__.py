@@ -36,6 +36,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "TransformationMetric",
             "pairwise_metric_optimization",
         ],
+        "_pproduct_metric":[
+            "PProductMetric",
+            "pproduct_metric",
+        ],
     },
 )
 
@@ -63,6 +67,10 @@ if TYPE_CHECKING:
     )
     from ._mahalanobis import MahalanobisDistance as MahalanobisDistance
     from ._parse import PRECOMPUTED as PRECOMPUTED
+    from ._pproduct_metric import (
+        PProductMetric as PProductMetric,
+        pproduct_metric as pproduct_metric,
+    )
     from ._utils import (
         NormInducedMetric as NormInducedMetric,
         PairwiseMetric as PairwiseMetric,

@@ -112,19 +112,17 @@ class PACE(
             footcite:t:`staniswalis+lee_1998_nonparametric_regression`
 
     Attributes:
-        components\_: this contains the principal components evaluated over
-            ``t_covariance\_``.
-        phi\_: this contains the principal components evaluated over
-            ``t_mean\_``, used in the FPC score calculation.
-        explained_variance\_ : the amount of variance explained by
-            each of the selected components.
-        explained_variance_ratio\_ : this contains the percentage
+        components\_: FDataGrid that contains the principal components.
+        explained_variance\_ : array that contains the amount of variance
+            explained by each of the selected components.
+        explained_variance_ratio\_ : array that contains the percentage
             of variance explained by each principal component.
-        mean\_: mean of the data.
-        t_mean\_: time points of the mean.
+        mean\_: FDataGrid that contains the smoothed mean of the data.
         bandwidth_mean\_: calculated or user-given bandwidth used for the mean.
-        covariance\_: covariance of the data.
-        t_covariance\_: time points of the covariance.
+        covariance\_: matrix of shape (``n_grid_points``, ``n_grid_points``,
+        codomain dimension) that contains the covariance of the data.
+        t_covariance\_: matrix of shape (``n_grid_points``,
+        domain dimension) that contains the time points of the covariance.
         bandwidth_cov\_: calculated or user-given bandwidth used for the
             covariance.
         sigma2\_: calculated error of the covariance.
@@ -371,7 +369,7 @@ class PACE(
             kernel: Kernel function to use for smoothing.
 
         Returns:
-            Smoothed estimates for each query point.
+            Array with smooth estimates for each query point.
         """
         epsilon = 1e-8
 
@@ -696,16 +694,16 @@ class PACE(
             if eigenvectors[1, i] < eigenvectors[0, i]:
                 eigenvectors[:, i] *= -1
 
-        phi = np.empty((len(self.t_mean_), n_selected_components))
+        phi = np.empty((len(self.mean_.grid_points[0]), n_selected_components))
 
         for i in range(n_selected_components):
             # Create cubic spline interpolator
             spline = make_interp_spline(t_eigen, eigenvectors[:, i])
             # Evaluate spline on new grid
-            phi[:, i] = spline(self.t_mean_.squeeze())
+            phi[:, i] = spline(self.mean_.grid_points[0])
             # Normalize in L2 over the grid of the mean
             phi[:, i] /= np.sqrt(
-                trapezoid(phi[:, i] ** 2, x=self.t_mean_.squeeze()),
+                trapezoid(phi[:, i] ** 2, x=self.mean_.grid_points[0]),
             )
 
         # plt.figure(figsize=(10, 6))
@@ -896,7 +894,7 @@ class PACE(
 
         # The mean has to be calculated with the points within the boundary
         # region, but over the whole domain
-        self.t_mean_ = np.sort(np.unique(X.points, axis=0), axis=0)
+        t_eval = np.sort(np.unique(X.points, axis=0), axis=0)
 
         if self.bandwidth_mean_ is None:
             self.bandwidth_mean_ = minimize_scalar(
@@ -919,18 +917,30 @@ class PACE(
 
         print(f"Selected bandwidth for mean: {self.bandwidth_mean_}. ")
 
-        self.mean_ = self._mean_lls(
+        mean = self._mean_lls(
             self.bandwidth_mean_,
-            self.t_mean_,
+            t_eval,
             x_work.points,
             x_work.values,
             self.kernel_mean,
         )
 
+        self.mean_ = FDataGrid(
+            data_matrix=mean.reshape(1, -1, 1),
+            grid_points=t_eval.ravel(),
+            domain_range=X.domain_range,
+            dataset_name=X.dataset_name,
+            argument_names=X.argument_names,
+            coordinate_names=X.coordinate_names,
+            sample_names=["Mean function"],
+            extrapolation=X.extrapolation,
+            interpolation=X.interpolation,
+        )
+
         raw_cov_data = self._compute_raw_covariances(
             x_work,
-            self.mean_,
-            self.t_mean_,
+            self.mean_.data_matrix[0],
+            t_eval,
             assume_noisy=self.assume_noisy,
         )
 
@@ -962,7 +972,7 @@ class PACE(
                         raw_cov_coords,
                         raw_cov_values,
                         win,
-                        self.t_mean_,
+                        t_eval,
                     ),
                     bounds=self.bandwidth_cov_interval_,
                     method="bounded",
@@ -1000,7 +1010,31 @@ class PACE(
 
         self.n_components, self.explained_variance_ratio = pc_data[:2]
         self.explained_variance_ = eigenvalues
-        self.phi_ = phi
+
+        self.components_: FDataGrid = FDataGrid(
+            data_matrix=phi,
+            grid_points=self.mean_.grid_points,
+            domain_range=X.domain_range,
+            dataset_name=X.dataset_name,
+            argument_names=X.argument_names,
+            coordinate_names=X.coordinate_names,
+            sample_names=[f"Eigenfunction {i+1}" for i in range(phi.shape[0])],
+            extrapolation=X.extrapolation,
+            interpolation=X.interpolation,
+        )
+
+        # fig, ax = plt.subplots()
+        # for i, sample in enumerate(self.components_):
+        #     label = self.components_.sample_names[i]
+        #     sample.plot(axes=ax, label=label)
+        #     if i == 2:
+        #         break
+
+        # ax.set_xlabel(self.components_.argument_names[0])
+        # ax.set_ylabel(self.components_.coordinate_names[0])
+        # ax.legend()
+        # plt.show()
+
 
         print(f"Optimal number of components: {self.n_components}")
 
@@ -1039,7 +1073,7 @@ class PACE(
             ``(n_samples, n_components)``.
         """
         end_indices = np.append(X.start_indices[1:], len(X.points))
-        t_mean = self.t_mean_.squeeze()
+        t_mean = self.mean_.grid_points[0].squeeze()
 
         fpc_scores = np.zeros((len(X.start_indices), int(self.n_components)))
         lambda_ = np.diag(self.explained_variance_)
@@ -1061,8 +1095,9 @@ class PACE(
 
             # Get indices in t_mean_ corresponding to points_i
             indices = [np.argmin(np.abs(t_mean - pt)) for pt in points_i]
-            mu_i = self.mean_[indices].squeeze()
-            phi_i = self.phi_[:, indices].T
+            mu_i = self.mean_.data_matrix[0, indices].squeeze()
+            phi_i_raw = self.components_.data_matrix[:, indices]
+            phi_i = phi_i_raw[..., 0].T
 
             num = lambda_ @ phi_i.T
             denom = phi_i @ lambda_ @ phi_i.T + self.sigma2_ * np.eye(m_i)
@@ -1090,12 +1125,6 @@ class PACE(
         # Add doctests
         # Add coverage
 
-        # t_mean = self.t_mean_.squeeze()
-        # mean_curve = self.mean_.squeeze()
-        # reconstructions = fpc_scores @ self.phi_ + mean_curve  # shape: (n_subjects, len(t_mean))
-
-        # plt.figure(figsize=(12, 6))
-
         # # Plot original reconstructed trajectories
         # for i in range(reconstructions.shape[0]):
         #     plt.plot(t_mean, reconstructions[i], alpha=0.6, label=f"Subject {i + 1}")
@@ -1108,57 +1137,6 @@ class PACE(
         # plt.grid(True)
         # plt.tight_layout()
         # plt.show()
-
-        for i in range(3):
-            subject_index = i
-            # Get their original observation points and values
-            idx = X.start_indices[subject_index]
-            end_idx = (
-                X.start_indices[subject_index + 1]
-                if subject_index + 1 < len(X.start_indices)
-                else len(X.points)
-            )
-            points_i = X.points[idx:end_idx].squeeze()
-            values_i = X.values[idx:end_idx].squeeze()
-
-            # Reconstruct the full trajectory over the mean grid
-            reconstructed_i = (
-                fpc_scores[subject_index] @ self.phi_ + self.mean_.squeeze()
-            )
-
-            # print(reconstructed_i)
-
-            # Plotting
-            plt.figure(figsize=(10, 6))
-            plt.plot(
-                self.t_mean_.squeeze(),
-                reconstructed_i,
-                label="Reconstructed Curve",
-                linewidth=2,
-            )
-            plt.scatter(
-                points_i,
-                values_i,
-                color="red",
-                label="Original Observations",
-                zorder=5,
-            )
-            plt.plot(
-                self.t_mean_.squeeze(),
-                self.mean_.squeeze(),
-                linestyle="--",
-                color="gray",
-                label="Mean Curve",
-            )
-            plt.xlabel("Time")
-            plt.ylabel("Value")
-            plt.title(
-                f"Subject {subject_index + 1}: Reconstruction vs Observations"
-            )
-            plt.legend()
-            plt.grid(True)
-            plt.tight_layout()
-            plt.show()
 
         return fpc_scores
 
@@ -1197,9 +1175,11 @@ class PACE(
         Returns:
             A FData object.
         """
-        reconstructed = pc_scores @ self.phi_ + self.mean_.squeeze()
+        phi = self.components_.data_matrix[..., 0]
+        mean = self.mean_.data_matrix.squeeze()
+        reconstructed = pc_scores @ phi + mean
 
         return FDataGrid(
             data_matrix=reconstructed,
-            grid_points=self.t_mean_.squeeze(),
+            grid_points=self.mean_.grid_points[0].squeeze(),
         )

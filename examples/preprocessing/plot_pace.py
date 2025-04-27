@@ -42,15 +42,19 @@ from skfda.representation import FDataIrregular
 #
 # We will analyse one of the datasets that is used in the original paper, the
 # CD4 dataset. This dataset contains the CD4 cell counts of 366 HIV patients
-# measured in between months -18 and 42 since seroconversion.
+# measured in between months -18 and 42 since seroconversion. To better
+# understand the data, we will plot the first 20 subjects.
 cd4_bunch: Bunch = fetch_cd4()
 cd4: FDataIrregular = cd4_bunch.data
 assert isinstance(cd4, FDataIrregular), "Expected an FDataIrregular object"
 
 cd4[:20].plot()
 plt.show()
-
-
+# %%
+# Continuing with the analysis of the dataset, we will plot the total data
+# across all subjects, where we can further identify the sparsity of the data.
+# The data is spread across all the domain, with more frequent measurements
+# every trimester, especially the first one before and after seroconversion.
 plt.figure(figsize=(10, 6))
 for i, (t, _) in enumerate(zip(cd4.points, cd4.values, strict=True)):
     plt.scatter(t, [i] * len(t), alpha=0.7, s=10, color="black")
@@ -59,5 +63,13 @@ plt.ylabel("CD4 cell count")
 plt.title("Total observed points in the CD4 dataset")
 plt.tight_layout()
 plt.show()
+
+# %%
+# We can now apply the PACE method to the dataset to obtain the principal
+# components of the data.
+pace = PACE(n_components=3)
+pace.fit(cd4)
+
+pace.components_.plot()
 
 # %%

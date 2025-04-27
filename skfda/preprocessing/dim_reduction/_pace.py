@@ -180,7 +180,7 @@ class PACE(
     def __init__(
         self,
         *,
-        n_components: float = 1.0,
+        n_components: float = 1.0, # Poner como scikit-learn, que no sea 1
         assume_noisy: bool = True,
         kernel_mean: KernelFunction = gaussian_kernel,
         bandwidth_mean: float | NDArrayFloat | None = None,
@@ -193,7 +193,7 @@ class PACE(
     ) -> None:
         if (isinstance(n_components, int) and n_components <= 0) or (
             not isinstance(n_components, int)
-            and (n_components <= 0.0 or n_components > 1.0)
+            and (n_components <= 0.0 or n_components >= 1.0)
         ):
             error_msg = (
                 "n_components must be an integer or a float in (0.0, 1.0]."
@@ -201,11 +201,11 @@ class PACE(
             raise ValueError(error_msg)
 
         bandwidth_mean_, bandwidth_mean_interval_ = self._check_bandwidth(
-            bandwidth_mean
+            bandwidth_mean,
         )
 
         bandwidth_cov_, bandwidth_cov_interval_ = self._check_bandwidth(
-            bandwidth_cov
+            bandwidth_cov,
         )
 
         if n_grid_points <= 0 or bw_cov_n_grid_points <= 0:
@@ -820,6 +820,7 @@ class PACE(
         """
         r_mat = np.sqrt(2) / 2 * np.array([[1, 1], [-1, 1]])
 
+        # Make separate function
         # Rotate coordinates of covariance points and evaluation points
         r_cov_coords = np.einsum("ijk,jk->ik", cov_coords, r_mat)
         r_cov_coords = r_cov_coords[:, :, np.newaxis]
@@ -840,6 +841,7 @@ class PACE(
         diff_r = (t_pairs[:, 0, None] - r_t_eval[None, :, 0]) / h
         diff_s = (t_pairs[:, 1, None] - r_t_eval[None, :, 1]) / h
 
+        # Make separate function to obtain the kernel
         kernel_r = self.kernel_cov(diff_r).T
         kernel_s = self.kernel_cov(diff_s).T
 
@@ -1107,56 +1109,56 @@ class PACE(
         # plt.tight_layout()
         # plt.show()
 
-        # for i in range(10):
-        #     subject_index = i
-        #     # Get their original observation points and values
-        #     idx = X.start_indices[subject_index]
-        #     end_idx = (
-        #         X.start_indices[subject_index + 1]
-        #         if subject_index + 1 < len(X.start_indices)
-        #         else len(X.points)
-        #     )
-        #     points_i = X.points[idx:end_idx].squeeze()
-        #     values_i = X.values[idx:end_idx].squeeze()
+        for i in range(3):
+            subject_index = i
+            # Get their original observation points and values
+            idx = X.start_indices[subject_index]
+            end_idx = (
+                X.start_indices[subject_index + 1]
+                if subject_index + 1 < len(X.start_indices)
+                else len(X.points)
+            )
+            points_i = X.points[idx:end_idx].squeeze()
+            values_i = X.values[idx:end_idx].squeeze()
 
-        #     # Reconstruct the full trajectory over the mean grid
-        #     reconstructed_i = (
-        #         fpc_scores[subject_index] @ self.phi_ + self.mean_.squeeze()
-        #     )
+            # Reconstruct the full trajectory over the mean grid
+            reconstructed_i = (
+                fpc_scores[subject_index] @ self.phi_ + self.mean_.squeeze()
+            )
 
-        #     # print(reconstructed_i)
+            # print(reconstructed_i)
 
-        #     # Plotting
-        #     plt.figure(figsize=(10, 6))
-        #     plt.plot(
-        #         self.t_mean_.squeeze(),
-        #         reconstructed_i,
-        #         label="Reconstructed Curve",
-        #         linewidth=2,
-        #     )
-        #     plt.scatter(
-        #         points_i,
-        #         values_i,
-        #         color="red",
-        #         label="Original Observations",
-        #         zorder=5,
-        #     )
-        #     plt.plot(
-        #         self.t_mean_.squeeze(),
-        #         self.mean_.squeeze(),
-        #         linestyle="--",
-        #         color="gray",
-        #         label="Mean Curve",
-        #     )
-        #     plt.xlabel("Time")
-        #     plt.ylabel("Value")
-        #     plt.title(
-        #         f"Subject {subject_index + 1}: Reconstruction vs Observations"
-        #     )
-        #     plt.legend()
-        #     plt.grid(True)
-        #     plt.tight_layout()
-        #     plt.show()
+            # Plotting
+            plt.figure(figsize=(10, 6))
+            plt.plot(
+                self.t_mean_.squeeze(),
+                reconstructed_i,
+                label="Reconstructed Curve",
+                linewidth=2,
+            )
+            plt.scatter(
+                points_i,
+                values_i,
+                color="red",
+                label="Original Observations",
+                zorder=5,
+            )
+            plt.plot(
+                self.t_mean_.squeeze(),
+                self.mean_.squeeze(),
+                linestyle="--",
+                color="gray",
+                label="Mean Curve",
+            )
+            plt.xlabel("Time")
+            plt.ylabel("Value")
+            plt.title(
+                f"Subject {subject_index + 1}: Reconstruction vs Observations"
+            )
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
 
         return fpc_scores
 

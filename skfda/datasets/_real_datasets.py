@@ -1687,9 +1687,9 @@ def fetch_cd4(
 
     curves = FDataIrregular.from_fdatagrid(
         cd4_grid,
-        dataset_name="cd4",
-        argument_names=["month"],
-        coordinate_names=["CD4 count"],
+        dataset_name="CD4 Cell Counts",
+        argument_names=["months since seroconversion"],
+        coordinate_names=["CD4 cell count"],
     )
 
     frame = None

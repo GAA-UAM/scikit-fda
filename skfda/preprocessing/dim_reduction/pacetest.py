@@ -34,8 +34,9 @@ fd = FDataIrregular(
 pace = PACE(
     n_components=0.99,
     n_grid_points=51,
-    bandwidth_mean=8.25,
-    bandwidth_cov=6.269,
+    # bandwidth_mean=8.25,
+    # bandwidth_cov=6.269,
+    # bandwidth_cov=3.8642,
     # bandwidth_cov=np.array([5.0, 30.0]),
     # assume_noisy=False,
     # boundary_effect_interval=(0.1, 0.9),
@@ -47,12 +48,33 @@ pace = PACE(
 # pace.fit(fd)
 # exit()
 cd4 = fetch_cd4()
+# exit()
+
 scores = pace.fit_transform(cd4.data)
 
 fd = pace.inverse_transform(scores)
-# fd.plot()
-fd[:10].plot()
-plt.show()
+# fd.plot() q
+
+
+# Number of subjects to show
+n_subjects = 5
+
+for i in range(n_subjects):
+    fig, ax = plt.subplots()
+
+    # Plot the reconstructed curve (continuous)
+    fd[i].plot(axes=ax, label="Reconstructed", color="C0", linestyle="-")
+
+    # Plot the original data points
+    cd4.data[i].scatter(axes=ax, label="Original (irregular)", color="C1", marker="o")
+
+    ax.set_title(f"Subject {i + 1}")
+    ax.set_xlabel(cd4.data.argument_names[0])
+    ax.set_ylabel(cd4.data.coordinate_names[0])
+    ax.legend()
+    plt.show()
+
+exit()
 
 t_matlab = np.array([
     -18, -17, -16, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3,

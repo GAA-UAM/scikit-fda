@@ -706,22 +706,6 @@ class PACE(
                 trapezoid(phi[:, i] ** 2, x=self.mean_.grid_points[0]),
             )
 
-        # plt.figure(figsize=(10, 6))
-        # # Plot up to 3 eigenvectors
-        # for i in range(min(3, n_selected_components)):
-        #     plt.plot(
-        #         self.t_covariance_.squeeze(),                # time axis
-        #         eigenvectors[:, i],            # eigenvector values
-        #         label=f"Eigenvector {i + 1}",
-        #     )
-        # plt.title("First 3 Smoothed Eigenvectors")
-        # plt.xlabel("Time")
-        # plt.ylabel("Eigenfunction value")
-        # plt.grid(True)
-        # plt.legend()
-        # plt.tight_layout()
-        # plt.show()
-
         return n_selected_components, fve, lambda_, phi.T
 
     def _get_sigma2(
@@ -1023,19 +1007,6 @@ class PACE(
             interpolation=X.interpolation,
         )
 
-        # fig, ax = plt.subplots()
-        # for i, sample in enumerate(self.components_):
-        #     label = self.components_.sample_names[i]
-        #     sample.plot(axes=ax, label=label)
-        #     if i == 2:
-        #         break
-
-        # ax.set_xlabel(self.components_.argument_names[0])
-        # ax.set_ylabel(self.components_.coordinate_names[0])
-        # ax.legend()
-        # plt.show()
-
-
         print(f"Optimal number of components: {self.n_components}")
 
         if self.assume_noisy:
@@ -1110,33 +1081,11 @@ class PACE(
 
             fpc_scores[i, :] = phi_sigma @ residual_i.T
 
-        # r_coords = raw_cov_coords[:, 0]
-        # s_coords = raw_cov_coords[:, 1]
-        # fig = plt.figure(figsize=(10, 6))
-        # ax = fig.add_subplot(111, projection='3d')
-        # ax.scatter(r_coords, s_coords, g_hat_int, c=g_hat_int, cmap='viridis', s=15)
-        # ax.set_axis_off()
-        # plt.tight_layout()
-        # plt.show()
-
         # need to inform of expected dimensions for each parameter
         # and types of the class parameters
 
         # Add doctests
         # Add coverage
-
-        # # Plot original reconstructed trajectories
-        # for i in range(reconstructions.shape[0]):
-        #     plt.plot(t_mean, reconstructions[i], alpha=0.6, label=f"Subject {i + 1}")
-
-        # plt.plot(t_mean, mean_curve, color='black', linestyle='--', linewidth=2, label='Mean Curve')
-        # plt.xlabel("Time")
-        # plt.ylabel("Value")
-        # plt.title("Reconstructed Trajectories via PACE over Mean Grid")
-        # plt.legend(loc='upper right', fontsize='small', ncol=2)
-        # plt.grid(True)
-        # plt.tight_layout()
-        # plt.show()
 
         return fpc_scores
 
@@ -1182,4 +1131,10 @@ class PACE(
         return FDataGrid(
             data_matrix=reconstructed,
             grid_points=self.mean_.grid_points[0].squeeze(),
+            domain_range=self.mean_.domain_range,
+            dataset_name=self.mean_.dataset_name,
+            argument_names=self.mean_.argument_names,
+            coordinate_names=self.mean_.coordinate_names,
+            extrapolation=self.mean_.extrapolation,
+            interpolation=self.mean_.interpolation,
         )

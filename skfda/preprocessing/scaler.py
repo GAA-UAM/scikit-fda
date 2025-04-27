@@ -45,7 +45,7 @@ def center_scale(
 
 
 @center_scale.register
-def _(
+def _center_scale_fdatagrid(
     X: FDataGrid,
     center: Callable[[FData], NDArrayFloat|FData] | FData | NDArrayFloat | None,
     scale: Callable[[FData], NDArrayFloat|FData] | FData | NDArrayFloat | None,
@@ -76,7 +76,7 @@ def _(
 
 
 @center_scale.register
-def _(
+def _center_scale_fdatabasis(
     X: FDataBasis,
     center: Callable[[FData], NDArrayFloat] | FData | NDArrayFloat | None,
     scale: Callable[[FData], NDArrayFloat] | FData | NDArrayFloat | None,

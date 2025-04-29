@@ -1,23 +1,17 @@
 import numpy as np
+from sklearn.metrics import mean_squared_error
 from skfda.misc.scoring import root_mean_squared_error
 
-# Exemple de données
-y_true = np.array( [3, -0.5, 2, 7])
-y_pred = np.array([2.5, 0.0, 2, 8])
+# Données
+y_true = np.array([[0.5, 1], [-1, 1], [7, -6]])
+y_pred = np.array([[0, 2], [-1, 2], [8, -5]])
 
-# Appel de la fonction
-rmse = root_mean_squared_error(y_true, y_pred)
+# Calcul avec scikit-learn
+mse = mean_squared_error(y_true, y_pred, multioutput='uniform_average')
+rmse_sklearn = np.sqrt(mse)
 
-print(f"Root Mean Squared Error (NumPy): {rmse}")
+# Calcul avec votre fonction
+rmse_custom = root_mean_squared_error(y_true, y_pred)
 
-from skfda.representation.grid import FDataGrid
-from skfda.misc.scoring import root_mean_squared_error
-
-# Exemple de données FDataGrid
-y_true = np.array([[0.5, 1], [-1, 1], [7, -6]]) #FDataGrid(data_matrix=[[0.5, 1], [-1, 1], [7, -6]], grid_points=[0, 1])
-y_pred = np.array([[0, 2],[-1, 2],[8, -5]])
-
-# Appel de la fonction
-rmse = root_mean_squared_error(y_true, y_pred)
-
-print(f"Root Mean Squared Error (FData): {rmse}")
+print(f"RMSE (scikit-learn): {rmse_sklearn}")
+print(f"RMSE (custom): {rmse_custom}")

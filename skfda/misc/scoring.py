@@ -941,8 +941,7 @@ def _(y_true: np.ndarray, y_pred: np.ndarray, *, sample_weight=None, multioutput
 def _(y_true: FData, y_pred: FData, *, sample_weight=None, multioutput="uniform_average"):
     """For FData."""
     mse = mean_squared_error(y_true, y_pred, sample_weight=sample_weight, multioutput=multioutput,squared=False)
-    return mse #** 0.5 jsp pourquoi ça renvoie Manual RMSE calculation: 0.5361902647381803
-#skfda RMSE result: 0.6390096504226938
+    return mse 
 
 
 @overload

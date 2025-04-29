@@ -81,6 +81,19 @@ outliers.
 
    skfda.exploratory.visualization.Outliergram
 
+DD-Plot
+-------
+
+The DD-plot plots the depth of each observation in two different distributions.
+
+This is useful to understand how our data is more related with one subset of
+the data / distribution than another one.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.exploratory.visualization.DDPlot
+
 Magnitude-Shape Plot
 --------------------
 

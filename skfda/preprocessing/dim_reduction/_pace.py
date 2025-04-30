@@ -68,9 +68,9 @@ class PACE(
             noiseless. Otherwise, when smoothing the covariance surface, the
             diagonal will be treated separately. Defaults to ``True``.
         kernel_mean: callable vectorized univariate smoothing kernel function
-            for the mean, of the form :math:`K(t, h)`, where `t` are the
-            n-dimensional time point, with n being the dimension of the domain,
-            and `h` is the bandiwdth. Defaults to a Gaussian kernel.
+            for the mean, of the form :math:`K(t)`, where `t` are the
+            n-dimensional time point, with n being the dimension of the domain.
+            Defaults to a Gaussian kernel.
         bandwidth_mean: bandwidth to use in the smoothing kernel for the mean.
             If no parameter is given, the bandwidth is calculated using the GCV
             method. If a float is given, it is used as the bandwidth. If a
@@ -80,12 +80,11 @@ class PACE(
             ``None``.
         kernel_cov: callable vectorized univariate smoothing kernel function
             for the covariance and calculations regarding its diagonal. It
-            should have the form :math:`K(t, h)`, where `t` are the
-            n-dimensional time point, with n being the dimension of the domain,
-            and `h` is the bandiwdth. To smooth the covariance, each value in
-            the two directions will be calculated with the function and the two
-            values will be multiplied, acting as an isotropic kernel. Defaults
-            to a Gaussian kernel.
+            should have the form :math:`K(t)`, where `t` are the
+            n-dimensional time point, with n being the dimension of the domain.
+            To smooth the covariance, each value in the two directions will be
+            calculated with the function and the two values will be multiplied,
+            acting as an isotropic kernel. Defaults to a Gaussian kernel.
         bandwidth_cov: bandwidth to use in the smoothing kernel for the
             covariance. If no parameter is given, the bandwidth is calculated
             using the GCV method. If a float is given, it is used as the
@@ -109,7 +108,7 @@ class PACE(
         variance_error_interval: A 2-element float vector in [0.0, 1.0]
             indicating the percent of data truncated during :math:`\\sigma^2`
             calculation. Defaults to (0.25, 0.75), as is suggested in
-            footcite:t:`staniswalis+lee_1998_nonparametric_regression`
+            footcite:t:`staniswalis+lee_1998_nonparametric_regression`.
 
     Attributes:
         components\_: FDataGrid that contains the principal components.
@@ -120,9 +119,9 @@ class PACE(
         mean\_: FDataGrid that contains the smoothed mean of the data.
         bandwidth_mean\_: calculated or user-given bandwidth used for the mean.
         covariance\_: matrix of shape (``n_grid_points``, ``n_grid_points``,
-        codomain dimension) that contains the covariance of the data.
+            codomain dimension) that contains the covariance of the data.
         t_covariance\_: matrix of shape (``n_grid_points``,
-        domain dimension) that contains the time points of the covariance.
+            domain dimension) that contains the time points of the covariance.
         bandwidth_cov\_: calculated or user-given bandwidth used for the
             covariance.
         sigma2\_: calculated error of the covariance.
@@ -870,11 +869,11 @@ class PACE(
             )
             raise AttributeError(error_msg)
 
-        if self.boundary_effect_interval != (0.0, 1.0):
+        if self.boundary_effect_interval == (0.0, 1.0):  # noqa: WPS358
+            x_work = X
+        else:
             # Slice the data to remove the boundary effect
             x_work = self._slice_fdata_irregular(X)
-        else:
-            x_work = X
 
         # The mean has to be calculated with the points within the boundary
         # region, but over the whole domain
@@ -1027,6 +1026,54 @@ class PACE(
 
         return self
 
+    def subject_fpc_scores(
+        self,
+        X: FDataIrregular,
+        start: int,
+        end: int,
+        lambda_: NDArrayFloat,
+        t_mean: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """
+        Compute the functional principal component scores for a specific obs.
+
+        Args:
+            X: The functional data object to be analysed.
+            start: The starting index of the subject's data.
+            end: The ending index of the subject's data.
+            lambda_: The eigenvalues of the covariance matrix.
+            t_mean: The time points of the mean function.
+
+        Returns:
+            Principal component scores for the specified subject.
+        """
+        points_i = X.points[start : end].squeeze()
+        values_i = X.values[start : end].squeeze()
+        if points_i.ndim == 0:
+            points_i = np.array([points_i])
+        m_i = len(points_i)
+
+        # Get indices in t_mean_ corresponding to points_i
+        indices = [np.argmin(np.abs(t_mean - pt)) for pt in points_i]
+        mu_i = self.mean_.data_matrix[0, indices].squeeze()
+        phi_i_raw = self.components_.data_matrix[:, indices]
+        phi_i = phi_i_raw[..., 0].T
+
+        num = lambda_ @ phi_i.T
+        denom = phi_i @ lambda_ @ phi_i.T + self.sigma2_ * np.eye(m_i)
+        try:
+            denom_inv = np.linalg.inv(denom)
+        except np.linalg.LinAlgError:
+            denom_inv = np.linalg.pinv(denom)
+        phi_sigma = num @ denom_inv
+
+        # Residuals
+        residual_i = values_i - mu_i
+        if residual_i.ndim == 0:
+            residual_i = np.array([residual_i])
+
+        return np.array(phi_sigma @ residual_i.T)
+
     def transform(
         self,
         X: FData,
@@ -1054,32 +1101,17 @@ class PACE(
         # self.sigma2_ = 26586
 
         if self.assume_noisy is False:
-            eps = 1e-10  # small regularization
+            eps = 1e-8  # small regularization
             self.sigma2_ = eps
 
         for i, idx in enumerate(X.start_indices):
-            points_i = X.points[idx : end_indices[i]].squeeze()
-            values_i = X.values[idx : end_indices[i]].squeeze()
-            if points_i.ndim == 0:
-                points_i = np.array([points_i])
-            m_i = len(points_i)
-
-            # Get indices in t_mean_ corresponding to points_i
-            indices = [np.argmin(np.abs(t_mean - pt)) for pt in points_i]
-            mu_i = self.mean_.data_matrix[0, indices].squeeze()
-            phi_i_raw = self.components_.data_matrix[:, indices]
-            phi_i = phi_i_raw[..., 0].T
-
-            num = lambda_ @ phi_i.T
-            denom = phi_i @ lambda_ @ phi_i.T + self.sigma2_ * np.eye(m_i)
-            phi_sigma = num @ np.linalg.inv(denom)
-
-            # Residuals
-            residual_i = values_i - mu_i
-            if residual_i.ndim == 0:
-                residual_i = np.array([residual_i])
-
-            fpc_scores[i, :] = phi_sigma @ residual_i.T
+            fpc_scores[i, :] = self.subject_fpc_scores(
+                X,
+                start=idx,
+                end=end_indices[i],
+                lambda_=lambda_,
+                t_mean=t_mean,
+            )
 
         # need to inform of expected dimensions for each parameter
         # and types of the class parameters

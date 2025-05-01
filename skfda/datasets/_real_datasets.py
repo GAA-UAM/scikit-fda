@@ -1719,3 +1719,77 @@ def fetch_cd4(
         target_names=[],
         DESCR=descr,
     )
+
+_country_height_descr = """
+    The Country Height dataset is a study of average male heights in 144
+    countries from 1810-1989, with a smaller number of countries from 1500-
+    1800.
+
+    References:
+        https://cran.r-project.org/package=brolgar
+        Joerg Baten and Matthias Blum (2014)
+            "Why are you tall while others are short? Agricultural production
+            and other proximate determinants of global heights",
+            European Review of Economic History, 18, 144-165.
+"""
+
+
+def fetch_country_height(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Bunch | Tuple[FDataIrregular, NDArrayInt] | Tuple[DataFrame, Series]:
+    """
+    Load the Bone Density dataset. This is an irregular dataset.
+
+    The data is obtained from the R package 'loon.data', which compiles several
+    irregular datasets. Sources to be determined.
+    """
+    descr = _country_height_descr
+    raw_dataset = fetch_cran("heights", "brolgar")
+    data = raw_dataset["heights"]
+
+    curve_name = "country"
+    argument_name = "year"
+    target_name = "continent"
+    coordinate_name = "height_cm"
+
+    curves = FDataIrregular._from_dataframe(
+        data,
+        id_column=curve_name,
+        argument_columns=argument_name,
+        coordinate_columns=coordinate_name,
+        argument_names=[argument_name],
+        coordinate_names=[coordinate_name],
+        dataset_name="Average Male Height by Country",
+        sample_names=data.drop_duplicates(subset=[curve_name])[curve_name],
+    )
+
+    target = pd.Series(
+        data.drop_duplicates(subset=["country"])[target_name],
+        name="group",
+    )
+
+    feature_name = curves.dataset_name.lower()
+    target_names = target.values.tolist()
+
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        target_as_frame = target.reset_index(drop=True).to_frame()
+        frame = pd.concat([curves, target_as_frame], axis=1)
+    else:
+        target = pd.Categorical(target).codes
+
+    if return_X_y:
+        return curves, target
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[argument_name],
+        target_names=target_names,
+        DESCR=descr,
+    )

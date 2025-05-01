@@ -1740,10 +1740,9 @@ def fetch_country_height(
     as_frame: bool = False,
 ) -> Bunch | Tuple[FDataIrregular, NDArrayInt] | Tuple[DataFrame, Series]:
     """
-    Load the Bone Density dataset. This is an irregular dataset.
+    Load the Country Height dataset. This is an irregular dataset.
 
-    The data is obtained from the R package 'loon.data', which compiles several
-    irregular datasets. Sources to be determined.
+    The data is obtained from the R package 'brolgar'.
     """
     descr = _country_height_descr
     raw_dataset = fetch_cran("heights", "brolgar")
@@ -1766,22 +1765,25 @@ def fetch_country_height(
         sample_names=data.drop_duplicates(subset=[curve_name])[curve_name],
     )
 
-    target = pd.Series(
-        data.drop_duplicates(subset=["country"])[target_name],
-        name="group",
-    )
+    country_targets = data.drop_duplicates(subset="country")
 
-    feature_name = curves.dataset_name.lower()
-    target_names = target.values.tolist()
+    target_categorical = pd.Categorical(country_targets[target_name])
+    target_codes = target_categorical.codes
 
     frame = None
 
     if as_frame:
-        curves = pd.DataFrame({feature_name: curves})
-        target_as_frame = target.reset_index(drop=True).to_frame()
-        frame = pd.concat([curves, target_as_frame], axis=1)
+        frame = data.pivot_table(
+            index=curve_name,
+            columns=argument_name,
+            values=coordinate_name,
+        )
+        frame["continent"] = target_categorical
+
+        curves = frame.iloc[:, :-1]
+        target = frame.iloc[:, -1]
     else:
-        target = pd.Categorical(target).codes
+        target = target_codes
 
     if return_X_y:
         return curves, target
@@ -1792,6 +1794,6 @@ def fetch_country_height(
         frame=frame,
         categories={},
         feature_names=[argument_name],
-        target_names=target_names,
+        target_names=target_categorical,
         DESCR=descr,
     )

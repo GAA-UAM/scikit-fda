@@ -9,7 +9,7 @@ irregularly sampled data.
 # Author: Alejandro Arias Gomez
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = -1
+# sphinx_gallery_thumbnail_number = 4
 
 # %%
 from collections import defaultdict

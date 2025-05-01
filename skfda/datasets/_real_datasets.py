@@ -1722,8 +1722,9 @@ def fetch_cd4(
 
 _country_height_descr = """
     The Country Height dataset is a study of average male heights in 144
-    countries from 1810-1989, with a smaller number of countries from 1500-
-    1800.
+    countries from 1810-1989, with a smaller number of countries from 1700-
+    1800. This data is truncated to the years 1700-1989 from the original
+    in the R package brolgar, from CRAN.
 
     References:
         https://cran.r-project.org/package=brolgar
@@ -1747,6 +1748,7 @@ def fetch_country_height(
     descr = _country_height_descr
     raw_dataset = fetch_cran("heights", "brolgar")
     data = raw_dataset["heights"]
+    data = data[data["year"] >= 1700]
 
     curve_name = "country"
     argument_name = "year"

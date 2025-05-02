@@ -18,9 +18,9 @@ This example shows the composition of multidimensional FDataGrids.
 # composition will produce a third function :math:`g \circ f: X \rightarrow Z`
 # which maps :math:`x \in X` to :math:`g(f(x))` [1].
 #
-# In :ref:`sphx_glr_auto_examples_plot_landmark_registration.py` it is shown
-# the simplest case, where it is used to apply a transformation of the time
-# scale of unidimensional data to register its features.
+# In :ref:`sphx_glr_auto_examples_preprocessing_plot_landmark_registration.py`
+# it is shown the simplest case, where it is used to apply a transformation of
+# the time scale of unidimensional data to register its features.
 #
 # The following example shows the basic usage applied to a surface and a
 # curve, although the method will work for data with arbitrary dimensions.

@@ -240,7 +240,7 @@ frames = 20
 # We use :func:`skfda.datasets.make_sde_trajectories` method of the datasets
 # module to simulate solutions of the SDE. More information on how to use it
 # can be found in the example
-# :ref:`sphx_glr_auto_examples_plot_sde_simulation.py`.
+# :ref:`sphx_glr_auto_examples_datasets_plot_sde_simulation.py`.
 
 from skfda.datasets import make_sde_trajectories
 

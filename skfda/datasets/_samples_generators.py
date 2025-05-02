@@ -247,7 +247,7 @@ def make_sde_trajectories(  # noqa: WPS211
 
     In order to compute :math:`I_{(j_1, j_2)} [t_n, t_{n+1}]`, we use
     Milstein L=0 method, described by Banerjee
-    :footcite:p:`banerjee++_2020_numerical`. This method approximates the
+    :footcite:p:`banerjee_2020_numerical`. This method approximates the
     value of the double Itô integral by simulating solutions of another SDE.
     The number of discretization points used to simulate the SDE which
     approximates the double Itô integral is given by the parameter
@@ -559,7 +559,7 @@ def _milstein(  # noqa: WPS211
 
     In order to compute :math:`I_{(j_1, j_2)} [t_n, t_{n+1}]`, we use
     Milstein L=0 method, described by Banerjee
-    :footcite:p:`banerjee++_2020_numerical`. This method approximates the
+    :footcite:p:`banerjee_2020_numerical`. This method approximates the
     value of the double Itô integral by simulating solutions of another SDE.
     The number of discretization points used to simulate the SDE which
     approximates the double Itô integral is given by the parameter

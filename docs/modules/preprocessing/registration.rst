@@ -14,7 +14,7 @@ Many of the issues involved in registration can be solved by considering
 the simplest case, a simple shift in the time scale. This often happens because
 the time at which the recording process begins is arbitrary, and is unrelated
 to the beginning of the interesting segment of the data. In the
-:ref:`sphx_glr_auto_examples_plot_shift_registration.py` example
+:ref:`sphx_glr_auto_examples_preprocessing_plot_shift_registration.py` example
 is shown the basic usage of this method.
 
 .. autosummary::
@@ -31,7 +31,7 @@ takes all the times of a given feature into a common value.
 
 The simplest case in which each sample presents a unique landmark can be solved
 by performing a translation in the time scale. See the
-:ref:`sphx_glr_auto_examples_plot_landmark_shift.py` example..
+:ref:`sphx_glr_auto_examples_preprocessing_plot_landmark_shift.py` example..
 
 .. autosummary::
    :toctree: autosummary
@@ -42,7 +42,7 @@ by performing a translation in the time scale. See the
 
 The general case of landmark registration may present multiple landmarks for
 each sample and a non-linear transformation in the time scale should be applied.
-See the :ref:`sphx_glr_auto_examples_plot_landmark_registration.py` example.
+See the :ref:`sphx_glr_auto_examples_preprocessing_plot_landmark_registration.py` example.
 
 .. autosummary::
    :toctree: autosummary
@@ -57,8 +57,8 @@ Elastic Registration
 The elastic registration is a novel approach to this problem that uses the
 properties of the Fisher-Rao metric to perform the alignment of the curves.
 In the examples of
-:ref:`sphx_glr_auto_examples_plot_pairwise_alignment.py` and
-:ref:`sphx_glr_auto_examples_plot_elastic_registration.py` is shown a brief
+:ref:`sphx_glr_auto_examples_preprocessing_plot_pairwise_alignment.py` and
+:ref:`sphx_glr_auto_examples_preprocessing_plot_elastic_registration.py` is shown a brief
 introduction to this topic along the usage of the corresponding functions.
 
 .. autosummary::

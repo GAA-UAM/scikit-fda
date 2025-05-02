@@ -19,8 +19,8 @@ Shows the usage of the nearest neighbors regressor with functional response.
 #
 #
 # As in the :ref:`scalar response example
-# <sphx_glr_auto_examples_plot_neighbors_scalar_regression.py>`, we will fetch
-# the Canadian weather dataset, which contains the daily temperature and
+# <sphx_glr_auto_examples_ml_plot_neighbors_scalar_regression.py>`, we will
+# fetch the Canadian weather dataset, which contains the daily temperature and
 # precipitation at 35 different locations in Canada averaged over 1960 to 1994.
 # The following figure shows the different temperature and precipitation
 # curves.

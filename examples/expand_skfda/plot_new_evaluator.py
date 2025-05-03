@@ -74,7 +74,8 @@ X = FDataGrid(
     interpolation=evaluator_lagrange,
 )
 
-X.plot()
+fig = X.plot()
+X.scatter(fig=fig)
 plt.show()
 
 # %%

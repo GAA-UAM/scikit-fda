@@ -111,6 +111,7 @@ module = [
   "scipy.*",
   "skdatasets.*",
   "sklearn.*",
+  "sphinx_gallery.*",
 ]
 ignore_missing_imports = true
 

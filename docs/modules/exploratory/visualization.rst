@@ -49,7 +49,7 @@ As such, it is a very useful tool to detect outliers and check the magnitude of 
 There are two variants of this plot, depending on the number of dimensions (1 or 2) of the :term:`domain`.
 
 If the dimension of the :term:`domain` is 1, the following class must be used.
-See the :ref:`sphx_glr_auto_examples_plot_boxplot.py` example for detailed explanation.
+See the :ref:`sphx_glr_auto_examples_exploratory_plot_boxplot.py` example for detailed explanation.
 
 .. autosummary::
    :toctree: autosummary
@@ -57,7 +57,7 @@ See the :ref:`sphx_glr_auto_examples_plot_boxplot.py` example for detailed expla
    skfda.exploratory.visualization.Boxplot
 
 If the dimension of the :term:`domain` is 2, this one. See the
-:ref:`sphx_glr_auto_examples_plot_surface_boxplot.py`
+:ref:`sphx_glr_auto_examples_exploratory_plot_surface_boxplot.py`
 example for detailed explanation.
 
 .. autosummary::
@@ -80,6 +80,19 @@ outliers.
    :toctree: autosummary
 
    skfda.exploratory.visualization.Outliergram
+
+DD-Plot
+-------
+
+The DD-plot plots the depth of each observation in two different distributions.
+
+This is useful to understand how our data is more related with one subset of
+the data / distribution than another one.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.exploratory.visualization.DDPlot
 
 Magnitude-Shape Plot
 --------------------
@@ -127,5 +140,5 @@ the following class is implemented:
 
    skfda.exploratory.visualization.FPCAPlot
 
-See the example :ref:`sphx_glr_auto_examples_plot_fpca.py` for detailed
+See the example :ref:`sphx_glr_auto_examples_preprocessing_plot_fpca.py` for detailed
 explanation.

@@ -894,6 +894,8 @@ def root_mean_squared_error(
         \sum_{i=1}^n w_i(X_i(t) - \hat{X}_i(t))^2}
     
     This is the square root of MSE (Mean Squared Error).
+    The values of test y_true = [3, -0.5, 2, 7], y_pred = [2.5, 0.0, 2, 8] come from
+    https://scikit-learn.org/stable/modules/generated/sklearn.metrics.root_mean_squared_error.html
 
     Args:
         y_true: Correct target values.
@@ -1183,6 +1185,8 @@ def root_mean_squared_log_error(
 
     This function applies the same logic as `mean_squared_log_error`, but
     directly takes the square root of the result.
+    The values of test y_true = [3, 5, 2.5, 7], y_pred = [2.5, 5, 4, 8] come from
+    https://scikit-learn.org/stable/modules/generated/sklearn.metrics.root_mean_squared_log_error.html
 
     Args:
         y_true: True target values.

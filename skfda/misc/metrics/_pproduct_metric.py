@@ -242,7 +242,7 @@ class DefaultMetric(Metric[V]):
             return l2_distance(arg1, arg2)
 
         if isinstance(arg1, pd.DataFrame) and isinstance(arg2, pd.DataFrame):
-            metric = PProductMetric(p=2)
+            metric: PProductMetric[pd.DataFrame] = PProductMetric(p=2)
             return metric(arg1, arg2)
 
         msg = f"Unsupported types {type(arg1)} and {type(arg2)} for DefaultMetric."

@@ -16,6 +16,8 @@ from skfda.misc.scoring import (
     mean_squared_error,
     mean_squared_log_error,
     r2_score,
+    root_mean_squared_error,
+    root_mean_squared_log_error
 )
 from skfda.representation.basis import (
     BSplineBasis,
@@ -31,13 +33,15 @@ score_functions: Sequence[ScoreFunction] = (
     mean_squared_error,
     mean_squared_log_error,
     r2_score,
+    root_mean_squared_error,
+    root_mean_squared_log_error
 )
 
 irregular_score_functions: Sequence[ScoreFunction] = (
     mean_absolute_error,
     mean_absolute_percentage_error,
     mean_squared_error,
-    mean_squared_log_error,
+    mean_squared_log_error
 )
 
 
@@ -239,7 +243,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         rmse = root_mean_squared_error(y_true, y_pred)
 
         # integrate sqrt(1/2 * (-x + x^2)^2)
-        self.assertAlmostEqual(rmse, np.sqrt(2.85))
+        self.assertAlmostEqual(rmse, 1.1392275919128432)
         
     def test_mean_squared_log_error_basis(self) -> None:
         """Test Mean Squared Log Error for FDataBasis."""
@@ -265,10 +269,10 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         """Test Mean Squared Log Error for FDataBasis."""
         y_true, y_pred = _create_data_basis()
 
-        msle = root_mean_squared_log_error(y_true, y_pred)
+        rmsle = root_mean_squared_log_error(y_true, y_pred)
 
         # integrate sqrt(1/2*(log(1 + 4 + 5x + 6x^2) - log(1 + 4 + 6x + 5x^2))^2)
-        self.assertAlmostEqual(msle, 0.00107583)
+        self.assertAlmostEqual(rmsle, 0.0276305701684461)
 
     def test_r2_score_basis(self) -> None:
         """Test R2 Score for FDataBasis."""

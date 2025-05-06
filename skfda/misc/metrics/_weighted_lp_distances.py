@@ -34,6 +34,7 @@ class WeightedLpDistance(
 
         self.p = p
         self.vector_norm = vector_norm
+        self.lp_weight = lp_weight
         norm = WeightedLpNorm(
             p=p, vector_norm=vector_norm, lp_weight=lp_weight,
         )
@@ -48,6 +49,7 @@ class WeightedLpDistance(
         return (
             f"{type(self).__name__}(p={self.p},"
             f" vector_norm={self.vector_norm})"
+            f" lp_weight={self.lp_weight})"
         )
 
 

@@ -86,10 +86,13 @@ class LpNorm(WeightedLpNorm):
         p: float,
         vector_norm: Norm[NDArrayFloat] | float | None = None,
     ) -> None:
-        super().__init__(p=p,vector_norm=vector_norm)
+        super().__init__(p=p, vector_norm=vector_norm)
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(p={self.p}, vector_norm={self.vector_norm})"
+        return (
+            f"{type(self).__name__}(p={self.p},"
+            f"vector_norm={self.vector_norm})"
+        )
 
 
 l1_norm: Final = LpNorm(1)

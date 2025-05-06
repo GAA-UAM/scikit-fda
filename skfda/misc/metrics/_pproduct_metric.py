@@ -155,12 +155,15 @@ def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
             check_fdata_same_kind(v1[0], v2[0])
 
         else:
-            msg = f"Distance not supported for sample type {type(sample)} in column {col}"
+            msg = (
+                f"Distance not supported for sample"
+                f" type {type(sample)} in column {col}"
+            )
             raise TypeError(msg)
 
 
 @compute_p_product.register
-def _(
+def _(  # noqa: C901
     metric: PProductMetric[V],
     arg1: pd.DataFrame,
     arg2: pd.DataFrame,
@@ -174,13 +177,12 @@ def _(
 
     if isinstance(metrics, Metric):
         metrics = [metrics] * n_cols
-    elif isinstance(metrics, Sequence):
-        if len(metrics) != n_cols:
-            msg = (
-                f"Number of metrics ({len(metrics)}) does not match the"
-                f" number of columns ({n_cols})."
-            )
-            raise ValueError(msg)
+    elif isinstance(metrics, Sequence) and len(metrics) != n_cols:
+        msg = (
+            f"Number of metrics ({len(metrics)}) does not match the"
+            f" number of columns ({n_cols})."
+        )
+        raise ValueError(msg)
     elif isinstance(metrics, dict):
         if len(metrics) != n_cols:
             msg = (
@@ -208,11 +210,11 @@ def _(
     for i, col in enumerate(arg1.columns):
         sample = arg1.iloc[0][col]
         if isinstance(sample, FData):
-            fdata1 = FData._from_sequence(arg1[col])
-            fdata2 = FData._from_sequence(arg2[col])
-            distances[i,:] += metrics[i](fdata1, fdata2)
+            fdata1 = FData._from_sequence(arg1[col])  # noqa: SLF001
+            fdata2 = FData._from_sequence(arg2[col])  # noqa: SLF001
+            distances[i, :] += metrics[i](fdata1, fdata2)
         else:
-            distances[i,:] += metrics[i](arg1[col].values, arg2[col].values)
+            distances[i, :] += metrics[i](arg1[col].values, arg2[col].values)
 
     res: NDArrayFloat = np.atleast_1d(
         np.sum(
@@ -222,6 +224,7 @@ def _(
         ),
     )
     return res[0] if len(res) == 1 else res
+
 
 class DefaultMetric(Metric[V]):
     """Default metric based on the input type."""
@@ -233,25 +236,32 @@ class DefaultMetric(Metric[V]):
     ) -> NDArrayFloat:
         """Compute the distance between `arg1` and `arg2`."""
         if isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
-            diff = arg1- arg2
+            diff = arg1 - arg2
             res = np.abs(diff).astype(np.float64)
             return res[0] if len(res) == 1 else res
 
         if isinstance(arg1, FData) and isinstance(arg2, FData):
             from skfda.misc.metrics import l2_distance
+
             return l2_distance(arg1, arg2)
 
         if isinstance(arg1, pd.DataFrame) and isinstance(arg2, pd.DataFrame):
             metric: PProductMetric[pd.DataFrame] = PProductMetric(p=2)
             return metric(arg1, arg2)
 
-        msg = f"Unsupported types {type(arg1)} and {type(arg2)} for DefaultMetric."
+        msg = (
+            f"Unsupported types {type(arg1)} "
+            f"and {type(arg2)} for DefaultMetric."
+        )
         raise TypeError(msg)
+
+
 def default_metric(
     arg1: NDArrayFloat | FData | pd.DataFrame,
     arg2: NDArrayFloat | FData | pd.DataFrame,
-)-> NDArrayFloat:
+) -> NDArrayFloat:
     return DefaultMetric()(arg1=arg1, arg2=arg2)
+
 
 class PProductMetric(Metric[V]):
     def __init__(
@@ -289,7 +299,7 @@ def pproduct_metric(
 
 
 @pairwise_metric_optimization.register
-def pairwise_metric_optimization_pproductmetric(
+def pairwise_metric_optimization_pproductmetric(  # noqa: C901, PLR0912
     metric: PProductMetric[V],
     arg1: pd.DataFrame,
     arg2: pd.DataFrame | None = None,
@@ -308,11 +318,17 @@ def pairwise_metric_optimization_pproductmetric(
         metrics = [metrics] * n_cols
     elif isinstance(metrics, Sequence):
         if len(metrics) != n_cols:
-            msg = f"Number of metrics ({len(metrics)}) does not match number of columns ({n_cols})."
+            msg = (
+                f"Number of metrics ({len(metrics)}) "
+                f"does not match number of columns ({n_cols})."
+            )
             raise ValueError(msg)
     elif isinstance(metrics, dict):
         if len(metrics) != n_cols:
-            msg = f"Number of metrics ({len(metrics)}) does not match number of columns ({n_cols})."
+            msg = (
+                f"Number of metrics ({len(metrics)}) "
+                f"does not match number of columns ({n_cols})."
+            )
             raise ValueError(msg)
         for col in metrics:
             if col not in arg1.columns:
@@ -323,7 +339,10 @@ def pairwise_metric_optimization_pproductmetric(
     if isinstance(weights, (float, int)):
         weights = np.full(n_cols, weights)
     elif isinstance(weights, np.ndarray) and len(weights) != n_cols:
-        msg = f"Number of weights ({len(weights)}) does not match number of columns ({n_cols})."
+        msg = (
+            f"Number of weights ({len(weights)}) "
+            f"does not match number of columns ({n_cols})."
+        )
         raise ValueError(msg)
 
     distances = np.zeros((len(arg1), len(arg2)), dtype=np.float64)
@@ -332,14 +351,15 @@ def pairwise_metric_optimization_pproductmetric(
         sample = arg1.iloc[0][col]
 
         if isinstance(sample, FData):
-            fdata1 = FData._from_sequence(arg1[col])
-            fdata2 = FData._from_sequence(arg2[col])
+            fdata1 = FData._from_sequence(arg1[col])  # noqa: SLF001
+            fdata2 = FData._from_sequence(arg2[col])  # noqa: SLF001
             col_distances = PairwiseMetric(metrics[i])(fdata1, fdata2)
         else:
-            col_distances = PairwiseMetric(metrics[i])(arg1[col].values, arg2[col].values)
+            col_distances = PairwiseMetric(metrics[i])(
+                arg1[col].values,
+                arg2[col].values,
+            )
 
         distances += weights[i] * np.power(col_distances, metric.p)
 
     return np.power(distances, 1 / metric.p)
-
-

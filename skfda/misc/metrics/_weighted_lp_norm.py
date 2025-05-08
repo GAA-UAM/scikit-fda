@@ -103,7 +103,7 @@ class WeightedLpNorm:
         ) = None,
     ) -> None:
 
-        # Checks that the lp normed is well defined
+        # Checks that the Lp normed is well defined
         if not np.isinf(p) and p < 1:
             msg = f"p (={p}) must be equal or greater than 1."
             raise ValueError(msg)
@@ -139,7 +139,7 @@ class WeightedLpNorm:
         if lp_weight is None:
             lp_weight = 1.0
 
-        if lp_weight ==1.0 and self.p ==vector_norm==2:  # noqa: PLR2004
+        if lp_weight == 1.0 and self.p == 2 and vector_norm == 2:  # noqa: PLR2004
             return np.sqrt(inner_product(vector, vector))
 
         if isinstance(vector, FDataBasis):

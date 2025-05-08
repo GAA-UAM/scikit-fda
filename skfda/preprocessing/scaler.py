@@ -18,21 +18,6 @@ from ..typing._numpy import NDArrayFloat
 
 T = TypeVar("T", bound=FDataGrid|FDataBasis)
 
-""" 
-def compute_uniform_center(X: FData) -> NDArrayFloat:
-    Compute the uniform center of the functional data
-    if isinstance(X, FDataGrid):
-        mean = X.data_matrix.mean(axis=0).mean()
-    elif isinstance(X, FDataBasis):
-        arr = np.array(X.domain_range)
-        diff = arr[:, 1] - arr[:, 0]
-        integral = nquad_vec(
-            lambda x: X.mean()(x),
-            X.domain_range,
-        )
-        mean = integral / diff
-    return mean """
-
 
 @singledispatch
 def center_scale(

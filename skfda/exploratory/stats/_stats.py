@@ -236,7 +236,7 @@ def depth_based_median(
     Returns:
         Object containing the computed depth_based median.
 
-    See also:
+    See Also:
         :func:`geometric_median`
 
     """
@@ -340,7 +340,8 @@ def trim_mean(
     *,
     depth_method: Depth[F] | None = None,
 ) -> FDataGrid:
-    """Compute the trimmed means based on a depth measure.
+    """
+    Compute the trimmed means based on a depth measure.
 
     The trimmed means consists in computing the mean function without a
     percentage of least deep curves. That is, we first remove the least deep
@@ -378,59 +379,57 @@ def trim_mean(
     return trimmed_curves.mean()
 
 
-def duoble_mean(X: FData) -> FData:
-    """Compute the double mean of a FData object.
-
-    Args:
-        X: Object containing all the samples whose double mean is wanted.
-
-    Returns:
-        Double mean of all the samples in the original object, as a
-        :term:`functional data object` with just one sample.
-
-    """
-    # Crate a FData object with one observation per observation in the original
-    # where this observation is X.mean() + one of each of the average values
-    individual_observation_means = average_function_value(X)
-    if isinstance(X, FDataBasis):
-        mean_function = X.mean()
-
-    elif isinstance(X, FDataGrid):
-        mean_function = X.mean().to_grid()
-        double_fdata = X.copy(
-            data_matrix=mean_function.data_matrix
-            + individual_observation_means
-            - grand_mean(X),
-            sample_names=(None,),
-        )
-
-    return double_fdata
-
-
 def individual_observation_mean(X: FData) -> NDArrayFloat:
-    """Compute the grand mean of a FData object.
+    r"""
+    Compute the individual mean (integrated average) of each sample.
+
+    For each function in the dataset, this computes its average value over
+    the domain. This is used to remove vertical shifts or normalize each
+    function based on its overall magnitude.
+
+    Mathematically:
+        .. math::
+            m_i = \int_\mathcal{T} X_i(t) \, dt
 
     Args:
-        X: Object containing all the samples whose grand mean is wanted.
+        X: Functional dataset.
 
     Returns:
-        Grand mean of all the samples in the original object, as a
-        :term:`functional data object` with just one sample.
+        A 1D array containing the integrated mean of each observation.
 
+    Raises:
+        TypeError: If `X` is not a supported FData type.
     """
     return average_function_value(X)
 
 
 def grand_mean(X: FData) -> NDArrayFloat:
-    """Compute the grand mean of a FData object.
+    r"""
+    Compute the grand mean scalar of the dataset.
+
+    This value is the average of the individual observation means across the
+    entire dataset. It provides a scalar summary of the central tendency
+    of the dataset.
+
+    Mathematically:
+        .. math::
+            m = \frac{1}{N} \sum_{i=1}^{N} m_i
+
+        where m_i is the integral of each function. Therefore the general
+        formula can be expressed as:
+
+        .. math::
+            X_i(t)-m \quad\text{where}\quad m = \frac{1}{N} \sum_{n=1}^{N}
+            \frac{1}{\mu(T)} \int_\mathcal{T} X_n(t) \, dt.
 
     Args:
-        X: Object containing all the samples whose grand mean is wanted.
+        X: Functional dataset.
 
     Returns:
-        Grand mean of all the samples in the original object, as a
-        :term:`functional data object` with just one sample.
+        A scalar representing the grand mean of all functions.
 
+    Raises:
+        TypeError: If `X` is not a supported FData type.
     """
     individual_mean = average_function_value(X)
 
@@ -440,7 +439,34 @@ def grand_mean(X: FData) -> NDArrayFloat:
 def root_integrated_sample_variance(
     X: FData, correction: int = 0,
 ) -> NDArrayFloat:
-    """Compute the uniform scale of the functional data."""
+    r"""
+    Compute the root integrated sample variance (RISV) for scaling.
+
+    This method estimates the variability of functional observations over
+    the domain and returns a scalar scaling factor. The output can be used
+    to normalize each function and avoid dominance of components with large
+    amplitude.
+
+    Mathematically:
+        .. math::
+            S = \sqrt{\frac{1}{N - \text{correction}} \sum_{i=1}^N
+                \int_\mathcal{T} (X_i(t) - m(t))^2 \, dt}
+
+        where m(t) is the functional mean.
+
+    This method can be used in vector valued and mixed functional data
+    contexts to allow for fair comparison between different components.
+
+    Args:
+        X: Functional dataset to scale.
+        correction: Degrees of freedom correction. Use 1 for sample variance.
+
+    Returns:
+        A 1D NumPy array with the scaling factor for each component.
+
+    Raises:
+        TypeError: If `X` is not a supported FData type.
+    """
     if isinstance(X, FDataGrid):
         integrand = X.copy(
             data_matrix=(X.data_matrix) ** 2,

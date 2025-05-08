@@ -18,9 +18,9 @@ class WeightedLpNorm:
     Weighted Lp norm for functional data objects.
 
     This class generalizes the standard Lp norm to support weighting across
-    the domain and pointwise vector norms. It is applicable to univariate,
-    multivariate, and vector-valued functional data, and supports both
-    `FDataGrid` and `FDataBasis` representations, as well as raw NumPy arrays.
+    the domain and pointwise vector norms. It is applicable to univariate, and
+    vector-valued functional data, and supports both `FDataGrid` and
+    `FDataBasis` representations, as well as raw NumPy arrays.
 
     The standard Lp norm is widely used to measure the size or difference
     between functions. For scalar-valued functions, it is defined as:
@@ -28,7 +28,7 @@ class WeightedLpNorm:
     .. math::
         \|X\|_p = \left( \int_{\mathcal{T}} |X(t)|^p dt \right)^{1/p}.
 
-    For multivariate or vector-valued functions
+    For vector-valued functions
     \( \mathbf{X}(t) = (X^{(1)}(t), \dots, X^{(D)}(t)) \),
     the norm is extended by applying a vector norm pointwise:
 
@@ -65,7 +65,7 @@ class WeightedLpNorm:
     Args:
         p: Exponent of the Lp norm. Must be ≥ 1. If set to `math.inf`,
         computes the L-infinity norm.
-        vector_norm: Norm to apply pointwise to multivariate functions.
+        vector_norm: Norm to apply pointwise to vector valued functions.
             May be a float (interpreted as an Lp norm index) or a callable.
             If `None`, defaults to `p`.
         lp_weight: Optional weight to apply in the integral. Can be a scalar

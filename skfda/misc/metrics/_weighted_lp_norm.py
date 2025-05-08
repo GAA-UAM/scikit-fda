@@ -17,49 +17,71 @@ class WeightedLpNorm:
     r"""
     Weighted Lp norm for functional data objects.
 
-    This class generalizes the standard Lp norm by incorporating optional
-    weighting functions over the domain of the data. It supports both
+    This class generalizes the standard Lp norm to support weighting across
+    the domain and pointwise vector norms. It is applicable to univariate,
+    multivariate, and vector-valued functional data, and supports both
     `FDataGrid` and `FDataBasis` representations, as well as raw NumPy arrays.
 
-    For a univariate or vector valued function :math:`X: \mathcal{T}
-    \rightarrow \mathbb{R}^D`, the weighted Lp norm is defined as:
+    The standard Lp norm is widely used to measure the size or difference
+    between functions. For scalar-valued functions, it is defined as:
 
     .. math::
-        \| \mathbf{X} \|_{p,w} = \left( \int_{\mathcal{T}}
-        w(t)\| \mathbf{X}(t) \|_{\mathbb{R}^D}^p \, dt \right)^{\frac{1}{p}}.
+        \|X\|_p = \left( \int_{\mathcal{T}} |X(t)|^p dt \right)^{1/p}.
 
-    Where:
-        - :math:`\| \cdot \|_{\mathbb{R}^D}^p` is a vectorial norm applied
-        pointwise, typically an Lp norm or the Euclidean norm.
-        - :math:`w(x)` is the weighting function.
-        - :math:`p \geq 1` is the order of the norm.
-        - :math:`D` is the domain of the function.
+    For multivariate or vector-valued functions
+    \( \mathbf{X}(t) = (X^{(1)}(t), \dots, X^{(D)}(t)) \),
+    the norm is extended by applying a vector norm pointwise:
 
-    If no weighting function is provided, the norm reduces to the standard
+    .. math::
+        \| \mathbf{X} \|_{p} =
+        \left( \int_{\mathcal{T}} \| \mathbf{X}(t) \|_{\mathbb{R}^D}^p \,
+        dt \right)^{\frac{1}{p}}.
+
+    The vector norm \( \| \cdot \|_{\mathbb{R}^D} \) is commonly chosen as:
+        - the Euclidean norm (default):
+        \( \| \mathbf{X}(t) \|_2 = \sqrt{ \sum_{d=1}^{D} |X^{(d)}(t)|^2 } \),
+        - or alternatives such as \( \ell^1 \) or \( \ell^\infty \) norms.
+
+    In many applications, certain time intervals may carry more relevance than
+    others. For example, peak energy demand periods or recent events in
+    financial data may deserve more emphasis. This is addressed by introducing
+    a non-negative weighting function \( w(t) \) into the integral, giving the
+    weighted Lp norm:
+
+    .. math::
+        \| \mathbf{X} \|_{p,w} = \left( \int_{\mathcal{T}} w(t)
+        \| \mathbf{X}(t) \|_{\mathbb{R}^D}^p \, dt \right)^{\frac{1}{p}}.
+
+    This allows domain-specific knowledge to influence the measure of
+    similarity or magnitude—making the norm more adaptable to real-world
+    settings.
+
+    If no weighting function is provided, the norm reduces to the classical
     (unweighted) Lp norm.
 
-    The integration is performed using Simpson's rule for `FDataGrid` and
-    `nquad_vec` for `FDataBasis`.
+    Internally, integration is performed using Simpson's rule for `FDataGrid`
+    objects, and multidimensional quadrature (`nquad_vec`) for `FDataBasis`.
 
     Args:
-        p: Exponent of the Lp norm. Must be greater than or equal to 1. If set
-            to `math.inf`, the norm becomes the L-infinity norm.
+        p: Exponent of the Lp norm. Must be ≥ 1. If set to `math.inf`,
+        computes the L-infinity norm.
         vector_norm: Norm to apply pointwise to multivariate functions.
-            If a float is passed, it is interpreted as an Lp norm index.
-            If `None`, defaults to the value of `p`.
-        lp_weight: Optional weight to apply in the integral. It can be a float
-            (applied uniformly) or a callable function taking domain points as
-            input and returning weights.
+            May be a float (interpreted as an Lp norm index) or a callable.
+            If `None`, defaults to `p`.
+        lp_weight: Optional weight to apply in the integral. Can be a scalar
+            (uniform weight) or a callable \( w(t) \) returning weights
+            for domain points.
 
     Raises:
-        ValueError: If `p` is less than 1 and not infinite.
+        ValueError: If `p` is less than 1 and not infinity.
         NotImplementedError: If the input data type is unsupported.
 
     Examples:
+        Calculates the weighted norm of a FDataGrid containing the functions
+        y = 1 and y = x defined in the interval [0,1].
 
         >>> import skfda
         >>> import numpy as np
-        >>>
         >>> x = np.linspace(0, 1, 1001)
         >>> fd = skfda.FDataGrid([np.ones(len(x)), x], x)
         >>> from skfda.misc.metrics._weighted_lp_norm import WeightedLpNorm
@@ -68,10 +90,9 @@ class WeightedLpNorm:
         array([1.41, 0.82])
 
     See Also:
-        :class:`LpNorm`: A subclass that sets a default weight of 1.0.
+        :class:`LpNorm`: A subclass with uniform weight (1.0).
         :func:`weighted_lp_norm`: Functional wrapper.
-        :func:`vectorial_norm`: Helper function used for pointwise norm
-        evaluation.
+        :func:`vectorial_norm`: Helper for evaluating pointwise norms.
     """
     def __init__(
         self,

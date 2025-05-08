@@ -1,4 +1,4 @@
-"""Tests for the metrics module."""
+"""Tests for LpDistance and LpNorm."""
 
 import unittest
 

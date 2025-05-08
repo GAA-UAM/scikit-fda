@@ -10,14 +10,7 @@ Shows the usage of the elastic registration to perform a groupwise alignment.
 
 # sphinx_gallery_thumbnail_number = 5
 
-import numpy as np
-
-import skfda
-from skfda.datasets import fetch_growth, make_multimodal_samples
-from skfda.exploratory.stats import fisher_rao_karcher_mean
-from skfda.preprocessing.registration import FisherRaoElasticRegistration
-
-##############################################################################
+# %%
 # In the example of pairwise alignment was shown the usage of
 # :class:`~skfda.preprocessing.registration.FisherRaoElasticRegistration` to
 # align a set of functional observations to a given template or a set of
@@ -32,10 +25,15 @@ from skfda.preprocessing.registration import FisherRaoElasticRegistration
 # We will create a synthetic dataset to show the basic usage of the
 # registration.
 
+import matplotlib.pyplot as plt
+
+from skfda.datasets import make_multimodal_samples
+
 fd = make_multimodal_samples(n_modes=2, stop=4, random_state=1)
 fd.plot()
+plt.show()
 
-###############################################################################
+# %%
 # The following figure shows the
 # :func:`~skfda.exploratory.stats.fisher_rao_karcher_mean` of the
 # dataset and the cross-sectional mean, which correspond to the karcher-mean
@@ -45,23 +43,27 @@ fd.plot()
 # curves compared to the standard mean, since it is not affected by the
 # deformations of the curves.
 
+from skfda.exploratory.stats import fisher_rao_karcher_mean
 
 fig = fd.mean().plot(label="L2 mean")
 fisher_rao_karcher_mean(fd).plot(fig=fig, label="Elastic mean")
 fig.legend()
+plt.show()
 
-##############################################################################
+# %%
 # In this case, the alignment completely reduces the amplitude variability
 # between the samples, aligning the maximum points correctly.
+
+from skfda.preprocessing.registration import FisherRaoElasticRegistration
 
 elastic_registration = FisherRaoElasticRegistration()
 
 fd_align = elastic_registration.fit_transform(fd)
 
 fd_align.plot()
+plt.show()
 
-
-##############################################################################
+# %%
 # In general these type of alignments are not possible, in the following
 # figure it is shown how it works with a real dataset.
 # The :func:`berkeley growth dataset<skfda.datasets.fetch_growth>`
@@ -71,27 +73,34 @@ fd_align.plot()
 #
 # First we show the original curves:
 
+import numpy as np
+
+from skfda.datasets import fetch_growth
+from skfda.representation.interpolation import SplineInterpolation
+
 growth = fetch_growth()
 
 # Select only one sex
-fd = growth['data'][growth['target'] == 0]
+fd = growth["data"][growth["target"] == 0]
 
 # Obtain velocity curves
-fd.interpolation = skfda.representation.interpolation.SplineInterpolation(3)
+fd.interpolation = SplineInterpolation(3)
 fd_derivative = fd.to_grid(np.linspace(*fd.domain_range[0], 200)).derivative()
 fd_derivative = fd_derivative.to_grid(np.linspace(*fd.domain_range[0], 50))
 fd_derivative.dataset_name = f"{fd.dataset_name} - derivative"
 fd_derivative.plot()
+plt.show()
 
-##############################################################################
+# %%
 # We now show the aligned curves:
 
 fd_align = elastic_registration.fit_transform(fd_derivative)
 fd_align.dataset_name = f"{fd.dataset_name} - derivative aligned"
 
 fd_align.plot()
+plt.show()
 
-##############################################################################
+# %%
 # * Srivastava, Anuj & Klassen, Eric P. (2016). Functional and shape data
 #   analysis. In *Functional Data and Elastic Registration* (pp. 73-122).
 #   Springer.

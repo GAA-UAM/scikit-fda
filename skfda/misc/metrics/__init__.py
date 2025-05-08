@@ -39,6 +39,8 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "_pproduct_metric":[
             "PProductMetric",
             "pproduct_metric",
+            "DefaultMetric",
+            "default_metric",
         ],
     },
 )
@@ -68,7 +70,9 @@ if TYPE_CHECKING:
     from ._mahalanobis import MahalanobisDistance as MahalanobisDistance
     from ._parse import PRECOMPUTED as PRECOMPUTED
     from ._pproduct_metric import (
+        DefaultMetric as DefaultMetric,
         PProductMetric as PProductMetric,
+        default_metric as default_metric,
         pproduct_metric as pproduct_metric,
     )
     from ._utils import (

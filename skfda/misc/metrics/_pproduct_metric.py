@@ -1,9 +1,9 @@
-"""Implementation of Lp metrics."""
+"""Implementation of Product Metrics."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import NoReturn, TypeVar
+from typing import Generic, NoReturn, TypeVar
 
 import multimethod
 import numpy as np
@@ -16,14 +16,15 @@ from ..metrics._utils import pairwise_metric_optimization
 from ..validation import check_fdata_same_kind
 from ._utils import PairwiseMetric
 
-V = TypeVar("V", bound=FData | pd.DataFrame | NDArrayFloat)
+V_call = TypeVar("V_call", bound=FData | pd.DataFrame | NDArrayFloat)
+V_metric = TypeVar("V_metric", bound=FData | pd.DataFrame | NDArrayFloat)
 
 
 @multimethod.multidispatch
-def compute_p_product(
-    metric: PProductMetric[V],
-    arg1: V,
-    arg2: V,
+def _compute_p_product(
+    metric: PProductMetric[V_call, V_metric],
+    arg1: V_call,
+    arg2: V_call,
 ) -> NoReturn:
     msg = (
         f"PProductMetric not implemented for type {type(arg1)} and "
@@ -32,9 +33,9 @@ def compute_p_product(
     raise NotImplementedError(msg)
 
 
-@compute_p_product.register
+@_compute_p_product.register
 def _(
-    metric: PProductMetric[V],
+    metric: PProductMetric[V_call, V_metric],
     arg1: NDArrayFloat,
     arg2: NDArrayFloat,
 ) -> NDArrayFloat:
@@ -58,20 +59,17 @@ def _(
         )
         raise TypeError(msg)
 
-    return (metric_computator(arg1, arg2) ** metric.p * weights) ** (
-        1 / metric.p
-    )
+    dist = metric_computator(arg1, arg2)
+    return (weights * dist**metric.p) ** (1 / metric.p)
 
 
-@compute_p_product.register
-def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
+@_compute_p_product.register
+def _(
+    metric: PProductMetric[V_call, V_metric], arg1: FData, arg2: FData,
+) -> NDArrayFloat:
     from ..metrics import l2_distance
 
-    if not arg1.__eq__(arg2):
-        msg = "FData objects must be equal to compute p-product."
-        raise ValueError(msg)
-
-    weights = metric.weights if metric.weights else 1.0
+    weights = metric.weights if metric.weights is not None else 1.0
     metrics = metric.metrics
 
     if isinstance(metrics, dict):
@@ -107,7 +105,7 @@ def _(metric: PProductMetric[V], arg1: FData, arg2: FData) -> NDArrayFloat:
 
     elif isinstance(arg1, FDataGrid):
         data_matrix1 = arg1.data_matrix
-        data_matrix2 = arg1.data_matrix
+        data_matrix2 = arg2.data_matrix
 
         value = np.array(
             [
@@ -162,9 +160,9 @@ def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
             raise TypeError(msg)
 
 
-@compute_p_product.register
-def _(  # noqa: C901
-    metric: PProductMetric[V],
+@_compute_p_product.register
+def _(  # noqa: C901, PLR0912
+    metric: PProductMetric[V_call, V_metric],
     arg1: pd.DataFrame,
     arg2: pd.DataFrame,
 ) -> NDArrayFloat:
@@ -172,8 +170,12 @@ def _(  # noqa: C901
     same_structure_and_data(arg1, arg2)
 
     n_cols = arg1.shape[1]
-    metrics = metric.metrics if metric.metrics else [default_metric] * n_cols
-    weights = metric.weights if metric.weights else 1.0
+    metrics = (
+        metric.metrics
+        if metric.metrics is not None
+        else [default_metric] * n_cols
+    )
+    weights = metric.weights if metric.weights is not None else 1.0
 
     if isinstance(metrics, Metric):
         metrics = [metrics] * n_cols
@@ -215,26 +217,62 @@ def _(  # noqa: C901
             distances[i, :] += metrics[i](fdata1, fdata2)
         else:
             distances[i, :] += metrics[i](arg1[col].values, arg2[col].values)
-
-    res: NDArrayFloat = np.atleast_1d(
-        np.sum(
+    if np.isinf(metric.p):
+        res: NDArrayFloat = np.max(distances * weights[:, np.newaxis], axis=0)
+    else:
+        res = np.sum(
             np.power(distances, metric.p) * weights[:, np.newaxis],
             axis=0,
             dtype=np.float64,
-        ),
-    )
+        )
+        res = np.power(res, 1 / metric.p)
+
     return res[0] if len(res) == 1 else res
 
 
-class DefaultMetric(Metric[V]):
-    """Default metric based on the input type."""
+class DefaultMetric(Metric[V_metric]):
+    """
+    Default metric class that computes distances based on the input data type.
+
+    This class selects a distance computation method depending on the type of
+    the input objects. It supports the following types:
+
+    - ``np.ndarray``: Computes the element-wise absolute difference.
+    - ``FData``: Uses the L2 distance for functional data objects.
+    - ``pandas.DataFrame``: Applies a product metric with ``p=2`` across
+    columns.
+
+    If the input types are unsupported or mismatched, a ``TypeError`` is
+    raised.
+
+    """
 
     def __call__(
         self,
         arg1: NDArrayFloat | FData | pd.DataFrame,
         arg2: NDArrayFloat | FData | pd.DataFrame,
     ) -> NDArrayFloat:
-        """Compute the distance between `arg1` and `arg2`."""
+        """
+        Compute the distance between ``arg1`` and ``arg2``.
+
+        The computation method depends on the type of the arguments:
+
+        - If both are ``np.ndarray``, returns the absolute element-wise difference.
+        - If both are ``FData``, returns the L2 distance.
+        - If both are ``pandas.DataFrame``, uses a product metric with ``p=2``.
+
+        Args:
+            arg1 : NDArrayFloat or FData or pandas.DataFrame
+                First object to compare. Must be of the same type as ``arg2``.
+            arg2 : NDArrayFloat or FData or pandas.DataFrame
+                Second object to compare. Must be of the same type as ``arg1``.
+
+        Returns:
+            The computed distance(s). The format depends on the input type:
+            - For NumPy arrays, an array of absolute differences.
+            - For FData, a float representing the L2 distance.
+            - For DataFrames, a float from the product metric.
+        """
         if isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
             diff = arg1 - arg2
             res = np.abs(diff).astype(np.float64)
@@ -246,7 +284,9 @@ class DefaultMetric(Metric[V]):
             return l2_distance(arg1, arg2)
 
         if isinstance(arg1, pd.DataFrame) and isinstance(arg2, pd.DataFrame):
-            metric: PProductMetric[pd.DataFrame] = PProductMetric(p=2)
+            metric: PProductMetric[pd.DataFrame, V_metric] = PProductMetric(
+                p=2,
+            )
             return metric(arg1, arg2)
 
         msg = (
@@ -260,15 +300,101 @@ def default_metric(
     arg1: NDArrayFloat | FData | pd.DataFrame,
     arg2: NDArrayFloat | FData | pd.DataFrame,
 ) -> NDArrayFloat:
+    """
+    Functional wrapper for computing Default Metric.
+
+    See :class:`~skfda.misc.metrics.DefaultMetric` for full documentation.
+    """
     return DefaultMetric()(arg1=arg1, arg2=arg2)
 
 
-class PProductMetric(Metric[V]):
+class PProductMetric(Metric[V_call], Generic[V_call, V_metric]):
+    r"""
+    Weighted :math:`l^p`-type product metric for Mixed Data.
+
+    This class defines a generalized distance over product spaces, where each
+    component of an observation may be of a different type (e.g., scalar,
+    vector valued function, functional). The distance is computed as a weighted
+    :math:`l^p` norm of component-wise distances, each using a custom metric.
+
+    Given two observations
+    :math:`X_1 = (X_1^{(1)}, ..., X_1^{(D)})` and
+    :math:`X_2 = (X_2^{(1)}, ..., X_2^{(D)})`,
+    the distance is computed as:
+
+    .. math::
+        d(X_1, X_2) = (\sum_{d=1}^D w^{(d)} * d_{q_d}(X_1^{(d)}, X_2^{(d)})^p
+        )^{1/p}
+
+    where:
+        - :math:`d_{q_d}` is a metric defined for component `d` (e.g.,
+            :math:`L^2` norm, Euclidean),
+        - :math:`w^{(d)}` is a weight controlling the scale or relevance of
+            component `d`,
+        - :math:`p \in [1, \infinity]` controls how distances are aggregated.
+
+    Args:
+        p : Aggregation parameter. Must be >= 1 or `np.inf`.
+            Determines the type of :math:`l^p` norm used to combine the
+            component-wise distances.
+        metrics : The metric(s) to use for each component. Options:
+                - A single `Metric` object, used for all components.
+                - A sequence of `Metric`, one per component.
+                - A dictionary mapping keys to metrics, for use
+                    with Mixed Data represented as `pd.DataFrames`.
+                - `None` defaults to Euclidean for numeric values and
+                    :math:`L^2` norm for `FData` types.
+        weights : Weights for each component. If a scalar, all components
+            receive equal weight. If `None`, weights default to 1 for all
+            components.
+
+    Examples:
+    Calculates de product metric between two Mixed Data observations, each
+    composed by a FDataBasis and a scalar value.
+
+    >>> from skfda.misc.metrics import l2_distance
+    >>> from skfda.representation.basis import FDataBasis, FourierBasis
+    >>> from skfda.misc.metrics import PProductMetric
+    >>> import numpy as np
+
+    >>> basis = FourierBasis(n_basis=5)
+    >>> fd1 = FDataBasis(basis, [[1, 2, 3, 4, 5]])
+    >>> fd2 = FDataBasis(basis, [[2, 3, 4, 5, 6]])
+
+    >>> pmetric = PProductMetric(
+    ...     p=2,
+    ...     metrics=[l2_distance, lambda x, y: abs(x - y)],
+    ...     weights=np.array([1.0, 0.5]),
+    ... )
+
+    >>> import pandas as pd
+    >>> df1 = pd.DataFrame({
+    ...     "fd": [fd1],
+    ...     "num": [6.0],
+    ... })
+    >>> df2 = pd.DataFrame({
+    ...     "fd": [fd2],
+    ...     "num": [3.0],
+    ... })
+    >>> pmetric(df1, df2).round(2)
+    3.08
+
+    Notes:
+    - The metric is evaluated in a vectorized fashion. If `arg1` or `arg2`
+      contains multiple observations, broadcasting rules apply.
+    - This class enables integration of scalar, categorical (with encoding),
+        and functional data for unified treatment in clustering,
+        classification, etc.
+    """
+
     def __init__(
         self,
         p: float,
         metrics: (
-            Sequence[Metric[V]] | Metric[V] | dict[str, Metric[V]] | None
+            Sequence[Metric[V_metric]]
+            | Metric[V_metric]
+            | dict[str, Metric[V_metric]]
+            | None
         ) = None,
         weights: NDArrayFloat | float | None = None,
     ) -> None:
@@ -282,25 +408,37 @@ class PProductMetric(Metric[V]):
     def __repr__(self) -> str:
         return f"{type(self).__name__}(p={self.p}, weights={self.weights})"
 
-    def __call__(self, arg1: V, arg2: V) -> NDArrayFloat:
-        return compute_p_product(self, arg1, arg2)
+    def __call__(self, arg1: V_call, arg2: V_call) -> NDArrayFloat:
+        return _compute_p_product(self, arg1, arg2)
 
 
 def pproduct_metric(
-    arg1: V,
-    arg2: V,
+    arg1: V_call,
+    arg2: V_call,
     *,
     p: float,
-    metrics: list[Metric[V]] | Metric[V] | dict[str, Metric[V]] | None = None,
+    metrics: (
+        list[Metric[V_metric]]
+        | Metric[V_metric]
+        | dict[str, Metric[V_metric]]
+        | None
+    ) = None,
     weights: NDArrayFloat | float | None = None,
 ) -> NDArrayFloat:
-    metric = PProductMetric(p, metrics=metrics, weights=weights)
+    """
+    Functional wrapper for computing PProduct Metrics.
+
+    See :class:`~skfda.misc.metrics.PProductMetric` for full documentation.
+    """
+    metric: PProductMetric[V_call, V_metric] = PProductMetric(
+        p, metrics=metrics, weights=weights,
+    )
     return metric(arg1, arg2)
 
 
 @pairwise_metric_optimization.register
 def pairwise_metric_optimization_pproductmetric(  # noqa: C901, PLR0912
-    metric: PProductMetric[V],
+    metric: PProductMetric[V_call, V_metric],
     arg1: pd.DataFrame,
     arg2: pd.DataFrame | None = None,
 ) -> NDArrayFloat:
@@ -311,8 +449,12 @@ def pairwise_metric_optimization_pproductmetric(  # noqa: C901, PLR0912
         arg2 = arg1
 
     n_cols = arg1.shape[1]
-    metrics = metric.metrics if metric.metrics else [default_metric] * n_cols
-    weights = metric.weights if metric.weights else 1.0
+    metrics = (
+        metric.metrics
+        if metric.metrics is not None
+        else [default_metric] * n_cols
+    )
+    weights = metric.weights if metric.weights is not None else 1.0
 
     if isinstance(metrics, Metric):
         metrics = [metrics] * n_cols

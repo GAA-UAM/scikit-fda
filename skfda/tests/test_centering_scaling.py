@@ -9,6 +9,7 @@ from skfda.exploratory.stats import (
     grand_mean,
     individual_observation_mean,
     root_integrated_sample_variance,
+    root_mean_square_l2,
 )
 from skfda.representation._functional_data import FData
 from skfda.typing._numpy import NDArrayFloat
@@ -42,8 +43,12 @@ def test_grand_mean(sample_fdgrid: FDataGrid) -> None:
 def test_root_integrated_sample_variance(sample_fdgrid: FDataGrid) -> None:
     """Test RISV matches implementation logic."""
     risv: NDArrayFloat = root_integrated_sample_variance(sample_fdgrid)
-    np.testing.assert_allclose(risv, 1, rtol=1e-5)
+    np.testing.assert_allclose(risv, np.sqrt(2/3), rtol=1e-5)
 
+def test_root_mean_square_l2(sample_fdgrid: FDataGrid) -> None:
+    """Test RISV matches implementation logic."""
+    risv: NDArrayFloat = root_mean_square_l2(sample_fdgrid)
+    np.testing.assert_allclose(risv, np.sqrt(3), rtol=1e-5)
 
 def test_unsupported_type() -> None:
     """Test RISV raises TypeError on invalid input."""

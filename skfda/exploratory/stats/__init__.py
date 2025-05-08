@@ -25,6 +25,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "individual_observation_mean",
             "grand_mean",
             "root_integrated_sample_variance",
+            "root_mean_square_l2",
         ],
     },
 )
@@ -44,6 +45,7 @@ if TYPE_CHECKING:
         mean as mean,
         modified_epigraph_index as modified_epigraph_index,
         root_integrated_sample_variance as root_integrated_sample_variance,
+        root_mean_square_l2 as root_mean_square_l2,
         std as std,
         trim_mean as trim_mean,
         var as var,

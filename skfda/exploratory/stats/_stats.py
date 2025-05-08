@@ -10,7 +10,7 @@ from scipy.stats import rankdata
 
 from skfda._utils.ndfunction import average_function_value
 
-from ..._utils import nquad_vec
+from ..._utils import function_to_fdatabasis, nquad_vec
 from ...misc.metrics._lp_distances import l2_distance
 from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
 from ...typing._numpy import NDArrayFloat
@@ -437,7 +437,8 @@ def grand_mean(X: FData) -> NDArrayFloat:
 
 
 def root_integrated_sample_variance(
-    X: FData, correction: int = 0,
+    X: FData,
+    correction: int = 0,
 ) -> NDArrayFloat:
     r"""
     Compute the root integrated sample variance (RISV) for scaling.
@@ -460,6 +461,7 @@ def root_integrated_sample_variance(
     Args:
         X: Functional dataset to scale.
         correction: Degrees of freedom correction. Use 1 for sample variance.
+        Defaults to cero.
 
     Returns:
         A 1D NumPy array with the scaling factor for each component.
@@ -468,28 +470,76 @@ def root_integrated_sample_variance(
         TypeError: If `X` is not a supported FData type.
     """
     if isinstance(X, FDataGrid):
-        integrand = X.copy(
+        x_minus_mean = X - X.mean()
+        x_squared = X.copy(
+            data_matrix=(x_minus_mean.data_matrix) ** 2,
+            coordinate_names=(None,),
+        )
+
+    elif isinstance(X, FDataBasis):
+        x_squared = function_to_fdatabasis(
+            lambda x: (X(x) - X.mean()(x)) ** 2,
+            new_basis=X.basis,
+        )
+    else:
+        msg = "Unsupported FData type."
+        raise TypeError(msg)
+
+    values = np.sum(average_function_value(x_squared)) * (
+        1 / (X.n_samples - correction)
+    )
+    scale = np.sqrt(values)
+    return np.atleast_1d(np.array(scale, dtype=np.float64))
+
+
+def root_mean_square_l2(X: FData, correction: int = 0) -> NDArrayFloat:
+    r"""
+    Compute the root mean square (RMS) L2 norm of a functional dataset.
+
+    This method calculates a global scaling factor for functional data by
+    computing the square root of the average integrated squared norm of the
+    functions. Unlike the root integrated sample variance (RISV), this method
+    does not subtract the mean function before squaring, and therefore captures
+    the total magnitude of the functions rather than their variability around
+    the mean.
+
+    Mathematically:
+        .. math::
+            S = \sqrt{ \frac{1}{N} \sum_{i=1}^N \int_{\mathcal{T}} X_i(t)^2 dt}
+
+    This RMS L2 norm is useful when centering is not desired, such as in
+    scaling functional data with non-zero baselines or when preserving vertical
+    offsets.
+
+    Args:
+        X: Functional dataset to be scaled.
+        correction: Degrees of freedom correction. Use 1 for sample variance.
+        Defaults to cero.
+
+    Returns:
+        A 1D NumPy array with the scaling factor for each component.
+
+    Raises:
+        TypeError: If `X` is not a supported FData type.
+
+    """
+    if isinstance(X, FDataGrid):
+        x_squared = X.copy(
             data_matrix=(X.data_matrix) ** 2,
             coordinate_names=(None,),
-        ).mean()
-        scale = np.sqrt(
-            np.sum(integrand.integrate().ravel(), axis=0)
-            / (X.n_samples - correction),
         )
-        return np.atleast_1d(np.array(scale, dtype=np.float64))
 
-    if isinstance(X, FDataBasis):
-        mean = grand_mean(X)
-
-        arr = np.array(X.domain_range)
-        diff = arr[:, 1] - arr[:, 0]
-
-        integral = nquad_vec(
-            lambda x: (X(x) - mean) ** 2,
-            X.domain_range,
+    elif isinstance(X, FDataBasis):
+        x_squared = function_to_fdatabasis(
+            lambda x: X(x) ** 2,
+            new_basis=X.basis,
         )
-        scale = np.sqrt(integral * 1 / (diff) * 1 / (X.n_samples - correction))
-        return np.atleast_1d(np.array(scale, dtype=np.float64))
+    else:
+        msg = "Unsupported FData type."
+        raise TypeError(msg)
 
-    msg = "Unsupported FData type."
-    raise TypeError(msg)
+    values = np.sum(average_function_value(x_squared)) * (
+        1 / (X.n_samples - correction)
+    )
+    scale = np.sqrt(values)
+    return np.atleast_1d(np.array(scale, dtype=np.float64))

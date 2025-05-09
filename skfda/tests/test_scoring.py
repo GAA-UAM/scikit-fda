@@ -16,6 +16,8 @@ from skfda.misc.scoring import (
     mean_squared_error,
     mean_squared_log_error,
     r2_score,
+    root_mean_squared_error,
+    root_mean_squared_log_error
 )
 from skfda.representation.basis import (
     BSplineBasis,
@@ -31,13 +33,15 @@ score_functions: Sequence[ScoreFunction] = (
     mean_squared_error,
     mean_squared_log_error,
     r2_score,
+    root_mean_squared_error,
+    root_mean_squared_log_error
 )
 
 irregular_score_functions: Sequence[ScoreFunction] = (
     mean_absolute_error,
     mean_absolute_percentage_error,
     mean_squared_error,
-    mean_squared_log_error,
+    mean_squared_log_error
 )
 
 
@@ -219,7 +223,28 @@ class TestScoreFunctionsBasis(unittest.TestCase):
 
         # integrate 1/2 * (-x + x^2)^2
         self.assertAlmostEqual(mse, 2.85)
+    
+    def test_root_mean_squared_error_nparray(self) -> None:
+        """Test Root Mean Squared Error for ndarray."""
+        y_true = np.array([3.0, -0.5, 2.0, 7.0])
+        y_pred = np.array([2.5, 0.0, 2.1, 7.8])
 
+        # Test without sample_weight
+        rmse_np = root_mean_squared_error(y_true, y_pred)
+        
+        # Expected result manually
+        expected_result = np.sqrt(np.mean((y_true - y_pred) ** 2))
+        self.assertAlmostEqual(rmse_np, expected_result)
+    
+    def test_root_mean_squared_error_basis(self) -> None:
+        """Test Root Mean Squared Error for FDataBasis."""
+        y_true, y_pred = _create_data_basis()
+
+        rmse = root_mean_squared_error(y_true, y_pred)
+
+        # integrate sqrt(1/2 * (-x + x^2)^2)
+        self.assertAlmostEqual(rmse, 1.1392275919128432)
+        
     def test_mean_squared_log_error_basis(self) -> None:
         """Test Mean Squared Log Error for FDataBasis."""
         y_true, y_pred = _create_data_basis()
@@ -228,6 +253,26 @@ class TestScoreFunctionsBasis(unittest.TestCase):
 
         # integrate 1/2*(log(1 + 4 + 5x + 6x^2) - log(1 + 4 + 6x + 5x^2))^2
         self.assertAlmostEqual(msle, 0.00107583)
+    def test_root_mean_squared_log_error_nparray(self) -> None:
+        """Test Root Mean Squared Log Error for ndarray."""
+        y_true = np.array([3.0, -0.5, 2.0, 7.0])
+        y_pred = np.array([2.5, 0.0, 2.1, 7.8])
+
+        # Test without sample_weight
+        rmsle_np = root_mean_squared_log_error(y_true, y_pred)
+        
+        # Expected result manually
+        expected_result = np.sqrt(np.mean((np.log1p(y_pred) - np.log1p(y_true)) ** 2))
+        self.assertAlmostEqual(rmsle_np, expected_result)
+          
+    def test_root_mean_squared_log_error_basis(self) -> None:
+        """Test Mean Squared Log Error for FDataBasis."""
+        y_true, y_pred = _create_data_basis()
+
+        rmsle = root_mean_squared_log_error(y_true, y_pred)
+
+        # integrate sqrt(1/2*(log(1 + 4 + 5x + 6x^2) - log(1 + 4 + 6x + 5x^2))^2)
+        self.assertAlmostEqual(rmsle, 0.0276305701684461)
 
     def test_r2_score_basis(self) -> None:
         """Test R2 Score for FDataBasis."""

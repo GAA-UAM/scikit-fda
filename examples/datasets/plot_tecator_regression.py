@@ -10,21 +10,6 @@ variable selection for functional data.
 
 # sphinx_gallery_thumbnail_number = 4
 
-import matplotlib.pyplot as plt
-import sklearn.linear_model
-from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.tree import DecisionTreeRegressor, plot_tree
-
-from skfda.datasets import fetch_tecator
-from skfda.ml.regression import LinearRegression
-from skfda.preprocessing.dim_reduction.variable_selection.maxima_hunting import (
-    MaximaHunting,
-    RelativeLocalMaximaSelector,
-)
-from skfda.representation.basis import BSplineBasis
-
 # %%
 # This example uses the Tecator dataset\
 # :footcite:`borggaard+thodberg_1992_optimal`
@@ -40,6 +25,11 @@ from skfda.representation.basis import BSplineBasis
 # %%
 # We will first load the Tecator data, keeping only the fat content target,
 # and plot it.
+
+import matplotlib.pyplot as plt
+
+from skfda.datasets import fetch_tecator
+
 X, y = fetch_tecator(return_X_y=True)
 y = y[:, 0]
 
@@ -60,6 +50,9 @@ plt.show()
 # for our regression predictions.
 # In order to compute functional linear regression we first convert the data
 # to a basis expansion.
+
+from skfda.representation.basis import BSplineBasis
+
 basis = BSplineBasis(
     n_basis=10,
 )
@@ -68,6 +61,12 @@ X_der_basis = X_der.to_basis(basis)
 # %%
 # We split the data in train and test, and compute the regression score using
 # the linear regression model.
+
+from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
+
+from skfda.ml.regression import LinearRegression
+
 X_train, X_test, y_train, y_test = train_test_split(
     X_der_basis,
     y,
@@ -89,6 +88,13 @@ print(score)
 # The variable selection method that we employ here is maxima hunting\
 # :footcite:`berrendero++_2016_variable`, a filter method that computes a
 # relevance score for each point of the curve and selects all the local maxima.
+
+from skfda.preprocessing.dim_reduction.variable_selection.\
+    maxima_hunting import (
+        MaximaHunting,
+        RelativeLocalMaximaSelector,
+)
+
 var_sel = MaximaHunting(
     local_maxima_selector=RelativeLocalMaximaSelector(max_points=2),
 )
@@ -122,6 +128,10 @@ X_train, X_test, y_train, y_test = train_test_split(
 # %%
 # We now make a pipeline with the variable selection and a multivariate linear
 # regression method for comparison.
+
+import sklearn.linear_model
+from sklearn.pipeline import Pipeline
+
 pipeline = Pipeline([
     ("variable_selection", var_sel),
     ("classifier", sklearn.linear_model.LinearRegression()),
@@ -134,6 +144,9 @@ print(score)
 # %%
 # We can use a tree regressor instead to improve both the score and the
 # interpretability.
+
+from sklearn.tree import DecisionTreeRegressor
+
 pipeline = Pipeline([
     ("variable_selection", var_sel),
     ("classifier", DecisionTreeRegressor(max_depth=3)),
@@ -145,6 +158,9 @@ print(score)
 
 # %%
 # We can plot the final version of the tree to explain every prediction.
+
+from sklearn.tree import plot_tree
+
 fig, ax = plt.subplots(figsize=(10, 10))
 plot_tree(pipeline.named_steps["classifier"], precision=6, filled=True, ax=ax)
 plt.show()

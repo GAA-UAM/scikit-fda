@@ -1,5 +1,4 @@
-# fmt: off
-# type: ignore
+# mypy: disable-error-code="no-untyped-call"
 """
 Creating a new basis
 ====================
@@ -14,9 +13,6 @@ Shows how to add new bases for FDataBasis by creating subclasses.
 # Author: Carlos Ramos Carreño
 # License: MIT
 
-import matplotlib.pyplot as plt
-import numpy as np
-
 # %%
 # In this example, we want to showcase how it is possible to make new
 # functional bases compatible with
@@ -29,12 +25,16 @@ import numpy as np
 # in Python as follows (remember than the input and output are both NumPy
 # arrays).
 
+import numpy as np
+
 
 def f(t):
+    """Function sin(6t)."""
     return np.sin(6 * t)
 
 
 def g(t):
+    """Function t^2."""
     return t**2
 
 
@@ -77,6 +77,12 @@ class MyBasis(Basis):
 
 # %%
 # We can now create an instance of this basis and plot it.
+
+import matplotlib.pyplot as plt
+
+# sphinx_gallery_start_ignore
+basis: Basis
+# sphinx_gallery_end_ignore
 
 basis = MyBasis()
 basis.plot()
@@ -158,7 +164,7 @@ class FPCABasis(Basis):
 
     def __eq__(self, other):
         return (
-            super().__eq__(self, other)
+            super().__eq__(other)
             and self._fpca.components_ == other._fpca.components_
         )
 

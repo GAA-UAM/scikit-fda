@@ -1,5 +1,5 @@
 name: Ruff on Changed Files
-on: [pull_request]
+on: [push, pull_request]
 
 jobs:
   ruff:
@@ -14,8 +14,12 @@ jobs:
           files: |
             **.py
 
+      - name: Check if any Python files were changed
+        if: steps.changed-files.outputs.all_changed_files == ''
+        run: echo "No Python files changed. Skipping Ruff." && exit 0
+
       - name: Run Ruff on changed files
         uses: astral-sh/ruff-action@v3
         with:
           version: "0.11.8"
-          src: ${{ steps.changed-files.outputs.all_changed_files }}
+          args: ${{ steps.changed-files.outputs.all_changed_files }}

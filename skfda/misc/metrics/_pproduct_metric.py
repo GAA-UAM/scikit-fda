@@ -141,18 +141,10 @@ def same_structure_and_data(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
         v1, v2 = df1[col].values, df2[col].values  # noqa: PD011
         sample = df1.iloc[0][col]
 
-        if isinstance(sample, (int, float, np.number, np.ndarray)):
-            if v1.shape != v2.shape:
-                msg = (
-                    f"The shape of the column {col} must be "
-                    f"the same for both DataFrames"
-                )
-                raise ValueError(msg)
-
-        elif isinstance(sample, FData):
+        if isinstance(sample, FData):
             check_fdata_same_kind(v1[0], v2[0])
 
-        else:
+        elif not isinstance(sample, (int, float, np.number, np.ndarray)):
             msg = (
                 f"Distance not supported for sample"
                 f" type {type(sample)} in column {col}"

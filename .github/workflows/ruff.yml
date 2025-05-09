@@ -12,14 +12,12 @@ jobs:
         uses: tj-actions/changed-files@v45
         with:
           files: |
-            **.py
-
-      - name: Check if any Python files were changed
-        if: steps.changed-files.outputs.all_changed_files == ''
-        run: echo "No Python files changed. Skipping Ruff." && exit 0
+            **/*.py
 
       - name: Run Ruff on changed files
+        if: steps.changed-files.outputs.all_changed_files != ''
         uses: astral-sh/ruff-action@v3
         with:
           version: "0.11.8"
           args: ${{ steps.changed-files.outputs.all_changed_files }}
+

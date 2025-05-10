@@ -10,14 +10,7 @@ Shows the usage of the nearest neighbors regressor with scalar response.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.model_selection import GridSearchCV, train_test_split
-
-import skfda
-from skfda.ml.regression import KNeighborsRegressor
-
-##############################################################################
+# %%
 #
 # In this example, we are going to show the usage of the nearest neighbors
 # regressors with scalar response. There is available a K-nn version,
@@ -35,29 +28,36 @@ from skfda.ml.regression import KNeighborsRegressor
 # The following figure shows the different temperature and precipitation
 # curves.
 
-data = skfda.datasets.fetch_weather()
-fd = data['data']
+from skfda.datasets import fetch_weather
+
+data = fetch_weather()
+fd = data["data"]
 
 
 # Split dataset, temperatures and curves of precipitation
 X, y_func = fd.coordinates
 
-##############################################################################
+# %%
 # Temperatures
 
-X.plot()
+import matplotlib.pyplot as plt
 
-##############################################################################
+X.plot()
+plt.show()
+
+# %%
 # Precipitation
 
 y_func.plot()
+plt.show()
 
-##############################################################################
+# %%
 #
 # We will try to predict the total log precipitation, i.e,
 # :math:`logPrecTot_i = \log \sum_{t=0}^{365} prec_i(t)` using the temperature
 # curves.
 
+import numpy as np
 
 # Sum directly from the data matrix
 prec = y_func.data_matrix.sum(axis=1)[:, 0]
@@ -65,11 +65,13 @@ log_prec = np.log(prec)
 
 print(log_prec)
 
-##############################################################################
+# %%
 #
 # As in the nearest neighbors classifier examples, we will split the dataset
 # in two partitions, for training and test, using the sklearn function
 # :func:`~sklearn.model_selection.train_test_split`.
+
+from sklearn.model_selection import train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(
     X,
@@ -77,7 +79,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state=7,
 )
 
-##############################################################################
+# %%
 #
 # Firstly we will try make a prediction with the default values of the
 # estimator, using 5 neighbors and the :math:`\mathbb{L}^2` distance.
@@ -89,33 +91,45 @@ X_train, X_test, y_train, y_test = train_test_split(
 # :class:`~skfda.representation.grid.FDataGrid` as input instead of an array
 # with multivariate data.
 
-knn = KNeighborsRegressor(weights='distance')
+from skfda.ml.regression import KNeighborsRegressor
+
+# sphinx_gallery_start_ignore
+# isort: split
+from numpy import floating
+from numpy.typing import NDArray
+
+from skfda import FDataGrid
+
+NDArrayFloat = NDArray[floating]
+
+knn: KNeighborsRegressor[FDataGrid, NDArrayFloat]
+# sphinx_gallery_end_ignore
+knn = KNeighborsRegressor(weights="distance")
 knn.fit(X_train, y_train)
 
-##############################################################################
+# %%
 #
 # We can predict values for the test partition using
 # :meth:`~skfda.ml.regression.KNeighborsScalarRegressor.predict`.
 
-
 pred = knn.predict(X_test)
 print(pred)
 
-##############################################################################
+# %%
 #
 # The following figure compares the real precipitations with the predicted
 # values.
 
 
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
+fig, ax = plt.subplots()
 ax.scatter(y_test, pred)
 ax.plot(y_test, y_test)
 ax.set_xlabel("Total log precipitation")
 ax.set_ylabel("Prediction")
 
+plt.show()
 
-##############################################################################
+# %%
 #
 # We can quantify how much variability it is explained by the model with
 # the coefficient of determination :math:`R^2` of the prediction,
@@ -130,7 +144,7 @@ score = knn.score(X_test, y_test)
 print(score)
 
 
-##############################################################################
+# %%
 #
 # In this case, we obtain a really good aproximation with this naive approach,
 # although, due to the small number of samples, the results will depend on
@@ -143,10 +157,11 @@ print(score)
 # :class:`~sklearn.model_selection.GridSearchCV`, to determine the optimal
 # number of neighbors and the best way to weight their votes.
 
+from sklearn.model_selection import GridSearchCV
 
 param_grid = {
-    'n_neighbors': range(1, 12, 2),
-    'weights': ['uniform', 'distance'],
+    "n_neighbors": range(1, 12, 2),
+    "weights": ["uniform", "distance"],
 }
 
 
@@ -158,7 +173,7 @@ gscv = GridSearchCV(
 )
 gscv.fit(X, log_prec)
 
-##############################################################################
+# %%
 #
 # We obtain that 7 is the optimal number of neighbors.
 
@@ -166,7 +181,7 @@ gscv.fit(X, log_prec)
 print("Best params", gscv.best_params_)
 print("Best score", gscv.best_score_)
 
-##############################################################################
+# %%
 #
 # More detailed information about the Canadian weather dataset can be obtained
 # in the following references.

@@ -11,11 +11,7 @@ real dataset.
 
 # sphinx_gallery_thumbnail_number = 4
 
-import skfda
-from skfda.inference.anova import oneway_anova
-from skfda.representation.basis import FourierBasis
-
-###############################################################################
+# %%
 # *One-way ANOVA* (analysis of variance) is a test that can be used to
 # compare the means of different samples of data.
 # Let :math:`X_{ij}(t), j=1, \dots, n_i` be trajectories corresponding to
@@ -28,31 +24,45 @@ from skfda.representation.basis import FourierBasis
 # To illustrate this functionality we are going to explore the data available
 # in GAIT dataset from *fda* R library. This dataset compiles a set of angles
 # of hips and knees from 39 different boys in a 20 point movement cycle.
-dataset = skfda.datasets.fetch_gait()
-fd_hip = dataset['data'].coordinates[0]
-fd_knee = dataset['data'].coordinates[1].to_basis(FourierBasis(n_basis=10))
 
-###############################################################################
+from skfda.datasets import fetch_gait
+from skfda.representation.basis import FourierBasis
+
+dataset = fetch_gait()
+fd_hip = dataset["data"].coordinates[0]
+fd_knee = dataset["data"].coordinates[1].to_basis(FourierBasis(n_basis=10))
+
+# %%
 # Let's start with the first feature, the angle of the hip. The sample
 # consists in 39 different trajectories, each representing the movement of the
 # hip of each of the boys studied.
-fig = fd_hip.plot()
+import matplotlib.pyplot as plt
 
-###############################################################################
+fig = fd_hip.plot()
+plt.show()
+
+# %%
 # The example is going to be divided in three different groups. Then we are
 # going to apply the ANOVA procedure to this groups to test if the means of
 # this three groups are equal or not.
 
-fd_hip1 = fd_hip[0:13]
-fd_hip2 = fd_hip[13:26]
-fd_hip3 = fd_hip[26:39]
-fd_hip.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])
+import skfda
+
+partition_size = len(fd_hip) // 3
+
+fd_hip1 = fd_hip[:partition_size]
+fd_hip2 = fd_hip[partition_size:2*partition_size]
+fd_hip3 = fd_hip[2*partition_size:]
+
+group = [0] * partition_size + [1] * partition_size + [2] * partition_size
+
+fd_hip.plot(group=group)
 
 means = [fd_hip1.mean(), fd_hip2.mean(), fd_hip3.mean()]
 fd_means = skfda.concatenate(means)
 fig = fd_means.plot()
 
-##############################################################################
+# %%
 # At this point is time to perform the *ANOVA* test. This functionality is
 # implemented in the function :func:`~skfda.inference.anova.oneway_anova`. As
 # it consists in an asymptotic method it is possible to set the number of
@@ -60,36 +70,38 @@ fig = fd_means.plot()
 # possible to set the :math:`p` of the :math:`L_p` norm used in the
 # calculations (defaults 2).
 
+from skfda.inference.anova import oneway_anova
+
 v_n, p_val = oneway_anova(fd_hip1, fd_hip2, fd_hip3)
 
-###############################################################################
+# %%
 # The function returns first the statistic :func:`~skfda.inference.anova
 # .v_sample_stat` used to measure the variability between groups,
 # second the *p-value* of the test . For further information visit
 # :func:`~skfda.inference.anova.oneway_anova` and
 # :footcite:t:`cuevas++_2004_anova`.
 
-print('Statistic: ', v_n)
-print('p-value: ', p_val)
+print("Statistic: ", v_n)
+print("p-value: ", p_val)
 
-###############################################################################
+# %%
 # This was the simplest way to call this function. Let's see another example,
 # this time using knee angles, this time with data in basis representation.
 fig = fd_knee.plot()
 
-###############################################################################
+# %%
 # The same procedure as before is followed to prepare the data.
 
-fd_knee1 = fd_knee[0:13]
-fd_knee2 = fd_knee[13:26]
-fd_knee3 = fd_knee[26:39]
-fd_knee.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])
+fd_knee1 = fd_knee[:partition_size]
+fd_knee2 = fd_knee[partition_size:2*partition_size]
+fd_knee3 = fd_knee[2*partition_size:]
+fd_knee.plot(group=group)
 
 means = [fd_knee1.mean(), fd_knee2.mean(), fd_knee3.mean()]
 fd_means = skfda.concatenate(means)
 fig = fd_means.plot()
 
-##############################################################################
+# %%
 # In this case the optional arguments of the function are going to be set.
 # First, there is a `n_reps` parameter, which allows the user to select the
 # number of simulations to perform in the asymptotic procedure of the test (
@@ -103,13 +115,18 @@ fig = fd_means.plot()
 # sampling distribution of the statistic which is compared with the first
 # return to get the *p-value*.
 
-v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_reps=1500,
-                                return_dist=True)
+v_n, p_val, dist = oneway_anova(
+    fd_knee1,
+    fd_knee2,
+    fd_knee3,
+    n_reps=1500,
+    return_dist=True,
+)
 
-print('Statistic: ', v_n)
-print('p-value: ', p_val)
-print('Distribution: ', dist)
+print("Statistic: ", v_n)
+print("p-value: ", p_val)
+print("Distribution: ", dist)
 
-###############################################################################
+# %%
 # **References:**
 #     .. footbibliography::

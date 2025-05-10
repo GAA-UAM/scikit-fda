@@ -834,9 +834,10 @@ class FPLS(  # noqa: WPS230
                 as the number of components of the model.
 
         Returns:
-            - X: Data reconstructed from the transformed data.
-            - Y: Data reconstructed from the transformed data
-                (if Y is not None)
+            Data reconstructed from the transformed data.
+            If ``Y`` is not None, returns a tuple containing reconstructed
+            data for both ``X`` and ``Y``. Otherwise, return just the data
+            for ``X``.
 
         """
         check_is_fitted(self)

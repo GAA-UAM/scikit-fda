@@ -27,7 +27,7 @@ def _squared_norms(x: NDArrayFloat, y: NDArrayFloat) -> NDArrayFloat:
 CovarianceLike = (
     float
     | NDArrayFloat
-    | Callable[[ArrayLike, ArrayLike], NDArrayFloat]
+    | Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]
 )
 
 Input = NDArray[Any] | FData

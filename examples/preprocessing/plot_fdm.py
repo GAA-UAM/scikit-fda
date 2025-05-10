@@ -15,20 +15,6 @@ provided.
 # Author: Eduardo Terrés Caballero
 # License: MIT
 
-from itertools import product
-
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.colors import ListedColormap
-from sklearn import datasets
-
-from skfda.datasets import fetch_phoneme
-from skfda.misc.covariances import Gaussian
-from skfda.preprocessing.dim_reduction import DiffusionMap 
-from skfda.representation import FDataGrid
-
-random_state = 0
-
 # %%
 # Some examples shown here are further explained in the
 # article :footcite:t:`barroso++_2023_fdm`.
@@ -41,6 +27,15 @@ random_state = 0
 # Firstly, a basic example of execution is presented using a functional version
 # of the moons dataset, a dataset consisting of two dimentional coordinates
 # representing the position of two different moons.
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import ListedColormap
+from sklearn import datasets
+
+seed = 612245103
+random_state = np.random.RandomState(seed)
+
 n_samples, n_grid_pts = 100, 50
 data_moons, y = datasets.make_moons(
     n_samples=n_samples,
@@ -50,8 +45,9 @@ data_moons, y = datasets.make_moons(
 
 colors = ["blue", "orange"]
 cmap = ListedColormap(colors)
-plt.scatter(data_moons[:, 0], data_moons[:, 1], c=y, cmap=cmap)
-plt.title("Moons data")
+fig, ax = plt.subplots()
+ax.scatter(data_moons[:, 0], data_moons[:, 1], c=y, cmap=cmap)
+ax.set_title("Moons data")
 plt.show()
 
 # %%
@@ -61,6 +57,9 @@ plt.show()
 # In other words, the multivariate vectors are interpreted as elements
 # of the basis.
 # Below is the code to generate the synthetic moons functional data.
+
+from skfda.representation import FDataGrid
+
 grid = np.linspace(-np.pi, np.pi, n_grid_pts)
 basis = np.array([np.sin(4 * grid), grid ** 2 + 2 * grid - 2])
 fd_moons = FDataGrid(
@@ -70,8 +69,8 @@ fd_moons = FDataGrid(
     argument_names=("x",),
     coordinate_names=("f (x)",),
 )
-fd_moons.plot(linewidth=0.5, group=y, group_colors=colors)
-plt.xlim((-np.pi, np.pi))
+fig = fd_moons.plot(linewidth=0.5, group=y, group_colors=colors)
+fig.axes[0].set_xlim((-np.pi, np.pi))
 plt.show()
 
 # %%
@@ -81,6 +80,10 @@ plt.show()
 # The FDM technique involves the use of a kernel operator, that acts
 # as a measure of similarity for the data. In this case we will be using
 # the Gaussian kernel, with a length scale parameter of 0.25.
+
+from skfda.misc.covariances import Gaussian
+from skfda.preprocessing.dim_reduction import DiffusionMap
+
 fdm = DiffusionMap(
     n_components=2,
     kernel=Gaussian(length_scale=0.25),
@@ -89,8 +92,9 @@ fdm = DiffusionMap(
 )
 embedding = fdm.fit_transform(fd_moons)
 
-plt.scatter(embedding[:, 0], embedding[:, 1], c=y, cmap=cmap)
-plt.title("Diffusion coordinates for the functional moons data")
+fig, ax = plt.subplots()
+ax.scatter(embedding[:, 0], embedding[:, 1], c=y, cmap=cmap)
+ax.set_title("Diffusion coordinates for the functional moons data")
 plt.show()
 
 # %%
@@ -121,9 +125,10 @@ data_spirals = np.column_stack((
 
 colors = ["yellow", "purple"]
 cmap = ListedColormap(colors)
-plt.scatter(data_spirals[:, 0], data_spirals[:, 1], c=y, cmap=cmap)
-plt.gca().set_aspect("equal", adjustable="box")
-plt.title("Spirals data")
+fig, ax = plt.subplots()
+ax.scatter(data_spirals[:, 0], data_spirals[:, 1], c=y, cmap=cmap)
+ax.set_aspect("equal", adjustable="box")
+ax.set_title("Spirals data")
 plt.show()
 
 # Define functional data object
@@ -144,6 +149,9 @@ plt.show()
 # Once the functional data is ready, we will perform a grid search
 # for the following values of the parameters, as well as plot
 # the resulting embeddings for visual comparison.
+
+from itertools import product
+
 alpha_set = [0, 0.33, 0.66, 1]
 length_scale_set = [2.5, 3, 4.5, 7, 10, 11, 15]
 param_grid = product(alpha_set, length_scale_set)
@@ -152,7 +160,7 @@ fig, axes = plt.subplots(
     len(alpha_set), len(length_scale_set), figsize=(16, 8),
 )
 
-for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
+for (alpha, length_scale), ax in zip(param_grid, axes.ravel(), strict=True):
     fdm = DiffusionMap(
         n_components=2,
         kernel=Gaussian(length_scale=length_scale),
@@ -165,10 +173,10 @@ for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
     ax.set_xticklabels([])
     ax.set_yticklabels([])
 
-for ax, alpha in zip(axes[:, 0], alpha_set):
+for ax, alpha in zip(axes[:, 0], alpha_set, strict=True):
     ax.set_ylabel(f"$\\alpha$: {alpha}", size=20, rotation=0, ha="right")
 
-for ax, length_scale in zip(axes[0], length_scale_set):
+for ax, length_scale in zip(axes[0], length_scale_set, strict=True):
     ax.set_title(f"$len-sc$: {length_scale}", size=20, va="bottom")
 
 plt.show()
@@ -213,7 +221,7 @@ fig, axes = plt.subplots(
     figsize=(16, 4),
 )
 
-for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
+for (alpha, length_scale), ax in zip(param_grid, axes.ravel(), strict=True):
     fdm = DiffusionMap(
         n_components=2,
         kernel=Gaussian(length_scale=length_scale),
@@ -230,7 +238,7 @@ axes[0].set_ylabel(
     f"$\\alpha$: {alpha_set[0]}", size=20, rotation=0, ha="right",
 )
 
-for ax, length_scale in zip(axes, length_scale_set):
+for ax, length_scale in zip(axes, length_scale_set, strict=True):
     ax.set_title(f"$len-sc$: {length_scale}", size=20, va="bottom")
 
 plt.show()
@@ -240,11 +248,11 @@ plt.show()
 # --------------------------
 #
 # So far, the above examples have been computed with a value of the
-# n_components parameter of 2. This implies that the resulting
+# ``n_components`` parameter of 2. This implies that the resulting
 # diffusion coordinate points belong to a two-dimensional space and thus we
 # can provide a graphical representation.
 # The aim of this new section is to explore further possibilities
-# regarding n_components.
+# regarding ``n_components``.
 #
 # We will now apply the method to a more complex example, the
 # Swiss roll dataset. This dataset consists of three dimensional points
@@ -285,6 +293,7 @@ plt.show()
 # Now, the FDM method will be applied for different values of the
 # parameters, again in the form of a grid search.
 # Note that the diffusion coordinates will now consist of three components.
+
 alpha_set = [0, 0.5, 1]
 length_scale_set = [1.5, 2.5, 4, 5]
 param_grid = product(alpha_set, length_scale_set)
@@ -296,7 +305,13 @@ fig, axes = plt.subplots(
     subplot_kw={"projection": "3d"},
 )
 
-for (alpha, length_scale), ax in zip(param_grid, axes.ravel()):
+for (alpha, length_scale), ax in zip(param_grid, axes.ravel(), strict=True):
+    # sphinx_gallery_start_ignore
+    from mpl_toolkits.mplot3d.axes3d import Axes3D
+
+    assert isinstance(ax, Axes3D)
+    # sphinx_gallery_end_ignore
+
     fdm = DiffusionMap(
         n_components=3,
         kernel=Gaussian(length_scale=length_scale),
@@ -357,6 +372,9 @@ plt.show()
 # Below is an example of execution using the phoneme dataset,
 # a dataset consisting of the computed log-periodogram for five distinct
 # phonemes coming from recorded male speech from the TIMIT database.
+
+from skfda.datasets import fetch_phoneme
+
 n_samples = 300
 colors = ["C0", "C1", "C2", "C3", "C4"]
 group_names = ["aa", "ao", "dcl", "iy", "sh"]
@@ -393,7 +411,10 @@ fig, axes = plt.subplots(
     1, len(view_points), figsize=(18, 6), subplot_kw={"projection": "3d"},
 )
 
-for view, ax in zip(view_points, axes.ravel()):
+for view, ax in zip(view_points, axes.ravel(), strict=True):
+    # sphinx_gallery_start_ignore
+    assert isinstance(ax, Axes3D)
+    # sphinx_gallery_end_ignore
     ax.scatter(
         diffusion_coord[:, 0],
         diffusion_coord[:, 1],

@@ -9,6 +9,7 @@ like depth measures.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import matplotlib
@@ -101,7 +102,9 @@ def _get_color_info(
             patches = [
                 matplotlib.patches.Patch(color=c, label=l)
                 for c, l in zip(
-                    group_colors_array, group_names_array, strict=False
+                    group_colors_array,
+                    group_names_array,
+                    strict=False,
                 )
             ]
 
@@ -873,6 +876,7 @@ class MixedDataPlot(BasePlot):
 
     @property
     def n_subplots(self) -> int:
+        """Returns the number of subplots generated."""
         return self._count_total_plots(self.df)
 
     def _count_total_plots(self, df: pd.DataFrame) -> int:
@@ -888,94 +892,98 @@ class MixedDataPlot(BasePlot):
                 total_plots += 1
         return total_plots
 
-    def _plot(self, fig: Figure, axes: Sequence[Axes]) -> None:
-        i = 0
+    def _plot_fdata(
+        self,
+        data: FData,
+        fig: Figure,
+        axes: Iterator[Axes],
+        col: str,
+    ) -> None:
+        fd_codim = data.dim_codomain
 
-        for col in self.df.columns:
-            ax = axes[i]
-            data = self.df[col].values  # noqa: PD011
-
-            if isinstance(data, FData):
-                fd_codim = data.dim_codomain
-
-                if fd_codim > 1:
-                    if self.flattened:
-                        col_axes = axes[i : i + fd_codim]
-                        data.plot(
-                            axes=col_axes,
-                            group=self.group,
-                            group_colors=self.group_colors,
-                            group_names=self.group_names,
+        if fd_codim > 1:
+            if self.flattened:
+                col_axes = [next(axes) for _ in range(fd_codim)]
+                data.plot(
+                    axes=col_axes,
+                    group=self.group,
+                    group_colors=self.group_colors,
+                    group_names=self.group_names,
+                )
+                for j, ax_sub in enumerate(col_axes):
+                    name = (
+                        data.coordinate_names[j]
+                        if (
+                            data.coordinate_names is not None
+                            and data.coordinate_names[j] is not None
                         )
-                        for j, ax_sub in enumerate(col_axes):
-                            if (
-                                data.coordinate_names is not None
-                                and data.coordinate_names[j] is not None
-                            ):
-                                ax_sub.set_title(
-                                    f"{col} - {data.coordinate_names[j]}",
-                                )
-                            else:
-                                ax_sub.set_title(f"{col} - {j + 1}")
-                        i += fd_codim
-                    else:
-                        outer_ax = axes[i]
-
-                        gs = outer_ax.get_subplotspec().subgridspec(
-                            fd_codim,
-                            1,
-                        )
-
-                        sub_axes = [
-                            fig.add_subplot(gs[j]) for j in range(fd_codim)
-                        ]
-
-                        data.plot(
-                            axes=sub_axes,
-                            group=self.group,
-                            group_colors=self.group_colors,
-                            group_names=self.group_names,
-                        )
-
-                        for j in range(fd_codim):
-                            if (
-                                data.coordinate_names is not None
-                                and data.coordinate_names[j] is not None
-                            ):
-                                sub_axes[j].set_title(
-                                    f"{col} - {data.coordinate_names[j]}",
-                                )
-                            else:
-                                sub_axes[j].set_title(f"{col} - {j + 1}")
-
-                        i += 1
-                        outer_ax.axis("off")
-
-                else:
-                    data.plot(
-                        axes=ax,
-                        group=self.group,
-                        group_colors=self.group_colors,
-                        group_names=self.group_names,
+                        else f"{j + 1}"
                     )
-                    ax.set_title(col)
-                    i += 1
-
-            elif isinstance(data[0], np.ndarray) or np.isscalar(data[0]):
-                data_array = np.asarray(data)
-                unique_vals = np.unique(data_array)
-
-                ax.hist(data_array, bins=len(unique_vals))
-                ax.set_title(col)
-                i += 1
-
+                    ax_sub.set_title(f"{col} - {name}")
             else:
+                outer_ax = next(axes)
+                spec = outer_ax.get_subplotspec()
+                if spec is None:
+                    msg = (
+                        "Axes must be created using a"
+                        "subplot for subgridspec to work."
+                    )
+                    raise RuntimeError(msg)
+                gs = spec.subgridspec(fd_codim, 1)
+                sub_axes = [fig.add_subplot(gs[j]) for j in range(fd_codim)]
+                data.plot(
+                    axes=sub_axes,
+                    group=self.group,
+                    group_colors=self.group_colors,
+                    group_names=self.group_names,
+                )
+                for j, sub_ax in enumerate(sub_axes):
+                    name = (
+                        data.coordinate_names[j]
+                        if (
+                            data.coordinate_names is not None
+                            and data.coordinate_names[j] is not None
+                        )
+                        else f"{j + 1}"
+                    )
+                    sub_ax.set_title(f"{col} - {name}")
+                outer_ax.axis("off")
+        else:
+            ax = next(axes)
+            data.plot(
+                axes=ax,
+                group=self.group,
+                group_colors=self.group_colors,
+                group_names=self.group_names,
+            )
+            ax.set_title(col)
+
+    def _plot_scalar(
+        self,
+        data: FData,
+        axes: Iterator[Axes],
+        col: str,
+    ) -> None:
+        data_array = np.asarray(data)
+        ax = next(axes)
+        ax.hist(data_array, bins=len(np.unique(data_array)))
+        ax.set_title(col)
+
+    def _plot(self, fig: Figure, axes: Sequence[Axes]) -> None:
+        axes_iter = iter(axes)
+        for col in self.df.columns:
+            data = self.df[col].values  # noqa: PD011
+            if isinstance(data, FData):
+                self._plot_fdata(data, fig, axes_iter, col)
+            elif isinstance(data[0], np.ndarray) or np.isscalar(data[0]):
+                self._plot_scalar(data, axes_iter, col)
+            else:
+                ax = next(axes_iter)
                 ax.axis("off")
-                i += 1
 
         # Hide extra axes
-        for j in range(i, len(axes)):
-            axes[j].axis("off")
+        for ax in axes_iter:
+            ax.axis("off")
 
         if self.patches is not None:
             fig.legend(handles=self.patches)
@@ -993,6 +1001,7 @@ def plot_mixed_data(  # noqa: PLR0913
     group_colors: Indexable[K, ColorLike] | None = None,
     group_names: Indexable[K, str] | None = None,
     legend: bool = False,
+    flattened: bool = False,
 ) -> Figure:
     """
     Plot a DataFrame containing numerical and functional (FData) data.
@@ -1041,6 +1050,12 @@ def plot_mixed_data(  # noqa: PLR0913
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
+        flattened: When the codomain dimension (`dim_codomain`) is greater than
+            1, this option controls how the components are displayed.
+                -If `False`, all components are overlaid in the same subplot.
+                -If `True`, each component is plotted separately, side by side
+                in individual subplots.
+            Defaults to `False`.
 
     Returns:
         matplotlib.figure.Figure: The resulting figure object.
@@ -1056,5 +1071,6 @@ def plot_mixed_data(  # noqa: PLR0913
         group_colors=group_colors,
         group_names=group_names,
         legend=legend,
+        flattened=flattened,
     )
     return plotter.plot()

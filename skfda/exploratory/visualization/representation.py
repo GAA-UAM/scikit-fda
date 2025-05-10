@@ -100,7 +100,9 @@ def _get_color_info(
         if group_names_array is not None:
             patches = [
                 matplotlib.patches.Patch(color=c, label=l)
-                for c, l in zip(group_colors_array, group_names_array, strict=False)
+                for c, l in zip(
+                    group_colors_array, group_names_array, strict=False
+                )
             ]
 
     # In this case, each curve has a different color unless specified
@@ -821,6 +823,12 @@ class MixedDataPlot(BasePlot):
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
+        flattened: When the codomain dimension (`dim_codomain`) is greater than
+            1, this option controls how the components are displayed.
+                -If `False`, all components are overlaid in the same subplot.
+                -If `True`, each component is plotted separately, side by side
+                in individual subplots.
+            Defaults to `False`.
 
     """
 
@@ -892,7 +900,6 @@ class MixedDataPlot(BasePlot):
 
                 if fd_codim > 1:
                     if self.flattened:
-
                         col_axes = axes[i : i + fd_codim]
                         data.plot(
                             axes=col_axes,
@@ -912,18 +919,16 @@ class MixedDataPlot(BasePlot):
                                 ax_sub.set_title(f"{col} - {j + 1}")
                         i += fd_codim
                     else:
-
                         outer_ax = axes[i]
 
-
                         gs = outer_ax.get_subplotspec().subgridspec(
-                            fd_codim, 1,
+                            fd_codim,
+                            1,
                         )
 
                         sub_axes = [
                             fig.add_subplot(gs[j]) for j in range(fd_codim)
                         ]
-
 
                         data.plot(
                             axes=sub_axes,
@@ -947,7 +952,6 @@ class MixedDataPlot(BasePlot):
                         outer_ax.axis("off")
 
                 else:
-
                     data.plot(
                         axes=ax,
                         group=self.group,

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from functools import singledispatch
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import numpy as np
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
@@ -14,97 +13,179 @@ from skfda.representation import FData, FDataBasis, FDataGrid
 from .._utils import function_to_fdatabasis
 from .._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ..exploratory import stats
+from ..misc.validation import check_fdata_same_kind
 from ..typing._numpy import NDArrayFloat
 
-T = TypeVar("T", bound=FDataGrid|FDataBasis)
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+T = TypeVar("T", bound=FDataGrid | FDataBasis)
+
+
+class CenterScaler(BaseEstimator, InductiveTransformerMixin[T, T, Any]):
+    """
+    Transformer for centering and scaling functional data.
+
+    This class applies centering and/or scaling to functional data objects
+    (`FDataGrid` or `FDataBasis`). The centering and scaling parameters can
+    either be predefined (constant or `FData` objects), or computed from the
+    data using callable functions.
+
+    Args:
+        center : Centering transformation. If a callable, it will be applied to
+            the input during `fit` to compute the center. If `None`, no
+            centering is applied.
+        scale : Scaling transformation. If a callable, it will be applied to
+            the input during `fit` to compute the scale. If `None`, no
+            scaling is applied.
+
+    Attributes:
+        center_ : Fitted centering value. Computed during `fit` if `center` is
+            a callable.
+        scale_ : Fitted scaling value. Computed during `fit` if `scale` is a
+            callable.
+    """
+
+    def __init__(
+        self,
+        *,
+        center: Callable[[T], NDArrayFloat | T] | T | NDArrayFloat | None,
+        scale: Callable[[T], NDArrayFloat | T] | T | NDArrayFloat | None,
+    ) -> None:
+        self.center = center
+        self.scale = scale
+
+    def fit(self, X: T, y: Any | None = None) -> CenterScaler:  # noqa: ANN401, ARG002
+        """
+        Compute and store the centering and scaling parameters.
+
+        Args:
+            X : Functional data to compute parameters from.
+            y : Present for compatibility with scikit-learn.
+
+        Returns:
+            self : Fitted transformer.
+        """
+        self.center_ = self.center(X) if callable(self.center) else self.center
+        self.scale_ = self.scale(X) if callable(self.scale) else self.scale
+        return self
+
+    def transform(self, X: T) -> T:
+        """
+        Apply centering and scaling to the functional data.
+
+        Args:
+            X : Functional data to transform.
+
+        Returns:
+            X_new : Transformed functional data.
+        """
+        sklearn_check_is_fitted(self)
+        return _transform(X, self.center_, self.scale_)
 
 
 @singledispatch
-def center_scale(
+def _transform(
     X: T,
-    center: Callable[[FData], NDArrayFloat|FData] | FData | NDArrayFloat | None,
-    scale: Callable[[FData], NDArrayFloat|FData] | FData | NDArrayFloat | None,
+    center: FData | NDArrayFloat | None,
+    scale: FData | NDArrayFloat | None,
 ) -> FData:
-    msg = f"center_scale not implemented for type {type(X)}"
+    msg = f"transform not implemented for type {type(X)}"
     raise NotImplementedError(msg)
 
 
-@center_scale.register
-def _center_scale_fdatagrid(
+@_transform.register
+def _transform_fdatagrid(
     X: FDataGrid,
-    center: Callable[[FData], NDArrayFloat|FData] | FData | NDArrayFloat | None,
-    scale: Callable[[FData], NDArrayFloat|FData] | FData | NDArrayFloat | None,
+    center: FData | NDArrayFloat | None,
+    scale: FData | NDArrayFloat | None,
 ) -> FDataGrid:
     result = X.copy()
 
     if center is not None:
-        center_val = center(X) if callable(center) else center
-        if isinstance(center_val, FDataGrid) and center_val==X:
-            if center_val.n_samples>1:
+        if isinstance(center, FDataGrid):
+            check_fdata_same_kind(X, center)
+            if center.n_samples > 1:
                 msg = "Cannot center with more than one sample"
                 raise ValueError(msg)
-            result = result - center_val
+            result = result - center
         else:
-            result.data_matrix -= np.asarray(center_val)
+            result.data_matrix -= np.asarray(center)
 
     if scale is not None:
-        scale_val = scale(X) if callable(scale) else scale
-        if isinstance(scale_val, FDataGrid) and scale_val==X:
-            if scale_val.n_samples>1:
+        if isinstance(scale, FDataGrid):
+            check_fdata_same_kind(X, scale)
+            if scale.n_samples > 1:
                 msg = "Cannot scale with more than one sample"
                 raise ValueError(msg)
-            result = result / scale_val
+            result = result / scale
         else:
-            result.data_matrix /= np.asarray(scale_val)
+            result.data_matrix /= np.asarray(scale)
 
     return result
 
 
-@center_scale.register
-def _center_scale_fdatabasis(
+@_transform.register
+def _transform_fdatabasis(
     X: FDataBasis,
-    center: Callable[[FData], NDArrayFloat] | FData | NDArrayFloat | None,
-    scale: Callable[[FData], NDArrayFloat] | FData | NDArrayFloat | None,
+    center: FData | NDArrayFloat | None,
+    scale: FData | NDArrayFloat | None,
 ) -> FDataBasis:
     result = X.copy()
 
     if center is not None:
-        center_val = center(X) if callable(center) else center
-        if isinstance(center_val, FDataBasis) and center_val==X:
-            if center_val.n_samples>1:
+        if isinstance(center, FDataBasis):
+            check_fdata_same_kind(X, center)
+            if center.n_samples > 1:
                 msg = "Cannot center with more than one sample"
                 raise ValueError(msg)
-            result = result - center_val
+            result = result - center
         else:
             result = function_to_fdatabasis(
-                lambda x: (result(x) - np.asarray(center_val)),
+                lambda x: (result(x) - np.asarray(center)),
                 new_basis=result.basis,
             )
 
     if scale is not None:
-        scale_val = scale(X) if callable(scale) else scale
-        if isinstance(scale_val, FDataBasis) and scale_val==X:
-            if scale_val.n_samples>1:
+        if isinstance(scale, FDataBasis):
+            check_fdata_same_kind(X, scale)
+            if scale.n_samples > 1:
                 msg = "Cannot scale with more than one sample"
                 raise ValueError(msg)
-            result = result / scale_val
             result = function_to_fdatabasis(
-                lambda x: (result(x) / scale_val(x)),
+                lambda x: (result(x) / scale(x)),
                 new_basis=result.basis,
             )
         else:
-            result = result/ np.asarray(scale_val)
+            result = function_to_fdatabasis(
+                lambda x: (result(x) / np.asarray(scale)),
+                new_basis=result.basis,
+            )
 
     return result
 
 
 class StandardScaler(
-    BaseEstimator, InductiveTransformerMixin[T, T, Any],
+    CenterScaler,
 ):
     """
-    Standardize functional data by centering and/or scaling.
+    Standardize functional data by centering and scaling.
 
-    Supports both FDataGrid and FDataBasis representations.
+    This transformer standardizes functional data by subtracting the functional
+    mean and dividing by the standard deviation of the dataset. It supports
+    both `FDataGrid` and `FDataBasis` representations.
+
+    Args:
+        with_mean : If True, center the data before scaling.
+        with_std : If True, scale the data with the standard deviation.
+        correction : Degrees of freedom correction to apply when computing the
+            standard deviation.
+
+    Attributes:
+        mean_ : Mean function computed during `fit`. `None` if `with_mean` is
+            False.
+        scale_ : Standard deviation function computed during `fit`.
+            `None` if `with_std` is False.
     """
 
     def __init__(
@@ -122,38 +203,24 @@ class StandardScaler(
         self.scale_: FData | None = None
 
     def fit(
-        self, X: T, y: Any | None = None,  # noqa: ANN401, ARG002
+        self,
+        X: T,
+        y: Any | None = None,  # noqa: ANN401, ARG002
     ) -> StandardScaler:
-        """Compute mean and standard deviation of the functional data."""
-        self.mean_ = stats.mean(X)
-        self.scale_ = stats.std(X, correction=self.correction_)
+        """
+        Compute mean and standard deviation of the functional data.
+
+        Args:
+            X : Functional data to compute the statistics from.
+            y : Not used, present for compatibility with scikit-learn pipeline.
+
+        Returns:
+            self : Fitted StandardScaler with computed `center_` and `scale_`.
+        """
+        self.center_ = None if not self.with_mean else stats.mean(X)
+        self.scale_ = (
+            None
+            if not self.with_std
+            else stats.std(X, correction=self.correction_)
+        )
         return self
-
-    def transform(self, X: T) -> T:
-        """Standardize the functional data using the computed mean and scale."""
-        sklearn_check_is_fitted(self)
-        if self.mean_ is None or self.scale_ is None:
-            msg = "fit must be called before transform."
-            raise ValueError(msg)
-
-
-        if isinstance(X, FDataGrid):
-            if self.with_mean:
-                X = X - self.mean_
-            if self.with_std:
-                X = X / self.scale_
-
-        elif isinstance(X, FDataBasis):
-            mean_func = self.mean_ if self.with_mean else lambda x: 0
-            if self.with_std:
-                scale_func = self.scale_
-                X = function_to_fdatabasis(
-                    lambda x: (X(x) - mean_func(x)) / scale_func(x),
-                    new_basis=X.basis,
-                )
-            elif self.with_mean:
-                X = function_to_fdatabasis(
-                    lambda x: X(x) - mean_func(x), new_basis=X.basis,
-                )
-
-        return X

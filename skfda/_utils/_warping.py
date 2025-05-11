@@ -4,7 +4,7 @@ This module contains routines related to the registration procedure.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.interpolate import PchipInterpolator
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 def invert_warping(
     warping: FDataGrid,
     *,
-    output_points: Optional[ArrayLike] = None,
+    output_points: ArrayLike | None = None,
 ) -> FDataGrid:
     r"""
     Compute the inverse of a diffeomorphism.
@@ -128,7 +128,7 @@ def normalize_scale(
 
 def normalize_warping(
     warping: FDataGrid,
-    domain_range: Optional[DomainRangeLike] = None,
+    domain_range: DomainRangeLike | None = None,
 ) -> FDataGrid:
     r"""
     Rescale a warping to normalize their :term:`domain`.

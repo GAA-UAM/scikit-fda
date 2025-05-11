@@ -9,6 +9,7 @@ like depth measures.
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -27,6 +28,7 @@ from ...misc.validation import validate_domain_range
 from ...representation._functional_data import FData
 from ...representation.irregular import FDataIrregular
 from ...typing._base import DomainRangeLike, GridPointsLike
+from ...typing._numpy import ArrayLike
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _set_labels
 
@@ -960,13 +962,34 @@ class MixedDataPlot(BasePlot):
 
     def _plot_scalar(
         self,
-        data: FData,
+        data: ArrayLike,
         axes: Iterator[Axes],
         col: str,
     ) -> None:
         data_array = np.asarray(data)
         ax = next(axes)
-        ax.hist(data_array, bins=len(np.unique(data_array)))
+
+        if data_array.dtype.kind in {"U", "S", "O"}:
+            counts = Counter(data_array)
+            labels, values = zip(*sorted(counts.items()), strict=False)
+            ax.bar(labels, values, edgecolor="black")
+        else:
+            n_unique = len(np.unique(data_array))
+
+            if n_unique <= 10:  # noqa: PLR2004
+                bins = np.arange(
+                    data_array.min() - 0.5, data_array.max() + 1.5,
+                )
+                ax.hist(
+                    data_array,
+                    bins=bins.tolist(),
+                    edgecolor="black",
+                    rwidth=0.8,
+                )
+                ax.set_xticks(np.unique(data_array))
+            else:
+                ax.hist(data_array, bins="auto", edgecolor="black")
+
         ax.set_title(col)
 
     def _plot(self, fig: Figure, axes: Sequence[Axes]) -> None:

@@ -31,7 +31,6 @@ class LineEnergyFunction(Protocol):
         original: FDataGrid,
         target: FDataGrid,
         *,
-        grid_points: NDArrayFloat,
         row: int,
         column: int,
     ) -> NDArrayFloat:
@@ -174,108 +173,143 @@ def _dp_recover_warpings(
     return na_interpolator.transform(warpings)
 
 
-def l2_line_energy(
-    original: FDataGrid,
-    target: FDataGrid,
-    *,
-    grid_points: NDArrayFloat,
-    row: int,
-    column: int,
-) -> NDArrayFloat:
+class L2LineEnergy:
     r"""
-    Compute the line energies for the :math:`L^2` distance.
+    L2 line energy with roughness penalty.
 
-    This computes, for each row ``i`` and column ``j``, with ``i < row`` and
-    ```j < column`` the following distance:
+    The energy computed is:
 
     .. math::
-        d(x, y) = \int_{t_i}^{t_{row}} (x(w(t)) - y(t))^2 dt
+            d(x, y) = \int_{t_i}^{t_{row}} (x(w(t)) - y(t))^2 dt
+            + \lambda (1 - \sqrt{w'(t)})^2
 
-    where :math:`w`, the warping, is a straight line, that is,
-    :math:`w(t) = (1 - l) t_j + l t_column` with
-    :math:`l = (t - t_i) / (t_{row} - t_i)`.
+    where :math:`\lambda` is the penalty factor.
 
-    Examples:
-        Consider a simple case with 4 irregularly sampled discretization
-        points:
-
-        >>> import numpy as np
-        >>> grid_points = np.array([0, 0.5, 0.75, 1])
-
-        We use the identity function :math:`x(t) = t` and the piecewise linear
-        function :math:`y(t) = \max(0, 2t - 1)`:
-
-        >>> from skfda import FDataGrid
-        >>> original = FDataGrid(grid_points, grid_points=grid_points)
-        >>> target = FDataGrid(
-        ...     np.maximum(0, 2 * grid_points - 1),
-        ...     grid_points=grid_points,
-        ... )
-
-        We will consider the final case ``row = 3``, ``column=3``:
-        >>> l2_line_energy(
-        ...    original,
-        ...    target,
-        ...    grid_points=grid_points,
-        ...    row=3,
-        ...    column=3,
-        ... )
-        array([[[ 0.14583333,  0.375     ,  0.55208333],
-                [ 0.        ,  0.14583333,  0.328125  ],
-                [ 0.04166667,  0.        ,  0.01041667]]])
-
-        Note that the cells ``(1, 0)`` and ``(2, 1)`` have 0 energy.
-        This is because they correspond to linear warpings that align
-        perfectly :math:`x` in the intervals :math:`(0.5, 1)` and
-        :math:`(0.75, 1)`, respectively.
-
-        Now consider a possible intermediate case with ``row = 2`` and
-        ``column=1``:
-        >>> l2_line_energy(
-        ...    original,
-        ...    target,
-        ...    grid_points=grid_points,
-        ...    row=2,
-        ...    column=1,
-        ... )
-        array([[[ 0.0625],
-                [ 0.    ]]])
-
-        This has again 0 energy at ``(1, 0)``, because it is possible to
-        align perfectly :math:`x` in the interval :math:`(0.5, 0.75)`.
+    Args:
+        penalty: The penalization factor. The default, 0, is no penalization.
 
     """
-    t_row = grid_points[row]
-    t_column = grid_points[column]
 
-    t_i = grid_points[:row, None]
-    t_j = grid_points[:column, None]
+    def __init__(self, penalty: float = 0) -> None:
+        self.penalty = penalty
 
-    t = grid_points[:row + 1]
-    l_vec = (t - t_i) / (t_row - t_i)
-    l_matrix = l_vec[:, None, :]
-    w = (1 - l_matrix) * t_j + l_matrix * t_column
+    def __call__(  # noqa: WPS210
+        self,
+        original: FDataGrid,
+        target: FDataGrid,
+        *,
+        row: int,
+        column: int,
+    ) -> NDArrayFloat:
+        r"""
+        Compute the line energies for the :math:`L^2` distance.
 
-    # Shape: N x row x column x t
-    x_t = original(w.reshape(-1)).reshape((len(original), *w.shape))
+        This computes, for each row ``i`` and column ``j``, with ``i < row``
+        and ``j < column`` the following distance:
 
-    # Shape: N x t
-    y_t = target.data_matrix[:, :row + 1, 0]
+        .. math::
+            d(x, y) = \int_{t_i}^{t_{row}} (x(w(t)) - y(t))^2 dt
 
-    integrand = (x_t - y_t[:, None, None, :])**2
+        where :math:`w`, the warping, is a straight line, that is,
+        :math:`w(t) = (1 - l) t_j + l t_column` with
+        :math:`l = (t - t_i) / (t_{row} - t_i)`.
 
-    # Set to 0 the parts that do not contribute to the integral
-    integrand = np.swapaxes(np.triu(np.swapaxes(integrand, 1, 2)), 1, 2)
+        Args:
+            original: Functions to be aligned.
+            target: Target function(s) to align to.
+            row: The row index of the candidate point.
+            column: The column index of the candidate point.
 
-    identity = np.eye(len(t))
-    quadrature_weights = simpson(
-        y=identity,
-        x=t,
-    )
+        Returns:
+            Energy of direct line warpings to the candidate point.
 
-    integral = np.sum(integrand * quadrature_weights, axis=-1)
+        Examples:
+            Consider a simple case with 4 irregularly sampled discretization
+            points:
 
-    return integral  # type: ignore[no-any-return]
+            >>> import numpy as np
+            >>> grid_points = np.array([0, 0.5, 0.75, 1])
+
+            We use the identity function :math:`x(t) = t` and the piecewise
+            linear function :math:`y(t) = \max(0, 2t - 1)`:
+
+            >>> from skfda import FDataGrid
+            >>> original = FDataGrid(grid_points, grid_points=grid_points)
+            >>> target = FDataGrid(
+            ...     np.maximum(0, 2 * grid_points - 1),
+            ...     grid_points=grid_points,
+            ... )
+
+            Consider the default case with no penalization:
+            >>> l2_line_energy = L2LineEnergy()
+
+            We will consider the final case ``row = 3``, ``column=3``:
+            >>> l2_line_energy(
+            ...    original,
+            ...    target,
+            ...    row=3,
+            ...    column=3,
+            ... )
+            array([[[ 0.14583333,  0.375     ,  0.55208333],
+                    [ 0.        ,  0.14583333,  0.328125  ],
+                    [ 0.04166667,  0.        ,  0.01041667]]])
+
+            Note that the cells ``(1, 0)`` and ``(2, 1)`` have 0 energy.
+            This is because they correspond to linear warpings that align
+            perfectly :math:`x` in the intervals :math:`(0.5, 1)` and
+            :math:`(0.75, 1)`, respectively.
+
+            Now consider a possible intermediate case with ``row = 2`` and
+            ``column=1``:
+            >>> l2_line_energy(
+            ...    original,
+            ...    target,
+            ...    row=2,
+            ...    column=1,
+            ... )
+            array([[[ 0.0625],
+                    [ 0.    ]]])
+
+            This has again 0 energy at ``(1, 0)``, because it is possible to
+            align perfectly :math:`x` in the interval :math:`(0.5, 0.75)`.
+
+        """
+        grid_points = original.grid_points[0]
+
+        t_row = grid_points[row]
+        t_column = grid_points[column]
+
+        t_i = grid_points[:row, None]
+        t_j = grid_points[:column, None]
+
+        t = grid_points[:row + 1]
+        l_vec = (t - t_i) / (t_row - t_i)
+        l_matrix = l_vec[:, None, :]
+        w = (1 - l_matrix) * t_j + l_matrix * t_column
+
+        # Shape: N x row x column x t
+        x_t = original(w.reshape(-1)).reshape((len(original), *w.shape))
+
+        # Shape: N x t
+        y_t = target.data_matrix[:, :row + 1, 0]
+
+        integrand = (x_t - y_t[:, None, None, :])**2
+
+        # Set to 0 the parts that do not contribute to the integral
+        integrand = np.swapaxes(np.triu(np.swapaxes(integrand, 1, 2)), 1, 2)
+
+        identity = np.eye(len(t))
+        quadrature_weights = simpson(
+            y=identity,
+            x=t,
+        )
+
+        integral = np.sum(integrand * quadrature_weights, axis=-1)
+
+        w_slope = (t_column - t_j.T) / (t_row - t_i)
+        roughness = self.penalty * (1 - np.sqrt(w_slope))**2
+
+        return integral + roughness  # type: ignore[no-any-return]
 
 def dynamic_programming_match(  # noqa: WPS210
     original: FDataGrid,
@@ -332,77 +366,58 @@ def dynamic_programming_match(  # noqa: WPS210
         The warpings that align the functions using the DP algorithm.
 
     Examples:
-        Consider a simple case with 5 irregularly sampled discretization
+        Consider a simple case with 100 equally spaced discretization
         points:
 
         >>> import numpy as np
-        >>> grid_points = np.array([0, 0.25, 0.5, 0.75, 1])
+        >>> grid_points = np.linspace(0, 1, 100)
 
-        We want to align the identity function :math:`x_1(t) = t` and the
-        function :math:`x_2(t) = \min(2t, 1)`
-        to the piecewise linear
-        function :math:`y(t) = \max(0, 2t - 1)`:
+        We want to align the functions :math:`x_1(t) = t**2` and the
+        function :math:`x_2(t) = \sin(\frac{\pi}{2} t)`
+        to the identity function :math:`y(t) = t`.
+        All these are functions that start and end at the same points ((0, 0)
+        and (1, 1), respectively), and they are monotonic. Thus, the exact,
+        expected solution for the registration problem with the identity is
+        that the warpings are their inverses:
 
         >>> from skfda import FDataGrid
         >>> original = FDataGrid(
         ...     [
-        ...         grid_points,
-        ...         np.minimum(2 * grid_points, 1),
+        ...         grid_points**2,
+        ...         np.sin(np.pi / 2 * grid_points),
         ...     ],
         ...     grid_points=grid_points,
         ... )
         >>> target = FDataGrid(
-        ...     np.maximum(0, 2 * grid_points - 1),
+        ...     grid_points,
         ...     grid_points=grid_points,
         ... )
 
+        We limit the grid size, for performance reasons:
+        >>> l2_line_energy = L2LineEnergy()
         >>> warpings = dynamic_programming_match(
         ...     original,
         ...     target,
         ...     line_energy_function=l2_line_energy,
+        ...     grid_dim=7,
         ... )
-        >>> warpings
-        FDataGrid(
-            array([[[ 0.  ],
-                    [ 0.  ],
-                    [ 0.  ],
-                    [ 0.5 ],
-                    [ 1.  ]],
-                   [[ 0.  ],
-                    [ 0.  ],
-                    [ 0.  ],
-                    [ 0.25],
-                    [ 1.  ]]]),
-            grid_points=(array([ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]),),
-        ...)
 
-        >>> eval_target = target(grid_points[..., None])
-        >>> eval_target
-        array([[[ 0. ],
-                [ 0. ],
-                [ 0. ],
-                [ 0.5],
-                [ 1. ]]])
-        >>> eval_warped = original(
-        ...     warpings(grid_points[..., None]),
-        ...     aligned=False,
+        We check now that the found warpings are close to their inverses:
+        >>> np.allclose(
+        ...     warpings.data_matrix[0, ..., 0],
+        ...     np.sqrt(grid_points),
+        ...     atol=0.05,
         ... )
-        >>> eval_warped
-        array([[[ 0. ],
-                [ 0. ],
-                [ 0. ],
-                [ 0.5],
-                [ 1. ]],
-               [[ 0. ],
-                [ 0. ],
-                [ 0. ],
-                [ 0.5],
-                [ 1. ]]])
-        >>> np.allclose(eval_warped[0], eval_target)
+        True
+        >>> np.allclose(
+        ...     warpings.data_matrix[1, ..., 0],
+        ...     2 / np.pi * np.arcsin(grid_points),
+        ...     atol=0.05,
+        ... )
         True
 
-        >>> np.allclose(eval_warped[1], eval_target)
-        True
+        Note that the allowed slopes are restricted by the grid, and thus
+        a small discrepancy is expected.
 
     """
     n_samples = original.n_samples
@@ -413,7 +428,7 @@ def dynamic_programming_match(  # noqa: WPS210
 
     row_indexes = np.zeros((n_samples, n_points, n_points), dtype=np.int64)
     column_indexes = np.zeros((n_samples, n_points, n_points), dtype=np.int64)
-    energy = np.zeros((n_samples, n_points, n_points))
+    energy = np.full((n_samples, n_points, n_points), fill_value=np.inf)
 
     # Discourage jumps from (0, 0) at the beginning
     energy[:, 0, :] = np.inf
@@ -431,7 +446,6 @@ def dynamic_programming_match(  # noqa: WPS210
             candidate_points_line_energy = line_energy_function(
                 original,
                 target,
-                grid_points=grid_points,
                 row=row,
                 column=column,
             )

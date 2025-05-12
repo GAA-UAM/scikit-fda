@@ -517,7 +517,7 @@ def root_mean_square_l2(X: FData, correction: int = 0) -> NDArrayFloat:
         Defaults to cero.
 
     Returns:
-        A 1D NumPy array with the scaling factor for each component.
+        A 1D NumPy array with the scaling factor for all components.
 
     Raises:
         TypeError: If `X` is not a supported FData type.
@@ -541,5 +541,48 @@ def root_mean_square_l2(X: FData, correction: int = 0) -> NDArrayFloat:
     values = np.sum(average_function_value(x_squared)) * (
         1 / (X.n_samples - correction)
     )
+    scale = np.sqrt(values)
+    return np.atleast_1d(np.array(scale, dtype=np.float64))
+
+def individual_root_mean_square_l2(X: FData) -> NDArrayFloat:
+    r"""
+    Compute the individual root mean square of a functional dataset.
+
+    This method calculates a individual RMS scaling factor, where each function
+    is scaled using its own root mean square. This approach captures the
+    magnitude of each observation independently, without aggregating
+    information across the dataset.
+
+    Mathematically:
+        .. math::
+            S_i = \sqrt{\int_{\mathcal{T}} X_i(t)^2 dt}
+
+    Args:
+        X: Functional dataset to be scaled.
+
+
+    Returns:
+        A 1D NumPy array with the scaling factor for each component.
+
+    Raises:
+        TypeError: If `X` is not a supported FData type.
+
+    """
+    if isinstance(X, FDataGrid):
+        x_squared = X.copy(
+            data_matrix=(X.data_matrix) ** 2,
+            coordinate_names=(None,),
+        )
+
+    elif isinstance(X, FDataBasis):
+        x_squared = function_to_fdatabasis(
+            lambda x: X(x) ** 2,
+            new_basis=X.basis,
+        )
+    else:
+        msg = "Unsupported FData type."
+        raise TypeError(msg)
+
+    values = average_function_value(x_squared)
     scale = np.sqrt(values)
     return np.atleast_1d(np.array(scale, dtype=np.float64))

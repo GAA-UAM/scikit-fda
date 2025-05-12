@@ -238,13 +238,14 @@ class GraphPlot(BasePlot):
         self.gradient_criteria = gradient_criteria
         if self.gradient_criteria is not None:
             if len(self.gradient_criteria) != fdata.n_samples:
-                raise ValueError(
+                msg = (
                     f"The length of the gradient color list "
                     f"({len(self.gradient_criteria)}) "
                     f"should be the same as the number "
                     f"of samples in fdata "
-                    f"({fdata.n_samples})",
+                    f"({fdata.n_samples})"
                 )
+                raise ValueError(msg)
 
             if min_grad is None:
                 self.min_grad = min(self.gradient_criteria)
@@ -303,15 +304,15 @@ class GraphPlot(BasePlot):
         self.patches = patches
 
     @property
-    def dim(self) -> int:
+    def dim(self) -> int:  # noqa: D102
         return self.fdata.dim_domain + 1
 
     @property
-    def n_subplots(self) -> int:
+    def n_subplots(self) -> int:  # noqa: D102
         return self.fdata.dim_codomain
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return self.fdata.n_samples
 
     def _plot(
@@ -353,12 +354,13 @@ class GraphPlot(BasePlot):
                 n_points_tuple = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
             elif isinstance(self.n_points, int):
                 n_points_tuple = (self.n_points, self.n_points)
-            elif len(self.n_points) != 2:
-                raise ValueError(
+            elif len(self.n_points) != 2:  # noqa: PLR2004
+                msg = (
                     "n_points should be a number or a tuple of "
                     "length 2, and has "
-                    f"length {len(self.n_points)}.",
+                    f"length {len(self.n_points)}."
                 )
+                raise ValueError(msg)
 
             # Axes where will be evaluated
             x = np.linspace(*self.domain_range[0], n_points_tuple[0])

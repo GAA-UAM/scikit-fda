@@ -95,6 +95,9 @@ fd_1st_precipitations_smooth.coordinate_names = (
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 3))
 
+axes[0].set_title("Temperatures smoothed first derivative")
+axes[1].set_title("Precipitations smoothed first derivative")
+
 fd_1st_temperatures_smooth.plot(axes=axes[0])
 fd_1st_precipitations_smooth.plot(axes=axes[1])
 

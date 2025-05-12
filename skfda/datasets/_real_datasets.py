@@ -1722,9 +1722,8 @@ def fetch_cd4(
 
 _country_height_descr = """
     The Country Height dataset is a study of average male heights in 144
-    countries from 1810-1989, with a smaller number of countries from 1700-
-    1800. This data is truncated to the years 1700-1989 from the original
-    in the R package brolgar, from CRAN.
+    countries from 1810-1989. This data is truncated to the specified years
+    from the original dataset in the R package brolgar, from CRAN.
 
     References:
         https://cran.r-project.org/package=brolgar
@@ -1745,9 +1744,11 @@ def fetch_country_height(
     The data is obtained from the R package 'brolgar'.
     """
     descr = _country_height_descr
-    raw_dataset = fetch_cran("heights", "brolgar")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        raw_dataset = fetch_cran("heights", "brolgar")
     data = raw_dataset["heights"]
-    data = data[data["year"] >= 1700]
+    data = data[(data["year"] >= 1810) & (data["year"] < 1990)]
 
     curve_name = "country"
     argument_name = "year"
@@ -1773,15 +1774,14 @@ def fetch_country_height(
     frame = None
 
     if as_frame:
-        frame = data.pivot_table(
-            index=curve_name,
-            columns=argument_name,
-            values=coordinate_name,
-        )
-        frame["continent"] = target_categorical
+        curves = curves.to_grid()
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: target_categorical,
+        })
 
-        curves = frame.iloc[:, :-1]
-        target = frame.iloc[:, -1]
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
     else:
         target = target_codes
 

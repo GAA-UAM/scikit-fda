@@ -82,11 +82,14 @@ plt.show()
 
 
 # %%
-# We can now apply the PACE method to the dataset.
+# We can now apply the PACE method to the dataset. Due to the fact that the
+# domain points are so sparse, bandwidths are going to be very high, which
+# highlights the importance of having a dense dataset, but also exemplifies
+# the idea that PACE can work even on sparse situations.
 pace = PACE(
-    n_components=0.95,
-    bandwidth_mean=np.array([12, 17]),
-    bandwidth_cov=np.array([18, 22]),
+    n_components=0.99,
+    bandwidth_mean=np.array([20, 22]),
+    bandwidth_cov=np.array([25, 28]),
 )
 pace.fit(country_height)
 
@@ -119,10 +122,13 @@ plt.show()
 
 # %%
 # We can further inspect the principal components of the data, where we can see
-# that the first component takes the form of a steady decrease over the years,
-# while the second component takes the shape of a slow increase, with peaks
-# around 1750 and 1890. The third component is a more complex shape, with a
-# decrease until the 1800s, only to spike until 1890 and decrease again.
+# that the first component takes the form of a steady increase over the years,
+# while the second component takes the shape of an increase over the first
+# years, followed by an accentuated decrease after the 1900s, which could be
+# supported by the first world war, a period of hunger. The third principal
+# component also takes the shape of an increase, but starting a bit later,
+# which could model countries where abundant food or resources arrived at a
+# latter stage, followed by a stabilization and slight decrease since 1900.
 # Combined, the last two components explain the more subtle variations in the
 # data, while the first component explains the main trend.
 fig, ax = plt.subplots()
@@ -135,6 +141,8 @@ ax.set_ylabel(pace.components_.coordinate_names[0] or "Value")
 ax.legend()
 plt.show()
 
+print(pace.explained_variance_ratio[:3])
+
 # %%
 # From the FPC scores, we can reconstruct the whole dataset, allowing us to
 # view the data in a regular grid, which is a necessary tool for clustering
@@ -143,6 +151,13 @@ reconstructed = pace.inverse_transform(fpc_scores)
 
 reconstructed.plot()
 plt.show()
+
+
+
+
+
+
+
 
 # %%
 # Now we can apply clustering techniques available in the package. More
@@ -207,6 +222,84 @@ ClusterPlot(
     cluster_labels=cluster_labels,
 ).plot()
 plt.show()
+
+
+
+
+
+
+
+
+# %%
+from skfda.datasets._real_datasets import fetch_growth, fetch_country_height
+
+X_df, y_df = fetch_country_height(return_X_y=True, as_frame=True)
+X = X_df.iloc[:, 0].array
+y_array = y_df.array
+categories = y_array.categories
+y = y_array.codes
+
+print(X)
+print("Y: ", y)
+
+print("Testing")
+
+X_df, y_df = fetch_growth(return_X_y=True, as_frame=True)
+
+X = X_df.iloc[:, 0].array
+y_array = y_df.array
+categories = y_array.categories
+y = y_array.codes
+
+print(X_df)
+print("Y", y_df)
+
+# import matplotlib.pyplot as plt
+# from sklearn.model_selection import train_test_split
+
+# X_train, X_test, y_train, y_test = train_test_split(
+#     X,
+#     y,
+#     test_size=0.3,
+#     stratify=y,
+#     random_state=0,
+# )
+
+# print(X_train[0])
+# print(X_test.shape)
+# print(y_train)
+
+# # Plot samples grouped by sex
+# # X_train.plot(group=y_train, group_names=categories)
+# # plt.show()
+
+
+# print(country_height[0])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # %%
 # References

@@ -998,7 +998,7 @@ class PACE(
             data_matrix=phi,
             grid_points=self.mean_.grid_points,
             domain_range=X.domain_range,
-            dataset_name=X.dataset_name,
+            dataset_name="Principal Components",
             argument_names=X.argument_names,
             coordinate_names=X.coordinate_names,
             sample_names=[f"Eigenfunction {i+1}" for i in range(phi.shape[0])],

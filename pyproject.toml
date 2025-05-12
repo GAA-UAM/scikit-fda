@@ -102,6 +102,7 @@ enable_error_code = "ignore-without-code"
 
 [[tool.mypy.overrides]]
 module = [
+  "asv_runner.*",
   "cartopy.*",
 	"fdasrsf.*",
   "findiff.*",

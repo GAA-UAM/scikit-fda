@@ -19,9 +19,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.utils import Bunch
 
 from skfda.datasets._real_datasets import fetch_country_height
-from skfda.exploratory.visualization.clustering import (
-    ClusterPlot,
-)
+from skfda.exploratory.visualization.clustering import ClusterPlot
 from skfda.ml.clustering import FuzzyCMeans
 from skfda.preprocessing.dim_reduction import PACE
 from skfda.representation import FDataIrregular
@@ -57,7 +55,7 @@ cmap = plt.get_cmap("Set2")
 country_colors = [cmap(i / (n_groups - 1)) for i in range(n_groups)]
 
 country_height.plot(
-    group=country_height_bunch.target,
+    group=target,
     group_colors=country_colors,
     group_names=country_categories,
 )
@@ -152,12 +150,50 @@ reconstructed = pace.inverse_transform(fpc_scores)
 reconstructed.plot()
 plt.show()
 
+# %%
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
+curve_name = "country"
+X = pd.DataFrame({
+    curve_name: reconstructed,
+}).iloc[:, [0]]
+X = X.iloc[:, 0].array
 
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    target,
+    test_size=0.3,
+    stratify=target,
+    random_state=0,
+)
 
+X_train.plot(
+    group=y_train,
+    group_names=country_categories,
+    group_colors=country_colors,
+)
+plt.show()
 
+# %%
+X_test.plot()
+plt.show()
 
+# %%
+from skfda.ml.classification import KNeighborsClassifier
 
+knn = KNeighborsClassifier()
+knn.fit(X_train, y_train)
+knn_pred = knn.predict(X_test)
+print(knn_pred)
+print(f"The score of KNN is {knn.score(X_test, y_test):2.2%}")
+
+X_test.plot(
+    group=knn_pred,
+    group_names=country_categories,
+    group_colors=country_colors,
+)
 
 # %%
 # Now we can apply clustering techniques available in the package. More
@@ -222,84 +258,6 @@ ClusterPlot(
     cluster_labels=cluster_labels,
 ).plot()
 plt.show()
-
-
-
-
-
-
-
-
-# %%
-from skfda.datasets._real_datasets import fetch_growth, fetch_country_height
-
-X_df, y_df = fetch_country_height(return_X_y=True, as_frame=True)
-X = X_df.iloc[:, 0].array
-y_array = y_df.array
-categories = y_array.categories
-y = y_array.codes
-
-print(X)
-print("Y: ", y)
-
-print("Testing")
-
-X_df, y_df = fetch_growth(return_X_y=True, as_frame=True)
-
-X = X_df.iloc[:, 0].array
-y_array = y_df.array
-categories = y_array.categories
-y = y_array.codes
-
-print(X_df)
-print("Y", y_df)
-
-# import matplotlib.pyplot as plt
-# from sklearn.model_selection import train_test_split
-
-# X_train, X_test, y_train, y_test = train_test_split(
-#     X,
-#     y,
-#     test_size=0.3,
-#     stratify=y,
-#     random_state=0,
-# )
-
-# print(X_train[0])
-# print(X_test.shape)
-# print(y_train)
-
-# # Plot samples grouped by sex
-# # X_train.plot(group=y_train, group_names=categories)
-# # plt.show()
-
-
-# print(country_height[0])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # %%
 # References

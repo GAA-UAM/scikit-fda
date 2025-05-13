@@ -1,9 +1,44 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skfda.datasets._real_datasets import fetch_cd4
+from skfda.datasets._real_datasets import fetch_cd4, fetch_country_height, fetch_growth
 from skfda.preprocessing.dim_reduction._pace import PACE
 from skfda.representation import FDataIrregular
+
+
+
+
+# hx, hy = fetch_country_height(as_frame=True, return_X_y=True)
+# gx, gy = fetch_growth(as_frame=True, return_X_y=True)
+
+
+# print(hx["country"][0])
+# print(gx["height"][0])
+
+# print(hx)
+# print(gx)
+
+# print(hy)
+# print(gy)
+
+
+X = fetch_cd4()
+Y = fetch_country_height()
+
+
+
+
+
+
+
+
+
+
+
+exit()
+
+
+
 
 n_samples = 10  # Number of samples
 n_points = 2    # Points per observation

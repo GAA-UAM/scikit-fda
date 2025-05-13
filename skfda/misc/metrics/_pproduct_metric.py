@@ -9,6 +9,9 @@ import multimethod
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 
+from ..._utils._sklearn_adapter import (
+    BaseEstimator,
+)
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
@@ -65,7 +68,9 @@ def _(
 
 @_compute_p_product.register
 def _(
-    metric: PProductMetric[V_call, V_metric], arg1: FData, arg2: FData,
+    metric: PProductMetric[V_call, V_metric],
+    arg1: FData,
+    arg2: FData,
 ) -> NDArrayFloat:
     from ..metrics import l2_distance
 
@@ -158,7 +163,6 @@ def _(  # noqa: C901, PLR0912
     arg1: pd.DataFrame,
     arg2: pd.DataFrame,
 ) -> NDArrayFloat:
-
     same_structure_and_data(arg1, arg2)
 
     n_cols = arg1.shape[1]
@@ -300,7 +304,7 @@ def default_metric(
     return DefaultMetric()(arg1=arg1, arg2=arg2)
 
 
-class PProductMetric(Metric[V_call], Generic[V_call, V_metric]):
+class PProductMetric(BaseEstimator, Metric[V_call], Generic[V_call, V_metric]):
     r"""
     Weighted :math:`l^p`-type product metric for Mixed Data.
 
@@ -423,7 +427,9 @@ def pproduct_metric(
     See :class:`~skfda.misc.metrics.PProductMetric` for full documentation.
     """
     metric: PProductMetric[V_call, V_metric] = PProductMetric(
-        p, metrics=metrics, weights=weights,
+        p,
+        metrics=metrics,
+        weights=weights,
     )
     return metric(arg1, arg2)
 

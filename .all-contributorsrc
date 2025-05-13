@@ -598,7 +598,8 @@
       "contributions": [
         "doc",
         "code",
-        "test"
+        "test",
+        "infra"
       ]
     },
     {
@@ -621,6 +622,16 @@
       "profile": "https://github.com/aleexarias",
       "contributions": [
         "doc"
+      ]
+    },
+    {
+      "login": "rosignol08",
+      "name": "rosignol08",
+      "avatar_url": "https://avatars.githubusercontent.com/u/159790609?v=4",
+      "profile": "https://romaric.site/",
+      "contributions": [
+        "code",
+        "test"
       ]
     }
   ],

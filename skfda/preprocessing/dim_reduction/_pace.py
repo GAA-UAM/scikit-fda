@@ -74,10 +74,7 @@ class PACE(
         bandwidth_mean: bandwidth to use in the smoothing kernel for the mean.
             If no parameter is given, the bandwidth is calculated using the GCV
             method. If a float is given, it is used as the bandwidth. If a
-            tuple is given, it is used as the bandwidth search range. This last
-            option is useful in some kernel functions, where the search result
-            is a boundary of the default search range (0.1, 10.0). Defaluts to
-            ``None``.
+            tuple is given, it is used as the bandwidth search range.
         kernel_cov: callable vectorized univariate smoothing kernel function
             for the covariance and calculations regarding its diagonal. It
             should have the form :math:`K(t)`, where `t` are the
@@ -89,9 +86,7 @@ class PACE(
             covariance. If no parameter is given, the bandwidth is calculated
             using the GCV method. If a float is given, it is used as the
             bandwidth. If a tuple is given, it is used as the bandwidth search
-            range. This last option is useful in some kernel functions, where
-            the search result is a boundary of the default search range (0.1,
-            10.0). Defaluts to ``None``.
+            range.
         bw_cov_n_grid_points: number of grid points to calculate the bandwidth
             for the covariance. This parameter's main purpose is to reduce the
             computational cost of the GCV method. If the parameter
@@ -134,7 +129,7 @@ class PACE(
 
     def _check_bandwidth(
         self,
-        bandwidth: float | NDArrayFloat | None,
+        bandwidth: float | NDArrayFloat,
     ) -> tuple[float | None, tuple[float, float] | None]:
         """
         Check if the bandwidth has the correct form.
@@ -148,9 +143,6 @@ class PACE(
             or None otherwise. In the case that the bandwidth is None, the
             function returns None, (0.1, 10.0) as the default search range.
         """
-        if bandwidth is None:
-            return None, (0.1, 10.0)
-
         if isinstance(bandwidth, float) and bandwidth <= 0:
             error_msg = "Given bandwidth values must be positive."
             raise ValueError(error_msg)
@@ -180,9 +172,9 @@ class PACE(
         n_components: float = 1.0, # Poner como scikit-learn, que no sea 1
         assume_noisy: bool = True,
         kernel_mean: KernelFunction = gaussian_kernel,
-        bandwidth_mean: float | NDArrayFloat | None = None,
+        bandwidth_mean: float | NDArrayFloat,
         kernel_cov: KernelFunction = gaussian_kernel,
-        bandwidth_cov: float | NDArrayFloat | None = None,
+        bandwidth_cov: float | NDArrayFloat,
         bw_cov_n_grid_points: int = 30,
         n_grid_points: int = 51,
         boundary_effect_interval: Sequence[float] = (0.0, 1.0),

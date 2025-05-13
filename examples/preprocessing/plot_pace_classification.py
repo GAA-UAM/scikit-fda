@@ -166,7 +166,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     target,
     test_size=0.3,
     stratify=target,
-    random_state=0,
+    random_state=8,
 )
 
 X_train.plot(
@@ -189,74 +189,21 @@ knn_pred = knn.predict(X_test)
 print(knn_pred)
 print(f"The score of KNN is {knn.score(X_test, y_test):2.2%}")
 
-X_test.plot(
+fig = X_test.plot(
     group=knn_pred,
     group_names=country_categories,
     group_colors=country_colors,
 )
 
-# %%
-# Now we can apply clustering techniques available in the package. More
-# specifically, we will use the Fuzzy C-Means algorithm, which is a
-# probabilistic clustering algorithm that allows each data point to belong to
-# multiple clusters with different degrees of membership.
-n_clusters = n_groups
-seed = 2
+X_test_0 = X_test[knn_pred == 0]
+X_test_1 = X_test[knn_pred == 1]
+X_test_2 = X_test[knn_pred == 2]
+X_test_3 = X_test[knn_pred == 3]
 
-cluster: FuzzyCMeans = FuzzyCMeans(
-    n_clusters=n_clusters,
-    max_iter=200,
-    random_state=seed,
-    fuzzifier=1.1,
-)
-cluster.fit(reconstructed)
-predicted = cluster.predict(reconstructed)
-
-confusion = confusion_matrix(target, predicted)
-row_ind, col_ind = linear_sum_assignment(-confusion)
-
-permutation = np.zeros(confusion.shape[1], dtype=int)
-permutation[col_ind] = row_ind
-
-remapped_predicted = permutation[predicted]
-
-matches = np.sum(remapped_predicted == target)
-percentage = (matches / len(target)) * 100
-
-print(f"Percentage of correct predictions: {percentage:.2f}%")
-
-
-# %%
-# As a result of the clustering algorithm, we can see that the percentage of
-# correct predictions is rather low, with around 50% of the countries being
-# correctly classified. Although this may be influenced by the fact that the
-# data is sparsely and irregularly sampled, especially in the earlier
-# decades, such a low percentage suggests that the average height by country
-# is not a good indicator of the continent to which a country belongs.
-#
-# Further studies could be done about the relation between the height of a
-# country's population and the geographical location they inhabit, but it may
-# be necessary to restrict the areas of classification to a smaller subsets,
-# given that the size of the continents is quite large and populations of
-# diverse ethnogeographic origins coexist in the same continent.
-#
-# In addition, restricting the analysis to a smaller time frame may also
-# improve the results.
-#
-# We will now plot the clustering results.
-cluster_colors = [
-    country_colors[permutation[i]] for i in range(len(permutation))
-]
-cluster_labels = [
-    country_categories[permutation[i]] for i in range(len(permutation))
-]
-
-ClusterPlot(
-    cluster,
-    reconstructed,
-    cluster_colors=cluster_colors,
-    cluster_labels=cluster_labels,
-).plot()
+X_test_0.mean().plot(fig=fig, color="#157a5b", linewidth=3)
+X_test_1.mean().plot(fig=fig, color="#666666", linewidth=3)
+X_test_2.mean().plot(fig=fig, color="#7fbc6a", linewidth=3)
+X_test_3.mean().plot(fig=fig, color="#c49c4d", linewidth=3)
 plt.show()
 
 # %%

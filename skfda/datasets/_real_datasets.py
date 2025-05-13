@@ -1647,12 +1647,14 @@ def fetch_bone_density(
 
 
 _cd4_descr = """
-    CD4 cell counts for 366 subjects between months -18 and 42 since
+    CD4 cell counts for 366 subjects between months 0 and 42 since
     seroconversion. Each subject's observations are contained in a single row.
 
     Format: A data frame made up of a 366 x 61 matrix of CD4 cell counts.
 
-    The data is obtained from the R package 'refund' from CRAN.
+    The data is a subset of the original data obtained from the R package
+    'refund' from CRAN, where only measurements since seroconversion are
+    evaluated.
 
     Source:
         https://cran.r-project.org/web/packages/refund/index.html
@@ -1674,11 +1676,20 @@ def fetch_cd4(
     The data is obtained from the R package 'refund'.
     """
     descr = _cd4_descr
-    raw_dataset = fetch_cran("cd4", "refund")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        raw_dataset = fetch_cran("cd4", "refund")
     cd4_array = raw_dataset["cd4"]
 
     grid_points = cd4_array.coords["dim_1"].to_numpy().astype(float)
     data_matrix = cd4_array.to_numpy().astype(float)
+
+    mask = grid_points >= 0
+    grid_points = grid_points[mask]
+    data_matrix = data_matrix[:, mask]
+
+    valid_rows = ~np.isnan(data_matrix).all(axis=1)
+    data_matrix = data_matrix[valid_rows]
 
     cd4_grid = FDataGrid(
         data_matrix=data_matrix,

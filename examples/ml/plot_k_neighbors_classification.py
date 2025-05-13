@@ -8,14 +8,7 @@ Shows the usage of the k-nearest neighbors classifier.
 # Author: Pablo Marcos Manchón
 # License: MIT
 
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.model_selection import GridSearchCV, train_test_split
-
-import skfda
-from skfda.ml.classification import KNeighborsClassifier
-
-##############################################################################
+# %%
 #
 # In this example we are going to show the usage of the K-nearest neighbors
 # classifier in their functional version, which is a extension of the
@@ -28,24 +21,35 @@ from skfda.ml.classification import KNeighborsClassifier
 #
 # The following figure shows the growth curves grouped by sex.
 
-X, y = skfda.datasets.fetch_growth(return_X_y=True, as_frame=True)
-X = X.iloc[:, 0].values
-y = y.values
+import matplotlib.pyplot as plt
+
+from skfda.datasets import fetch_growth
+
+X_df, y_df = fetch_growth(return_X_y=True, as_frame=True)
+X = X_df.iloc[:, 0].array
+target = y_df.array
+# sphinx_gallery_start_ignore
+from pandas import Categorical
+
+from skfda import FDataGrid
+
+assert isinstance(X, FDataGrid)
+assert isinstance(target, Categorical)
+# sphinx_gallery_end_ignore
+y = target.codes
 
 # Plot samples grouped by sex
-X.plot(group=y.codes, group_names=y.categories)
+X.plot(group=target.codes, group_names=target.categories)
+plt.show()
 
-y = y.codes
-
-
-##############################################################################
+# %%
 #
 # The class labels are stored in an array. Zeros represent male
 # samples while ones represent female samples.
 
 print(y)
 
-##############################################################################
+# %%
 #
 # We can split the dataset using the sklearn function
 # :func:`~sklearn.model_selection.train_test_split`.
@@ -53,6 +57,8 @@ print(y)
 # The function will return two
 # :class:`~skfda.representation.grid.FDataGrid`'s, ``X_train`` and ``X_test``
 # with the corresponding partitions, and arrays with their class labels.
+
+from sklearn.model_selection import GridSearchCV, train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(
     X,
@@ -63,7 +69,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 
-##############################################################################
+# %%
 #
 # We will fit the classifier
 # :class:`~skfda.ml.classification.KNeighborsClassifier`
@@ -73,10 +79,12 @@ X_train, X_test, y_train, y_test = train_test_split(
 # a :class:`~skfda.representation.grid.FDataGrid` with
 # functional observations instead of an array with multivariate data.
 
+from skfda.ml.classification import KNeighborsClassifier
+
 knn = KNeighborsClassifier(n_neighbors=5)
 knn.fit(X_train, y_train)
 
-##############################################################################
+# %%
 #
 # Once it is fitted, we can predict labels for the test samples.
 #
@@ -93,7 +101,7 @@ knn.fit(X_train, y_train)
 pred = knn.predict(X_test)
 print(pred)
 
-##############################################################################
+# %%
 #
 # The :func:`~skfda.ml.classification.KNeighborsClassifier.score` method
 # allows us to calculate the mean accuracy for the test data. In this case we
@@ -102,7 +110,7 @@ print(pred)
 score = knn.score(X_test, y_test)
 print(score)
 
-##############################################################################
+# %%
 #
 # We can also estimate the probability of membership to the predicted class
 # using :func:`~skfda.ml.classification.KNeighborsClassifier.predict_proba`,
@@ -113,7 +121,7 @@ probs = knn.predict_proba(X_test[:5])  # Predict first 5 samples
 print(probs)
 
 
-##############################################################################
+# %%
 #
 # We can use the sklearn
 # :class:`~sklearn.model_selection.GridSearchCV` to perform a
@@ -136,20 +144,21 @@ print("Best params:", gscv.best_params_)
 print("Best cross-validation score:", gscv.best_score_)
 
 
-##############################################################################
+# %%
 #
 # We have obtained the greatest mean accuracy using 11 neighbors. The
 # following figure shows the score depending on the number of neighbors.
 
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
+fig, ax = plt.subplots()
 ax.bar(param_grid["n_neighbors"], gscv.cv_results_["mean_test_score"])
 ax.set_xticks(param_grid["n_neighbors"])
 ax.set_ylabel("Number of Neighbors")
 ax.set_xlabel("Cross-validation score")
 ax.set_ylim((0.9, 1))
 
-##############################################################################
+plt.show()
+
+# %%
 #
 # By default, after performing the cross validation, the classifier will
 # be fitted to the whole training data provided in the call to
@@ -161,7 +170,7 @@ ax.set_ylim((0.9, 1))
 score = gscv.score(X_test, y_test)
 print(score)
 
-##############################################################################
+# %%
 #
 # This classifier can be used with multivariate functional data, as surfaces
 # or curves in :math:`\mathbb{R}^N`, if the metric supports it too.

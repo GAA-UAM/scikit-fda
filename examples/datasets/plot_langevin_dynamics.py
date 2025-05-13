@@ -10,14 +10,6 @@ Stochastic Differential Equations (SDEs).
 # License: MIT
 # sphinx_gallery_thumbnail_number = 1
 
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib import rc
-from matplotlib.animation import FuncAnimation
-from scipy.stats import multivariate_normal
-
-from skfda.datasets import make_sde_trajectories
-
 # %%
 # Langevin dynamics is a mathematical model used to describe the behaviour of
 # particles in a fluid, particularly in the context of statistical mechanic
@@ -91,6 +83,13 @@ from skfda.datasets import make_sde_trajectories
 # We start by defining functions that compute the pdf, log_pdf and score of the
 # distribution.
 
+from typing import Any
+
+import numpy as np
+from scipy.stats import multivariate_normal
+
+NDArrayFloat = np.typing.NDArray[np.floating[Any]]
+
 means = np.array([[-1, -1], [3, 2], [0, 2]])
 cov_matrices = np.array(
     [
@@ -104,39 +103,44 @@ probabilities = np.array([0.3, 0.6, 0.1])
 
 
 def pdf_gaussian_mixture(
-    x: np.ndarray,
-    weight: np.ndarray,
-    mean: np.ndarray,
-    cov: np.ndarray,
-) -> np.ndarray:
+    x: NDArrayFloat,
+    weight: NDArrayFloat,
+    mean: NDArrayFloat,
+    cov: NDArrayFloat,
+) -> NDArrayFloat:
     """Pdf of a 2-d Gaussian distribution of N Gaussians."""
-    n_gaussians, dim = np.shape(means)
+    n_gaussians, dim = mean.shape
+    # sphinx_gallery_start_ignore
+    gaussians_pdfs: np.typing.NDArray[np.floating[Any]]
+    # sphinx_gallery_end_ignore
+    gaussians_pdfs = np.array([
+        weight[n] * multivariate_normal.pdf(x, mean[n], cov[n])
+        for n in range(n_gaussians)
+    ])
     return np.sum(
-        [weight[n] * multivariate_normal.pdf(x, mean[n], cov[n])
-         for n in range(n_gaussians)
-         ],
+        gaussians_pdfs,
         axis=0,
     )
 
 
 def log_pdf_gaussian_mixture(
-    x: np.ndarray,
-    weight: np.ndarray,
-    mean: np.ndarray,
-    cov: np.ndarray,
-) -> np.ndarray:
+    x: NDArrayFloat,
+    weight: NDArrayFloat,
+    mean: NDArrayFloat,
+    cov: NDArrayFloat,
+) -> NDArrayFloat:
     """Log-pdf of a 2-d Gaussian distribution of N Gaussians."""
     return np.log(pdf_gaussian_mixture(x, weight, mean, cov))
 
 
 def score_gaussian_mixture(
-    x: np.ndarray,
-    weight: np.ndarray,
-    mean: np.ndarray,
-    cov: np.ndarray,
-) -> np.ndarray:
+    x: NDArrayFloat,
+    weight: NDArrayFloat,
+    mean: NDArrayFloat,
+    cov: NDArrayFloat,
+) -> NDArrayFloat:
     """Score of a 2-d Gaussian distribution of N Gaussians."""
-    n_gaussians, dim = np.shape(means)
+    n_gaussians, dim = np.shape(mean)
     score = np.zeros_like(x)
     pdf = pdf_gaussian_mixture(x, weight, mean, cov)
 
@@ -154,6 +158,7 @@ def score_gaussian_mixture(
 # visualize them with a contour plot of the logprobability and the vector
 # field given by the score.
 
+import matplotlib.pyplot as plt
 
 x_range = np.linspace(-4, 6, 100)
 y_range = np.linspace(-4, 6, 100)
@@ -175,15 +180,14 @@ score = score_gaussian_mixture(
     means,
     cov_matrices,
 )
-score = score.reshape(X_score.shape + (2,))
+score = score.reshape((*X_score.shape, 2))
 score_x_coord = score[:, :, 0]
 score_y_coord = score[:, :, 1]
 
-plt.contour(X, Y, Z, levels=25, cmap='autumn')
-plt.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
-plt.xticks([])
-plt.yticks([])
-plt.title("Score of a Gaussian mixture", y=1.02)
+fig, ax = plt.subplots()
+ax.contour(X, Y, Z, levels=25, cmap="autumn")
+ax.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
+ax.set_title("Score of a Gaussian mixture", y=1.02)
 plt.show()
 
 # %%
@@ -203,16 +207,16 @@ plt.show()
 
 def langevin_drift(
     t: float,
-    x: np.ndarray,
-) -> np.ndarray:
+    x: NDArrayFloat,
+) -> NDArrayFloat:
     """Drift term of the Langevin dynamics."""
     return score_gaussian_mixture(x, probabilities, means, cov_matrices)
 
 
 def langevin_diffusion(
     t: float,
-    x: np.ndarray,
-) -> np.ndarray:
+    x: NDArrayFloat,
+) -> NDArrayFloat:
     """Diffusion term of the Langevin dynamics."""
     return np.sqrt(2) * np.eye(x.shape[-1])
 
@@ -223,7 +227,7 @@ rnd_state = np.random.RandomState(1)
 def initial_distribution(
     size: int,
     random_state: np.random.RandomState,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Uniform initial distribution"""
     return random_state.uniform(-4, 6, (size, 2))
 
@@ -236,7 +240,10 @@ frames = 20
 # We use :func:`skfda.datasets.make_sde_trajectories` method of the datasets
 # module to simulate solutions of the SDE. More information on how to use it
 # can be found in the example
-# :ref:`sphx_glr_auto_examples_plot_sde_simulation.py`.
+# :ref:`sphx_glr_auto_examples_datasets_plot_sde_simulation.py`.
+
+from skfda.datasets import make_sde_trajectories
+
 t_0 = 0
 t_n = 3.0
 
@@ -256,32 +263,30 @@ fd = make_sde_trajectories(
 # gradually move to regions of higher mass probability pushed by the score
 # drift. The final result is an approximate sample from the target
 # distribution.
+from collections.abc import Sequence
+
+from matplotlib import rc
+from matplotlib.animation import FuncAnimation
+from matplotlib.artist import Artist
 
 points = fd.data_matrix
 fig, ax = plt.subplots()
 
-plt.contour(X, Y, Z, levels=25, cmap='autumn')
-plt.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
-rc('animation', html='jshtml')
-scatter = None
+ax.contour(X, Y, Z, levels=25, cmap="autumn")
+ax.quiver(X_score, Y_score, score_x_coord, score_y_coord, scale=200)
+rc("animation", html="jshtml")
+ax.set_xlim(-4, 6)
+ax.set_ylim(-4, 6)
+x = points[:, 0, 0]
+y = points[:, 0, 1]
+scatter = ax.scatter(x, y, s=5, c="dodgerblue")
 
-
-def update(frame: int) -> None:
+def update(frame: int) -> Sequence[Artist]:
     """Creation of each frame of the animation."""
-    global scatter
+    positions = points[:, grid_points_per_frame * frame]
+    scatter.set_offsets(positions)
+    return (scatter,)
 
-    if scatter:
-        scatter.remove()
-
-    ax.set_xlim(-4, 6)
-    ax.set_ylim(-4, 6)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    x = points[:, grid_points_per_frame * frame, 0]
-    y = points[:, grid_points_per_frame * frame, 1]
-    scatter = ax.scatter(x, y, s=5, c='dodgerblue')
-
-
-animation = FuncAnimation(fig, update, frames=frames, interval=500)
+animation = FuncAnimation(fig, update, frames=frames, interval=500, blit=True)
 plt.close()
 animation

@@ -1,7 +1,7 @@
 """Implementation of Lp norms."""
 
 import math
-from typing import Final, Union
+from typing import Final
 
 from ...representation import FData
 from ...typing._metric import Norm
@@ -90,8 +90,7 @@ class LpNorm(WeightedLpNorm):
 
     def __repr__(self) -> str:
         return (
-            f"{type(self).__name__}(p={self.p},"
-            f"vector_norm={self.vector_norm})"
+            f"{type(self).__name__}(p={self.p},vector_norm={self.vector_norm})"
         )
 
 
@@ -101,10 +100,10 @@ linf_norm: Final = LpNorm(math.inf)
 
 
 def lp_norm(
-    vector: Union[NDArrayFloat, FData],
+    vector: NDArrayFloat | FData,
     *,
     p: float,
-    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+    vector_norm: Norm[NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
     r"""Calculate the norm of all the observations in a FDataGrid object.
 
@@ -184,7 +183,7 @@ def lp_norm(
             ....
         ValueError: p (=0.5) must be equal or greater than 1.
 
-    See also:
+    See Also:
         :class:`LpNorm`
 
     """

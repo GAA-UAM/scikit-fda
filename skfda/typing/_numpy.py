@@ -13,9 +13,9 @@ except ImportError:
 try:  # noqa: WPS229
     from numpy.typing import NDArray
     NDArrayAny = NDArray[Any]
-    NDArrayInt = NDArray[np.int_]
-    NDArrayFloat = NDArray[np.float64]
-    NDArrayReal = NDArray[Union[np.float64, np.int_]]
+    NDArrayInt = NDArray[np.integer[Any]]
+    NDArrayFloat = NDArray[np.floating[Any]]
+    NDArrayReal = NDArray[np.floating[Any] | np.integer[Any]]
     NDArrayBool = NDArray[np.bool_]
     NDArrayStr = NDArray[np.str_]
     NDArrayObject = NDArray[np.object_]

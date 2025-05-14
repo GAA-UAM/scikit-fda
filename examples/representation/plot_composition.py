@@ -10,12 +10,7 @@ This example shows the composition of multidimensional FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import numpy as np
-from mpl_toolkits.mplot3d import axes3d
-
-import skfda
-
-##############################################################################
+# %%
 # Function composition can be applied to our data once is in functional
 # form using the method :func:`~skfda.representation.FData.compose`.
 #
@@ -23,17 +18,23 @@ import skfda
 # composition will produce a third function :math:`g \circ f: X \rightarrow Z`
 # which maps :math:`x \in X` to :math:`g(f(x))` [1].
 #
-# In :ref:`sphx_glr_auto_examples_plot_landmark_registration.py` it is shown
-# the simplest case, where it is used to apply a transformation of the time
-# scale of unidimensional data to register its features.
+# In :ref:`sphx_glr_auto_examples_preprocessing_plot_landmark_registration.py`
+# it is shown the simplest case, where it is used to apply a transformation of
+# the time scale of unidimensional data to register its features.
 #
 # The following example shows the basic usage applied to a surface and a
-# curve, although the method will work for data with arbitrary dimensions to.
+# curve, although the method will work for data with arbitrary dimensions.
 #
 # Firstly we will create a data object containing a surface
 # :math:`g: \mathbb{R}^2 \rightarrow \mathbb{R}`.
-#
+
 # Constructs example surface
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d import axes3d
+
+import skfda
+
 X, Y, Z = axes3d.get_test_data(1.2)
 data_matrix = [Z.T]
 grid_points = [X[0, :], Y[:, 0]]
@@ -42,10 +43,11 @@ g = skfda.FDataGrid(data_matrix, grid_points)
 
 # Plots the surface
 g.plot()
+plt.show()
 
-##############################################################################
+# %%
 # We will create a parametric curve
-# :math:`f(t)=(10 \, \cos(t), 10 \, sin(t))`. The result of the composition,
+# :math:`f(t)=(10 \, \cos(t), 10 \, \sin(t))`. The result of the composition,
 # :math:`g \circ f:\mathbb{R} \rightarrow \mathbb{R}` will be another
 # functional object with the values of :math:`g` along the path given by
 # :math:`f`.
@@ -61,20 +63,20 @@ f = skfda.FDataGrid(data_matrix, t)
 gof = g.compose(f)
 
 gof.plot()
+plt.show()
 
-##############################################################################
+# %%
 # In the following chart it is plotted the curve
 # :math:`(10 \, \cos(t), 10 \, sin(t), g \circ f (t))` and the surface.
 
 # Plots surface
-fig = g.plot(alpha=0.8)
+fig = g.plot(alpha=0.6)
 
 # Plots path along the surface
 path = f(t)[0]
-fig.axes[0].plot(path[:, 0], path[:, 1], gof(t)[0, ..., 0], color="orange")
+fig.axes[0].plot(path[:, 0], path[:, 1], gof(t)[0, ..., 0], color="red")
+plt.show()
 
-fig
-
-##############################################################################
+# %%
 # [1] Function composition `https://en.wikipedia.org/wiki/Function_composition
 # <https://en.wikipedia.org/wiki/Function_composition>`_.

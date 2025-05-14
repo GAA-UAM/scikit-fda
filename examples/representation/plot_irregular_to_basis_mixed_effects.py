@@ -10,17 +10,6 @@ effects model.
 
 # sphinx_gallery_thumbnail_number = -1
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
-from skfda import FDataBasis, FDataIrregular
-from skfda.datasets import fetch_weather, irregular_sample
-from skfda.misc.scoring import mean_squared_error, r2_score
-from skfda.representation.basis import BSplineBasis, FourierBasis
-from skfda.representation.conversion import EMMixedEffectsConverter
-
 # %%
 # Sythetic data
 # -------------
@@ -33,9 +22,22 @@ from skfda.representation.conversion import EMMixedEffectsConverter
 # :footcite:t:`james_2018_sparsenessfda`. This just means that
 # the coefficients of the basis representation are generated from a Gaussian
 # distribution.
+
+import numpy as np
+
+from skfda import FDataBasis
+from skfda.representation.basis import BSplineBasis
+
 n_curves = 70
 n_basis = 4
 domain_range = (0, 10)
+
+# sphinx_gallery_start_ignore
+from skfda.representation.basis import Basis
+
+basis: Basis
+# sphinx_gallery_end_ignore
+
 basis = BSplineBasis(n_basis=n_basis, domain_range=domain_range, order=3)
 
 coeff_mean = np.array([-15, 20, -4, 6])
@@ -53,47 +55,71 @@ fdatabasis_original = FDataBasis(basis, coefficients)
 
 # %%
 # Plot the basis functions used to generate the data
-basis.plot()
-plt.title("Basis functions")
+
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots()
+basis.plot(axes=ax)
+ax.set_title("Basis functions")
 plt.show()
 
 # %%
 # Plot some of the generated curves
-fdatabasis_original[:10].plot()
-plt.title("Original curves")
+
+fig, ax = plt.subplots()
+fdatabasis_original[:10].plot(axes=ax)
+ax.set_title("Original curves")
 plt.show()
 
 # %%
 # We subsample the original data by measuring a random number of
 # points per curve generating an irregular dataset.
 # Moreover, we add some Gaussian noise to the data.
+
+from skfda import FDataIrregular
+from skfda.datasets import fetch_weather, irregular_sample
+
 fd_irregular_without_noise = irregular_sample(
     fdata=fdatabasis_original,
     n_points_per_curve=random_state.randint(2, 6, n_curves),
     random_state=random_state,
 )
 noise_std = .3
+noise = random_state.normal(
+    0,
+    noise_std,
+    fd_irregular_without_noise.values.shape,
+)
 fd_irregular = FDataIrregular(
     points=fd_irregular_without_noise.points,
     start_indices=fd_irregular_without_noise.start_indices,
-    values=fd_irregular_without_noise.values + random_state.normal(
-        0, noise_std, fd_irregular_without_noise.values.shape,
-    ),
+    values=fd_irregular_without_noise.values + noise,
 )
 
 # %%
 # Plot 3 curves of the newly created irregular data along with the original
-fig = plt.figure(figsize=(10, 3))
-for k in range(3):
-    axes = plt.subplot(1, 3, k + 1)
-    fdatabasis_original[k].plot(axes=axes, alpha=0.3, color=f"C{k}")
-    fd_irregular[k].plot(axes=axes, marker=".", color=f"C{k}")
-    plt.ylim((-27, 27))
+
+fig, axes = plt.subplots(1, 3, figsize=(10, 3))
+for curve_idx, ax in enumerate(axes):
+    fdatabasis_original[curve_idx].plot(
+        axes=ax,
+        alpha=0.3,
+        color=f"C{curve_idx}",
+    )
+    fd_irregular[curve_idx].plot(
+        axes=ax,
+        marker=".",
+        color=f"C{curve_idx}",
+    )
+    ax.set_ylim((-27, 27))
 plt.show()
 
 # %%
 # We split our irregular data into two groups, the train curves
 # and the test curves.
+
+from sklearn.model_selection import train_test_split
+
 train_original, test_original, train_irregular, test_irregular = (
     train_test_split(
         fdatabasis_original,
@@ -109,6 +135,9 @@ train_original, test_original, train_irregular, test_irregular = (
 # For comparison, we also convert to basis representation using the default
 # basis representation for each curve, which is done curve-wise instead of
 # taking into account the whole dataset.
+
+from skfda.representation.conversion import EMMixedEffectsConverter
+
 converter = EMMixedEffectsConverter(basis)
 converter.fit(train_irregular)
 
@@ -127,32 +156,45 @@ test_functionwise_to_basis = test_irregular.to_basis(
 # %%
 # To visualize the conversion results, we plot the first original and
 # converted curves of the test set.
-fig = plt.figure(figsize=(11, 16))
-plt.suptitle("Comparison of the original and converted data (test set)")
-for k in range(10):
-    axes = plt.subplot(5, 2, k + 1)
 
-    test_irregular[k].scatter(axes=axes, color=f"C{k}", label="Irregular")
-    test_original[k].plot(
-        axes=axes, color=f"C{k}", alpha=0.5, label="Original",
-    )
-    test_functionwise_to_basis[k].plot(
-        axes=axes, color=f"C{k}", linestyle=":", label="Function-wise",
-    )
-    test_converted[k].plot(
-        axes=axes, color=f"C{k}", linestyle="--", label="Mixed-effects",
-    )
-    axes.legend()
-    plt.ylim((-27, 27))  # Same scale for all plots
+fig, axes = plt.subplots(5, 2, figsize=(11, 16))
 
-plt.tight_layout(rect=[0, 0, 1, 0.98])
+fig.suptitle("Comparison of the original and converted data (test set)")
+for curve_idx, ax in enumerate(axes.flat):
+    test_irregular[curve_idx].scatter(
+        axes=ax,
+        color=f"C{curve_idx}",
+        label="Irregular",
+    )
+    test_original[curve_idx].plot(
+        axes=ax,
+        color=f"C{curve_idx}",
+        alpha=0.5,
+        label="Original",
+    )
+    test_functionwise_to_basis[curve_idx].plot(
+        axes=ax,
+        color=f"C{curve_idx}",
+        linestyle=":",
+        label="Function-wise",
+    )
+    test_converted[curve_idx].plot(
+        axes=ax,
+        color=f"C{curve_idx}",
+        linestyle="--",
+        label="Mixed-effects",
+    )
+    ax.legend()
+    ax.set_ylim((-27, 27))  # Same scale for all plots
+
+fig.tight_layout(rect=(0, 0, 1, 0.98))
 plt.show()
 
 # %%
 # As can be seen in the previous plot, when measurements are distributed
 # across the domain, both the mixed effects model and the function-wise
 # conversion are able to provide a good approximation of the original data.
-# However, when the measurements are concentrated in a small region of 
+# However, when the measurements are concentrated in a small region of
 # the domain, e can see that the mixed effects model is able to provide a more
 # accurate approximation. Moreover, the mixed effects model is able to remove
 # the noise from the measurements, which is not the case for the function-wise
@@ -161,6 +203,17 @@ plt.show()
 # Finally, we make use of the :math:`R^2` score and the :math:`MSE` to compare
 # the converted basis representations with the original data, both for the
 # train and test sets.
+
+# sphinx_gallery_start_ignore
+from collections.abc import Callable
+
+score_functions: dict[str, Callable[[FDataBasis, FDataBasis], float]]
+# sphinx_gallery_end_ignore
+
+import pandas as pd
+
+from skfda.misc.scoring import mean_squared_error, r2_score
+
 score_functions = {"R^2": r2_score, "MSE": mean_squared_error}
 scores = {
     score_name: pd.DataFrame({
@@ -175,10 +228,16 @@ scores = {
     })
     for score_name, score_fun in score_functions.items()
 }
-for score_name, score_df in scores.items():
-    print(f"{score_name} scores:")
-    print("-" * 35)
-    print(score_df, end="\n\n\n")
+
+# %%
+# The :math:`R^2` scores are as follows (higher is better):
+
+scores["R^2"]
+
+# %%
+# The MSE errors are as follows (lower is better):
+
+scores["MSE"]
 
 
 # %%
@@ -192,6 +251,7 @@ for score_name, score_df in scores.items():
 # As we want to illustrate the conversion of irregular data to basis,
 # representation, we will take an irregular sample of the temperatures dataset
 # containing only 7 points per curve.
+
 weather = fetch_weather()
 fd_temperatures = weather.data.coordinates[0]
 
@@ -203,35 +263,48 @@ irregular_temperatures = irregular_sample(
 # The dataset contains information about the region of each station,
 # which have different types of climate. We save the indices of the stations
 # in each region to later plot some of them.
-print(weather.categories["region"])
-arctic = np.where(weather.target == 0)[0]
-atlantic = np.where(weather.target == 1)[0]
-continental = np.where(weather.target == 2)[0]
-pacific = np.where(weather.target == 3)[0]
+
+regions = weather.categories["region"]
+print(regions)
+
+region_indexes = {
+    region: np.nonzero(weather.target == i)[0]
+    for i, region in enumerate(regions)
+}
+arctic_indexes = region_indexes["Arctic"]
+atlantic_indexes = region_indexes["Atlantic"]
+continental_indexes = region_indexes["Continental"]
+pacific_indexes = region_indexes["Pacific"]
 
 
 # %%
 # Here we plot the original data alongside one of the original curves
 # and its irregularly sampled version.
-fig = plt.figure(figsize=(10, 4))
 
-axes = plt.subplot(1, 2, 1)
-fd_temperatures.plot(axes=axes)
-ylim = axes.get_ylim()
-plt.title("All temperature curves")
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
-axes = plt.subplot(1, 2, 2)
-k = 13  # index of the station
-fd_temperatures[k].plot(axes=axes, color="black", alpha=0.4)
-irregular_temperatures[k].scatter(axes=axes, color="black", marker="o")
-plt.ylim(ylim)
-plt.title(f"{fd_temperatures.sample_names[k]} station's temperature curve")
+ax = axes[0]
+fd_temperatures.plot(axes=ax)
+ylim = ax.get_ylim()
+ax.set_title("All temperature curves")
+
+ax = axes[1]
+index = 13  # index of the station
+fd_temperatures[index].plot(axes=ax, color="black", alpha=0.4)
+irregular_temperatures[index].scatter(axes=ax, color="black", marker="o")
+ax.set_ylim(ylim)
+ax.set_title(
+    f"{fd_temperatures.sample_names[index]} station's temperature curve",
+)
 
 plt.show()
 
 # %%
 # Now, we convert the irregularly sampled temperature curves to basis
 # representation. Due to the periodicity of the data, a Fourier basis is used.
+
+from skfda.representation.basis import FourierBasis
+
 basis = FourierBasis(n_basis=5, domain_range=fd_temperatures.domain_range)
 irregular_temperatures_converted = irregular_temperatures.to_basis(
     basis, conversion_type="mixed-effects",
@@ -244,30 +317,35 @@ curvewise_temperatures_converted = irregular_temperatures.to_basis(
 # To visualize the conversion, we now plot 4 of the converted
 # curves (one from each region) along with the original temperatures
 # and the irregular points that we sampled.
-idxes = [arctic[0], atlantic[11], continental[3], pacific[3]]
-fig = plt.figure(figsize=(10, 10))
-for k in range(4):
-    axes = plt.subplot(2, 2, k + 1)
-    plt.tight_layout()
-    idx = idxes[k]
-    fd_temperatures[idx].plot(
-        axes=axes, color=f"C{k}", alpha=0.5, label="Original",
+
+indexes = [
+    arctic_indexes[0],
+    atlantic_indexes[11],
+    continental_indexes[3],
+    pacific_indexes[3],
+]
+fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+for i, (index, ax) in enumerate(zip(indexes, axes.flat, strict=True)):
+    fd_temperatures[index].plot(
+        axes=ax, color=f"C{i}", alpha=0.5, label="Original",
     )
-    curvewise_temperatures_converted[idx].plot(
-        axes=axes, color=f"C{k}", linestyle=":", label="Function-wise",
+    curvewise_temperatures_converted[index].plot(
+        axes=ax, color=f"C{i}", linestyle=":", label="Function-wise",
     )
-    irregular_temperatures_converted[idx].plot(
-        axes=axes, color=f"C{k}", linestyle="--", label="Mixed-effects",
+    irregular_temperatures_converted[index].plot(
+        axes=ax, color=f"C{i}", linestyle="--", label="Mixed-effects",
     )
-    irregular_temperatures[idx].scatter(
-        axes=axes, color=f"C{k}", alpha=0.5, label="Irregular",
+    irregular_temperatures[index].scatter(
+        axes=ax, color=f"C{i}", alpha=0.5, label="Irregular",
     )
-    plt.title(
-        f"{fd_temperatures.sample_names[idx]} station "
-        f"({weather.categories['region'][weather.target[idx]]})"
+    ax.set_title(
+        f"{fd_temperatures.sample_names[index]} station "
+        f"({weather.categories['region'][weather.target[index]]})",
     )
-    plt.ylim(ylim)
-    axes.legend()
+    ax.set_ylim(ylim)
+    ax.legend()
+
+fig.tight_layout()
 
 plt.show()
 

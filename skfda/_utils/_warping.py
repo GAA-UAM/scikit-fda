@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
-from scipy.integrate import simpson
+from scipy.integrate import trapezoid
 from scipy.interpolate import PchipInterpolator
 
 if TYPE_CHECKING:
@@ -33,6 +33,7 @@ class LineEnergyFunction(Protocol):
         *,
         row: int,
         column: int,
+        grid_dim: int | None = None,
     ) -> NDArrayFloat:
         """Returns energies of all lines from each candidate point."""
 
@@ -200,6 +201,7 @@ class L2LineEnergy:
         *,
         row: int,
         column: int,
+        grid_dim: int | None = None,
     ) -> NDArrayFloat:
         r"""
         Compute the line energies for the :math:`L^2` distance.
@@ -219,6 +221,10 @@ class L2LineEnergy:
             target: Target function(s) to align to.
             row: The row index of the candidate point.
             column: The column index of the candidate point.
+            grid_dim: Dimension of the grid used in the alignment
+                algorithm. Only the direct lines from points whose grid
+                separation with the candidate point is less or equal than
+                ``grid_dim`` are considered.
 
         Returns:
             Energy of direct line warpings to the candidate point.
@@ -250,9 +256,9 @@ class L2LineEnergy:
             ...    row=3,
             ...    column=3,
             ... )
-            array([[[ 0.14583333,  0.375     ,  0.55208333],
-                    [ 0.        ,  0.14583333,  0.328125  ],
-                    [ 0.04166667,  0.        ,  0.01041667]]])
+            array([[[ 0.109375  ,  0.30859375,  0.47558594],
+                    [ 0.        ,  0.046875  ,  0.10546875],
+                    [ 0.03125   ,  0.        ,  0.0078125 ]]])
 
             Note that the cells ``(1, 0)`` and ``(2, 1)`` have 0 energy.
             This is because they correspond to linear warpings that align
@@ -267,22 +273,63 @@ class L2LineEnergy:
             ...    row=2,
             ...    column=1,
             ... )
-            array([[[ 0.0625],
-                    [ 0.    ]]])
+            array([[[ 0.04166667],
+                    [ 0.        ]]])
 
             This has again 0 energy at ``(1, 0)``, because it is possible to
             align perfectly :math:`x` in the interval :math:`(0.5, 0.75)`.
 
+            With the parameter ``grid_dim`` we can control the size of the
+            grid used, so that the algorithm is still tractable with many
+            points:
+
+            >>> complete_grid = l2_line_energy(
+            ...    original,
+            ...    target,
+            ...    row=3,
+            ...    column=3,
+            ... )
+
+            >>> grid_1 = l2_line_energy(
+            ...    original,
+            ...    target,
+            ...    row=3,
+            ...    column=3,
+            ...    grid_dim = 1,
+            ... )
+            >>> grid_1
+            array([[[ 0.0078125]]])
+
+            >>> grid_2 = l2_line_energy(
+            ...    original,
+            ...    target,
+            ...    row=3,
+            ...    column=3,
+            ...    grid_dim = 2,
+            ... )
+            >>> grid_2
+            array([[[ 0.046875  ,  0.10546875],
+                    [ 0.        ,  0.0078125 ]]])
+
+            As you can see, the results correspond to the lower-right part
+            of the complete grid.
+
         """
+        if grid_dim is None:
+            grid_dim = max(row, column)
+
         grid_points = original.grid_points[0]
+
+        first_row_index = max(0, row - grid_dim)
+        first_column_index = max(0, column - grid_dim)
 
         t_row = grid_points[row]
         t_column = grid_points[column]
 
-        t_i = grid_points[:row, None]
-        t_j = grid_points[:column, None]
+        t_i = grid_points[first_row_index:row, None]
+        t_j = grid_points[first_column_index:column, None]
 
-        t = grid_points[:row + 1]
+        t = grid_points[first_row_index:row + 1]
         l_vec = (t - t_i) / (t_row - t_i)
         l_matrix = l_vec[:, None, :]
         w = (1 - l_matrix) * t_j + l_matrix * t_column
@@ -291,18 +338,32 @@ class L2LineEnergy:
         x_t = original(w.reshape(-1)).reshape((len(original), *w.shape))
 
         # Shape: N x t
-        y_t = target.data_matrix[:, :row + 1, 0]
+        y_t = target.data_matrix[:, first_row_index:row + 1, 0]
 
         integrand = (x_t - y_t[:, None, None, :])**2
 
-        # Set to 0 the parts that do not contribute to the integral
-        integrand = np.swapaxes(np.triu(np.swapaxes(integrand, 1, 2)), 1, 2)
-
         identity = np.eye(len(t))
-        quadrature_weights = simpson(
+        quadrature_weights = trapezoid(
             y=identity,
             x=t,
         )
+
+        # We set the weights of unused points to 0
+        quadrature_weights = np.triu(
+            np.tile(quadrature_weights, (len(t_i), 1)),
+        )
+
+        # Final correction: adjust the weight at the extreme
+        # We need to remove t_i - t_{i-1} only at the leftmost point
+        interval_lenghts = np.diff(t, prepend=t[0])[:-1]
+        quadrature_weights_diag = np.diagonal(quadrature_weights)
+        np.fill_diagonal(
+            quadrature_weights,
+            quadrature_weights_diag - interval_lenghts / 2,
+        )
+
+        # Add column dimension
+        quadrature_weights = quadrature_weights[:, None, :]
 
         integral = np.sum(integrand * quadrature_weights, axis=-1)
 
@@ -316,6 +377,7 @@ def dynamic_programming_match(  # noqa: WPS210
     target: FDataGrid,
     *,
     line_energy_function: LineEnergyFunction,
+    grid_dim: int | None = None,
 ) -> FDataGrid:
     r"""
     Find an optimal warping to transform a set of curves into another.
@@ -361,6 +423,9 @@ def dynamic_programming_match(  # noqa: WPS210
         target: Target function(s) to align to.
         line_energy_function: Function used to compute the energy for a line
             segment of the warpings.
+        grid_dim: Dimension of the grid used in the alignment algorithm. Only
+            the direct lines from points whose grid separation with the
+            candidate point is less or equal than ``grid_dim`` are considered.
 
     Returns:
         The warpings that align the functions using the DP algorithm.
@@ -423,6 +488,8 @@ def dynamic_programming_match(  # noqa: WPS210
     n_samples = original.n_samples
     grid_points = original.grid_points[0]
     n_points = len(grid_points)
+    if grid_dim is None:
+        grid_dim = n_points
 
     arange_idx = np.arange(n_samples)
 
@@ -437,7 +504,14 @@ def dynamic_programming_match(  # noqa: WPS210
 
     for row in range(1, n_points):
         for column in range(1, n_points):
-            candidate_points_partial_energy = energy[:, :row, :column]
+            first_row_index = max(0, row - grid_dim)
+            first_column_index = max(0, column - grid_dim)
+
+            candidate_points_partial_energy = energy[
+                :,
+                first_row_index:row,
+                first_column_index:column,
+            ]
 
             # This can be further vectorized and extracted
             # out of the loop, but not sure if it is worth it.
@@ -448,6 +522,7 @@ def dynamic_programming_match(  # noqa: WPS210
                 target,
                 row=row,
                 column=column,
+                grid_dim=grid_dim,
             )
             partial_energies = (
                 candidate_points_partial_energy + candidate_points_line_energy
@@ -462,6 +537,8 @@ def dynamic_programming_match(  # noqa: WPS210
                 min_idx,
                 partial_energies.shape[1:],
             )
+            rows_idx += first_row_index
+            columns_idx += first_column_index
             row_indexes[:, row, column] = rows_idx
             column_indexes[:, row, column] = columns_idx
             energy[:, row, column] = ravel_partial_energies[

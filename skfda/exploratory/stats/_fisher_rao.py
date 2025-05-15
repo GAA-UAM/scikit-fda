@@ -7,6 +7,8 @@ import scipy.integrate
 from fdasrsf.utility_functions import optimum_reparam
 
 from ..._utils import invert_warping, normalize_scale
+from ..._utils._warping import L2LineEnergy, dynamic_programming_match
+from ...misc.metrics import l2_distance, l2_norm
 from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
@@ -249,75 +251,45 @@ def fisher_rao_karcher_mean(
     )
 
     srsf_transformer = SRSF(initial_value=0)
-    fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)
+    srsf = srsf_transformer.fit_transform(fdatagrid)
     eval_points = fdatagrid.grid_points[0]
-
-    eval_points_normalized = normalize_scale(eval_points)
-    y_scale = eval_points[-1] - eval_points[0]
 
     interpolation = SplineInterpolation(interpolation_order=3, monotone=True)
 
-    # Discretisation points
-    fdatagrid_normalized = FDataGrid(
-        fdatagrid(eval_points) / y_scale,
-        grid_points=eval_points_normalized,
-    )
-
-    srsf = fdatagrid_srsf(eval_points)[..., 0]
-
     # Initialize with function closest to the L2 mean with the L2 distance
-    centered = (srsf.T - srsf.mean(axis=0, keepdims=True).T).T
-
-    distances = scipy.integrate.simpson(
-        np.square(centered, out=centered),
-        x=eval_points_normalized,
-        axis=1,
-    )
+    distances = l2_distance(srsf, srsf.mean())
 
     # Initialization of iteration
     mu = srsf[np.argmin(distances)]
-    mu_aux = np.empty(mu.shape)
-    mu_1 = np.empty(mu.shape)
+
+    line_energy = L2LineEnergy(
+        penalty,
+        slope_scaling=True,
+    )
 
     # Main iteration
     for _ in range(max_iter):
 
-        gammas_matrix = _elastic_alignment_array(
-            mu,
+        gammas = dynamic_programming_match(
             srsf,
-            eval_points_normalized,
-            penalty,
-            grid_dim,
+            mu,
+            line_energy_function=line_energy,
+            grid_dim=grid_dim,
         )
+        gammas.interpolation = interpolation
 
-        gammas = FDataGrid(
-            gammas_matrix,
-            grid_points=eval_points_normalized,
-            interpolation=interpolation,
-        )
-
-        fdatagrid_normalized = fdatagrid_normalized.compose(gammas)
+        fdatagrid = fdatagrid.compose(gammas)
         srsf = srsf_transformer.transform(
-            fdatagrid_normalized,
-        ).data_matrix[..., 0]
+            fdatagrid,
+        )
 
         # Next iteration
-        mu_1 = srsf.mean(axis=0)
+        mu_1 = srsf.mean()
 
         # Convergence criterion
-        mu_norm = np.sqrt(
-            scipy.integrate.simpson(
-                np.square(mu, out=mu_aux),
-                x=eval_points_normalized,
-            ),
-        )
+        mu_norm = l2_norm(mu)
 
-        mu_diff = np.sqrt(
-            scipy.integrate.simpson(
-                np.square(mu - mu_1, out=mu_aux),
-                x=eval_points_normalized,
-            ),
-        )
+        mu_diff = l2_distance(mu, mu_1)
 
         if mu_diff / mu_norm < tol:
             break
@@ -331,11 +303,7 @@ def fisher_rao_karcher_mean(
 
     # Karcher mean orbit in space L2/Gamma
     karcher_mean = srsf_transformer.inverse_transform(
-        fdatagrid.copy(
-            data_matrix=[mu],
-            grid_points=eval_points,
-            sample_names=("Karcher mean",),
-        ),
+        mu,
     )
 
     if center:

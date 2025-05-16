@@ -983,7 +983,7 @@ class PACE(
 
         eigenvalues, phi = pc_data[2:]
 
-        self.n_components, self.explained_variance_ratio = pc_data[:2]
+        self.n_components, self.explained_variance_ratio_ = pc_data[:2]
         self.explained_variance_ = eigenvalues
 
         self.components_: FDataGrid = FDataGrid(

@@ -14,13 +14,11 @@ irregularly sampled data using PACE.
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.optimize import linear_sum_assignment
-from sklearn.metrics import confusion_matrix
+import pandas as pd
+from sklearn.model_selection import train_test_split
 from sklearn.utils import Bunch
 
 from skfda.datasets._real_datasets import fetch_country_height
-from skfda.exploratory.visualization.clustering import ClusterPlot
-from skfda.ml.clustering import FuzzyCMeans
 from skfda.preprocessing.dim_reduction import PACE
 from skfda.representation import FDataIrregular
 
@@ -139,72 +137,103 @@ ax.set_ylabel(pace.components_.coordinate_names[0] or "Value")
 ax.legend()
 plt.show()
 
-print(pace.explained_variance_ratio[:3])
+print(pace.explained_variance_ratio_[:3])
 
 # %%
 # From the FPC scores, we can reconstruct the whole dataset, allowing us to
 # view the data in a regular grid, which is a necessary tool for clustering
 # algorithms.
-reconstructed = pace.inverse_transform(fpc_scores)
-
-reconstructed.plot()
-plt.show()
-
-# %%
-import matplotlib.pyplot as plt
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
-curve_name = "country"
-X = pd.DataFrame({
-    curve_name: reconstructed,
-}).iloc[:, [0]]
-X = X.iloc[:, 0].array
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    target,
-    test_size=0.3,
-    stratify=target,
-    random_state=8,
-)
-
-X_train.plot(
-    group=y_train,
-    group_names=country_categories,
-    group_colors=country_colors,
-)
-plt.show()
-
-# %%
-X_test.plot()
-plt.show()
-
-# %%
 from skfda.ml.classification import KNeighborsClassifier
 
-knn = KNeighborsClassifier()
-knn.fit(X_train, y_train)
-knn_pred = knn.predict(X_test)
-print(knn_pred)
-print(f"The score of KNN is {knn.score(X_test, y_test):2.2%}")
+n_components_list = [1, 2, 3]
+reconstructed_all = []
+titles = [
+    "Objective Classification",
+    "PACE (1 component)",
+    "PACE (2 components)",
+    "PACE (3 components)",
+]
+mean_colors = ["#00522c", "#6c84b5", "#238b45", "#8c6d31", "#666666"]
+knn_scores = []
+knn_preds = []
 
-fig = X_test.plot(
-    group=knn_pred,
-    group_names=country_categories,
-    group_colors=country_colors,
-)
+for n in n_components_list:
+    pace = PACE(
+        n_components=n,
+        # bandwidth_mean=np.array([0.1, 100.0]),
+        # bandwidth_cov=np.array([0.1, 100.0]),
+        bandwidth_mean=22.74,
+        bandwidth_cov=28.53,
+    )
+    pace_scores = pace.fit_transform(country_height)
+    reconstructed = pace.inverse_transform(pace_scores)
 
-X_test_0 = X_test[knn_pred == 0]
-X_test_1 = X_test[knn_pred == 1]
-X_test_2 = X_test[knn_pred == 2]
-X_test_3 = X_test[knn_pred == 3]
+    curve_name = "country"
+    X = pd.DataFrame({
+        curve_name: reconstructed,
+    }).iloc[:, [0]]
+    X = X.iloc[:, 0].array
 
-X_test_0.mean().plot(fig=fig, color="#157a5b", linewidth=3)
-X_test_1.mean().plot(fig=fig, color="#666666", linewidth=3)
-X_test_2.mean().plot(fig=fig, color="#7fbc6a", linewidth=3)
-X_test_3.mean().plot(fig=fig, color="#c49c4d", linewidth=3)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        target,
+        test_size=0.3,
+        stratify=target,
+        random_state=8,
+    )
+
+    knn = KNeighborsClassifier()
+    knn.fit(X_train, y_train)
+    knn_pred = knn.predict(X_test)
+
+    knn_scores.append(knn.score(X_test, y_test))
+    knn_preds.append(knn_pred)
+
+    reconstructed_all.append(X_test)
+    if n == 3:
+        reconstructed_all.append(reconstructed)
+
+
+# %%
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+for i, ax in enumerate(axes.flat):
+    if i == 0:
+        reconstructed_all[3].plot(
+            axes=ax,
+            group=target,
+            group_names=country_categories,
+            group_colors=country_colors,
+        )
+
+        for label, color in zip(range(5), mean_colors, strict=True):
+            reconstructed_all[3][target == label].mean().plot(
+                axes=ax,
+                color=color,
+                linewidth=5,
+            )
+    else:
+        reconstructed_all[i-1].plot(
+            axes=ax,
+            group=knn_preds[i-1],
+            group_names=country_categories,
+            group_colors=country_colors,
+        )
+
+        for label, color in zip(range(5), mean_colors, strict=True):
+            reconstructed_all[i-1][knn_preds[i-1] == label].mean().plot(
+                axes=ax,
+                color=color,
+                linewidth=5,
+            )
+
+    ax.set_title(titles[i])
+
+plt.tight_layout()
 plt.show()
+
+print(knn_scores)
+
 
 # %%
 # References

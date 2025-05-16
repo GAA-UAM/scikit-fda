@@ -1647,14 +1647,12 @@ def fetch_bone_density(
 
 
 _cd4_descr = """
-    CD4 cell counts for 366 subjects between months 0 and 42 since
+    CD4 cell counts for 366 subjects between months -18 and 42 since
     seroconversion. Each subject's observations are contained in a single row.
 
     Format: A data frame made up of a 366 x 61 matrix of CD4 cell counts.
 
-    The data is a subset of the original data obtained from the R package
-    'refund' from CRAN, where only measurements since seroconversion are
-    evaluated.
+    The data is obtained from the R package 'refund' from CRAN.
 
     Source:
         https://cran.r-project.org/web/packages/refund/index.html
@@ -1683,13 +1681,6 @@ def fetch_cd4(
 
     grid_points = cd4_array.coords["dim_1"].to_numpy().astype(float)
     data_matrix = cd4_array.to_numpy().astype(float)
-
-    mask = grid_points >= 0
-    grid_points = grid_points[mask]
-    data_matrix = data_matrix[:, mask]
-
-    valid_rows = ~np.isnan(data_matrix).all(axis=1)
-    data_matrix = data_matrix[valid_rows]
 
     cd4_grid = FDataGrid(
         data_matrix=data_matrix,
@@ -1743,7 +1734,6 @@ _country_height_descr = """
             and other proximate determinants of global heights",
             European Review of Economic History, 18, 144-165.
 """
-
 
 def fetch_country_height(
     return_X_y: bool = False,

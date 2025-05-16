@@ -188,11 +188,19 @@ class L2LineEnergy:
 
     Args:
         penalty: The penalization factor. The default, 0, is no penalization.
+        slope_scaling: Wether to scale the original data by the square root
+            of the slope of the interval. This is necessary when we work with
+            the SRSF of the curves instead of with the curves themselves.
 
     """
 
-    def __init__(self, penalty: float = 0) -> None:
+    def __init__(
+        self,
+        penalty: float = 0,
+        slope_scaling: bool = False,
+    ) -> None:
         self.penalty = penalty
+        self.slope_scaling = slope_scaling
 
     def __call__(  # noqa: WPS210
         self,
@@ -340,6 +348,12 @@ class L2LineEnergy:
         # Shape: N x t
         y_t = target.data_matrix[:, first_row_index:row + 1, 0]
 
+        w_slope = (t_column - t_j.T) / (t_row - t_i)
+        w_slope_root = np.sqrt(w_slope)
+
+        if self.slope_scaling:
+            x_t *= w_slope_root[None, ..., None]
+
         integrand = (x_t - y_t[:, None, None, :])**2
 
         identity = np.eye(len(t))
@@ -367,8 +381,7 @@ class L2LineEnergy:
 
         integral = np.sum(integrand * quadrature_weights, axis=-1)
 
-        w_slope = (t_column - t_j.T) / (t_row - t_i)
-        roughness = self.penalty * (1 - np.sqrt(w_slope))**2
+        roughness = self.penalty * (1 - w_slope_root)**2
 
         return integral + roughness  # type: ignore[no-any-return]
 

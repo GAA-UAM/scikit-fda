@@ -60,9 +60,9 @@ class PACE(
     Parameters:
         n_components: If parameter is an integer, it refers to the number of
             principal components to keep from functional principal component
-            analysis. If parameter is a float in the range (0.0, 1. 0], it
+            analysis. If parameter is a float in the range (0.0, 1.0), it
             refers to the minimum proportion of variance explained by the
-            selected principal components. Defaults to 1.0 (maximum number
+            selected principal components. Defaults to None (maximum number
             of principal components that can be extracted).
         assume_noisy: Set to ``False`` when the data is assumed to be
             noiseless. Otherwise, when smoothing the covariance surface, the
@@ -72,9 +72,9 @@ class PACE(
             n-dimensional time point, with n being the dimension of the domain.
             Defaults to a Gaussian kernel.
         bandwidth_mean: bandwidth to use in the smoothing kernel for the mean.
-            If no parameter is given, the bandwidth is calculated using the GCV
-            method. If a float is given, it is used as the bandwidth. If a
-            tuple is given, it is used as the bandwidth search range.
+            If a float is given, it is used as the bandwidth. If a tuple is
+            given, it is used as the bandwidth search range, and the bandwidth
+            is calculated using the GCV method.
         kernel_cov: callable vectorized univariate smoothing kernel function
             for the covariance and calculations regarding its diagonal. It
             should have the form :math:`K(t)`, where `t` are the
@@ -83,15 +83,14 @@ class PACE(
             calculated with the function and the two values will be multiplied,
             acting as an isotropic kernel. Defaults to a Gaussian kernel.
         bandwidth_cov: bandwidth to use in the smoothing kernel for the
-            covariance. If no parameter is given, the bandwidth is calculated
-            using the GCV method. If a float is given, it is used as the
-            bandwidth. If a tuple is given, it is used as the bandwidth search
-            range.
+            covariance. If a float is given, it is used as the bandwidth. If a
+            tuple is given, it is used as the bandwidth search range, and the
+            bandwidth is calculated using the GCV method.
         bw_cov_n_grid_points: number of grid points to calculate the bandwidth
             for the covariance. This parameter's main purpose is to reduce the
             computational cost of the GCV method. If the parameter
-            ``bandwidth_cov`` is provided, this parameter is ignored. Defaults
-            to 30.
+            ``bandwidth_cov`` is provided as a float, this parameter is
+            ignored. Defaults to 30.
         n_grid_points: number of grid points to calculate the covariance and,
             subsequently, the eigenfunctions for better approximations. The
             final FPC scores will be given in the original grid points.
@@ -122,6 +121,34 @@ class PACE(
         sigma2\_: calculated error of the covariance.
 
     Examples:
+        >>> import numpy as np
+        >>> from skfda.representation import FDataIrregular
+        >>> from skfda.preprocessing.dim_reduction import PACE
+
+        >>> points = np.array([0.0, 1.0, 0.0, 1.0])
+        >>> values = np.array([1.0, 0.0, 0.0, 2.0])
+        >>> start_indices = np.array([0, 2])
+
+        >>> fd = FDataIrregular(
+        ...     points=points,
+        ...     values=values,
+        ...     start_indices=start_indices,
+        ... )
+
+        >>> pace = PACE(
+        ...     n_components=2,
+        ...     bandwidth_mean=np.array([0.1, 10]),
+        ...     bandwidth_cov=np.array([0.1, 10]),
+        ... )
+        >>> scores = pace.fit_transform(fd)
+        >>> expected = np.array([
+        ...     [-0.04886943, -0.00023432],
+        ...     [ 0.04886943,  0.00023432],
+        ... ])
+        >>> np.allclose(scores, expected)
+        True
+        >>> round(float(pace.sigma2_), 3)
+        0.973
 
     References:
         .. footbibliography::
@@ -169,7 +196,7 @@ class PACE(
     def __init__(
         self,
         *,
-        n_components: float = 1.0, # Poner como scikit-learn, que no sea 1
+        n_components: float | None = None,
         assume_noisy: bool = True,
         kernel_mean: KernelFunction = gaussian_kernel,
         bandwidth_mean: float | NDArrayFloat,
@@ -185,7 +212,7 @@ class PACE(
             and (n_components <= 0.0 or n_components >= 1.0)
         ):
             error_msg = (
-                "n_components must be an integer or a float in (0.0, 1.0]."
+                "n_components must be an integer or a float in (0.0, 1.0)."
             )
             raise ValueError(error_msg)
 
@@ -218,7 +245,7 @@ class PACE(
             )
             raise ValueError(error_msg)
 
-        self.n_components = n_components
+        self.n_components = n_components if n_components is not None else 1.0
         self.assume_noisy = assume_noisy
         self.kernel_mean = kernel_mean
         self.bandwidth_mean_ = bandwidth_mean_
@@ -554,6 +581,12 @@ class PACE(
         domain_diff = np.max(pdist(time_points))
         k0 = self.kernel_cov(np.zeros((1, 1, cov_coords.shape[2])))[0]
         n_obs = len(cov_values)
+        if n_obs == 0:
+            error_msg = (
+                "Unable to perform computations with one measurement per "
+                "observation on noisy data."
+            )
+            raise ValueError(error_msg)
         # Normalize by number of observations and bandwidth
         denom = 1 - (1 / n_obs) * ((domain_diff * k0) / h) ** 2
 

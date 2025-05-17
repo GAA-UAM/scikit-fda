@@ -19,9 +19,11 @@ import numpy as np
 from sklearn.utils import Bunch
 
 import skfda
-from skfda.datasets._real_datasets import fetch_cd4
-from skfda.preprocessing.dim_reduction import PACE
-from skfda.representation import FDataIrregular
+from skfda.datasets._real_datasets import fetch_growth
+from skfda.datasets._sample_from_fdata import irregular_sample
+from skfda.preprocessing.dim_reduction import FPCA, PACE
+from skfda.representation import FDataGrid, FDataIrregular
+from skfda.typing._numpy import NDArrayInt
 
 # %%
 # In this example we are going to use functional principal component analysis
@@ -42,46 +44,66 @@ from skfda.representation import FDataIrregular
 # and in this example we will use the implementation of the algorithm that
 # follows the same steps as the original algorithm.
 #
-# We will analyse the CD4 dataset. This dataset contains the CD4 cell counts of
-# 366 HIV patients measured in between months -18 and 42 since seroconversion.
-# To better understand the data, we will plot the first 20 subjects. Each
-# subject contains a different number of measurements (less than 12), and the
-# time points are different for each subject.
-cd4_bunch: Bunch = fetch_cd4()
-cd4: FDataIrregular = cd4_bunch.data
-assert isinstance(cd4, FDataIrregular), "Expected an FDataIrregular object"
+dataset: Bunch = fetch_growth()
+fd: FDataIrregular = dataset.data
+assert isinstance(fd, FDataGrid), "Expected an FDataGrid object"
 
-cd4[:20].plot()
+fd[:20].plot()
 plt.show()
 
+print(fd.data_matrix.shape)
+# print(fd.data_matrix[3])
+
 # %%
-# Continuing with the analysis of the dataset, we will plot the total data
-# across all subjects, where we can further identify the sparsity of the data.
-# The data is spread across all the domain, with more frequent measurements
-# every trimester, especially the first one before and after seroconversion.
+fpca = FPCA(n_components=2)
+scores = fpca.fit_transform(fd)
+fpca_rec = fpca.inverse_transform(scores)
+fpca.components_.plot()
+plt.show()
+
+print(fpca.explained_variance_ratio_)
+
+# %%
+random_state = 12
+
+irregular_fd = irregular_sample(
+    fd,
+    8,
+    random_state=random_state,
+)
+irregular_fd.coordinate_names = fd.coordinate_names
+irregular_fd.argument_names = fd.argument_names
+irregular_fd.dataset_name = fd.dataset_name
+
+irregular_fd[:5].plot()
+plt.show()
+
+
+# %%
 plt.figure()
-for t, v in zip(cd4.points, cd4.values, strict=True):
+for t, v in zip(irregular_fd.points, irregular_fd.values, strict=True):
     t_i = np.asarray(t)
     v_i = np.asarray(v)
     plt.scatter(t_i, v_i, alpha=0.7, s=10, color="black")
 
-plt.xlabel("months since seroconversion")
-plt.ylabel("CD4 cell count")
-plt.title("All observed CD4 values across subjects")
-plt.tight_layout()
+plt.xlabel("age")
+plt.ylabel("height")
+plt.title("Berkeley Growth Study", pad=20)
+# plt.tight_layout()
 plt.show()
 
 # %%
 # We can now apply the PACE method to the dataset.
 pace = PACE(
-    n_components=3,
+    n_components=2,
     bandwidth_mean=np.array([0.1, 50]),
-    bandwidth_cov=np.array([0.1, 50]),
-    boundary_effect_interval=(0.0, 0.95),
+    # bandwidth_cov=np.array([0.1, 50]),
+    bandwidth_cov=1.3,
+    # n_grid_points=31,
 )
-pace.fit(cd4)
+pace.fit(irregular_fd)
 
-fpc_scores = pace.transform(cd4)
+fpc_scores = pace.transform(irregular_fd)
 
 # %%
 # Let's further understand the correlation of the data, by plotting the
@@ -92,13 +114,13 @@ fpc_scores = pace.transform(cd4)
 t_mean = np.asarray(pace.mean_.grid_points[0])
 pair_counts: defaultdict[tuple[int, int], int] = defaultdict(int)
 
-for i, start in enumerate(cd4.start_indices):
+for i, start in enumerate(irregular_fd.start_indices):
     end = (
-        cd4.start_indices[i + 1]
-        if i + 1 < len(cd4.start_indices)
-        else len(cd4.points)
+        irregular_fd.start_indices[i + 1]
+        if i + 1 < len(irregular_fd.start_indices)
+        else len(irregular_fd.points)
     )
-    t_i = np.asarray(cd4.points[start:end])
+    t_i = np.asarray(irregular_fd.points[start:end])
 
     for s in t_i:
         for t in t_i:
@@ -174,33 +196,7 @@ ax.legend()
 plt.show()
 
 # %%
-# Analysing the components, we see that the first component is the one that
-# explains the most variance in the data (82.975%), and it is a smooth
-# horizontal curve that indicates that the curves have a similar structure to
-# the mean of the data. The second component captures variations in the rate of
-# change of CD4 counts over time. Specifically, it reflects differences in how
-# rapidly patients' CD4 counts decline or recover post-seroconversion. For
-# instance, a positive score on this component may indicate a patient whose CD4
-# count decreases more slowly, while a negative score may correspond to a more
-# rapid decline.
-#
-# The third component accounts for more nuanced fluctuations in CD4 counts,
-# such as temporary increases or decreases at specific time points, especially
-# right after seroconversion. This could represent individual variations in
-# response to treatment or other factors affecting immune function. However,
-# this component explains a smaller portion of the variance, indicating that
-# such patterns are less common across the patient population.
-#
-# Overall, these components reflect progressively more localized and less
-# dominant variations in the data. The first component mostly models the
-# general progression of CD4 cell count, while the second and third provide
-# subject-specific refinements. This analysis further supports the conclusions
-# drawn from the covariance surface.
-#
-# Additionally, we can also obtain the graph that shows the fraction of
-# variance explained by the number of components. This graph is useful to
-# determine whether the number of components to use in the analysis is
-# appropriate.
+# Analysing the components
 
 fve_percent = pace.explained_variance_ratio_ * 100
 fve_percent = np.insert(fve_percent, 0, 0)
@@ -232,7 +228,7 @@ plt.show()
 # original time points.
 reconstructed = pace.inverse_transform(fpc_scores)
 
-subject_indices = [188, 301]
+subject_indices = [6, 15]
 
 t_mean = np.asarray(pace.mean_.grid_points[0])
 mean_values = pace.mean_.data_matrix[0, :, 0]
@@ -242,14 +238,14 @@ for ax, i in zip(axes, subject_indices, strict=True):
     reconstructed[i].plot(
         axes=ax, label="Reconstructed", color="C0", linestyle="-",
     )
-    cd4[i].scatter(
+    irregular_fd[i].scatter(
         axes=ax, label="Original (irregular)", color="red", marker="o"
     )
     ax.plot(t_mean, mean_values, linestyle="--", color="gray", label="Mean")
 
     ax.set_title(f"Subject {i}")
-    ax.set_xlabel(cd4.argument_names[0] or "Domain")
-    ax.set_ylabel(cd4.coordinate_names[0] or "Value")
+    ax.set_xlabel(irregular_fd.argument_names[0] or "Domain")
+    ax.set_ylabel(irregular_fd.coordinate_names[0] or "Value")
     ax.legend()
 
 plt.tight_layout()
@@ -266,6 +262,37 @@ plt.show()
 # perform.
 reconstructed.plot()
 plt.show()
+
+grid1 = fd.grid_points[0]
+grid2 = fpca_rec.grid_points[0]
+
+common_grid = np.intersect1d(grid1, grid2)
+idx1 = np.where(np.isin(grid1, common_grid))[0]
+idx2 = np.where(np.isin(grid2, common_grid))[0]
+
+aligned_true = fd.data_matrix[:, idx1]
+aligned_pred = fpca_rec.data_matrix[:, idx2]
+
+mse_per_curve = np.mean((aligned_true - aligned_pred) ** 2, axis=1)
+average_mse = np.mean(mse_per_curve)
+
+print(average_mse)
+
+
+grid1 = fd.grid_points[0]
+grid2 = reconstructed.grid_points[0]
+
+common_grid = np.intersect1d(grid1, grid2)
+idx1 = np.where(np.isin(grid1, common_grid))[0]
+idx2 = np.where(np.isin(grid2, common_grid))[0]
+
+aligned_true = fd.data_matrix[:, idx1]
+aligned_pred = reconstructed.data_matrix[:, idx2]
+
+mse_per_curve = np.mean((aligned_true - aligned_pred) ** 2, axis=1)
+average_mse = np.mean(mse_per_curve)
+
+print(average_mse)
 
 # In conclusion, this analysis demonstrates how Functional Principal Component
 # Analysis through Conditional Expectation (PACE) can be effectively applied to

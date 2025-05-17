@@ -14,27 +14,15 @@ irregularly sampled data.
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.utils import Bunch
 
 import skfda
-from skfda.datasets._real_datasets import fetch_tecator
-from skfda.datasets._sample_from_fdata import irregular_sample
-from skfda.preprocessing.dim_reduction import FPCA, PACE
-from skfda.representation import FDataGrid
-from skfda.typing._numpy import NDArrayInt
-
-# %%
-tecator_bunch: Bunch = fetch_tecator()
-tecator: FDataGrid = tecator_bunch.data
-assert isinstance(tecator, FDataGrid), "Expected an FDataGrid object"
-
-# %%
+from skfda.datasets import fetch_weatherfrom skfda.representation import FDataGrid
 
 def generate_num_measurements(
     percentage: int,
-    size: int = 215,
+    size: int = 35,
     min_val: int = 1,
-    max_val: int = 100,
+    max_val: int = 365,
     random_state: int | None = None,
 ) -> NDArrayInt:
     """
@@ -71,22 +59,12 @@ def generate_num_measurements(
 
 # %%
 n_components = 3
-
-# Store results for plotting
 components_all = []
 reconstructed_all = []
+mse_all = []
 
-fpca = FPCA(n_components=n_components)
-fpca_scores = fpca.fit_transform(tecator)
-reconstructed_fpca = fpca.inverse_transform(fpca_scores)
-components_all.append(fpca.components_)
-reconstructed_all.append(reconstructed_fpca)
-
-
-
-# %%
-random_state = 43
-data_percentages = np.array([5, 10, 15])
+random_state = 11
+data_percentages = np.array([10, 20, 35])
 
 for perc in data_percentages:
     measurements_per_obs = generate_num_measurements(
@@ -94,28 +72,52 @@ for perc in data_percentages:
         random_state=random_state,
     )
 
-    irregular_tecator = irregular_sample(
-        tecator,
+    irregular_canadian = irregular_sample(
+        canadian,
         measurements_per_obs,
         random_state=random_state,
     )
-    irregular_tecator.coordinate_names = tecator.coordinate_names
-    irregular_tecator.argument_names = tecator.argument_names
-    irregular_tecator.dataset_name = f"Tecator {perc}%"
+    irregular_canadian.coordinate_names = canadian.coordinate_names
+    irregular_canadian.argument_names = canadian.argument_names
 
     pace = PACE(
         n_components=n_components,
         bandwidth_mean=np.array([0.1, 10]),
         bandwidth_cov=10.0,
+        n_grid_points=25,
     )
-    pace_scores = pace.fit_transform(irregular_tecator)
+    pace_scores = pace.fit_transform(irregular_canadian)
     reconstructed_pace = pace.inverse_transform(pace_scores)
     components_all.append(pace.components_)
     reconstructed_all.append(reconstructed_pace)
 
+    grid1 = canadian.grid_points[0]
+    grid2 = reconstructed_pace.grid_points[0]
+
+    common_grid = np.intersect1d(grid1, grid2)
+    idx1 = np.where(np.isin(grid1, common_grid))[0]
+    idx2 = np.where(np.isin(grid2, common_grid))[0]
+
+    aligned_true = canadian.data_matrix[:, idx1]
+    aligned_pred = reconstructed_pace.data_matrix[:, idx2]
+
+    mse_per_curve = np.mean((aligned_true - aligned_pred) ** 2, axis=1)
+    average_mse = np.mean(mse_per_curve)
+
+    mse_all.append(average_mse)
+
+print(mse_all)
+
+# %%
+fpca = FPCA(n_components=n_components)
+fpca_scores = fpca.fit_transform(canadian)
+reconstructed_fpca = fpca.inverse_transform(fpca_scores)
+components_all.append(fpca.components_)
+reconstructed_all.append(reconstructed_fpca)
+
 # %%
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-titles = ["Regular FPCA", "PACE (5%)", "PACE (10%)", "PACE (15%)"]
+titles = ["PACE (10%)", "PACE (20%)", "PACE (35%)", "Regular FPCA"]
 for i, ax in enumerate(axes.flat):
     components_all[i].plot(axes=ax)
     ax.set_title(titles[i])
@@ -132,5 +134,36 @@ for i, ax in enumerate(axes.flat):
 
 plt.tight_layout()
 plt.show()
+
+# %%
+import numpy as np
+from skfda.representation import FDataIrregular
+from skfda.preprocessing.dim_reduction import PACE
+
+points = np.array([0.0, 1.0, 0.0, 1.0])
+values = np.array([1.0, 0.0, 0.0, 2.0])
+start_indices = np.array([0, 2])
+
+fd = FDataIrregular(
+    points=points,
+    values=values,
+    start_indices=start_indices,
+)
+
+pace = PACE(
+    n_components=2,
+    bandwidth_mean=np.array([0.1, 10]),
+    bandwidth_cov=np.array([0.1, 10]),
+)
+scores = pace.fit_transform(fd)
+expected = np.array([
+    [-0.04886943, -0.00023432],
+    [ 0.04886943,  0.00023432],
+])
+np.allclose(scores, expected)
+True
+round(float(pace.sigma2_), 3)
+0.973
+# scores
 
 # %%

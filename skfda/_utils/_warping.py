@@ -322,6 +322,25 @@ class L2LineEnergy:
             As you can see, the results correspond to the lower-right part
             of the complete grid.
 
+            It is also possible to penalize deviations from the identity
+            function:
+
+            >>> l2_line_energy = L2LineEnergy(penalty=1)
+
+            >>> l2_line_energy(
+            ...    original,
+            ...    target,
+            ...    row=3,
+            ...    column=3,
+            ... )
+            array([[[ 0.109375  ,  0.39438019,  0.72558594],
+                    [ 0.08578644,  0.046875  ,  0.14836197],
+                    [ 0.28125   ,  0.04289322,  0.0078125 ]]])
+
+            Note that the terms on the main diagonal are not penalized in this
+            case, as there is no difference in slope with respect to the
+            identity function.
+
         """
         if grid_dim is None:
             grid_dim = max(row, column)
@@ -337,8 +356,10 @@ class L2LineEnergy:
         t_i = grid_points[first_row_index:row, None]
         t_j = grid_points[first_column_index:column, None]
 
+        total_interval_length = t_row - t_i
+
         t = grid_points[first_row_index:row + 1]
-        l_vec = (t - t_i) / (t_row - t_i)
+        l_vec = (t - t_i) / total_interval_length
         l_matrix = l_vec[:, None, :]
         w = (1 - l_matrix) * t_j + l_matrix * t_column
 
@@ -348,7 +369,7 @@ class L2LineEnergy:
         # Shape: N x t
         y_t = target.data_matrix[:, first_row_index:row + 1, 0]
 
-        w_slope = (t_column - t_j.T) / (t_row - t_i)
+        w_slope = (t_column - t_j.T) / total_interval_length
         w_slope_root = np.sqrt(w_slope)
 
         if self.slope_scaling:
@@ -381,7 +402,9 @@ class L2LineEnergy:
 
         integral = np.sum(integrand * quadrature_weights, axis=-1)
 
-        roughness = self.penalty * (1 - w_slope_root)**2
+        roughness = self.penalty * (
+            (1 - w_slope_root)**2 * total_interval_length
+        )
 
         return integral + roughness  # type: ignore[no-any-return]
 

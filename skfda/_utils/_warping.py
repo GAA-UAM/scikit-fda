@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 from scipy.interpolate import PchipInterpolator
+from typing_extensions import override
 
 from ._utils import evaluate_fdatagrid_linear_interpolation
 
@@ -25,6 +26,43 @@ class LineEnergyFunction(Protocol):
     segments between a candidate point and the target.
 
     """
+    def dp_start(
+        self,
+        /,
+        original: FDataGrid,
+        target: FDataGrid,
+        *,
+        grid_dim: int,
+    ) -> None:
+        """
+        Called at the start of the DP algorithm.
+
+        This can be used to cache the needed values that are the
+        same for each row and column.
+
+        """
+
+    def dp_change_row(
+        self,
+        /,
+        original: FDataGrid,
+        target: FDataGrid,
+        *,
+        row: int,
+        grid_dim: int,
+    ) -> None:
+        """
+        Called when a row is changed in the DP algorithm.
+
+        This can be used to cache the needed values that are the
+        same for each row.
+
+        Note:
+            There is no analog function for columns, as the column
+            always change (and it requires less computations, because
+            the integral domain does not change).
+
+        """
 
     def __call__(
         self,
@@ -34,7 +72,7 @@ class LineEnergyFunction(Protocol):
         *,
         row: int,
         column: int,
-        grid_dim: int | None = None,
+        grid_dim: int,
     ) -> NDArrayFloat:
         """Returns energies of all lines from each candidate point."""
 
@@ -175,7 +213,7 @@ def _dp_recover_warpings(
     return na_interpolator.transform(warpings)
 
 
-class L2LineEnergy:
+class L2LineEnergy(LineEnergyFunction):
     r"""
     L2 line energy with roughness penalty.
 
@@ -193,16 +231,255 @@ class L2LineEnergy:
             of the slope of the interval. This is necessary when we work with
             the SRSF of the curves instead of with the curves themselves.
 
+    Examples:
+        Consider a simple case with 4 irregularly sampled discretization
+        points:
+
+        >>> import numpy as np
+        >>> grid_points = np.array([0, 0.5, 0.75, 1])
+
+        We use the identity function :math:`x(t) = t` and the piecewise
+        linear function :math:`y(t) = \max(0, 2t - 1)`:
+
+        >>> from skfda import FDataGrid
+        >>> original = FDataGrid(grid_points, grid_points=grid_points)
+        >>> target = FDataGrid(
+        ...     np.maximum(0, 2 * grid_points - 1),
+        ...     grid_points=grid_points,
+        ... )
+
+        Consider the default case with no penalization:
+        >>> l2_line_energy = L2LineEnergy()
+
+        We will consider use the full grid for now:
+
+        >>> grid_dim = len(grid_points)
+
+        Before calling it, the DP algorithm will call the ``dp_start``
+        method, at the beginning of the algorithm, to give the opportunity to
+        cache variables that are common for all the candidate points.
+
+        >>> l2_line_energy.dp_start(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ... )
+
+        We will consider the final case ``row = 3``, ``column=3``. Before
+        calling the function, the DP algorithm will call ``dp_change_row``
+        whenever the row is changed, to give the opportunity to
+        cache variables that are common for all the candidate points in
+        the same row.
+
+        >>> l2_line_energy.dp_change_row(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=3,
+        ... )
+
+        >>> l2_line_energy(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=3,
+        ...    column=3,
+        ... )
+        array([[[ 0.109375  ,  0.30859375,  0.47558594],
+                [ 0.        ,  0.046875  ,  0.10546875],
+                [ 0.03125   ,  0.        ,  0.0078125 ]]])
+
+        Note that the cells ``(1, 0)`` and ``(2, 1)`` have 0 energy.
+        This is because they correspond to linear warpings that align
+        perfectly :math:`x` in the intervals :math:`(0.5, 1)` and
+        :math:`(0.75, 1)`, respectively.
+
+        Now consider a possible intermediate case with ``row = 2`` and
+        ``column=1``:
+        >>> l2_line_energy.dp_change_row(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=2,
+        ... )
+        >>> l2_line_energy(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=2,
+        ...    column=1,
+        ... )
+        array([[[ 0.04166667],
+                [ 0.        ]]])
+
+        This has again 0 energy at ``(1, 0)``, because it is possible to
+        align perfectly :math:`x` in the interval :math:`(0.5, 0.75)`.
+
+        With the parameter ``grid_dim`` we can control the size of the
+        grid used, so that the algorithm is still tractable with many
+        points:
+
+        >>> grid_dim = 1
+
+        >>> l2_line_energy.dp_start(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ... )
+
+        >>> l2_line_energy.dp_change_row(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=3,
+        ... )
+
+        >>> grid_1 = l2_line_energy(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=3,
+        ...    column=3,
+        ... )
+        >>> grid_1
+        array([[[ 0.0078125]]])
+
+        >>> grid_dim = 2
+
+        >>> l2_line_energy.dp_start(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ... )
+
+        >>> l2_line_energy.dp_change_row(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=3,
+        ... )
+
+        >>> grid_2 = l2_line_energy(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=3,
+        ...    column=3,
+        ... )
+        >>> grid_2
+        array([[[ 0.046875  ,  0.10546875],
+                [ 0.        ,  0.0078125 ]]])
+
+        As it can be seen, the results correspond to the lower-right part
+        of the complete grid.
+
+        It is also possible to penalize deviations from the identity
+        function:
+
+        >>> l2_line_energy = L2LineEnergy(penalty=1)
+
+        >>> grid_dim = len(grid_points)
+
+        >>> l2_line_energy.dp_start(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ... )
+
+        >>> l2_line_energy.dp_change_row(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=3,
+        ... )
+
+        >>> l2_line_energy(
+        ...    original,
+        ...    target,
+        ...    grid_dim=grid_dim,
+        ...    row=3,
+        ...    column=3,
+        ... )
+        array([[[ 0.109375  ,  0.39438019,  0.72558594],
+                [ 0.08578644,  0.046875  ,  0.14836197],
+                [ 0.28125   ,  0.04289322,  0.0078125 ]]])
+
+        Note that the terms on the main diagonal are not penalized in this
+        case, as there is no difference in slope with respect to the
+        identity function.
+
     """
 
     def __init__(
         self,
+        *,
         penalty: float = 0,
         slope_scaling: bool = False,
     ) -> None:
         self.penalty = penalty
         self.slope_scaling = slope_scaling
 
+    @override
+    def dp_start(
+        self,
+        /,
+        original: FDataGrid,
+        target: FDataGrid,
+        *,
+        grid_dim: int,
+    ) -> None:
+        self.grid_points = original.grid_points[0]
+        self.interval_lenghts = np.diff(
+            self.grid_points,
+            prepend=self.grid_points[0],
+        )
+
+    @override
+    def dp_change_row(
+        self,
+        /,
+        original: FDataGrid,
+        target: FDataGrid,
+        *,
+        row: int,
+        grid_dim: int,
+    ) -> None:
+        first_row_index = max(0, row - grid_dim)
+        t_row = self.grid_points[row]
+        t_i = self.grid_points[first_row_index:row, None]
+        self.total_interval_length = t_row - t_i
+
+        t = self.grid_points[first_row_index:row + 1]
+        self.l_matrix = (
+            (t - t_i) / self.total_interval_length
+        )[:, None, :]
+
+        self.y_t = target.data_matrix[:, first_row_index:row + 1, 0]
+
+        row_interval_lenghts = self.interval_lenghts[
+            first_row_index:row + 1
+        ]
+        quadrature_weights = row_interval_lenghts / 2
+        quadrature_weights[:-1] += row_interval_lenghts[1:] / 2
+
+        # We set the weights of unused points to 0
+        quadrature_weights = np.triu(
+            np.tile(quadrature_weights, (len(t_i), 1)),
+        )
+
+        # Final correction: adjust the weight at the extreme
+        # We need to remove t_i - t_{i-1} only at the leftmost point
+        quadrature_weights_diag = np.diagonal(quadrature_weights)
+        np.fill_diagonal(
+            quadrature_weights,
+            quadrature_weights_diag - row_interval_lenghts[:-1] / 2,
+        )
+
+        # Add column dimension
+        quadrature_weights = quadrature_weights[:, None, :]
+        self.quadrature_weights = quadrature_weights
+
+    @override
     def __call__(  # noqa: WPS210
         self,
         original: FDataGrid,
@@ -210,7 +487,7 @@ class L2LineEnergy:
         *,
         row: int,
         column: int,
-        grid_dim: int | None = None,
+        grid_dim: int,
     ) -> NDArrayFloat:
         r"""
         Compute the line energies for the :math:`L^2` distance.
@@ -238,130 +515,18 @@ class L2LineEnergy:
         Returns:
             Energy of direct line warpings to the candidate point.
 
-        Examples:
-            Consider a simple case with 4 irregularly sampled discretization
-            points:
-
-            >>> import numpy as np
-            >>> grid_points = np.array([0, 0.5, 0.75, 1])
-
-            We use the identity function :math:`x(t) = t` and the piecewise
-            linear function :math:`y(t) = \max(0, 2t - 1)`:
-
-            >>> from skfda import FDataGrid
-            >>> original = FDataGrid(grid_points, grid_points=grid_points)
-            >>> target = FDataGrid(
-            ...     np.maximum(0, 2 * grid_points - 1),
-            ...     grid_points=grid_points,
-            ... )
-
-            Consider the default case with no penalization:
-            >>> l2_line_energy = L2LineEnergy()
-
-            We will consider the final case ``row = 3``, ``column=3``:
-            >>> l2_line_energy(
-            ...    original,
-            ...    target,
-            ...    row=3,
-            ...    column=3,
-            ... )
-            array([[[ 0.109375  ,  0.30859375,  0.47558594],
-                    [ 0.        ,  0.046875  ,  0.10546875],
-                    [ 0.03125   ,  0.        ,  0.0078125 ]]])
-
-            Note that the cells ``(1, 0)`` and ``(2, 1)`` have 0 energy.
-            This is because they correspond to linear warpings that align
-            perfectly :math:`x` in the intervals :math:`(0.5, 1)` and
-            :math:`(0.75, 1)`, respectively.
-
-            Now consider a possible intermediate case with ``row = 2`` and
-            ``column=1``:
-            >>> l2_line_energy(
-            ...    original,
-            ...    target,
-            ...    row=2,
-            ...    column=1,
-            ... )
-            array([[[ 0.04166667],
-                    [ 0.        ]]])
-
-            This has again 0 energy at ``(1, 0)``, because it is possible to
-            align perfectly :math:`x` in the interval :math:`(0.5, 0.75)`.
-
-            With the parameter ``grid_dim`` we can control the size of the
-            grid used, so that the algorithm is still tractable with many
-            points:
-
-            >>> complete_grid = l2_line_energy(
-            ...    original,
-            ...    target,
-            ...    row=3,
-            ...    column=3,
-            ... )
-
-            >>> grid_1 = l2_line_energy(
-            ...    original,
-            ...    target,
-            ...    row=3,
-            ...    column=3,
-            ...    grid_dim = 1,
-            ... )
-            >>> grid_1
-            array([[[ 0.0078125]]])
-
-            >>> grid_2 = l2_line_energy(
-            ...    original,
-            ...    target,
-            ...    row=3,
-            ...    column=3,
-            ...    grid_dim = 2,
-            ... )
-            >>> grid_2
-            array([[[ 0.046875  ,  0.10546875],
-                    [ 0.        ,  0.0078125 ]]])
-
-            As you can see, the results correspond to the lower-right part
-            of the complete grid.
-
-            It is also possible to penalize deviations from the identity
-            function:
-
-            >>> l2_line_energy = L2LineEnergy(penalty=1)
-
-            >>> l2_line_energy(
-            ...    original,
-            ...    target,
-            ...    row=3,
-            ...    column=3,
-            ... )
-            array([[[ 0.109375  ,  0.39438019,  0.72558594],
-                    [ 0.08578644,  0.046875  ,  0.14836197],
-                    [ 0.28125   ,  0.04289322,  0.0078125 ]]])
-
-            Note that the terms on the main diagonal are not penalized in this
-            case, as there is no difference in slope with respect to the
-            identity function.
-
         """
-        if grid_dim is None:
-            grid_dim = max(row, column)
+        grid_points = self.grid_points
 
-        grid_points = original.grid_points[0]
-
-        first_row_index = max(0, row - grid_dim)
         first_column_index = max(0, column - grid_dim)
 
-        t_row = grid_points[row]
         t_column = grid_points[column]
 
-        t_i = grid_points[first_row_index:row, None]
         t_j = grid_points[first_column_index:column, None]
 
-        total_interval_length = t_row - t_i
+        total_interval_length = self.total_interval_length
 
-        t = grid_points[first_row_index:row + 1]
-        l_vec = (t - t_i) / total_interval_length
-        l_matrix = l_vec[:, None, :]
+        l_matrix = self.l_matrix
         w = (1 - l_matrix) * t_j + l_matrix * t_column
         w_flat = w.reshape(-1)
 
@@ -372,7 +537,7 @@ class L2LineEnergy:
         )
 
         # Shape: N x t
-        y_t = target.data_matrix[:, first_row_index:row + 1, 0]
+        y_t = self.y_t
 
         w_slope = (t_column - t_j.T) / total_interval_length
         w_slope_root = np.sqrt(w_slope)
@@ -382,25 +547,7 @@ class L2LineEnergy:
 
         integrand = (x_t - y_t[:, None, None, :])**2
 
-        interval_lenghts = np.diff(t, prepend=t[0])
-        quadrature_weights = interval_lenghts / 2
-        quadrature_weights[:-1] += interval_lenghts[1:] / 2
-
-        # We set the weights of unused points to 0
-        quadrature_weights = np.triu(
-            np.tile(quadrature_weights, (len(t_i), 1)),
-        )
-
-        # Final correction: adjust the weight at the extreme
-        # We need to remove t_i - t_{i-1} only at the leftmost point
-        quadrature_weights_diag = np.diagonal(quadrature_weights)
-        np.fill_diagonal(
-            quadrature_weights,
-            quadrature_weights_diag - interval_lenghts[:-1] / 2,
-        )
-
-        # Add column dimension
-        quadrature_weights = quadrature_weights[:, None, :]
+        quadrature_weights = self.quadrature_weights
 
         integral = np.sum(integrand * quadrature_weights, axis=-1)
 
@@ -540,7 +687,21 @@ def dynamic_programming_match(  # noqa: WPS210
     energy[:, :, 0] = np.inf
     energy[:, 0, 0] = 0
 
+    line_energy_function.dp_start(
+        original,
+        target,
+        grid_dim=grid_dim,
+    )
+
     for row in range(1, n_points):
+
+        line_energy_function.dp_change_row(
+            original,
+            target,
+            grid_dim=grid_dim,
+            row=row,
+        )
+
         for column in range(1, n_points):
             first_row_index = max(0, row - grid_dim)
             first_column_index = max(0, column - grid_dim)

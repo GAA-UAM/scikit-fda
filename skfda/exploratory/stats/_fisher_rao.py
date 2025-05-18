@@ -263,7 +263,7 @@ def fisher_rao_karcher_mean(
     mu = srsf[np.argmin(distances)]
 
     line_energy = L2LineEnergy(
-        penalty,
+        penalty=penalty,
         slope_scaling=True,
     )
 

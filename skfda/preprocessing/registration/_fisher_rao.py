@@ -187,7 +187,7 @@ class FisherRaoElasticRegistration(
 
         # Values of the warping
         line_energy = L2LineEnergy(
-            self.penalty,
+            penalty=self.penalty,
             slope_scaling=True,
         )
 

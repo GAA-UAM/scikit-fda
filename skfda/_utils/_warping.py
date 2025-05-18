@@ -7,8 +7,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
-from scipy.integrate import trapezoid
 from scipy.interpolate import PchipInterpolator
+
+from ._utils import evaluate_fdatagrid_linear_interpolation
 
 if TYPE_CHECKING:
     from ..representation import FDataGrid
@@ -362,9 +363,13 @@ class L2LineEnergy:
         l_vec = (t - t_i) / total_interval_length
         l_matrix = l_vec[:, None, :]
         w = (1 - l_matrix) * t_j + l_matrix * t_column
+        w_flat = w.reshape(-1)
 
         # Shape: N x row x column x t
-        x_t = original(w.reshape(-1)).reshape((len(original), *w.shape))
+        x_t_flat = evaluate_fdatagrid_linear_interpolation(original, w_flat)
+        x_t = x_t_flat.reshape(
+            (len(original), *w.shape),
+        )
 
         # Shape: N x t
         y_t = target.data_matrix[:, first_row_index:row + 1, 0]
@@ -377,11 +382,9 @@ class L2LineEnergy:
 
         integrand = (x_t - y_t[:, None, None, :])**2
 
-        identity = np.eye(len(t))
-        quadrature_weights = trapezoid(
-            y=identity,
-            x=t,
-        )
+        interval_lenghts = np.diff(t, prepend=t[0])
+        quadrature_weights = interval_lenghts / 2
+        quadrature_weights[:-1] += interval_lenghts[1:] / 2
 
         # We set the weights of unused points to 0
         quadrature_weights = np.triu(
@@ -390,11 +393,10 @@ class L2LineEnergy:
 
         # Final correction: adjust the weight at the extreme
         # We need to remove t_i - t_{i-1} only at the leftmost point
-        interval_lenghts = np.diff(t, prepend=t[0])[:-1]
         quadrature_weights_diag = np.diagonal(quadrature_weights)
         np.fill_diagonal(
             quadrature_weights,
-            quadrature_weights_diag - interval_lenghts / 2,
+            quadrature_weights_diag - interval_lenghts[:-1] / 2,
         )
 
         # Add column dimension

@@ -653,9 +653,11 @@ def evaluate_fdatagrid_linear_interpolation(
     indexes[indexes >= len(grid_points)] = len(grid_points) - 1
     indexes_prev = indexes - 1
 
+    grid_points_prev = grid_points[indexes_prev]
+
     interp_parameter = (
-        (evaluation_points - grid_points[indexes_prev])
-        / (grid_points[indexes] - grid_points[indexes_prev])
+        (evaluation_points - grid_points_prev)
+        / (grid_points[indexes] - grid_points_prev)
     )
 
     left = np.take(data_matrix, indices=indexes_prev, axis=1)

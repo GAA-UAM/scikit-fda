@@ -549,13 +549,15 @@ class L2LineEnergy(LineEnergyFunction):
 
         quadrature_weights = self.quadrature_weights
 
-        integral = np.sum(integrand * quadrature_weights, axis=-1)
+        integrand *= quadrature_weights
+        integral = np.sum(integrand, axis=-1)
 
         roughness = self.penalty * (
             (1 - w_slope_root)**2 * total_interval_length
         )
 
-        return integral + roughness  # type: ignore[no-any-return]
+        integral += roughness
+        return integral  # type: ignore[no-any-return]
 
 def dynamic_programming_match(  # noqa: WPS210
     original: FDataGrid,

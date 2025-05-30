@@ -941,6 +941,13 @@ class MixedDataPlot(BasePlot):
                     group_colors=self.group_colors,
                     group_names=self.group_names,
                 )
+
+                if data.argument_names and data.argument_names[0]:
+                    x_label = data.argument_names[0]
+                for sub_ax in sub_axes:
+                    sub_ax.set_xlabel("")
+                sub_axes[-1].set_xlabel(x_label)
+
                 for j, sub_ax in enumerate(sub_axes):
                     name = (
                         data.coordinate_names[j]
@@ -951,6 +958,7 @@ class MixedDataPlot(BasePlot):
                         else f"{j + 1}"
                     )
                     sub_ax.set_title(f"{col} - {name}")
+
                 outer_ax.axis("off")
         else:
             ax = next(axes)
@@ -980,7 +988,8 @@ class MixedDataPlot(BasePlot):
 
             if n_unique <= 10:  # noqa: PLR2004
                 bins = np.arange(
-                    data_array.min() - 0.5, data_array.max() + 1.5,
+                    data_array.min() - 0.5,
+                    data_array.max() + 1.5,
                 )
                 ax.hist(
                     data_array,

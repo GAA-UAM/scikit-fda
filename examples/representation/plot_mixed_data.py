@@ -85,9 +85,9 @@ fd_1st_precipitations_smooth = smoother_precipitations.fit_transform(
 )
 
 
-fd_1st_temperatures_smooth.coordinate_names = ("temperature (ºC)/time (days)",)
+fd_1st_temperatures_smooth.coordinate_names = ("ºC/days",)
 fd_1st_precipitations_smooth.coordinate_names = (
-    "precipitation (mm.)/time (days)",
+    "mm./days",
 )
 
 # %% [markdown]
@@ -117,6 +117,7 @@ fd_vector = FDataGrid(
     grid_points=fd_temperatures.grid_points,
     coordinate_names=fd_precipitations.coordinate_names
     + fd_1st_precipitations_smooth.coordinate_names,
+    argument_names = fd_1st_precipitations_smooth.argument_names
 )
 
 fd_vector.plot()
@@ -146,4 +147,5 @@ mixed_fd = pd.DataFrame(
 
 from skfda.exploratory.visualization.representation import plot_mixed_data
 
-plot_mixed_data(mixed_fd)
+plot_mixed_data(mixed_fd).show()
+input("")

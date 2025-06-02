@@ -143,9 +143,11 @@ mixed_fd = pd.DataFrame(
 # %% [markdown]
 # Finally, we use `plot_mixed_data` to visualize the full mixed dataset. Each
 # column is visualized with an appropriate method, helping us explore the
-# structure and variation in both scalar and functional components.
+# structure in both scalar and functional components.
 
 from skfda.exploratory.visualization.representation import plot_mixed_data
 
-plot_mixed_data(mixed_fd).show()
-input("")
+fig, axes = plt.subplots(1, 4, figsize=(28, 6))
+
+plot_mixed_data(mixed_fd, axes= axes)
+plt.show()

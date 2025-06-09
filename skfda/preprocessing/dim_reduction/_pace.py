@@ -692,8 +692,8 @@ class PACE(
         if isinstance(n_components, int):
             if n_components > len(eigenvalues):
                 error_msg = (
-                    "The number of components must be smaller than the sample"
-                    "size",
+                    "The sample size must be bigger than the number of "
+                    "components"
                 )
                 raise AttributeError(error_msg)
             n_selected_components = n_components
@@ -1121,10 +1121,6 @@ class PACE(
         fpc_scores = np.zeros((len(X.start_indices), int(self.n_components)))
         lambda_ = np.diag(self.explained_variance_)
 
-        # Difference is that they iteratively calculate sigma so they get minor
-        # differences
-        # self.sigma2_ = 26586
-
         if self.assume_noisy is False:
             eps = 1e-8  # small regularization
             self.sigma2_ = eps
@@ -1137,12 +1133,6 @@ class PACE(
                 lambda_=lambda_,
                 t_mean=t_mean,
             )
-
-        # need to inform of expected dimensions for each parameter
-        # and types of the class parameters
-
-        # Add doctests
-        # Add coverage
 
         return fpc_scores
 

@@ -59,6 +59,16 @@ country_height.plot(
 )
 plt.show()
 
+from collections import Counter
+
+conteo = Counter(target)
+total = len(target)
+
+for i in range(5):
+    cantidad = conteo.get(i, 0)
+    porcentaje = (cantidad / total) * 100
+    print(f"Número {i}: {cantidad} veces ({porcentaje:.2f}%)")
+
 
 # %%
 # To reinforce the irregularity of the data, we will plot the data points
@@ -193,6 +203,8 @@ for n in n_components_list:
     if n == 3:
         reconstructed_all.append(reconstructed)
 
+# %%
+print(pace.explained_variance_ratio_)
 
 # %%
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))

@@ -9,7 +9,7 @@ irregularly sampled data using PACE.
 # Author: Alejandro Arias Gomez
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 8
+# sphinx_gallery_thumbnail_number = 5
 
 # %%
 import matplotlib.pyplot as plt
@@ -23,22 +23,28 @@ from skfda.preprocessing.dim_reduction import PACE
 from skfda.representation import FDataIrregular
 
 # %%
-# In this example, we will use the Country Height dataset, which contains the
-# average height of 144 countries grouped by decades, from 1700 to 2000.
-# The dataset is irregularly sampled, meaning that not all countries have
+# This example explores the possibility to apply clustering techniques to
+# sparse, irregularly sampled data using the PACE algorithm, as described in
+# :footcite:ts`yao+muller+wang_2005_pace`.
+#
+# Throughout this analysis, we will use the Country Height dataset, which
+# contains the average height of 144 countries grouped by decades, from 1810 to
+# 1989. The dataset is irregularly sampled, meaning that not all countries have
 # measurements for all decades.
 #
 # The dataset is available in the `skfda.datasets` module.
 #
 # Our goal is to analyse the relationship between the countries and their
-# continent using clustering techniques. However, because the dataset is
+# continent using classification techniques. However, because the dataset is
 # irregularly sampled, we will use the PACE algorithm to perform FPCA analysis
-# and reconstruct the underlying curves for each country and convert the data
-# into a regular grid before applying clustering, in order to be able to use
-# the package's clustering algorithms.
+# and reconstruct the underlying curves for each country, converting the data
+# into a regular grid before classification, in order to be able to use the
+# package's algorithms.
 #
 # We will first load the dataset and plot each country's height curve, divided
-# by continent.
+# by continent. In addition, we will represent how many countries we have per
+# continent, in order to compare the classification results with a
+# classificator by majority.
 country_height_bunch: Bunch = fetch_country_height()
 country_height: FDataIrregular = country_height_bunch.data
 assert isinstance(
@@ -61,13 +67,13 @@ plt.show()
 
 from collections import Counter
 
-conteo = Counter(target)
+counter = Counter(target)
 total = len(target)
 
 for i in range(5):
-    cantidad = conteo.get(i, 0)
-    porcentaje = (cantidad / total) * 100
-    print(f"Número {i}: {cantidad} veces ({porcentaje:.2f}%)")
+    quantity = counter.get(i, 0)
+    perc = (quantity / total) * 100
+    print(f"Continent {i}: {quantity} countries ({perc:.2f}%)")
 
 
 # %%
@@ -85,7 +91,6 @@ plt.ylabel("height_cm")
 plt.title("Average male height by country")
 plt.tight_layout()
 plt.show()
-
 
 # %%
 # We can now apply the PACE method to the dataset. Due to the fact that the
@@ -125,16 +130,15 @@ ax.set_title("Smoothed Covariance Surface via PACE")
 plt.tight_layout()
 plt.show()
 
-
 # %%
 # We can further inspect the principal components of the data, where we can see
 # that the first component takes the form of a steady increase over the years,
-# while the second component takes the shape of an increase over the first
-# years, followed by an accentuated decrease after the 1900s, which could be
-# supported by the first world war, a period of hunger. The third principal
-# component also takes the shape of an increase, but starting a bit later,
-# which could model countries where abundant food or resources arrived at a
-# latter stage, followed by a stabilization and slight decrease since 1900.
+# while the second and third components account for the smaller variations in
+# the different subjects. These could represent periods of hunger, wars,
+# industrialisation or other affecting factors. Because no direct event can be
+# linked to these variations, we are unable to determine the sign of these
+# principal components.
+#
 # Combined, the last two components explain the more subtle variations in the
 # data, while the first component explains the main trend.
 fig, ax = plt.subplots()
@@ -151,8 +155,8 @@ print(pace.explained_variance_ratio_[:3])
 
 # %%
 # From the FPC scores, we can reconstruct the whole dataset, allowing us to
-# view the data in a regular grid, which is a necessary tool for clustering
-# algorithms.
+# view the data in a regular grid, which is a necessary tool for classification
+# algorithms in the package.
 from skfda.ml.classification import KNeighborsClassifier
 
 n_components_list = [1, 2, 3]
@@ -170,8 +174,6 @@ knn_preds = []
 for n in n_components_list:
     pace = PACE(
         n_components=n,
-        # bandwidth_mean=np.array([0.1, 100.0]),
-        # bandwidth_cov=np.array([0.1, 100.0]),
         bandwidth_mean=22.74,
         bandwidth_cov=28.53,
     )
@@ -204,9 +206,11 @@ for n in n_components_list:
         reconstructed_all.append(reconstructed)
 
 # %%
-print(pace.explained_variance_ratio_)
-
-# %%
+# We finish the analysis by showcasing a visual comparison of classification
+# results based on the number of principal components used. The first panel
+# represents the true classes (continent) with average curves per group, while
+# the remaining panels show the predicted groups using 1, 2, and 3 FPCs
+# respectively.
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
 for i, ax in enumerate(axes.flat):
@@ -246,6 +250,23 @@ plt.show()
 
 print(knn_scores)
 
+# Analysing the classification scores for each experiment, we observe that,
+# even in the worst case scenario, the classification is more accurate than
+# a random classificator (20% success) or a classificator by majority (32.17%
+# success). In addition, these results show a clear upward trend in
+# classification accuracy as the number of components increases. Each
+# additional component captures further variability in the data, which helps to
+# better differentiate between countries. This highlights a trade-off between
+# dimensionality and expressiveness: even a small number of components (3)
+# achieves over 60% accuracy despite the original data's irregularity,
+# showcasing PACE effectiveness in recovering discriminative features from
+# sparse data.
+#
+# Focusing solely on the analysis of this particular problem, the results
+# confirm the presence of continent-level patterns in the data, but the
+# moderate accuracy also suggests that intra-continental diversity—such as
+# socioeconomic or ethnic differences—limits the strength of the correlation,
+# leaving room for further refinement or more granular modeling.
 
 # %%
 # References

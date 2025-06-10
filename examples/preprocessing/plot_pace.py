@@ -9,7 +9,7 @@ irregularly sampled data.
 # Author: Alejandro Arias Gomez
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 4
+# sphinx_gallery_thumbnail_number = 8
 
 # %%
 from collections import defaultdict
@@ -18,17 +18,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.utils import Bunch
 
-import skfda
 from skfda.datasets._real_datasets import fetch_growth
 from skfda.datasets._sample_from_fdata import irregular_sample
 from skfda.preprocessing.dim_reduction import FPCA, PACE
 from skfda.representation import FDataGrid, FDataIrregular
-from skfda.typing._numpy import NDArrayInt
 
 # %%
 # In this example we are going to use functional principal component analysis
-# through conditional expectation to explore datasets and obtain conclusions
-# about said dataset using this technique.
+# through conditional expectation to explore the Berkeley Growth Study and
+# obtain conclusions about said dataset using this technique, comparing the
+# results to those obtained with the FPCA method.
 #
 # The PACE algorithm is an alternative to FPCA that is specifically designed
 # for irregularly sampled data. It uses local linear smoothing to estimate
@@ -44,6 +43,10 @@ from skfda.typing._numpy import NDArrayInt
 # and in this example we will use the implementation of the algorithm that
 # follows the same steps as the original algorithm.
 #
+# The Berkeley Growth Study dataset consists of height measurements over time
+# for a cohort of children. It is a classic dataset in Functional Data
+# Analysis, and here it is initially provided in a dense, regular format
+# (FDataGrid).
 dataset: Bunch = fetch_growth()
 fd: FDataIrregular = dataset.data
 assert isinstance(fd, FDataGrid), "Expected an FDataGrid object"
@@ -51,11 +54,11 @@ assert isinstance(fd, FDataGrid), "Expected an FDataGrid object"
 fd[:20].plot()
 plt.show()
 
-# print(fd.data_matrix.shape)
-# print(fd.data_matrix[3])
-
-
 # %%
+# To evaluate the performance of PACE, we transform the dense dataset into an
+# irregular one. Each subject is now sampled at 8 randomly selected time
+# points. This mirrors the sparse and irregular setting often found in
+# real-world longitudinal data.
 random_state = 12
 
 irregular_fd = irregular_sample(
@@ -72,6 +75,9 @@ plt.show()
 
 
 # %%
+# We continue by plotting all raw (t_i, X_i) points from the irregularly
+# sampled dataset. This gives insight into the data sparsity and non-uniform
+# time coverage across individuals.
 plt.figure()
 for t, v in zip(irregular_fd.points, irregular_fd.values, strict=True):
     t_i = np.asarray(t)
@@ -85,6 +91,8 @@ plt.title("Berkeley Growth Study", pad=20)
 plt.show()
 
 # %%
+# We apply classical FPCA (intended for regularly sampled data) to the original
+# dense dataset. This gives us a reference point to later compare with PACE.
 n_components = 2
 fpca = FPCA(n_components=n_components)
 scores = fpca.fit_transform(fd)
@@ -102,13 +110,13 @@ plt.show()
 print(fpca.explained_variance_ratio_)
 
 # %%
-# We can now apply the PACE method to the dataset.
+# We now apply the PACE algorithm to the irregularly sampled dataset. The
+# bandwidth parameters for mean and covariance estimation are specified
+# manually.
 pace = PACE(
     n_components=n_components,
     bandwidth_mean=np.array([0.1, 50]),
-    # bandwidth_cov=np.array([0.1, 50]),
     bandwidth_cov=1.5,
-    # n_grid_points=31,
 )
 pace.fit(irregular_fd)
 
@@ -119,7 +127,8 @@ fpc_scores = pace.transform(irregular_fd)
 # covariance function, which measures how the data varies together over time.
 # First, we inspect the time point pairs by subject: although the data per
 # subject is sparse, the assembled data fill the domain of the covariance
-# surface quite densely.
+# surface quite densely. This visualization is relevant to justify the
+# effectiveness of the kernel smoother.
 t_mean = np.asarray(pace.mean_.grid_points[0])
 pair_counts: defaultdict[tuple[int, int], int] = defaultdict(int)
 
@@ -157,20 +166,12 @@ plt.title("Observed (r, s) Pairs by Subject Frequency")
 plt.show()
 
 # %%
-# We can see that, before seroconversion, the data is very correlated, meaning
-# that the subject's behaviour is similar. However, as time passes, the data
-# becomes less correlated. This is because the patients undergo different
-# treatments and have different responses to the disease. Another increase in
-# the correlation is observed at the end of the time interval, which is due to
-# the fact that patients reach a steady state (treatment) and the CD4 cell
-# counts are similar.
-#
-# The early-late stages high correlation is likely related to the fact that
-# patients who started with higher CD4 counts before seroconversion tend to
-# also end with higher CD4 counts after 40 months — and those who started low,
-# stay low. This indicates a strong individual-level persistence: patients
-# maintain their relative immune status (i.e., high or low CD4) across the
-# entire time range.
+# The kernel-smoothed covariance surface Ĝ(t, s) is visualized here. It
+# captures how height values co-vary over time, averaged over the population.
+# The surface portrays how the correlation of the measurements increases over
+# time, verifying the theoretical results where we are aware of the disparity
+# in growth curves at adolescence, only to reach a more stable increase
+# towards the age of 16-17.
 covariance_x, covariance_y = np.meshgrid(
     pace.t_covariance_,
     pace.t_covariance_,
@@ -192,8 +193,12 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# To take the analysis further, we can now plot the first three components of
-# the PACE method to develop our understanding of the data.
+# To take the analysis further, we can now plot the first two components of
+# the PACE method to develop our understanding of the data. What stands out
+# is the strong similarity with the components extracted from the FPCA method,
+# taking into account that only 8/31 time points are kept from each subject.
+# Variations in their trajectories appear more smoothed due to the effect of
+# the kernel smoothers used for the mean and covariance surface.
 fig, ax = plt.subplots()
 for i, sample in enumerate(pace.components_):
     label = pace.components_.sample_names[i]
@@ -206,8 +211,10 @@ ax.legend()
 plt.show()
 
 # %%
-# Analysing the components
-
+# Another graph of interest is the fraction of variance explained by number of
+# principal components, which can help decide how many components to maintain
+# for further stages of analysis. For this example, we draw the line in >95%
+# and, because of this, we use the first two principal components.
 fve_percent = pace.explained_variance_ratio_ * 100
 fve_percent = np.insert(fve_percent, 0, 0)
 
@@ -232,10 +239,12 @@ plt.ylim(0, 105)
 plt.show()
 
 # %%
-# Lastly, we can also plot the reconstructed curves using the first three
+# Lastly, we can also plot the reconstructed curves using the first two
 # components to see how well they adjust to the original data. Selecting two
 # arbitrary subjects, we will now plot the reconstructed curves against the
-# original time points.
+# original time points. Plotted in red with bigger circles are the points used
+# for the analysis, and in a smaller orange form are the discarded points, used
+# in the case of FPCA analysis.
 reconstructed = pace.inverse_transform(fpc_scores)
 
 subject_indices = [6, 15]
@@ -279,9 +288,11 @@ for ax, i in zip(axes, subject_indices, strict=True):
 plt.tight_layout()
 plt.show()
 
-# In these two cases, we can see that the first subject has a very high
-# influence by the second component, whereas the second subject's trajectory is
-# mostly influenced by the first component.
+# In these two cases, we can see that the reconstructions are remarkably
+# accurate. However, in subject 6 we see that, because no points from the last
+# stages are included, the reconstruction does not capture the slight increase.
+# This stresses the importance of utilising a densely populated dataset for
+# more accurate results.
 
 # %%
 # We can finalise the analysis by plotting the reconstructed curves of the
@@ -324,16 +335,13 @@ print(average_mse)
 
 # In conclusion, this analysis demonstrates how Functional Principal Component
 # Analysis through Conditional Expectation (PACE) can be effectively applied to
-# irregularly sampled longitudinal data, such as the CD4 dataset. By leveraging
-# local smoothing and conditional expectation, PACE provides a principled way
-# to estimate the mean, covariance surface, and principal components of sparse
-# functional data.
+# irregularly sampled longitudinal data. By leveraging local smoothing and
+# conditional expectation, PACE provides a principled way to estimate the mean,
+# covariance surface, and principal components of sparse functional data.
 #
-# The results reveal meaningful biological patterns, such as the persistence of
-# immune status across time and the existence of distinct trajectories of CD4
-# decline among patients. The extracted components help disentangle population-
-# level trends from subject-specific variations, and the reconstruction process
-# confirms that just a few components can adequately capture the main structure
+# The extracted components help disentangle population-level trends from
+# subject-specific variations, and the reconstruction process confirms that a
+# small number of components suffice to adequately capture the main structure
 # in the data.
 #
 # Overall, PACE proves to be a powerful tool for exploratory analysis and

@@ -1,15 +1,15 @@
 """
-Functional Principal Component Analysis through Conditional Expectation
+PACE analysis based on the total percentage of data available
 =======================================================================
 
-Explores an alternative way to do functional principal component analysis for
-irregularly sampled data.
+Explores the effect of the sparseness of the data in the reconstruction of
+subject trajectories via the PACE algorithm for irregularly sampled data.
 """
 
 # Author: Alejandro Arias Gomez
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 2
+# sphinx_gallery_thumbnail_number = 3
 
 # %%
 import matplotlib.pyplot as plt
@@ -22,11 +22,23 @@ from skfda.representation import FDataGrid
 from skfda.typing._numpy import NDArrayInt
 
 # %%
+# This example explores the effect of the sparseness of the data in the
+# reconstruction of subject trajectories via the PACE algorithm for irregularly
+# sampled data. We simulate different sparsity levels of a regular dataset and
+# evaluate the reconstruction accuracy of PACE vs. classical FPCA.
+#
+# For this experiment we will use the Canadian weather dataset, more precisely
+# the first coordinate, which corresponds to the temperatures over each day of
+# the year averaged from 1960 to 1994 at 35 different locations.
 canadian = fetch_weather().data.coordinates[0]
 assert isinstance(canadian, FDataGrid), "Expected an FDataGrid object"
 
-# %%
+canadian.plot()
+plt.show()
 
+# %%
+# We will artificially sparsify the data based on a percentage with the
+# following function.
 def generate_num_measurements(
     percentage: int,
     size: int = 35,
@@ -67,6 +79,11 @@ def generate_num_measurements(
     return result.tolist()
 
 # %%
+# In order to generate sufficient data for our analysis, we will perform the
+# PACE algorithm for each of the different data percentages: 10, 20 and 35.
+# Our interest resides in analysing the principal components, full
+# reconstructions of the data and calculating the average mean squared error
+# of the reconstructed curves, compared to the original ones.
 n_components = 3
 components_all = []
 reconstructed_all = []
@@ -118,6 +135,8 @@ for perc in data_percentages:
 print(mse_all)
 
 # %%
+# For more accurate analysis, we will compare the obtained results with those
+# derived from applying FPCA to the full dataset.
 fpca = FPCA(n_components=n_components)
 fpca_scores = fpca.fit_transform(canadian)
 reconstructed_fpca = fpca.inverse_transform(fpca_scores)
@@ -140,6 +159,21 @@ average_mse = np.mean(mse_per_curve)
 print(average_mse)
 
 # %%
+# We will display the first three principal components extracted under each
+# reconstruction setting: using PACE with 10%, 20%, and 35% data retention
+# respectively, and one using regular FPCA on the full dataset. Because PACE
+# components are estimated from incomplete and irregular data, some of the
+# qualitative interpretability is lost in the 10% and 20% cases. Nevertheless,
+# the components remain reasonable approximations, consistent in shape and
+# orientation (up to sign) with those from full FPCA.
+#
+# As sparsity decreases in the 35% case, the components estimated via PACE
+# visually converge to those obtained from regular FPCA, bearing in mind that
+# principal components are identifiable only up to a sign. These results
+# confirm that, with enough irregular data, PACE not only reconstructs
+# trajectories accurately, but also recovers meaningful modes of variation —
+# enabling interpretable decompositions of functional datasets even in sparse
+# settings.
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 titles = ["PACE (10%)", "PACE (20%)", "PACE (35%)", "Regular FPCA"]
 for i, ax in enumerate(axes.flat):
@@ -150,6 +184,28 @@ plt.tight_layout()
 plt.show()
 
 # %%
+# We will now plot the reconstructred trajectories, along with the mean curve
+# on each case. As expected, the reconstruction captures most of the small
+# variations in the dataset, as well as the general structure of the
+# temperature curves over the year, with peaks and troughs that correspond to
+# summer and winter months, respectively. The reconstruction aligns well with
+# the known periodic nature of climate data, especially in high-latitude
+# regions like Canada.
+#
+# Despite the progressive reduction in data density, PACE is able to recover
+# the key trends in the functional data with remarkable consistency. At the 10%
+# level, the reconstruction is the noisiest, with more visible deviations in
+# individual trajectories. Nevertheless, the mean curve and general trends of
+# information remain largely consistent with that of the regular FPCA. The
+# average MSE at this level is approximately 4.37, confirming a relatively good
+# approximation given the extreme sparsity. As the percentage increases to 20%,
+# the MSE decreases to 2.93, reflecting the better estimation accuracy. At 35%,
+# the reconstruction becomes more precise, with the MSE dropping further to
+# approximately 1.41 which, compared to the MSE of 0.68 obtained by FPCA,
+# confirms the convergence of PACE to the dense-data solution as more
+# observations become available and reaffirming PACE as a powerful and flexible
+# alternative for real-world scenarios where dense, regularly sampled data is
+# rarely available.
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 for i, ax in enumerate(axes.flat):
     reconstructed_all[i].plot(axes=ax, color="gray")

@@ -680,6 +680,15 @@ class PACE(
         cov = cov_matrix.squeeze()
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
 
+        if (
+            not np.all(np.isfinite(eigenvalues)) or
+            not np.all(np.isfinite(eigenvectors))
+        ):
+            error_msg = (
+                "Covariance matrix has invalid eigenvalues or eigenvectors."
+            )
+            raise ValueError(error_msg)
+
         # Remove negative or complex eigenvalues and sort in decreasing order
         eigenvalues = np.maximum(eigenvalues, 0)
 

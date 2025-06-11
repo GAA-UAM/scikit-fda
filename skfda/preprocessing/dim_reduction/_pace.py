@@ -5,7 +5,6 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable, Sequence
 
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy import trapezoid
 from scipy.interpolate import (
@@ -680,9 +679,8 @@ class PACE(
         cov = cov_matrix.squeeze()
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
 
-        if (
-            not np.all(np.isfinite(eigenvalues)) or
-            not np.all(np.isfinite(eigenvectors))
+        if not np.all(np.isfinite(eigenvalues)) or not np.all(
+            np.isfinite(eigenvectors)
         ):
             error_msg = (
                 "Covariance matrix has invalid eigenvalues or eigenvectors."
@@ -1081,8 +1079,8 @@ class PACE(
         Returns:
             Principal component scores for the specified subject.
         """
-        points_i = X.points[start : end].squeeze()
-        values_i = X.values[start : end].squeeze()
+        points_i = X.points[start:end].squeeze()
+        values_i = X.values[start:end].squeeze()
         if points_i.ndim == 0:
             points_i = np.array([points_i])
         m_i = len(points_i)

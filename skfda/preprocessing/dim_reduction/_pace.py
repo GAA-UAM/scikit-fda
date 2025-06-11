@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Sequence
+from typing import NamedTuple, cast
 
 import numpy as np
 from numpy import trapezoid
@@ -18,10 +19,23 @@ from scipy.spatial.distance import pdist
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation import FData
 from ...representation.irregular import FDataGrid, FDataIrregular
-from ...typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 KernelFunction = Callable[[NDArrayFloat], NDArrayFloat]
 
+class RawCovarianceLists(NamedTuple):
+    t_1: list[list[float]]
+    t_2: list[list[float]]
+    raw_cov: list[NDArrayFloat]
+    subj_idx: list[int]
+
+class RawCovarianceResult(NamedTuple):
+    t_pairs_neq: NDArrayFloat
+    f_raw_cov_neq: NDArrayFloat
+    subj_idx: NDArrayInt
+    weights: NDArrayFloat
+    t_pairs_eq: NDArrayFloat
+    f_raw_cov_eq: NDArrayFloat
 
 def gaussian_kernel(t: NDArrayFloat) -> NDArrayFloat:
     """
@@ -43,7 +57,7 @@ def gaussian_kernel(t: NDArrayFloat) -> NDArrayFloat:
     return np.array(coeff * np.exp(-0.5 * norm_sq))
 
 
-class PACE(
+class PACE(  # noqa: WPS230
     InductiveTransformerMixin[FData, NDArrayFloat, object],
     BaseEstimator,
 ):
@@ -176,10 +190,9 @@ class PACE(
         tuple_length = 2
 
         if isinstance(bandwidth, Sequence) and (
-            len(bandwidth) != tuple_length
-            or not all(isinstance(b, (float, int)) for b in bandwidth)
-            or bandwidth[0] <= 0
-            or bandwidth[1] <= bandwidth[0]
+            len(bandwidth) != tuple_length or (
+                not all(isinstance(b, (float, int)) for b in bandwidth)
+            ) or bandwidth[0] <= 0 or bandwidth[1] <= bandwidth[0]
         ):
             error_msg = (
                 "Bandwidth search ranges must be a non-decreasing 2-sequence "
@@ -192,7 +205,7 @@ class PACE(
 
         return None, (bandwidth[0], bandwidth[1])
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         n_components: float | None = None,
@@ -206,14 +219,20 @@ class PACE(
         boundary_effect_interval: Sequence[float] = (0.0, 1.0),
         variance_error_interval: Sequence[float] = (0.25, 0.75),
     ) -> None:
-        if (isinstance(n_components, int) and n_components <= 0) or (
-            not isinstance(n_components, int)
-            and (n_components <= 0.0 or n_components >= 1.0)
-        ):
-            error_msg = (
-                "n_components must be an integer or a float in (0.0, 1.0)."
+        if n_components is None:
+            n_components = 1.0
+        else:
+            int_leq_0 = (isinstance(n_components, int) and n_components <= 0)
+            float_out_range = (
+                not isinstance(n_components, int) and (
+                    n_components <= 0.0 or n_components >= 1.0
+                )
             )
-            raise ValueError(error_msg)
+            if int_leq_0 or float_out_range:
+                error_msg = (
+                    "n_components must be an integer or a float in (0.0, 1.0)."
+                )
+                raise ValueError(error_msg)
 
         bandwidth_mean_, bandwidth_mean_interval_ = self._check_bandwidth(
             bandwidth_mean,
@@ -228,23 +247,32 @@ class PACE(
             raise ValueError(error_msg)
 
         tuple_length = 2
-        if (
-            len(boundary_effect_interval) != tuple_length
-            or boundary_effect_interval[0] < 0
-            or boundary_effect_interval[1] > 1
-            or boundary_effect_interval[0] >= boundary_effect_interval[1]
-            or len(variance_error_interval) != tuple_length
-            or variance_error_interval[0] < 0
-            or variance_error_interval[1] > 1
-            or variance_error_interval[0] >= variance_error_interval[1]
-        ):
+        boundary_incorrect = (
+            len(boundary_effect_interval) != tuple_length or (
+                boundary_effect_interval[0] < 0
+            ) or (
+                boundary_effect_interval[1] > 1
+            ) or (
+                boundary_effect_interval[0] >= boundary_effect_interval[1]
+            )
+        )
+        variance_interval_incorrect = (
+            len(variance_error_interval) != tuple_length or (
+                variance_error_interval[0] < 0
+            ) or (
+                variance_error_interval[1] > 1
+            ) or (
+                variance_error_interval[0] >= variance_error_interval[1]
+            )
+        )
+        if boundary_incorrect or variance_interval_incorrect:
             error_msg = (
                 "interval parameters must be an increasing sequence of two "
                 "floats in [0.0, 1.0]."
             )
             raise ValueError(error_msg)
 
-        self.n_components = n_components if n_components is not None else 1.0
+        self.n_components = n_components
         self.assume_noisy = assume_noisy
         self.kernel_mean = kernel_mean
         self.bandwidth_mean_ = bandwidth_mean_
@@ -257,18 +285,23 @@ class PACE(
         self.boundary_effect_interval = boundary_effect_interval
         self.variance_error_interval = variance_error_interval
 
-    def _slice_fdata_irregular(
+    def _compute_cut_bounds(
         self,
         data: FDataIrregular,
-    ) -> FDataIrregular:
+    ) -> tuple[NDArrayFloat, NDArrayFloat]:
         """
-        Slice the FDataIrregular object to the interval [a, b].
+        Compute slicing bounds for the given FDataIrregular object.
+
+        Applies the boundary effect interval to compute new lower and upper
+        bounds for each coordinate dimension, based on the original domain.
 
         Args:
-            data: The FDataIrregular object to be sliced.
+            data: The FDataIrregular object whose domain is used to compute
+                the slicing bounds.
 
         Returns:
-            A new FDataIrregular object sliced to the interval [a, b].
+            A tuple (a_bounds, b_bounds) of arrays representing the lower and
+            upper bounds to apply when slicing each coordinate dimension.
         """
         # Reduce time points and values based on the boundary effect
         domain_range = np.array(data.domain_range)
@@ -283,46 +316,92 @@ class PACE(
             1 - self.boundary_effect_interval[1]
         )
 
-        cut_domain_range = list(zip(start_cut, end_cut, strict=True))
+        a_bounds = np.array(start_cut)
+        b_bounds = np.array(end_cut)
 
-        a_bounds = np.array([interval[0] for interval in cut_domain_range])
-        b_bounds = np.array([interval[1] for interval in cut_domain_range])
+        return a_bounds, b_bounds
 
-        all_points = data.points
-        all_values = data.values
+    def _filter_fdata_points(
+        self,
+        data: FDataIrregular,
+        a_bounds: NDArrayFloat,
+        b_bounds: NDArrayFloat,
+    ) -> tuple[NDArrayFloat, NDArrayFloat, NDArrayFloat]:
+        """
+        Filter observation points and values within the specified bounds.
+
+        For each trajectory in the irregular dataset, retains only the
+        time-location pairs that lie within the interval defined by a_bounds
+        and b_bounds in all coordinate dimensions.
+
+        Args:
+            data: The original FDataIrregular object to be filtered.
+            a_bounds: Lower slicing bounds per dimension.
+            b_bounds: Upper slicing bounds per dimension.
+
+        Returns:
+            A tuple (filtered_points, filtered_values, filtered_start_indices)
+            containing the sliced data points, corresponding values, and
+            updated trajectory start indices.
+        """
         start_indices = data.start_indices
-        end_indices = np.append(start_indices[1:], len(all_points))
+        end_indices = np.append(start_indices[1:], len(data.points))
 
         new_points = []
         new_values = []
         new_start_indices = [0]
 
         for start, end in zip(start_indices, end_indices, strict=True):
-            pts = all_points[start:end, :]
-            vals = all_values[start:end, :]
-
-            # Build boolean mask: keep rows where all coords are inside their
-            # bounds
+            pts = data.points[start:end, :]
+            values = data.values[start:end, :]
             mask = np.all((pts >= a_bounds) & (pts <= b_bounds), axis=1)
 
-            filtered_pts = pts[mask]
-            filtered_vals = vals[mask]
+            new_points.append(pts[mask])
+            new_values.append(values[mask])
+            new_start_indices.append(new_start_indices[-1] + len(pts[mask]))
 
-            new_points.append(filtered_pts)
-            new_values.append(filtered_vals)
-            new_start_indices.append(new_start_indices[-1] + len(filtered_pts))
-
-        filtered_points = np.concatenate(new_points, axis=0)
-        filtered_values = np.concatenate(new_values, axis=0)
-        filtered_start_indices = np.array(
+        filtered_points: NDArrayFloat = np.concatenate(new_points, axis=0)
+        filtered_values: NDArrayFloat = np.concatenate(new_values, axis=0)
+        filtered_start_indices: NDArrayFloat = np.array(
             new_start_indices[:-1],
             dtype=np.uint32,
         )
 
+        return filtered_points, filtered_values, filtered_start_indices
+
+    def _slice_fdata_irregular(
+        self,
+        data: FDataIrregular,
+    ) -> FDataIrregular:
+        """
+        Slice the FDataIrregular object to the interval [a, b].
+
+        Args:
+            data: The FDataIrregular object to be sliced.
+
+        Returns:
+            A new FDataIrregular object sliced to the interval [a, b].
+        """
+        a_bounds, b_bounds = self._compute_cut_bounds(data)
+
+        points, values, start_indices = self._filter_fdata_points(
+            data,
+            a_bounds,
+            b_bounds,
+        )
+
+        cut_domain_range = tuple(
+            (float(a), float(b)) for a, b in zip(
+                a_bounds,
+                b_bounds,
+                strict=True,
+            )
+        )
+
         return FDataIrregular(
-            points=filtered_points,
-            values=filtered_values,
-            start_indices=filtered_start_indices,
+            points=points,
+            values=values,
+            start_indices=start_indices,
             domain_range=cut_domain_range,
             argument_names=data.argument_names,
             coordinate_names=data.coordinate_names,
@@ -367,6 +446,38 @@ class PACE(
         denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
         return float(rss / denom) if denom > 0 else np.inf
 
+    def _compute_local_estimate(
+        self,
+        xi: NDArrayFloat,
+        yi: NDArrayFloat,
+        wi: NDArrayFloat,
+        d: int,
+        epsilon: float,
+    ) -> NDArrayFloat:
+        """Compute local linear smoother estimate at a single point."""
+        win = wi[:, None]
+
+        k0 = np.sum(wi)
+        k1 = np.sum(win * xi, axis=0)
+        k2 = np.einsum("ni,nj->ij", win * xi, xi)
+
+        s0 = np.sum(win * yi, axis=0)
+        s1 = np.einsum("ni,nj->ij", win * xi, yi)
+
+        # Solve linear system for beta0 (intercept)
+        # Build left-hand matrix and right-hand side
+        xtwx = np.block(
+            [
+                [np.array([[k0]]),
+                k1[None, :]],
+                [k1[:, None], k2],
+            ],
+        ) + epsilon * np.eye(d + 1)
+        xtwy = np.vstack([s0[None, :], s1])
+
+        beta = np.linalg.solve(xtwx, xtwy)
+        return cast("NDArrayFloat", beta[0]) # intercept term
+
     def _mean_lls(
         self,
         h: float,
@@ -406,29 +517,100 @@ class PACE(
         estimates = np.empty((n_eval, q))
 
         for i in range(n_eval):
-            wi = weights[i]
-            xi = diffs[i]
-            yi = y_obs
-            win = wi[:, None]
-
-            k0 = np.sum(wi)
-            k1 = np.sum(win * xi, axis=0)
-            k2 = np.einsum("ni,nj->ij", win * xi, xi)
-
-            s0 = np.sum(win * yi, axis=0)
-            s1 = np.einsum("ni,nj->ij", win * xi, yi)
-
-            # Solve linear system for beta0 (intercept)
-            # Build left-hand matrix and right-hand side
-            xtwx = np.block(
-                [[np.array([[k0]]), k1[None, :]], [k1[:, None], k2]],
-            ) + epsilon * np.eye(d + 1)
-            xtwy = np.vstack([s0[None, :], s1])
-
-            beta = np.linalg.solve(xtwx, xtwy)
-            estimates[i] = beta[0]  # intercept term
+            estimates[i] = self._compute_local_estimate(
+                xi=diffs[i],
+                yi=y_obs,
+                wi=weights[i],
+                d=d,
+                epsilon=epsilon,
+            )
 
         return estimates
+
+    def _collect_raw_covariance_lists(
+        self,
+        points: NDArrayFloat,
+        values: NDArrayFloat,
+        start_indices: NDArrayInt,
+        end_indices: NDArrayInt,
+        time_points: NDArrayFloat,
+        mean: NDArrayFloat,
+    ) -> RawCovarianceLists:
+        """
+        Collect raw covariance components as lists from all trajectories.
+
+        Returns:
+            t_1: List of first time points in each pair.
+            t_2: List of second time points in each pair.
+            raw_cov: List of raw covariance matrices (outer products).
+            subj_idx: List of subject indices.
+        """
+        t_1, t_2, raw_cov, subj_idx = [], [], [], []
+
+        for i, start_i in enumerate(start_indices):
+            p_i = points[start_i:end_indices[i]]
+            v_i = values[start_i:end_indices[i]]
+
+            _, indices = cKDTree(time_points).query(p_i)
+            mean_proj = mean[indices]
+            r_i = v_i - mean_proj
+
+            for j, p_ij in enumerate(p_i):
+                for k, p_ik in enumerate(p_i):
+                    t_1.append([float(p_ij)])
+                    t_2.append([float(p_ik)])
+                    raw_cov.append(r_i[j] * r_i[k])
+                    subj_idx.append(i)
+
+        return RawCovarianceLists(
+            t_1=t_1,
+            t_2=t_2,
+            raw_cov=raw_cov,
+            subj_idx=subj_idx,
+        )
+
+    def _compute_raw_covariance_arrays(
+        self,
+        points: NDArrayFloat,
+        values: NDArrayFloat,
+        start_indices: NDArrayInt,
+        end_indices: NDArrayInt,
+        time_points: NDArrayFloat,
+        mean: NDArrayFloat,
+    ) -> tuple[NDArrayFloat, NDArrayFloat, NDArrayInt]:
+        """
+        Compute all raw covariance data and reshape into arrays.
+
+        Args:
+            points: All data points (n_total, d).
+            values: All data values (n_total, q).
+            start_indices: Start indices for each subject.
+            end_indices: End indices for each subject.
+            time_points: Locations where the mean is defined.
+            mean: Values of the mean function.
+
+        Returns:
+            t_pairs: Array of shape (n_pairs, 2, d) with all time point pairs.
+            f_raw_cov: Array of shape (n_pairs, q, q) with raw covariances.
+            subj_idx: Array of shape (n_pairs,) with subject indices.
+        """
+        t_1, t_2, raw_cov, subj_idx = self._collect_raw_covariance_lists(
+            points,
+            values,
+            start_indices,
+            end_indices,
+            time_points,
+            mean,
+        )
+
+        # Convert to arrays
+        t_pairs = np.array([t_1, t_2]).squeeze().T
+        t_pairs = t_pairs.reshape(t_pairs.shape[0], 2, -1)
+
+        f_raw_cov = np.array(raw_cov)
+        subj_idx_array = np.array(subj_idx, dtype=np.uint32)
+
+        return t_pairs, f_raw_cov, subj_idx_array
 
     def _compute_raw_covariances(
         self,
@@ -437,14 +619,7 @@ class PACE(
         time_points: NDArrayFloat,
         *,
         assume_noisy: bool,
-    ) -> tuple[
-        NDArrayFloat,
-        NDArrayFloat,
-        NDArrayFloat,
-        NDArrayFloat,
-        NDArrayFloat,
-        NDArrayFloat,
-    ]:
+    ) -> RawCovarianceResult:
         """
         Compute raw covariances for irregular data.
 
@@ -470,37 +645,14 @@ class PACE(
         start_indices = x_work.start_indices
         end_indices = np.append(start_indices[1:], len(points))
 
-        # Create lists to store the results
-        t_1, t_2, x_1, x_2 = [], [], [], []
-        subj_idx, raw_cov = [], []
-
-        # Vectorize the time points and corresponding values
-        for i, start_i in enumerate(start_indices):
-            p_i = points[start_i : end_indices[i]]
-            v_i = values[start_i : end_indices[i]]
-
-            # Find the mean projection for each point
-            tree = cKDTree(time_points)
-            _, indices = tree.query(p_i)
-            mean_proj = mean[indices]
-
-            # Center the values by subtracting the mean
-            r_i = v_i - mean_proj
-
-            for j, p_ij in enumerate(p_i):
-                for k, p_ik in enumerate(p_i):
-                    # Store all pairs of time points (including duplicates)
-                    t_1.append([p_ij])
-                    t_2.append([p_ik])
-                    x_1.append(r_i[j])
-                    x_2.append(r_i[k])
-                    subj_idx.append(i)  # Subject index
-                    raw_cov.append(r_i[j] * r_i[k])  # Raw covariance
-
-        # Convert lists to numpy arrays
-        t_pairs = np.array([t_1, t_2]).squeeze().T
-        t_pairs = t_pairs.reshape(t_pairs.shape[0], 2, -1)
-        f_raw_cov = np.array(raw_cov)
+        t_pairs, f_raw_cov, subj_idx = self._compute_raw_covariance_arrays(
+            points,
+            values,
+            start_indices,
+            end_indices,
+            time_points,
+            mean,
+        )
 
         if assume_noisy:
             t_neq = np.where(t_pairs[:, 0] != t_pairs[:, 1])[0]
@@ -517,13 +669,13 @@ class PACE(
 
         win = np.ones(len(f_raw_cov_neq))
 
-        return (
-            t_pairs_neq,
-            f_raw_cov_neq,
-            np.array(subj_idx),
-            win,
-            t_pairs_eq,
-            f_raw_cov_eq,
+        return RawCovarianceResult(
+            t_pairs_neq=t_pairs_neq,
+            f_raw_cov_neq=f_raw_cov_neq,
+            subj_idx=subj_idx,
+            weights=win,
+            t_pairs_eq=t_pairs_eq,
+            f_raw_cov_eq=f_raw_cov_eq,
         )
 
     def _cov_gcv_score(
@@ -572,8 +724,9 @@ class PACE(
 
         # Calculate residual sum of squares (RSS)
         rss = np.sum(
-            (cov_values.squeeze() - g_hat_int)
-            * (cov_values.squeeze() - g_hat_int).T,
+            (cov_values.squeeze() - g_hat_int) * (
+                cov_values.squeeze() - g_hat_int
+            ).T,
         )
 
         # Calculate pairwise distances between points
@@ -590,6 +743,81 @@ class PACE(
         denom = 1 - (1 / n_obs) * ((domain_diff * k0) / h) ** 2
 
         return float(rss / denom**2) if denom > 0 else np.inf
+
+    def _compute_cov_weights(
+        self,
+        h: float,
+        r_eval: NDArrayFloat,
+        s_eval: NDArrayFloat,
+        t_pairs: NDArrayFloat,
+        win: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """
+        Compute the kernel weight matrix for local linear covariance smoothing.
+
+        This method calculates the product of kernel weights centered at the
+        evaluation points `r_eval` and `s_eval`, scaled by the bandwidth `h`,
+        and weighted by the observation weights `win`.
+
+        Args:
+            h: Bandwidth parameter for the kernel.
+            r_eval: Array of shape (n_eval, d) representing evaluation points
+                in the r-direction.
+            s_eval: Array of shape (n_eval, d) representing evaluation points
+                in the s-direction.
+            t_pairs: Array of shape (n_obs, 2, d) with observed time point
+                pairs.
+            win: Array of shape (n_obs,) with observation weights.
+
+        Returns:
+            Array of shape (n_eval, n_eval, n_obs) with kernel weight products
+                for each evaluation pair.
+        """
+        diff_r = (t_pairs[:, 0, None] - r_eval[None, :]) / h
+        diff_s = (t_pairs[:, 1, None] - s_eval[None, :]) / h
+        kernel_r = self.kernel_cov(diff_r).T
+        kernel_s = self.kernel_cov(diff_s).T
+        return cast(
+            "NDArrayFloat",
+            np.einsum("ik,jk->ijk", kernel_r, kernel_s) * win
+        )
+
+    def _build_design_matrix(
+        self,
+        t_pairs: NDArrayFloat,
+        r_eval: NDArrayFloat,
+        s_eval: NDArrayFloat,
+        n_eval: int,
+        n_obs: int,
+    ) -> NDArrayFloat:
+        """
+        Construct the design matrix for local linear regression.
+
+        The design matrix contains a constant term and linear terms for both
+        r- and s-directions, centered at the evaluation points. It is used in
+        the weighted least squares estimation of the covariance surface.
+
+        Args:
+            t_pairs: Array of shape (n_obs, 2, d) with observed time point
+                pairs.
+            r_eval: Array of shape (n_eval, d) with r-direction evaluation
+                points.
+            s_eval: Array of shape (n_eval, d) with s-direction evaluation
+                points.
+            n_eval: Number of evaluation points
+                (i.e., len(r_eval) == len(s_eval)).
+            n_obs: Number of observed point pairs.
+
+        Returns:
+            Array of shape (n_eval, n_eval, n_obs, 3) representing the design
+            matrix with columns [1, t_r - r_eval, t_s - s_eval].
+        """
+        x = np.ones((n_eval, n_eval, n_obs, 3))
+        for i in range(n_eval):
+            for j in range(n_eval):
+                x[:, j, :, 1, None] = t_pairs[None, :, 0] - r_eval[:, None]
+                x[i, :, :, 2, None] = t_pairs[None, :, 1] - s_eval[:, None]
+        return x
 
     def _cov_lls(
         self,
@@ -614,34 +842,19 @@ class PACE(
         Returns:
             n_grid_points x n_grid_points array of smoothed covariance values.
         """
-        # Active indices based on non-zero weights
         active = np.nonzero(win)[0]
         t_pairs = cov_coords[active, :]
         cov_values = cov_values[active]
         win = win[active]
 
-        n_eval, d = r_eval.shape
-        n_obs, q = cov_values.shape
+        n_eval, _ = r_eval.shape
+        n_obs, _ = cov_values.shape
 
-        # Correct the broadcasting shape of r_eval and s_eval
-        diff_r = (t_pairs[:, 0, None] - r_eval[None, :]) / h
-        diff_s = (t_pairs[:, 1, None] - s_eval[None, :]) / h
-
-        kernel_r = self.kernel_cov(diff_r).T
-        kernel_s = self.kernel_cov(diff_s).T
-
-        weights = np.einsum("ik,jk->ijk", kernel_r, kernel_s)
-        w_diag = weights * win
-
-        # Build the design matrix for weighted least squares
-        x = np.ones((n_eval, n_eval, n_obs, 3))
-        for i in range(n_eval):
-            for j in range(n_eval):
-                x[:, j, :, 1, None] = t_pairs[None, :, 0] - r_eval[:, None]
-                x[i, :, :, 2, None] = t_pairs[None, :, 1] - s_eval[:, None]
+        weights = self._compute_cov_weights(h, r_eval, s_eval, t_pairs, win)
+        x = self._build_design_matrix(t_pairs, r_eval, s_eval, n_eval, n_obs)
 
         x_t = np.transpose(x, (0, 1, 3, 2))
-        xtw = x_t * w_diag[:, :, None, :]
+        xtw = x_t * weights[:, :, None, :]
         xtwx = xtw @ x
         xtwy = xtw @ cov_values
 
@@ -649,8 +862,48 @@ class PACE(
 
         cov = beta[:, :, 0]
         cov_t = np.transpose(cov, (1, 0, 2))
+        return np.array((cov + cov_t) / 2.0)  # noqa: WPS432
 
-        return np.array((cov + cov_t) / 2.0)
+    def _sort_and_clip_eigenpairs(
+        self,
+        eigenvalues: NDArrayFloat,
+        eigenvectors: NDArrayFloat,
+    ) -> tuple[NDArrayFloat, NDArrayFloat]:
+        """Sort and non-negatively clip eigenvalues, reorder eigenvectors."""
+        eigenvalues = np.maximum(eigenvalues, 0)
+        idx = np.argsort(eigenvalues)[::-1]
+        return eigenvalues[idx], eigenvectors[:, idx]
+
+    def _normalize_and_orient(
+        self,
+        eigenvectors: NDArrayFloat,
+        t: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """Normalize and align the eigenvectors."""
+        for i in range(eigenvectors.shape[1]):
+            phi_i = eigenvectors[:, i]
+            norm = np.sqrt(trapezoid(phi_i**2, x=t))
+            phi_i /= norm
+            if phi_i[1] < phi_i[0]:
+                phi_i *= -1
+            eigenvectors[:, i] = phi_i
+        return eigenvectors
+
+    def _interpolate_and_normalize_basis(
+        self,
+        t_eigen: NDArrayFloat,
+        eigenvectors: NDArrayFloat,
+        target_grid: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """Spline-interpolate and normalize eigenfunctions on new grid."""
+        n_points = len(target_grid)
+        n_components = eigenvectors.shape[1]
+        phi = np.empty((n_points, n_components))
+        for i in range(n_components):
+            spline = make_interp_spline(t_eigen, eigenvectors[:, i])
+            phi[:, i] = spline(target_grid)
+            phi[:, i] /= np.sqrt(trapezoid(phi[:, i] ** 2, x=target_grid))
+        return phi
 
     def _get_pc(
         self,
@@ -660,42 +913,31 @@ class PACE(
         """
         Select the number of principal components.
 
-        Select the best number of principal components based on fraction of
-        variance explained or number of components.
-
         Args:
             cov_matrix: The smoothed covariance matrix.
-            n_components: The threshold for the fraction of variance explained,
-                or the number of components to keep.
+            n_components: Threshold for variance explained or number to retain.
 
         Returns:
-            The chosen number of principal components.
-            Cumulative fraction of variance explained.
-            Eigenvalues.
-            Eigenfunctions evaluated over the mean grid.
+            Number of components, cumulative FVE, eigenvalues, eigenfunctions.
         """
         t_eigen = self.t_covariance_.squeeze()
         h = (t_eigen.max() - t_eigen.min()) / (len(t_eigen) - 1)
         cov = cov_matrix.squeeze()
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
 
-        if not np.all(np.isfinite(eigenvalues)) or not np.all(
-            np.isfinite(eigenvectors)
+        if not np.all(np.isfinite(eigenvalues)) or (
+            not np.all(np.isfinite(eigenvectors))
         ):
             error_msg = (
                 "Covariance matrix has invalid eigenvalues or eigenvectors."
             )
             raise ValueError(error_msg)
 
-        # Remove negative or complex eigenvalues and sort in decreasing order
-        eigenvalues = np.maximum(eigenvalues, 0)
-
-        idx = np.argsort(eigenvalues)[::-1]
-        eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors[:, idx]
+        eigenvalues, eigenvectors = self._sort_and_clip_eigenpairs(
+            eigenvalues, eigenvectors,
+        )
 
         fve = np.cumsum(eigenvalues) / np.sum(eigenvalues)
-
         if isinstance(n_components, int):
             if n_components > len(eigenvalues):
                 error_msg = (
@@ -712,30 +954,15 @@ class PACE(
         eigenvectors = eigenvectors[:, :n_selected_components]
 
         lambda_ = h * eigenvalues
-        eigenvectors *= 1 / np.sqrt(h)
+        eigenvectors /= np.sqrt(h)
 
-        for i in range(n_selected_components):
-            # Ensure each eigenfunction is normalized, forming an orthonormal
-            # basis
-            phi_i = eigenvectors[:, i]
-            norm = np.sqrt(trapezoid(phi_i**2, x=self.t_covariance_.squeeze()))
-            eigenvectors[:, i] = phi_i / norm
+        eigenvectors = self._normalize_and_orient(
+            eigenvectors, self.t_covariance_.squeeze()
+        )
 
-            # Enforce a consistent basis orientation
-            if eigenvectors[1, i] < eigenvectors[0, i]:
-                eigenvectors[:, i] *= -1
-
-        phi = np.empty((len(self.mean_.grid_points[0]), n_selected_components))
-
-        for i in range(n_selected_components):
-            # Create cubic spline interpolator
-            spline = make_interp_spline(t_eigen, eigenvectors[:, i])
-            # Evaluate spline on new grid
-            phi[:, i] = spline(self.mean_.grid_points[0])
-            # Normalize in L2 over the grid of the mean
-            phi[:, i] /= np.sqrt(
-                trapezoid(phi[:, i] ** 2, x=self.mean_.grid_points[0]),
-            )
+        phi = self._interpolate_and_normalize_basis(
+            t_eigen, eigenvectors, self.mean_.grid_points[0],
+        )
 
         return n_selected_components, fve, lambda_, phi.T
 
@@ -808,6 +1035,61 @@ class PACE(
             sigma2 = 0
         return float(sigma2)
 
+    def _rotate_coordinates(
+        self,
+        cov_coords: NDArrayFloat,
+        r_eval: NDArrayFloat,
+        s_eval: NDArrayFloat,
+    ) -> tuple[NDArrayFloat, NDArrayFloat]:
+        """Rotate covariance and evaluation coordinates using rotation."""
+        r_mat = np.sqrt(2) / 2 * np.array([[1, 1], [-1, 1]])
+        r_cov_coords = np.einsum("ijk,jk->ik", cov_coords, r_mat)
+        r_cov_coords = r_cov_coords[:, :, np.newaxis]
+
+        t_eval = np.stack((r_eval, s_eval), axis=1).squeeze()
+        r_t_eval = t_eval @ r_mat
+        r_t_eval = r_t_eval[:, :, np.newaxis]
+
+        return r_cov_coords, r_t_eval
+
+    def _compute_rotated_cov_weights(
+        self,
+        h: float,
+        t_pairs: NDArrayFloat,
+        r_t_eval: NDArrayFloat,
+        win: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """Compute weights for rotated covariance smoothing."""
+        diff_r = (t_pairs[:, 0, None] - r_t_eval[None, :, 0]) / h
+        diff_s = (t_pairs[:, 1, None] - r_t_eval[None, :, 1]) / h
+        kernel_r = self.kernel_cov(diff_r).T
+        kernel_s = self.kernel_cov(diff_s).T
+        weights = np.einsum("ik,jk->ijk", kernel_r, kernel_s)
+        weighted_diag = (weights * win)[
+            np.arange(weights.shape[1]),
+            np.arange(weights.shape[1]),
+        ]
+        return cast("NDArrayFloat", weighted_diag)
+
+    def _build_rotated_design_matrix(
+        self,
+        t_pairs: NDArrayFloat,
+        r_t_eval: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """Build design matrix for rotated coordinates."""
+        n_eval = r_t_eval.shape[0]
+        n_obs = t_pairs.shape[0]
+        x = np.ones((n_eval, n_obs, 3))
+
+        for i in range(n_eval):
+            delta_r0 = t_pairs[:, 0, 0] - r_t_eval[i, 0]
+            delta_r1 = t_pairs[:, 1, 0] - r_t_eval[i, 1]
+
+            x[i, :, 1] = delta_r0**2
+            x[i, :, 2] = delta_r1
+
+        return x
+
     def _rotated_cov_lls(
         self,
         h: float,
@@ -831,48 +1113,19 @@ class PACE(
         Returns:
             n_grid_points x n_grid_points array of smoothed covariance values.
         """
-        r_mat = np.sqrt(2) / 2 * np.array([[1, 1], [-1, 1]])
-
-        # Make separate function
-        # Rotate coordinates of covariance points and evaluation points
-        r_cov_coords = np.einsum("ijk,jk->ik", cov_coords, r_mat)
-        r_cov_coords = r_cov_coords[:, :, np.newaxis]
-
-        t_eval = np.stack((r_eval, s_eval), axis=1).squeeze()
-        r_t_eval = t_eval @ r_mat
-        r_t_eval = r_t_eval[:, :, np.newaxis]
+        r_cov_coords, r_t_eval = self._rotate_coordinates(cov_coords, r_eval, s_eval)
 
         active = np.nonzero(win)[0]
-        t_pairs = r_cov_coords[active, :]
+        t_pairs = r_cov_coords[active]
         cov_values = cov_values[active]
         win = win[active]
 
-        n_eval, d = r_eval.shape
-        n_obs, q = cov_values.shape
+        weights = self._compute_rotated_cov_weights(h, t_pairs, r_t_eval, win)
+        design_matrix = self._build_rotated_design_matrix(t_pairs, r_t_eval)
 
-        # Correct the broadcasting shape of r_eval and s_eval
-        diff_r = (t_pairs[:, 0, None] - r_t_eval[None, :, 0]) / h
-        diff_s = (t_pairs[:, 1, None] - r_t_eval[None, :, 1]) / h
-
-        # Make separate function to obtain the kernel
-        kernel_r = self.kernel_cov(diff_r).T
-        kernel_s = self.kernel_cov(diff_s).T
-
-        weights = np.einsum("ik,jk->ijk", kernel_r, kernel_s)
-        w_diag = (weights * win)[np.arange(n_eval), np.arange(n_eval)]
-
-        x = np.ones((n_eval, n_obs, 3))
-
-        for i in range(n_eval):
-            delta_r0 = t_pairs[:, 0, 0][:, np.newaxis] - r_t_eval[i, 0]
-            delta_r1 = t_pairs[:, 1, 0][:, np.newaxis] - r_t_eval[i, 1]
-
-            x[i, :, 1] = delta_r0[:, 0] ** 2
-            x[i, :, 2] = delta_r1[:, 0]
-
-        x_t = np.transpose(x, (0, 2, 1))
-        xtw = x_t * w_diag[:, None, :]
-        xtwx = xtw @ x
+        x_t = np.transpose(design_matrix, (0, 2, 1))
+        xtw = x_t * weights[:, None, :]
+        xtwx = xtw @ design_matrix
         xtwy = xtw @ cov_values
 
         beta = np.linalg.pinv(xtwx) @ xtwy
@@ -882,7 +1135,7 @@ class PACE(
     def fit(
         self,
         X: FDataIrregular,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> PACE:
         """
         Compute the ``n_components`` first principal components and saves them.
@@ -929,8 +1182,6 @@ class PACE(
             if self.kernel_mean == gaussian_kernel:
                 gaussian_correction_term = 1.1
                 self.bandwidth_mean_ *= gaussian_correction_term
-
-        print(f"Selected bandwidth for mean: {self.bandwidth_mean_}. ")
 
         mean = self._mean_lls(
             self.bandwidth_mean_,
@@ -1005,8 +1256,6 @@ class PACE(
                 gaussian_correction_term = 1.1
                 self.bandwidth_cov_ *= gaussian_correction_term
 
-        print(f"Selected bandwidth for covariance: {self.bandwidth_cov_}. ")
-
         self.covariance_ = self._cov_lls(
             self.bandwidth_cov_,
             self.t_covariance_,
@@ -1021,9 +1270,11 @@ class PACE(
             self.n_components,
         )
 
+        n_components, explained_variance_ratio_ = pc_data[:2]
         eigenvalues, phi = pc_data[2:]
 
-        self.n_components, self.explained_variance_ratio_ = pc_data[:2]
+        self.n_components = n_components
+        self.explained_variance_ratio_ = explained_variance_ratio_
         self.explained_variance_ = eigenvalues
 
         self.components_: FDataGrid = FDataGrid(
@@ -1038,8 +1289,6 @@ class PACE(
             interpolation=X.interpolation,
         )
 
-        print(f"Optimal number of components: {self.n_components}")
-
         if self.assume_noisy:
             self.sigma2_ = self._get_sigma2(
                 self.bandwidth_cov_,
@@ -1053,8 +1302,6 @@ class PACE(
             )
         else:
             self.sigma2_ = 0
-
-        print(f"Estimated sigma2: {self.sigma2_}")
 
         return self
 
@@ -1109,7 +1356,7 @@ class PACE(
     def transform(
         self,
         X: FData,
-        y: object = None,
+        y: object = None,  # noqa: ARG002
     ) -> NDArrayFloat:
         """
         Compute the ``n_components`` first principal components scores.

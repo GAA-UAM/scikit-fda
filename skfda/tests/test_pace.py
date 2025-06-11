@@ -600,8 +600,6 @@ def test_boundary_effect(
     pace, fd, expected_fd = test_boundary_effect_fixture
     pace.fit(fd)
 
-    print(pace.mean_)
-
     np.testing.assert_allclose(
         pace.mean_.data_matrix,
         expected_fd.data_matrix,

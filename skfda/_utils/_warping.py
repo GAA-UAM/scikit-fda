@@ -8,6 +8,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
+import numba
 from scipy.interpolate import PchipInterpolator, make_interp_spline
 from typing_extensions import override
 
@@ -717,6 +718,86 @@ class L2LineEnergy(LineEnergyFunction):
             axis=1,
         )
 
+    @staticmethod
+    def compute_integral_generic(
+        *,
+        grid_points: NDArrayFloat,
+        original_data_matrix: NDArrayFloat,
+        warpings: NDArrayFloat,
+        y_t: NDArrayFloat,
+        warping_slopes_root: NDArrayFloat,
+        quadrature_weights: NDArrayFloat,
+        roughness: NDArrayFloat,
+        slope_scaling: bool
+    ) -> NDArrayFloat:
+        # Linear interpolation
+        interpolator = make_interp_spline(
+            grid_points,
+            original_data_matrix.mT,
+            k=1,
+        )
+
+        x_t = np.moveaxis(interpolator(warpings), -1, 0)
+
+        if slope_scaling:
+            x_t *= warping_slopes_root[None, ..., None]
+
+        y_t_reshaped = y_t[:, :, None, None, None, :]
+        integrand = x_t  # x_t is not used anymore
+        integrand -= y_t_reshaped
+
+        # Compute integrand**2 * quadrature_weights and
+        # sum over the last axis.
+        integral = np.einsum(
+            "nxyijk,nxyijk,xyijk->nxyij",
+            integrand,
+            integrand,
+            quadrature_weights,
+        )
+
+        integral += roughness
+        return integral
+
+    @staticmethod
+    @numba.jit
+    def compute_integral_numba(
+        *,
+        grid_points: NDArrayFloat,
+        original_data_matrix: NDArrayFloat,
+        warpings: NDArrayFloat,
+        y_t: NDArrayFloat,
+        warping_slopes_root: NDArrayFloat,
+        quadrature_weights: NDArrayFloat,
+        roughness: NDArrayFloat,
+        slope_scaling: bool
+    ) -> NDArrayFloat:
+        # Linear interpolation
+        x_t = np.empty((original_data_matrix.shape[0], *warpings.shape))
+
+        for sample in range(x_t.shape[0]):
+            x_t[sample] = np.reshape(
+                np.interp(
+                    warpings.ravel(),
+                    grid_points,
+                    original_data_matrix[sample],
+                ),
+                shape=warpings.shape,
+            )
+
+        if slope_scaling:
+            x_t *= warping_slopes_root[None, ..., None]
+
+        y_t_reshaped = y_t[:, :, None, None, None, :]
+        integrand = x_t  # x_t is not used anymore
+        integrand -= y_t_reshaped
+
+        integrand **= 2
+        integrand *= quadrature_weights
+
+        integral = np.sum(integrand, axis=-1)
+
+        integral += roughness
+        return integral
 
     @override
     def __call__(  # noqa: WPS210
@@ -778,16 +859,12 @@ class L2LineEnergy(LineEnergyFunction):
             row_interval_lengths=row_interval_lengths,
         )
 
-        # Shape: N x row x column x t
+        warping_slopes_root = np.sqrt(warping_slopes)
 
-        # Linear interpolation
-        interpolator = make_interp_spline(
-            grid_points,
-            original.data_matrix[..., 0].mT,
-            k=1,
+        roughness = self.penalty * (
+            (1 - warping_slopes_root)**2
+            * distances_to_endpoint[:, None, :, None]
         )
-
-        x_t = np.moveaxis(interpolator(warpings), -1, 0)
 
         # Shape: N x t
         y_t = self.evaluate_target(
@@ -795,31 +872,16 @@ class L2LineEnergy(LineEnergyFunction):
             grid_dim=grid_dim,
         )
 
-        warping_slopes_root = np.sqrt(warping_slopes)
-
-        if self.slope_scaling:
-            x_t *= warping_slopes_root[None, ..., None]
-
-        y_t_reshaped = y_t[:, :, None, None, None, :]
-        integrand = x_t  # x_t is not used anymore
-        integrand -= y_t_reshaped
-
-        # Compute integrand**2 * quadrature_weights and
-        # sum over the last axis.
-        integral = np.einsum(
-            "nxyijk,nxyijk,xyijk->nxyij",
-            integrand,
-            integrand,
-            quadrature_weights,
+        return self.compute_integral_numba(
+            grid_points=grid_points,
+            original_data_matrix=original.data_matrix[..., 0],
+            warpings=warpings,
+            y_t=y_t,
+            warping_slopes_root=warping_slopes_root,
+            quadrature_weights=quadrature_weights,
+            roughness=roughness,
+            slope_scaling=self.slope_scaling,
         )
-
-        roughness = self.penalty * (
-            (1 - warping_slopes_root)**2
-            * distances_to_endpoint[:, None, :, None]
-        )
-
-        integral += roughness
-        return integral # type: ignore[no-any-return]
 
 def dynamic_programming_match(  # noqa: WPS210
     original: FDataGrid,

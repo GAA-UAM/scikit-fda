@@ -110,7 +110,7 @@ def _transform_fdatagrid(
                 raise ValueError(msg)
             result = result - center
         else:
-            result.data_matrix -= np.asarray(center)
+            result.data_matrix = result.data_matrix - np.asarray(center)
 
     if scale is not None:
         if isinstance(scale, FDataGrid):
@@ -120,7 +120,7 @@ def _transform_fdatagrid(
                 raise ValueError(msg)
             result = result / scale
         else:
-            result.data_matrix /= np.asarray(scale)
+            result.data_matrix = result.data_matrix / np.asarray(scale)
 
     return result
 

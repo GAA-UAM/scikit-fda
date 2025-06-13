@@ -135,8 +135,8 @@ mixed_fd = pd.DataFrame(
     {
         "category": y,
         "temperatures": fd_temperatures,
-        "temperature_derivatives": fd_1st_temperatures_smooth,
-        "precipitations_vector": fd_vector,
+        "temperature derivative": fd_1st_temperatures_smooth,
+        "precipitations vector": fd_vector,
     },
 )
 
@@ -147,7 +147,13 @@ mixed_fd = pd.DataFrame(
 
 from skfda.exploratory.visualization.representation import plot_mixed_data
 
-fig, axes = plt.subplots(1, 4, figsize=(28, 6))
+fig, axes = plt.subplots(1, 4, figsize=(28, 7))
 
 plot_mixed_data(mixed_fd, axes= axes)
+fig.suptitle("Canadian Weather", fontsize=24)
+for ax in fig.axes:
+    title = ax.get_title()
+    if title:  # only update if there's a title
+        ax.set_title(title, fontsize=18)
+
 plt.show()

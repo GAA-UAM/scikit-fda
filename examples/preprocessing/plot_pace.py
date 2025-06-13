@@ -9,7 +9,7 @@ irregularly sampled data.
 # Author: Alejandro Arias Gomez
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 8
+# sphinx_gallery_thumbnail_number = 6
 
 # %%
 from collections import defaultdict
@@ -333,6 +333,7 @@ average_mse = np.mean(mse_per_curve)
 
 print(average_mse)
 
+# %%
 # In conclusion, this analysis demonstrates how Functional Principal Component
 # Analysis through Conditional Expectation (PACE) can be effectively applied to
 # irregularly sampled longitudinal data. By leveraging local smoothing and

@@ -15,7 +15,7 @@ subject trajectories via the PACE algorithm for irregularly sampled data.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skfda.datasets._real_datasets import fetch_weather
+from skfda.datasets._real_datasets import fetch_weather, fetch_octane
 from skfda.datasets._sample_from_fdata import irregular_sample
 from skfda.preprocessing.dim_reduction import FPCA, PACE
 from skfda.representation import FDataGrid
@@ -30,20 +30,25 @@ from skfda.typing._numpy import NDArrayInt
 # For this experiment we will use the Canadian weather dataset, more precisely
 # the first coordinate, which corresponds to the temperatures over each day of
 # the year averaged from 1960 to 1994 at 35 different locations.
-canadian = fetch_weather().data.coordinates[0]
+# canadian = fetch_weather().data.coordinates[0]
+canadian, _ = fetch_octane(return_X_y=True)
 assert isinstance(canadian, FDataGrid), "Expected an FDataGrid object"
 
 canadian.plot()
 plt.show()
+
+print(canadian.data_matrix.shape)
 
 # %%
 # We will artificially sparsify the data based on a percentage with the
 # following function.
 def generate_num_measurements(
     percentage: int,
-    size: int = 35,
+    # size: int = 35,
+    size: int = 39,
     min_val: int = 1,
-    max_val: int = 365,
+    # max_val: int = 365,
+    max_val: int = 226,
     random_state: int | None = None,
 ) -> NDArrayInt:
     """
@@ -90,7 +95,7 @@ reconstructed_all = []
 mse_all = []
 
 random_state = 11
-data_percentages = np.array([10, 20, 35])
+data_percentages = np.array([5, 15, 25])
 
 for perc in data_percentages:
     measurements_per_obs = generate_num_measurements(
@@ -116,6 +121,8 @@ for perc in data_percentages:
     reconstructed_pace = pace.inverse_transform(pace_scores)
     components_all.append(pace.components_)
     reconstructed_all.append(reconstructed_pace)
+
+    print(pace.explained_variance_ratio_[:8])
 
     grid1 = canadian.grid_points[0]
     grid2 = reconstructed_pace.grid_points[0]
@@ -175,7 +182,7 @@ print(average_mse)
 # enabling interpretable decompositions of functional datasets even in sparse
 # settings.
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-titles = ["PACE (10%)", "PACE (20%)", "PACE (35%)", "Regular FPCA"]
+titles = ["PACE (5%)", "PACE (15%)", "PACE (25%)", "Regular FPCA"]
 for i, ax in enumerate(axes.flat):
     components_all[i].plot(axes=ax)
     ax.set_title(titles[i])

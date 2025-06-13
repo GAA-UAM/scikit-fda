@@ -1,5 +1,5 @@
 """
-PACE algorithm for cluster analysis
+PACE algorithm for classification analysis
 =======================================================================
 
 Explores the possibility to apply clustering techniques to sparse,

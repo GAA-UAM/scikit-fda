@@ -84,11 +84,16 @@ fd_1st_precipitations_smooth = smoother_precipitations.fit_transform(
     fd_1st_precipitations,
 )
 
+fd_precipitations.argument_names = ("t (day)",)
+fd_1st_precipitations_smooth.argument_names =  ("t (day)",)
+fd_1st_temperatures_smooth.argument_names = ("t (day)",)
 
-fd_1st_temperatures_smooth.coordinate_names = ("ºC/days",)
+fd_precipitations.coordinate_names = ("P(t) (mm.)",)
 fd_1st_precipitations_smooth.coordinate_names = (
-    "mm./days",
+    "P'(t) (mm./days)",
 )
+fd_temperatures.coordinate_names =  ("T(t) (ºC)",)
+fd_1st_temperatures_smooth.coordinate_names = ("T'(t) (ºC/days)",)
 
 # %% [markdown]
 # Let's take a look at the smoothed derivatives.
@@ -117,7 +122,7 @@ fd_vector = FDataGrid(
     grid_points=fd_temperatures.grid_points,
     coordinate_names=fd_precipitations.coordinate_names
     + fd_1st_precipitations_smooth.coordinate_names,
-    argument_names = fd_1st_precipitations_smooth.argument_names
+    argument_names = fd_1st_precipitations_smooth.argument_names,
 )
 
 fd_vector.plot()
@@ -133,10 +138,10 @@ fd_vector.plot()
 
 mixed_fd = pd.DataFrame(
     {
-        "category": y,
-        "temperatures": fd_temperatures,
-        "temperature derivative": fd_1st_temperatures_smooth,
-        "precipitations vector": fd_vector,
+        "weather type": y,
+        "T(t)": fd_temperatures,
+        "T'(t)": fd_1st_temperatures_smooth,
+        "P(t)_vec": fd_vector,
     },
 )
 

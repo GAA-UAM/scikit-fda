@@ -905,8 +905,8 @@ class MixedDataPlot(BasePlot):
     ) -> None:
         fd_codim = data.dim_codomain
 
-        if fd_codim > 1:
-            if self.flattened:
+        if fd_codim > 1: # Plot vector valued functions
+            if self.flattened: # Each component ploted side bi side
                 col_axes = [next(axes) for _ in range(fd_codim)]
                 data.plot(
                     axes=col_axes,
@@ -924,7 +924,7 @@ class MixedDataPlot(BasePlot):
                         else f"{j + 1}"
                     )
                     ax_sub.set_title(f"{col} - {name}")
-            else:
+            else: # Components are stacked one on top of each other
                 outer_ax = next(axes)
                 spec = outer_ax.get_subplotspec()
                 if spec is None:
@@ -944,9 +944,17 @@ class MixedDataPlot(BasePlot):
 
                 if data.argument_names and data.argument_names[0]:
                     x_label = data.argument_names[0]
-                for sub_ax in sub_axes:
+
+                # Remove x-label and ticks from all but the last subplot
+                for sub_ax in sub_axes[:-1]:
                     sub_ax.set_xlabel("")
+                    sub_ax.set_xticklabels([])
+
+                # Set x-label and restore ticks on the last subplot
                 sub_axes[-1].set_xlabel(x_label)
+                sub_axes[-1].tick_params(
+                    axis="x", which="both", labelbottom=True,
+                )
 
                 for j, sub_ax in enumerate(sub_axes):
                     name = (

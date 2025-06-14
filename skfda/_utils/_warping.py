@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
-from scipy.interpolate import PchipInterpolator
+from scipy.interpolate import make_interp_spline, PchipInterpolator
 from typing_extensions import override
 
 if TYPE_CHECKING:
@@ -432,35 +432,11 @@ class L2LineEnergy(LineEnergyFunction):
             prepend=self.grid_points[0],
         )
 
-        data_matrix = original.data_matrix[..., 0]
-
-        self.data_diff = np.diff(
-            data_matrix,
-            prepend=data_matrix[:, :1],
+        self.interpolator = make_interp_spline(
+            self.grid_points,
+            original.data_matrix[..., 0].mT,
+            k=1,
         )
-
-        padding_col = np.zeros((data_matrix.shape[0], 1))
-
-        self.left_grid_points = np.concat(
-            (self.grid_points[:1], self.grid_points),
-        )
-
-        diff = np.concat(
-            (self.data_diff, padding_col),
-            axis=1,
-        )
-
-        # First lenght is 0, so skip it
-        # It will only be used multiplied by 0 in that case, anyway
-        diff[:, 1:-1] /= self.interval_lenghts[1:]
-
-        self.left_and_diff = np.stack((
-            np.concat(
-                (data_matrix[:, :1], data_matrix),
-                axis=1,
-            ),
-            diff,
-        ))
 
     @override
     def dp_change_row(
@@ -513,28 +489,6 @@ class L2LineEnergy(LineEnergyFunction):
         quadrature_weights = quadrature_weights[:, None, :]
         self.quadrature_weights = quadrature_weights
 
-    def evaluate_fdatagrid_linear_interpolation(
-        self,
-        evaluation_points: NDArrayFloat,
-    ) -> NDArrayFloat:
-        """Evaluate the functions at some points using linear interpolation."""
-        indexes = np.searchsorted(
-            self.grid_points,
-            evaluation_points,
-            side="left",
-        )
-        # Extrapolation is not necessary, as the warping values are inside the
-        # domain
-
-        grid_points_prev = self.left_grid_points[indexes]
-
-        interp_parameter = evaluation_points - grid_points_prev
-
-        left, data_diff = np.take(self.left_and_diff, indices=indexes, axis=2)
-
-        left += interp_parameter * data_diff
-        return left  # type: ignore[no-any-return]
-
     @override
     def __call__(  # noqa: WPS210
         self,
@@ -586,7 +540,7 @@ class L2LineEnergy(LineEnergyFunction):
         w = t_j + l_matrix * (t_column - t_j)
 
         # Shape: N x row x column x t
-        x_t =self.evaluate_fdatagrid_linear_interpolation(w)
+        x_t = np.moveaxis(self.interpolator(w), -1, 0)
 
         w_slope = (t_column - t_j.T) / total_interval_length
         w_slope_root = np.sqrt(w_slope)
@@ -594,12 +548,17 @@ class L2LineEnergy(LineEnergyFunction):
         if self.slope_scaling:
             x_t *= w_slope_root[None, ..., None]
 
-        integrand = (x_t - self.y_t)**2
+        integrand = x_t
+        integrand -= self.y_t
 
-        quadrature_weights = self.quadrature_weights
-
-        integrand *= quadrature_weights
-        integral = np.sum(integrand, axis=-1)
+        # Compute integrand**2 * quadrature_weights and
+        # sum over the last axis.
+        integral = np.einsum(
+            "nijk,nijk,ijk->nij",
+            integrand,
+            integrand,
+            self.quadrature_weights,
+        )
 
         roughness = self.penalty * (
             (1 - w_slope_root)**2 * total_interval_length

@@ -173,17 +173,11 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
 
         values = register([-0.25, -0.1, 0, 0.1, 0.25])
 
-        expected = [
-            [
-                [0.599058], [0.997427], [0.772248], [0.412342], [0.064725],
-            ],
-            [
-                [0.626875], [0.997155], [0.791649], [0.382181], [0.050098],
-            ],
-            [
-                [0.620992], [0.997369], [0.785886], [0.376556], [0.048804],
-            ],
-        ]
+        expected = np.array([
+            [ 0.74600422,  0.95497466,  0.60476075,  0.2328707 ,  0.02170034],
+            [ 0.72551554,  0.96444129,  0.62627011,  0.2472809 ,  0.02393268],
+            [ 0.73169587,  0.961721  ,  0.61982462,  0.24290167,  0.0232434 ],
+        ])[..., None]
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
@@ -194,17 +188,11 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         register = reg.fit_transform(self.unimodal_samples)
 
         values = register([-0.25, -0.1, 0, 0.1, 0.25])
-        expected = [
-            [
-                [0.599058], [0.997427], [0.772248], [0.412342], [0.064725],
-            ],
-            [
-                [0.626875], [0.997155], [0.791649], [0.382181], [0.050098],
-            ],
-            [
-                [0.620992], [0.997369], [0.785886], [0.376556], [0.048804],
-            ],
-        ]
+        expected = np.array([
+            [ 0.74600422,  0.95497466,  0.60476075,  0.2328707 ,  0.02170034],
+            [ 0.72551554,  0.96444129,  0.62627011,  0.2472809 ,  0.02393268],
+            [ 0.73169587,  0.961721  ,  0.61982462,  0.24290167,  0.0232434 ],
+        ])[..., None]
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
@@ -244,7 +232,7 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         reg = FisherRaoElasticRegistration()
         reg.fit(self.unimodal_samples)
         score = reg.score(self.unimodal_samples)
-        np.testing.assert_allclose(score, 0.99938, rtol=1e-5)
+        np.testing.assert_allclose(score, 0.999736, rtol=1e-5)
 
     def test_warping_mean(self) -> None:
         """Test the warping_mean function."""

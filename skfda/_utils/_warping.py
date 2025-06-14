@@ -801,25 +801,19 @@ class L2LineEnergy(LineEnergyFunction):
             x_t *= warping_slopes_root[None, ..., None]
 
         y_t_reshaped = y_t[:, :, None, None, None, :]
-        integrand = x_t  # x_t is not used anymore
+        integrand = x_t
         integrand -= y_t_reshaped
+        integrand **= 2
+        integrand *= quadrature_weights
 
-        # Compute integrand**2 * quadrature_weights and
-        # sum over the last axis.
-        integral = np.einsum(
-            "nxyijk,nxyijk,xyijk->nxyij",
-            integrand,
-            integrand,
-            quadrature_weights,
-        )
+        integral = np.sum(integrand, axis=-1)
 
         roughness = self.penalty * (
             (1 - warping_slopes_root)**2
             * distances_to_endpoint[:, None, :, None]
         )
 
-        integral += roughness
-        return integral # type: ignore[no-any-return]
+        return integral + roughness  # type: ignore[no-any-return]
 
 def dynamic_programming_match(  # noqa: WPS210
     original: FDataGrid,

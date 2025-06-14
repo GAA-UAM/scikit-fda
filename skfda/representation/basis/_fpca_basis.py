@@ -1,12 +1,11 @@
-from typing import Optional, Tuple
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.base import clone
 
-from skfda.representation.basis import Basis
+import numpy as np
+
 from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
-from skfda.typing._numpy import NDArrayFloat
 from skfda.representation._functional_data import FData
+from skfda.representation.basis import Basis
+from skfda.typing._numpy import NDArrayFloat
+
 
 class FPCABasis(Basis):
     """
@@ -30,6 +29,8 @@ class FPCABasis(Basis):
         n_basis: Number of FPCA components to retain.
 
     Examples:
+        Constructs a FPCABasis and adjusts it to the Canadian Weather
+
         >>> from skfda.datasets import fetch_weather
         >>> X, _ = fetch_weather(return_X_y=True)
         >>> X = X.coordinates[0]
@@ -42,7 +43,7 @@ class FPCABasis(Basis):
         *,
         X: FData,
         n_basis: int = 1,
-    ):
+    ) -> None:
         super().__init__(domain_range=X.domain_range, n_basis=n_basis)
 
         self._fpca = FPCA(n_components=n_basis)
@@ -64,7 +65,7 @@ class FPCABasis(Basis):
         self,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple["FPCABasis", NDArrayFloat]:
+    ) -> tuple["FPCABasis", NDArrayFloat]:
         """
         Compute the basis and coefficients of the derivative.
 
@@ -81,7 +82,7 @@ class FPCABasis(Basis):
         """
         new_components = self._fpca.components_.derivative(order)
         new_basis = self.copy()
-        new_basis._fpca.components_ = new_components
+        new_basis._fpca.components_ = new_components  # noqa: SLF001
         return new_basis, coefs
 
     def _gram_matrix(self) -> NDArrayFloat:
@@ -96,7 +97,7 @@ class FPCABasis(Basis):
         """
         return np.identity(self.n_basis)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             super().__eq__(other)
             and self._fpca.components_ == other._fpca.components_

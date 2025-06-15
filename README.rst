@@ -2,7 +2,7 @@
 	:alt: scikit-fda: Functional Data Analysis in Python
 
 scikit-fda: Functional Data Analysis in Python
-===================================================
+==============================================
 
 |build-status| |docs| |Codecov| |repostatus| |versions| |PyPIBadge| |conda| |license| |doi|
 
@@ -28,8 +28,18 @@ The documentation of the latest version, corresponding with the develop
 version of the package, can be found at
 `fda.readthedocs.io/en/latest/ <https://fda.readthedocs.io/en/latest/>`_.
 
+How do I start?
+===============
+
+If you want a quick overview of the package, we recommend you to try the
+new :doc:`tutorial <auto_tutorial/index>`. For articles about specific
+topics, feel free to explore the :doc:`examples <auto_examples/index>`. Want
+to check the documentation of a particular class or function? Try searching
+for it in the :doc:`API list <apilist>`.
+
 Installation
 ============
+
 Currently, *scikit-fda* is available in Python versions above 3.8, regardless of the
 platform.
 The stable version can be installed via PyPI_:
@@ -39,6 +49,7 @@ The stable version can be installed via PyPI_:
     pip install scikit-fda
 
 It is also available from conda-forge_:
+
 .. code::
 
     conda install -c conda-forge scikit-fda
@@ -125,12 +136,6 @@ repository fork and creating a pull request to the development branch.
 The people involved at some point in the development of the package can be
 found in the `contributors
 file <https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
-
-.. Citation
-   ========
-   If you find this project useful, please cite:
-
-   .. todo:: Include citation to scikit-fda paper.
 
 License
 =======

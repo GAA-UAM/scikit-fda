@@ -181,3 +181,14 @@ license_ can be found along with the code.
 .. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3468127.svg
     :alt: Available in Zenodo
     :target: https://doi.org/10.5281/zenodo.3468127
+
+Acknowledgements
+================
+
+The project has received financial support from projects PID2019-109387GB-I00,
+PID2019-106827GB-I00, and PID2022-139856NB-I00, funded by
+MCIN/ AEI / 10.13039/501100011033 / FEDER, UE,
+project IDEA-CM (TEC-2024/COM-89) from the Autonomous Community of Madrid,
+and from the ELLIS Unit Madrid.  The authors acknowledge computational support
+from the Centro de Computación Científica-Universidad Autónoma de Madrid
+(CCC-UAM).

@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3  # noqa: D100
 #
 # scikit-fda documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 22 18:46:59 2017.
@@ -16,23 +15,26 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
 from __future__ import annotations
 
 import inspect
 import os
 import sys
 import warnings
+from collections.abc import Callable, Mapping
 from os.path import dirname, relpath
-from typing import Callable, Mapping
+from typing import Any
 
 import pkg_resources
+
 # Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
 # repository
+# isort: split
 import sphinx_gallery.interactive_example
 from sphinx.errors import ConfigError
-# -- Extensions to the  Napoleon GoogleDocstring class ---------------------
-from sphinx.ext.napoleon.docstring import GoogleDocstring
+
+# Extensions to the  Napoleon GoogleDocstring class
+# isort: split
 from sphinx_gallery.sorting import ExampleTitleSortKey, ExplicitOrder
 
 import skfda
@@ -41,19 +43,20 @@ import skfda
 project = "scikit-fda"
 package_name = "skfda"
 author = "Grupo de Aprendizaje Automático"
-copyright = (
+copyright = (  # noqa: A001
     "2019, Grupo de Aprendizaje Automático - "
     "Universidad Autónoma de Madrid"
 )
 github_url = "https://github.com/GAA-UAM/scikit-fda"
 rtd_version = os.environ.get("READTHEDOCS_VERSION")
 rtd_version_type = os.environ.get("READTHEDOCS_VERSION_TYPE")
+release_version = skfda.__version__
 
 switcher_version = rtd_version
 if switcher_version == "latest":
     switcher_version = "dev"
-elif rtd_version_type not in {"branch", "tag"}:
-    switcher_version = skfda.__version__
+elif rtd_version_type not in {"branch", "tag"} or rtd_version == "stable":
+    switcher_version = release_version
 
 rtd_branch = os.environ.get(" READTHEDOCS_GIT_IDENTIFIER", "develop")
 language = "en"
@@ -61,7 +64,7 @@ language = "en"
 try:
     release = pkg_resources.get_distribution(project).version
 except pkg_resources.DistributionNotFound:
-    print(
+    print(  # noqa: T201, WPS421
         f"To build the documentation, The distribution information of\n"
         f"{project} has to be available.  Either install the package\n"
         f"into your development environment or run 'setup.py develop'\n"
@@ -204,15 +207,6 @@ epub_author = author
 epub_publisher = author
 epub_copyright = copyright
 
-# The unique identifier of the text. This can be a ISBN number
-# or the project homepage.
-#
-# epub_identifier = ""
-
-# A unique identification for the text.
-#
-# epub_uid = ""
-
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ["search.html"]
 
@@ -254,7 +248,10 @@ intersphinx_mapping = {
 # -- Options for "sphinx.ext.linkcode" --
 
 
-def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
+def linkcode_resolve(  # noqa: WPS212
+    domain: str,
+    info: Mapping[str, str],  # noqa: WPS110
+) -> str | None:
     """
     Resolve a link to source in the Github repo.
 
@@ -274,7 +271,7 @@ def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
     for part in fullname.split("."):
         try:
             obj = getattr(obj, part)
-        except Exception:
+        except AttributeError:  # noqa: PERF203
             return None
 
     fn = None
@@ -282,28 +279,25 @@ def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
 
     try:
         fn = inspect.getsourcefile(obj)
-    except Exception:
+    except Exception:  # noqa: BLE001
         fn = None
     if not fn:
         return None
 
     # Ignore re-exports as their source files are not within the skfda repo
     module = inspect.getmodule(obj)
-    if module is not None and not module.__name__.startswith("skfda"):
+    if module is not None and not module.__name__.startswith(package_name):
         return None
 
     try:
         source, lineno = inspect.getsourcelines(obj)
         lineno_final = lineno + len(source) - 1
-    except Exception:
+    except Exception:  # noqa: BLE001
         lineno_final = None
 
-    fn = relpath(fn, start=dirname(skfda.__file__))
+    fn = relpath(fn, start=dirname(skfda.__file__))  # noqa: PTH120
 
-    if lineno:
-        linespec = f"#L{lineno}-L{lineno_final}"
-    else:
-        linespec = ""
+    linespec = f"#L{lineno}-L{lineno_final}" if lineno else ""
 
     return f"{github_url}/tree/{rtd_branch}/skfda/{fn}{linespec}"
 
@@ -312,49 +306,8 @@ def linkcode_resolve(domain: str, info: Mapping[str, str]) -> str | None:
 
 # -- Options for "sphinx.ext.napoleon" --
 
+napoleon_custom_sections = [("Attributes", "params_style")]
 napoleon_use_rtype = True
-
-
-# Napoleon fix for attributes
-# Taken from
-# https://michaelgoerz.net/notes/extending-sphinx-napoleon-docstring-sections.html
-
-
-# first, we define new methods for any new sections and add them to the class
-
-
-def parse_keys_section(self, section):
-    return self._format_fields("Keys", self._consume_fields())
-
-
-GoogleDocstring._parse_keys_section = parse_keys_section
-
-
-def parse_attributes_section(self, section):
-    return self._format_fields("Attributes", self._consume_fields())
-
-
-GoogleDocstring._parse_attributes_section = parse_attributes_section
-
-
-def parse_class_attributes_section(self, section):
-    return self._format_fields("Class Attributes", self._consume_fields())
-
-
-GoogleDocstring._parse_class_attributes_section = parse_class_attributes_section
-
-# we now patch the parse method to guarantee that the the above methods are
-# assigned to the _section dict
-
-
-def patched_parse(self):
-    self._sections["keys"] = self._parse_keys_section
-    self._sections["class attributes"] = self._parse_class_attributes_section
-    self._unpatched_parse()
-
-
-GoogleDocstring._unpatched_parse = GoogleDocstring._parse
-GoogleDocstring._parse = patched_parse
 
 # -- Options for "sphinx.ext.todo" --
 
@@ -372,7 +325,7 @@ tutorial_list = [
 OrderType = Callable[[str], str]
 
 
-class SkfdaExplicitSubOrder(object):
+class SkfdaExplicitSubOrder:
     """
     Class for use within the "within_subsection_order" key.
 
@@ -440,8 +393,12 @@ warnings.filterwarnings(
 original_gen_binder_rst = sphinx_gallery.interactive_example.gen_binder_rst
 
 
-def patched_gen_binder_rst(*args, **kwargs):
-    original_rst = original_gen_binder_rst(*args, **kwargs)
+def patched_gen_binder_rst(
+    *args: Any,  # noqa: ANN401
+    **kwargs: Any,  # noqa: ANN401
+) -> str:
+    """Patched Binder link so that Binder uses the path to the Python file."""
+    original_rst: str = original_gen_binder_rst(*args, **kwargs)
     return original_rst.replace(
         "../examples/auto_",
         "",

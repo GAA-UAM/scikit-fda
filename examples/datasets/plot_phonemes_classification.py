@@ -10,19 +10,6 @@ methods.
 # License: MIT
 
 # sphinx_gallery_thumbnail_number = 3
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.pipeline import Pipeline
-
-from skfda.datasets import fetch_phoneme
-from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
-from skfda.misc.kernels import normal
-from skfda.misc.metrics import MahalanobisDistance
-from skfda.ml.classification import KNeighborsClassifier
-from skfda.preprocessing.registration import FisherRaoElasticRegistration
-from skfda.preprocessing.smoothing import KernelSmoother
 
 # %%
 # This example uses the Phoneme dataset\ :footcite:`hastie++_1995_penalized`
@@ -37,9 +24,15 @@ from skfda.preprocessing.smoothing import KernelSmoother
 # %%
 # We will first load the (binary) Phoneme dataset and plot the first 20
 # functions.
-# We restrict the data to the first 150 variables, as done in Ferraty and 
+# We restrict the data to the first 150 variables, as done in Ferraty and
 # Vieu (chapter 7)\ :footcite:ps:`ferraty+vieu_2006`, because most of the
 # useful information is in the lower frequencies.
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from skfda.datasets import fetch_phoneme
+
 X, y = fetch_phoneme(return_X_y=True)
 
 X = X[(y == 0) | (y == 1)]
@@ -53,7 +46,7 @@ new_data = X.data_matrix[:, :n_points]
 X = X.copy(
     grid_points=new_points,
     data_matrix=new_data,
-    domain_range=(np.min(new_points), np.max(new_points)),
+    domain_range=(float(np.min(new_points)), float(np.max(new_points))),
 )
 
 n_plot = 20
@@ -65,6 +58,11 @@ plt.show()
 # We can leverage the continuity of the trajectories by smoothing, using
 # a Nadaraya-Watson estimator.
 # We then plot the data again, as well as the class means.
+
+from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
+from skfda.misc.kernels import normal
+from skfda.preprocessing.smoothing import KernelSmoother
+
 smoother = KernelSmoother(
     NadarayaWatsonHatMatrix(
         bandwidth=0.1,
@@ -100,6 +98,9 @@ plt.show()
 # to do per-class registration with unlabeled data.
 # As Fisher-Rao elastic registration is
 # very slow, we only register the plotted curves as an approximation.
+
+from skfda.preprocessing.registration import FisherRaoElasticRegistration
+
 reg = FisherRaoElasticRegistration(
     penalty=0.01,
 )
@@ -120,6 +121,8 @@ plt.show()
 # the smoothing step, but normally you would want to do all preprocessing in
 # a pipeline to guarantee that.
 
+from sklearn.model_selection import train_test_split
+
 X_train, X_test, y_train, y_test = train_test_split(
     X_smooth,
     y,
@@ -131,6 +134,12 @@ X_train, X_test, y_train, y_test = train_test_split(
 # %%
 # We use a k-nn classifier with a functional analog to the Mahalanobis
 # distance and a fixed number of neighbors.
+
+from sklearn.metrics import accuracy_score
+
+from skfda.misc.metrics import MahalanobisDistance
+from skfda.ml.classification import KNeighborsClassifier
+
 n_neighbors = int(np.sqrt(X_smooth.n_samples))
 n_neighbors += n_neighbors % 2 - 1  # Round to an odd integer
 
@@ -148,6 +157,10 @@ print(score)
 
 # %%
 # If we wanted to optimize hyperparameters, we can use scikit-learn tools.
+
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+
 pipeline = Pipeline([
     ("smoother", smoother),
     ("classifier", classifier),
@@ -169,6 +182,35 @@ grid_search = GridSearchCV(
 # y_pred = grid_search.predict(X_test)
 # score = accuracy_score(y_test, y_pred)
 # print(score)
+
+# %%
+# The optimal parameters obtained are ``smoother__kernel_estimator__bandwidth``
+# = 0.01, ``classifier__n_neighbors`` = 37 and ``classifier__metric__alpha`` =
+# 0.001. We now train a new classifier with these parameters.
+
+optimal_smoother = KernelSmoother(
+    NadarayaWatsonHatMatrix(
+        bandwidth=0.01,
+        kernel=normal,
+    ),
+)
+
+optimal_classifier = KNeighborsClassifier(
+    n_neighbors=37,
+    metric=MahalanobisDistance(
+        alpha=0.001,
+    ),
+)
+
+optimal_pipeline = Pipeline([
+    ("smoother", optimal_smoother),
+    ("classifier", optimal_classifier),
+])
+
+optimal_pipeline.fit(X_train, y_train)
+y_pred = optimal_pipeline.predict(X_test)
+score = accuracy_score(y_test, y_pred)
+print(f"Accuracy of the optimized pipeline: {score:.4f}")
 
 # %%
 # References

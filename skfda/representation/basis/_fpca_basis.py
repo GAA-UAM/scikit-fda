@@ -98,6 +98,9 @@ class FPCABasis(Basis):
         return np.identity(self.n_basis)
 
     def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FPCABasis):
+            return False
+        
         return (
             super().__eq__(other)
             and self._fpca.components_ == other._fpca.components_

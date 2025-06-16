@@ -17,6 +17,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "_monomial_basis": ["MonomialBasis", "Monomial"],
         "_tensor_basis": ["TensorBasis", "Tensor"],
         "_vector_basis": ["VectorValuedBasis", "VectorValued"],
+        "_fpca_basis": ["FPCABasis"],
     },
 )
 
@@ -53,3 +54,4 @@ if TYPE_CHECKING:
         VectorValued as VectorValued,
         VectorValuedBasis as VectorValuedBasis,
     )
+    from ._fpca_basis import FPCABasis as FPCABasis

@@ -365,6 +365,13 @@ class TestInterface(base.BaseInterfaceTests):  # type: ignore[misc]
     def test_contains(self, data: Any, data_missing: Any) -> None:
         pass
 
+    # We do not attempt to implement copy right now.
+    @pytest.mark.skip(reason="Unsupported")
+    def test_array_interface_copy(
+        self,
+        data: Any,
+    ) -> None:
+        pass
 
 class TestArithmeticOps(base.BaseArithmeticOpsTests):  # type: ignore[misc]
 

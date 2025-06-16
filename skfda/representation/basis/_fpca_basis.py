@@ -1,7 +1,5 @@
-
 import numpy as np
 
-from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
 from skfda.representation._functional_data import FData
 from skfda.representation.basis import Basis
 from skfda.typing._numpy import NDArrayFloat
@@ -44,6 +42,9 @@ class FPCABasis(Basis):
         X: FData,
         n_basis: int = 1,
     ) -> None:
+        from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
+
+
         super().__init__(domain_range=X.domain_range, n_basis=n_basis)
 
         self._fpca = FPCA(n_components=n_basis)

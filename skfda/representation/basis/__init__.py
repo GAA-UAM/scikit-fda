@@ -44,6 +44,7 @@ if TYPE_CHECKING:
         Fourier as Fourier,
         FourierBasis as FourierBasis,
     )
+    from ._fpca_basis import FPCABasis as FPCABasis
     from ._grid_basis import _GridBasis as _GridBasis
     from ._monomial_basis import (
         Monomial as Monomial,
@@ -54,4 +55,3 @@ if TYPE_CHECKING:
         VectorValued as VectorValued,
         VectorValuedBasis as VectorValuedBasis,
     )
-    from ._fpca_basis import FPCABasis as FPCABasis

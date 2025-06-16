@@ -302,7 +302,7 @@ def fisher_rao_karcher_mean(
         ).data_matrix[..., 0]
 
         # Next iteration
-        mu_1 = srsf.mean(axis=0, out=mu_1)
+        mu_1 = srsf.mean(axis=0)
 
         # Convergence criterion
         mu_norm = np.sqrt(

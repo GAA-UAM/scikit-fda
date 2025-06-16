@@ -25,8 +25,8 @@ Nearest Neighbors
 This module contains `nearest neighbors
 <https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm>`_ estimators to
 perform regression. In the examples
-:ref:`sphx_glr_auto_examples_plot_neighbors_scalar_regression.py` and
-:ref:`sphx_glr_auto_examples_plot_neighbors_functional_regression.py`
+:ref:`sphx_glr_auto_examples_ml_plot_neighbors_scalar_regression.py` and
+:ref:`sphx_glr_auto_examples_ml_plot_neighbors_functional_regression.py`
 it is explained the basic usage of these estimators.
 
 .. autosummary::

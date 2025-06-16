@@ -733,7 +733,7 @@ class FDataBasis(FData):  # noqa: WPS214
         if not super().equals(other):
             return False
 
-        other = cast(grid.FDataGrid, other)
+        other = cast(FDataBasis, other)
 
         return (
             self.basis == other.basis

@@ -10,6 +10,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    TypeVar,
     Union,
 )
 
@@ -58,11 +59,19 @@ ArgcheckResultType = Tuple[
     Sequence[AcceptedDataCoefsType],
 ]
 
+Input = TypeVar(
+    "Input",
+    bound=AcceptedDataType | pd.DataFrame,
+)
+Output = TypeVar(
+    "Output",
+    bound=AcceptedDataType | pd.DataFrame,
+)
 
 class LinearRegression(
     RegressorMixin[
-        Union[AcceptedDataType, Sequence[AcceptedDataType]],
-        NDArrayFloat,
+        Input,
+        Output,
     ],
     BaseEstimator,
 ):
@@ -311,8 +320,8 @@ class LinearRegression(
 
     def fit(  # noqa: D102
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
-        y: AcceptedDataType,
+        X: Input,
+        y: Output,
         sample_weight: Optional[NDArrayFloat] = None,
     ) -> LinearRegression:
 
@@ -449,8 +458,8 @@ class LinearRegression(
 
     def predict(  # noqa: D102
         self,
-        X: Union[Sequence[AcceptedDataType], pd.DataFrame],
-    ) -> NDArrayFloat:
+        X: Input,
+    ) -> Output:
 
         check_is_fitted(self)
         X = self._argcheck_X(X)

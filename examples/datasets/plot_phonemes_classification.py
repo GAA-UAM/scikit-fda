@@ -185,8 +185,8 @@ grid_search = GridSearchCV(
 
 # %%
 # The optimal parameters obtained are ``smoother__kernel_estimator__bandwidth``
-# = 0.001, ``classifier__n_neighbors`` = 37 and ``classifier__metric__alpha`` =
-# 0.01. We now train a new classifier with these parameters.
+# = 0.01, ``classifier__n_neighbors`` = 37 and ``classifier__metric__alpha`` =
+# 0.001. We now train a new classifier with these parameters.
 
 optimal_smoother = KernelSmoother(
     NadarayaWatsonHatMatrix(

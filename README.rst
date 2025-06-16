@@ -2,7 +2,7 @@
 	:alt: scikit-fda: Functional Data Analysis in Python
 
 scikit-fda: Functional Data Analysis in Python
-===================================================
+==============================================
 
 |build-status| |docs| |Codecov| |repostatus| |versions| |PyPIBadge| |conda| |license| |doi|
 
@@ -28,8 +28,18 @@ The documentation of the latest version, corresponding with the develop
 version of the package, can be found at
 `fda.readthedocs.io/en/latest/ <https://fda.readthedocs.io/en/latest/>`_.
 
+How do I start?
+===============
+
+If you want a quick overview of the package, we recommend you to try the
+new :doc:`tutorial <auto_tutorial/index>`. For articles about specific
+topics, feel free to explore the :doc:`examples <auto_examples/index>`. Want
+to check the documentation of a particular class or function? Try searching
+for it in the :doc:`API list <apilist>`.
+
 Installation
 ============
+
 Currently, *scikit-fda* is available in Python versions above 3.8, regardless of the
 platform.
 The stable version can be installed via PyPI_:
@@ -39,6 +49,7 @@ The stable version can be installed via PyPI_:
     pip install scikit-fda
 
 It is also available from conda-forge_:
+
 .. code::
 
     conda install -c conda-forge scikit-fda
@@ -126,12 +137,6 @@ The people involved at some point in the development of the package can be
 found in the `contributors
 file <https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
 
-.. Citation
-   ========
-   If you find this project useful, please cite:
-
-   .. todo:: Include citation to scikit-fda paper.
-
 License
 =======
 
@@ -176,3 +181,14 @@ license_ can be found along with the code.
 .. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3468127.svg
     :alt: Available in Zenodo
     :target: https://doi.org/10.5281/zenodo.3468127
+
+Acknowledgements
+================
+
+The project has received financial support from projects PID2019-109387GB-I00,
+PID2019-106827GB-I00, and PID2022-139856NB-I00, funded by
+MCIN/ AEI / 10.13039/501100011033 / FEDER, UE,
+project IDEA-CM (TEC-2024/COM-89) from the Autonomous Community of Madrid,
+and from the ELLIS Unit Madrid.  The authors acknowledge computational support
+from the Centro de Computación Científica-Universidad Autónoma de Madrid
+(CCC-UAM).

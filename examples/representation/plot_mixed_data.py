@@ -125,13 +125,15 @@ fd_vector = FDataGrid(
     argument_names = fd_1st_precipitations_smooth.argument_names,
 )
 
-fd_vector.plot()
+fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+
+fd_vector.plot(axes=axes)
 
 # %% [markdown]
 # We now create a mixed data object using a `pandas.DataFrame`. This includes:
-# - a scalar variable: the climate zone,
-# - functional variables: the temperature and its derivative,
-# - and the vector-valued version combining both.
+# - a scalar variable: the climate zone (weather type),
+# - functional variables: the temperature (T(t)) and its derivative (T'(t)),
+# - and the vector-valued version combining both (P_vec(t)=(P(t), P'(t))).
 #
 # This illustrates two valid ways to include a function and its derivative
 # in mix

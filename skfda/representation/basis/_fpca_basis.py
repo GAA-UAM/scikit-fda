@@ -1,8 +1,8 @@
 import numpy as np
 
-from skfda.representation._functional_data import FData
-from skfda.representation.basis import Basis
-from skfda.typing._numpy import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
+from .._functional_data import FData
+from ..basis import Basis
 
 
 class FPCABasis(Basis):
@@ -43,7 +43,6 @@ class FPCABasis(Basis):
         n_basis: int = 1,
     ) -> None:
         from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
-
 
         super().__init__(domain_range=X.domain_range, n_basis=n_basis)
 
@@ -101,7 +100,7 @@ class FPCABasis(Basis):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FPCABasis):
             return False
-        
+
         return (
             super().__eq__(other)
             and self._fpca.components_ == other._fpca.components_

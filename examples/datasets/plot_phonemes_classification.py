@@ -184,6 +184,35 @@ grid_search = GridSearchCV(
 # print(score)
 
 # %%
+# The optimal parameters obtained are ``smoother__kernel_estimator__bandwidth``
+# = 0.01, ``classifier__n_neighbors`` = 37 and ``classifier__metric__alpha`` =
+# 0.001. We now train a new classifier with these parameters.
+
+optimal_smoother = KernelSmoother(
+    NadarayaWatsonHatMatrix(
+        bandwidth=0.01,
+        kernel=normal,
+    ),
+)
+
+optimal_classifier = KNeighborsClassifier(
+    n_neighbors=37,
+    metric=MahalanobisDistance(
+        alpha=0.001,
+    ),
+)
+
+optimal_pipeline = Pipeline([
+    ("smoother", optimal_smoother),
+    ("classifier", optimal_classifier),
+])
+
+optimal_pipeline.fit(X_train, y_train)
+y_pred = optimal_pipeline.predict(X_test)
+score = accuracy_score(y_test, y_pred)
+print(f"Accuracy of the optimized pipeline: {score:.4f}")
+
+# %%
 # References
 # ----------
 #

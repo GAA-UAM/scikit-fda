@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 from ...typing._numpy import NDArrayFloat
@@ -65,7 +67,7 @@ class FPCABasis(Basis):
         self,
         coefs: NDArrayFloat,
         order: int = 1,
-    ) -> tuple["FPCABasis", NDArrayFloat]:
+    ) -> tuple[FPCABasis, NDArrayFloat]:
         """
         Compute the basis and coefficients of the derivative.
 

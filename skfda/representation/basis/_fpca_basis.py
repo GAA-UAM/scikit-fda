@@ -2,7 +2,7 @@ import numpy as np
 
 from ...typing._numpy import NDArrayFloat
 from .._functional_data import FData
-from ..basis import Basis
+from ._basis import Basis
 
 
 class FPCABasis(Basis):

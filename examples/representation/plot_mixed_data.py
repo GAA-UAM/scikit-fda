@@ -37,10 +37,12 @@ fd_precipitations = fd.coordinates[1]
 # %% [markdown]
 # We visualize the two functional components separately.
 
-fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
 fd_temperatures.plot(axes=axes[0])
 fd_precipitations.plot(axes=axes[1])
+fig.tight_layout()
+plt.show()
 
 # %% [markdown]
 # To enrich the data with dynamic information, we compute the first derivative
@@ -98,7 +100,7 @@ fd_1st_temperatures_smooth.coordinate_names = ("T'(t) (ºC/days)",)
 # %% [markdown]
 # Let's take a look at the smoothed derivatives.
 
-fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
 axes[0].set_title("Temperatures smoothed first derivative")
 axes[1].set_title("Precipitations smoothed first derivative")
@@ -106,6 +108,8 @@ axes[1].set_title("Precipitations smoothed first derivative")
 fd_1st_temperatures_smooth.plot(axes=axes[0])
 fd_1st_precipitations_smooth.plot(axes=axes[1])
 
+fig.tight_layout()
+plt.show()
 # %% [markdown]
 # Now we build a vector-valued functional object that combines the original
 # temperature and its derivative. This type of structure is useful when you
@@ -128,6 +132,8 @@ fd_vector = FDataGrid(
 fig, axes = plt.subplots(1, 2, figsize=(8, 3))
 
 fd_vector.plot(axes=axes)
+fig.tight_layout()
+plt.show()
 
 # %% [markdown]
 # We now create a mixed data object using a `pandas.DataFrame`. This includes:

@@ -49,30 +49,33 @@ def sample_data() -> dict:
     }
 
 
-def test_lp_norm_grid(sample_data) -> None:
+def test_lp_norm_grid(sample_data: dict) -> None:
     """Test that the Lp norms work with FDataGrid."""
     fd = sample_data["fd"]
 
     np.testing.assert_allclose(weighted_lp_norm(fd, p=1), [16.0, 41.33333333])
     np.testing.assert_allclose(
-        weighted_lp_norm(fd, p=2), [8.326664, 25.006666],
+        weighted_lp_norm(fd, p=2),
+        [8.326664, 25.006666],
     )
     np.testing.assert_allclose(
-        weighted_lp_norm(fd, p=3), [6.839904, 22.401268],
+        weighted_lp_norm(fd, p=3),
+        [6.839904, 22.401268],
     )
     np.testing.assert_allclose(weighted_lp_norm(fd, p=math.inf), [6, 25])
 
 
-def test_lp_norm_basis(sample_data) -> None:
+def test_lp_norm_basis(sample_data: dict) -> None:
     """Test that the L2 norm works with FDataBasis."""
     fd_basis = sample_data["fd_basis"]
 
     np.testing.assert_allclose(
-        weighted_lp_norm(fd_basis, p=2), [8.326664, 24.996],
+        weighted_lp_norm(fd_basis, p=2),
+        [8.326664, 24.996],
     )
 
 
-def test_lp_norm_basis_equivalent(sample_data) -> None:
+def test_lp_norm_basis_equivalent(sample_data: dict) -> None:
     """Test that the Lp norms in basis are similar to FDataGrid."""
     fd = sample_data["fd"]
     fd_grid_in_basis = sample_data["fd_grid_in_basis"]
@@ -94,7 +97,7 @@ def test_lp_norm_basis_equivalent(sample_data) -> None:
     )
 
 
-def test_lp_norm_vector_valued(sample_data) -> None:
+def test_lp_norm_vector_valued(sample_data: dict) -> None:
     """Test that the Lp norms work with vector-valued FDataGrid."""
     fd = sample_data["fd_vector_valued"]
 
@@ -102,7 +105,7 @@ def test_lp_norm_vector_valued(sample_data) -> None:
     np.testing.assert_allclose(weighted_lp_norm(fd, p=math.inf), [6, 25])
 
 
-def test_lp_norm_surface_inf(sample_data) -> None:
+def test_lp_norm_surface_inf(sample_data: dict) -> None:
     """Test that the Linf norm works with multidimensional domains."""
     fd_surface = sample_data["fd_surface"]
 
@@ -112,7 +115,7 @@ def test_lp_norm_surface_inf(sample_data) -> None:
     )
 
 
-def test_lp_norm_surface(sample_data) -> None:
+def test_lp_norm_surface(sample_data: dict) -> None:
     """Test the integration of surfaces."""
     fd_surface = sample_data["fd_surface"]
 
@@ -123,23 +126,29 @@ def test_lp_norm_surface(sample_data) -> None:
     )
 
 
-def test_lp_error_dimensions(sample_data) -> None:
+def test_lp_error_dimensions(sample_data: dict) -> None:
     """Test error on metric between different kind of objects."""
     fd = sample_data["fd"]
     fd_surf = sample_data["fd_surface"]
     fd_vec = sample_data["fd_vector_valued"]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Error in columns dimensions"):
         weighted_lp_distance(fd, fd_surf, p=2)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=(
+            "There must be a name for each of"
+            " the dimensions of the codomain."
+        ),
+    ):# NormInducedMetrics subtracts before checking compatibility
         weighted_lp_distance(fd, fd_vec, p=2)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Error in columns dimensions"):
         weighted_lp_distance(fd_surf, fd_vec, p=2)
 
 
-def test_lp_error_domain_ranges(sample_data) -> None:
+def test_lp_error_domain_ranges(sample_data: dict) -> None:
     """Test error on metric between objects with different domains."""
     fd = sample_data["fd"]
     fd2 = FDataGrid(
@@ -150,11 +159,14 @@ def test_lp_error_domain_ranges(sample_data) -> None:
         grid_points=[2, 3, 4, 5, 6],
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Grid points for both objects must be equal",
+    ):
         weighted_lp_distance(fd, fd2, p=2)
 
 
-def test_lp_error_grid_points(sample_data) -> None:
+def test_lp_error_grid_points(sample_data: dict) -> None:
     """Test error on metric for FDataGrids with different grid points."""
     fd = sample_data["fd"]
     fd2 = FDataGrid(
@@ -165,19 +177,24 @@ def test_lp_error_grid_points(sample_data) -> None:
         grid_points=[1, 2, 4, 4.3, 5],
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Grid points for both objects must be equal",
+    ):
         weighted_lp_distance(fd, fd2, p=2)
 
 
-def test_lp_array(sample_data) -> None:
+def test_lp_array(sample_data: dict) -> None:
     """Test that the Lp norms work with arrays."""
     array = sample_data["array"]
 
     np.testing.assert_allclose(weighted_lp_norm(array, p=1), [20, 55])
     np.testing.assert_allclose(
-        weighted_lp_norm(array, p=2), [9.48683298, 31.28897569],
+        weighted_lp_norm(array, p=2),
+        [9.48683298, 31.28897569],
     )
     np.testing.assert_allclose(
-        weighted_lp_norm(array, p=3), [7.60590492, 27.37519199],
+        weighted_lp_norm(array, p=3),
+        [7.60590492, 27.37519199],
     )
     np.testing.assert_allclose(weighted_lp_norm(array, p=math.inf), [6, 25])

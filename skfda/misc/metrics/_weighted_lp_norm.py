@@ -94,6 +94,7 @@ class WeightedLpNorm:
         :func:`weighted_lp_norm`: Functional wrapper.
         :func:`vectorial_norm`: Helper for evaluating pointwise norms.
     """
+
     def __init__(
         self,
         p: float,
@@ -102,7 +103,6 @@ class WeightedLpNorm:
             Callable[[GridPointsLike], NDArrayFloat] | float | None
         ) = None,
     ) -> None:
-
         # Checks that the Lp normed is well defined
         if not np.isinf(p) and p < 1:
             msg = f"p (={p}) must be equal or greater than 1."
@@ -118,9 +118,9 @@ class WeightedLpNorm:
             f" vector_norm={self.vector_norm})"
         )
 
-    def __call__(self, vector: NDArrayFloat | FData) -> NDArrayFloat:  # noqa: C901, PLR0912
+    def __call__(self, vector: NDArrayFloat | FData) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
-        from ...misc import inner_product
+        from ...misc import inner_product  # noqa: PLC0415
 
         if isinstance(vector, np.ndarray):
             if isinstance(self.lp_weight, (float, int)):
@@ -143,73 +143,12 @@ class WeightedLpNorm:
             return np.sqrt(inner_product(vector, vector))
 
         if isinstance(vector, FDataBasis):
-            domain = vector.basis.domain_range
-            call = vector
-
-            def integrand(*args: GridPointsLike) -> NDArrayFloat:
-                f_args = np.asarray(args)
-
-                try:
-                    f1 = call(f_args)[:, 0, :]
-                except Exception:  # noqa: BLE001
-                    f1 = call(f_args)
-                weight = (
-                    lp_weight
-                    if isinstance(lp_weight, (float, int))
-                    else lp_weight(f_args)
-                )
-                return np.asarray(
-                    np.power(np.abs(f1), self.p) * weight,
-                    dtype=np.float64,
-                )
-
-            integral = nquad_vec(
-                integrand,
-                domain,
-            )
-
-            res = (np.sum(integral, axis=-1)) ** (1 / self.p)
+            res = self._compute_norm_basis(vector=vector, lp_weight=lp_weight)
 
         elif isinstance(vector, FDataGrid):
-            data_matrix = vector.data_matrix
-
-            if isinstance(vector_norm, (float, int)):
-                data_matrix = np.linalg.norm(
-                    vector.data_matrix,
-                    ord=vector_norm,
-                    axis=-1,
-                    keepdims=True,
-                )
-            else:
-                original_shape = data_matrix.shape
-                data_matrix = data_matrix.reshape(-1, original_shape[-1])
-                data_matrix = vector_norm(data_matrix)
-                data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
-
-            if np.isinf(self.p):
-                if isinstance(lp_weight, (float, int)):
-                    data_matrix *= lp_weight
-                else:
-                    data_matrix *= lp_weight(vector.grid_points)
-
-                res = np.max(
-                    data_matrix,
-                    axis=tuple(range(1, data_matrix.ndim)),
-                )
-
-            else:
-                data_matrix **= self.p
-
-                if isinstance(lp_weight, (float, int)):
-                    data_matrix *= lp_weight
-                else:
-                    data_matrix *= lp_weight(vector.grid_points)
-
-                integrand = vector.copy(
-                    data_matrix=data_matrix,
-                    coordinate_names=(None,),
-                )
-                res = integrand.integrate().ravel() ** (1 / self.p)
+            res = self._compute_norm_grid(
+                vector=vector, vector_norm=vector_norm, lp_weight=lp_weight,
+            )
 
         else:
             msg = f"LpNorm not implemented for type {type(vector)}"
@@ -219,6 +158,86 @@ class WeightedLpNorm:
             return res[0]  # type: ignore[no-any-return]
 
         return res  # type: ignore[no-any-return]
+
+    def _compute_norm_basis(
+        self,
+        vector: FDataBasis,
+        lp_weight: (Callable[[GridPointsLike], NDArrayFloat] | float),
+    ) -> NDArrayFloat:
+        domain = vector.basis.domain_range
+        call = vector
+
+        def integrand(*args: GridPointsLike) -> NDArrayFloat:
+            f_args = np.asarray(args)
+
+            try:
+                f1 = call(f_args)[:, 0, :]
+            except Exception:  # noqa: BLE001
+                f1 = call(f_args)
+            weight = (
+                lp_weight
+                if isinstance(lp_weight, (float, int))
+                else lp_weight(f_args)
+            )
+            return np.asarray(
+                np.power(np.abs(f1), self.p) * weight,
+                dtype=np.float64,
+            )
+
+        integral = nquad_vec(
+            integrand,
+            domain,
+        )
+
+        return (np.sum(integral, axis=-1)) ** (1 / self.p)
+
+    def _compute_norm_grid(
+        self,
+        vector: FDataGrid,
+        vector_norm: Norm[NDArrayFloat] | float,
+        lp_weight: (Callable[[GridPointsLike], NDArrayFloat] | float),
+    ) -> NDArrayFloat:
+        data_matrix = vector.data_matrix
+
+        if isinstance(vector_norm, (float, int)):
+            data_matrix = np.linalg.norm(
+                vector.data_matrix,
+                ord=vector_norm,
+                axis=-1,
+                keepdims=True,
+            )
+        else:
+            original_shape = data_matrix.shape
+            data_matrix = data_matrix.reshape(-1, original_shape[-1])
+            data_matrix = vector_norm(data_matrix)
+            data_matrix = data_matrix.reshape((*original_shape[:-1], 1))
+
+        if np.isinf(self.p):
+            if isinstance(lp_weight, (float, int)):
+                data_matrix *= lp_weight
+            else:
+                data_matrix *= lp_weight(vector.grid_points)
+
+            res = np.max(
+                data_matrix,
+                axis=tuple(range(1, data_matrix.ndim)),
+            )
+
+        else:
+            data_matrix **= self.p
+
+            if isinstance(lp_weight, (float, int)):
+                data_matrix *= lp_weight
+            else:
+                data_matrix *= lp_weight(vector.grid_points)
+
+            integrand = vector.copy(
+                data_matrix=data_matrix,
+                coordinate_names=(None,),
+            )
+            res = integrand.integrate().ravel() ** (1 / self.p)
+
+        return res
 
 
 def weighted_lp_norm(

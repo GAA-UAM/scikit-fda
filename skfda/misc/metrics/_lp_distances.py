@@ -108,7 +108,7 @@ def _pairwise_metric_optimization_lp_fdata(
     elem1: FData,
     elem2: FData | None,
 ) -> NDArrayFloat:
-    from ...misc import inner_product, inner_product_matrix
+    from ...misc import inner_product, inner_product_matrix  # noqa: PLC0415
 
     vector_norm = metric.vector_norm
 

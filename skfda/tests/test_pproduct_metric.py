@@ -136,15 +136,20 @@ def test_invalid_weights_ndarray_shape(fd1: FDataGrid, fd2: FDataGrid) -> None:
 
 
 def test_invalid_metric_type_for_array() -> None:
-    """Raise TypeError if the number of metrics does not match array shape."""
+    """Raise TypeError if multiple metrics provided for NDArrayFloat inputs."""
     a = np.array([[1.0]])
     b = np.array([[1.0]])
     metric: PProductMetric[NDArrayFloat, NDArrayFloat] = PProductMetric(
         p=2.0,
-        metrics=[l2_distance, l2_distance],
+        metrics=[
+            l2_distance,
+            l2_distance,
+        ],  # Only one metric is allowed for array input
     )
 
-    with pytest.raises(TypeError):
+    with pytest.raises(
+        TypeError, match="Only one metric is supported for NDArrayFloat",
+    ):
         metric(a, b)
 
 

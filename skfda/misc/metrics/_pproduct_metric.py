@@ -42,7 +42,7 @@ def _(
     arg1: NDArrayFloat,
     arg2: NDArrayFloat,
 ) -> NDArrayFloat:
-    from ..metrics import l2_distance
+    from ..metrics import l2_distance  # noqa: PLC0415
 
     weights = metric.weights if metric.weights is not None else 1.0
     if not isinstance(weights, (float, int)):
@@ -72,7 +72,7 @@ def _(
     arg1: FData,
     arg2: FData,
 ) -> NDArrayFloat:
-    from ..metrics import l2_distance
+    from ..metrics import l2_distance  # noqa: PLC0415
 
     weights = metric.weights if metric.weights is not None else 1.0
     metrics = metric.metrics
@@ -253,7 +253,8 @@ class DefaultMetric(Metric[V_metric]):
 
         The computation method depends on the type of the arguments:
 
-        - If both are ``np.ndarray``, returns the absolute element-wise difference.
+        - If both are ``np.ndarray``, returns the absolute element-wise
+        difference.
         - If both are ``FData``, returns the L2 distance.
         - If both are ``pandas.DataFrame``, uses a product metric with ``p=2``.
 
@@ -275,7 +276,7 @@ class DefaultMetric(Metric[V_metric]):
             return res[0] if len(res) == 1 else res
 
         if isinstance(arg1, FData) and isinstance(arg2, FData):
-            from skfda.misc.metrics import l2_distance
+            from skfda.misc.metrics import l2_distance  # noqa: PLC0415
 
             return l2_distance(arg1, arg2)
 
@@ -373,7 +374,7 @@ class PProductMetric(BaseEstimator, Metric[V_call], Generic[V_call, V_metric]):
     ...     "num": [3.0],
     ... })
     >>> pmetric(df1, df2).round(2)
-    3.08
+    np.float64(3.08)
 
     Notes:
     - The metric is evaluated in a vectorized fashion. If `arg1` or `arg2`

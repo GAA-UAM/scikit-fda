@@ -1,5 +1,7 @@
 """Test for PProductMetric."""
 
+import re
+
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import pytest
@@ -96,7 +98,7 @@ def test_dataframe_same_structure(fd1: FDataGrid) -> None:
     assert np.isclose(dist, 0.0)
 
 
-def test_dataframe_structure_mismatch_raises(fd1: FDataGrid) -> None:
+def test_dataframe_structure_mismatch_raises(fd1: FDataGrid) -> None:  # noqa: ARG001
     """Ensure a ValueError is raised when DataFrames have mismatched keys."""
     df1 = pd.DataFrame({"a": [1.0]})
     df2 = pd.DataFrame({"b": [1.0]})
@@ -105,7 +107,10 @@ def test_dataframe_structure_mismatch_raises(fd1: FDataGrid) -> None:
         metrics={"a": l2_distance},
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Columns must be the same in both DataFrames",
+    ):
         metric(df1, df2)
 
 
@@ -120,7 +125,13 @@ def test_invalid_weights_ndarray_shape(fd1: FDataGrid, fd2: FDataGrid) -> None:
         weights=np.array([1.0, 2.0, 3.0]),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Number of weights (3) does not match"
+            " the number of dimensions (2).",
+        ),
+    ):
         metric(fd_mult, fd_mult)
 
 
@@ -139,7 +150,10 @@ def test_invalid_metric_type_for_array() -> None:
 
 def test_invalid_p_value() -> None:
     """Raise ValueError when the aggregation parameter p is less than 1."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("p (=0.5) must be equal or greater than 1."),
+    ):
         PProductMetric(p=0.5)
 
 

@@ -35,6 +35,39 @@ value of ``p`` must be explicitly passed in each call.
    skfda.misc.metrics.lp_norm
    skfda.misc.metrics.lp_distance
 
+Weighted Lp Spaces
+------------------
+
+In some applications, it is useful to emphasize certain time points more than
+others when measuring the distance between functional observations. This can
+be achieved by introducing a weight function :math:`w(t)` inside the integral.
+The weight function assigns varying importance to different regions of the
+domain :math:`\mathcal{T}`, resulting in a weighted :math:`L^p` norm.
+
+These classes generalize the standard Lp norm and distance by supporting such
+weighting. This is useful in domains where relevance is time- or region-specific—
+such as emphasizing peak hours in energy data or symptom windows in medical
+signals.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.misc.metrics.WeightedLpNorm
+   skfda.misc.metrics.WeightedLpDistance
+
+The following functional wrappers are provided for convenience, allowing direct
+evaluation of the norm or distance without explicitly creating a class instance:
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.misc.metrics.weighted_lp_norm
+   skfda.misc.metrics.weighted_lp_distance
+
+These norms and distances are compatible with the same functionality that uses
+standard Lp norms, including classification pipelines, clustering algorithms,
+and pairwise distance computations.
+
 Angular distance
 ----------------
 

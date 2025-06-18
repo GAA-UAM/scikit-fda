@@ -83,8 +83,8 @@ class WeightedLpDistance(
         >>> fd2 = skfda.FDataGrid([np.zeros(len(x))], x)
         >>>
         >>> distance = WeightedLpDistance(p=2, lp_weight=2.0)
-        >>> distance(fd1, fd2).round(2)
-        array([1.41])
+        >>> print(distance(fd1, fd2).round(2))
+        1.41
 
         If the functional data are defined over different sets of
         discretization points, the function raises an exception.

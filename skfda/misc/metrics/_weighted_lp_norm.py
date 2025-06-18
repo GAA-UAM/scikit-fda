@@ -87,7 +87,7 @@ class WeightedLpNorm:
         >>> from skfda.misc.metrics._weighted_lp_norm import WeightedLpNorm
         >>> weighted_norm = WeightedLpNorm(p=2, lp_weight=2.0)
         >>> weighted_norm(fd).round(2)
-        array([1.41, 0.82])
+        array([ 1.41,  0.82])
 
     See Also:
         :class:`LpNorm`: A subclass with uniform weight (1.0).

@@ -186,26 +186,31 @@ class WeightedLpNorm:
                 data_matrix = vector_norm(data_matrix)
                 data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
 
-            data_matrix = (
-                data_matrix * lp_weight
-                if isinstance(lp_weight, (float, int))
-                else lp_weight(vector.grid_points) * data_matrix
-            )
-
             if np.isinf(self.p):
+                if isinstance(lp_weight, (float, int)):
+                    data_matrix *= lp_weight
+                else:
+                    data_matrix *= lp_weight(vector.grid_points)
+
                 res = np.max(
                     data_matrix,
                     axis=tuple(range(1, data_matrix.ndim)),
                 )
 
             else:
+                data_matrix **= self.p
+
+                if isinstance(lp_weight, (float, int)):
+                    data_matrix *= lp_weight
+                else:
+                    data_matrix *= lp_weight(vector.grid_points)
+
                 integrand = vector.copy(
-                    data_matrix=data_matrix**self.p,
+                    data_matrix=data_matrix,
                     coordinate_names=(None,),
                 )
-                # Computes the norm, approximating the integral with Simpson's
-                # rule.
                 res = integrand.integrate().ravel() ** (1 / self.p)
+
         else:
             msg = f"LpNorm not implemented for type {type(vector)}"
             raise NotImplementedError(msg)

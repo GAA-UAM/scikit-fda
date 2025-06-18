@@ -110,3 +110,39 @@ transformation followed by another metric:
    :toctree: autosummary
 
    skfda.misc.metrics.TransformationMetric
+
+
+Product metric for mixed data
+-----------------------------
+
+In applications involving heterogeneous data—such as combinations of 
+scalar values and functional observations—it is often useful to define
+a metric that captures distances across all components in a consistent
+way. The following class implements a weighted product metric that
+supports combining multiple data types, each potentially requiring
+a different metric.
+
+This class generalizes the idea of computing a norm over a product
+space, where each component may be associated with a different scale
+or importance. It supports common functional data representations
+(:class:`~skfda.representation.FDataGrid`, 
+:class:`~skfda.representation.FDataBasis`), numeric arrays, and 
+:class:`pandas.DataFrame` objects mixing them.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.misc.metrics.PProductMetric
+   skfda.misc.metrics.pproduct_metric
+   skfda.misc.metrics.DefaultMetric
+
+The metric is defined as a weighted :math:`L^p`` norm of component-wise
+distances. Each component may be assigned its own metric and weight,
+allowing fine-grained control over the overall distance calculation.
+This is especially useful in machine learning tasks that involve mixed
+input types, such as classification or clustering over functional and
+scalar features.
+
+Functional wrappers for ease of use are also provided, along with a
+default metric that infers the appropriate behavior depending on the
+input type.

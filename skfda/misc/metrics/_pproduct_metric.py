@@ -39,8 +39,8 @@ def _compute_p_product(
 @_compute_p_product.register
 def _(
     metric: PProductMetric[V_call, V_metric],
-    arg1: NDArrayFloat,
-    arg2: NDArrayFloat,
+    arg1: np.ndarray,
+    arg2: np.ndarray,
 ) -> NDArrayFloat:
     from ..metrics import l2_distance  # noqa: PLC0415
 

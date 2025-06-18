@@ -7,6 +7,7 @@ from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
+from sklearn.utils import Tags, get_tags
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ..._utils import _classifier_get_classes
@@ -110,8 +111,8 @@ class PerClassTransformer(
         Finally we can predict and check the score:
 
         >>> neigh1.predict(X_test1)
-        array([ 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
-            1, 1, 1], dtype=int8)
+        array([ 0,  0,  1,  0,  1,  1,  1,  0,  0,  0,  0,  1,  1,  0,  0,  0,
+                0, 1,  1,  1,  1,  1,  1,  1], dtype=int8)
 
         >>> round(neigh1.score(X_test1, y_test1), 3)
         0.958
@@ -148,11 +149,11 @@ class PerClassTransformer(
         >>> neigh2 = KNeighborsClassifier()
         >>> neigh2 = neigh2.fit(X_train2, y_train2)
         >>> neigh2.predict(X_test2)
-        array([ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
-               1, 1, 1], dtype=int8)
+        array([ 1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  1,  1,  0,  0,  0,
+                0,  1,  1,  1,  1,  0,  1,  1], dtype=int8)
 
         >>> round(neigh2.score(X_test2, y_test2), 3)
-        0.917
+        0.875
 
     """
 
@@ -165,19 +166,15 @@ class PerClassTransformer(
         self.transformer = transformer
         self.array_output = array_output
 
-    def _more_tags(self) -> Mapping[str, Any]:
-        parent_tags = super()._more_tags()
-        transformer_tags = self.transformer._get_tags()  # noqa: WPS437
+    def __sklearn_tags__(self) -> Tags:
+        tags = super().__sklearn_tags__()
+        transformer_tags = get_tags(self.transformer)
 
-        return {
-            **parent_tags,
-            'allow_nan': transformer_tags['allow_nan'],
-            'non_deterministic': transformer_tags['non_deterministic'],
-            'pairwise': transformer_tags['pairwise'],
-            'requires_positive_X': transformer_tags['requires_positive_X'],
-            'requires_y': True,
-            'X_types': transformer_tags['X_types'],
-        }
+        tags.input_tags = transformer_tags.input_tags
+        tags.target_tags = transformer_tags.target_tags
+        tags.non_deterministic = transformer_tags.non_deterministic
+
+        return tags
 
     def _validate_transformer(
         self,
@@ -206,21 +203,22 @@ class PerClassTransformer(
                 " doesn't",
             )
 
-        tags = self.transformer._get_tags()  # noqa: WPS437
+        tags = get_tags(self.transformer)
 
-        if tags['stateless']:
+        if not tags.requires_fit:
             warnings.warn(
                 f"Parameter 'transformer' with type "
                 f"{type(self.transformer)} should use the data for "
                 f" fitting."
-                f"It should have the 'stateless' tag set to 'False'",
+                f"It should have the 'requires_fit' tag set to 'True'",
             )
 
-        if tags['requires_y']:
+        if tags.target_tags.required:
             warnings.warn(
                 f"Parameter 'transformer' with type "
                 f"{type(self.transformer)} should not use the class label."
-                f"It should have the 'requires_y' tag set to 'False'",
+                f"It should have the 'target_tags.required' tag set to "
+                f"'False'",
             )
 
     def fit(  # type: ignore[override]

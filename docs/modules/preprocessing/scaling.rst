@@ -67,9 +67,9 @@ and ``scale`` parameters of ``CenterScaler``.
 References
 ----------
 
-* J. Prothero, J. Hannig, and J. Marron. *New perspectives on centering*. The New England Journal of Statistics in Data Science, **1**(2), 216–236, 2023.
+* J. Prothero, J. Hannig, and J. Marron. *New perspectives on centering*. The New England Journal of Statistics in Data Science, vol. 1, no. 2, 216–236, 2023.
 
-* C. Happ and S. Greven. *Multivariate Functional Principal Component Analysis for Data Observed on Different (Dimensional) Domains*. Journal of the American Statistical Association, **113**(522), 649–659, 2018.
+* C. Happ and S. Greven. *Multivariate Functional Principal Component Analysis for Data Observed on Different (Dimensional) Domains*. Journal of the American Statistical Association, vol. 113, no. 522, 649–659, 2018.
 
 * S. Suyundykov, S. Puechmorel, and L. Ferré. *Multivariate functional data clusterization by PCA in Sobolev space using wavelets*. In *42èmes Journées de Statistique*, 2010.
 

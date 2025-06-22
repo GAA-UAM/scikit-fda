@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import invert_warping, normalize_scale
-from ..._utils._warping import L2LineEnergy, dynamic_programming_match
+from ..._utils._warping import elastic_registration_match
 from ...exploratory.stats import fisher_rao_karcher_mean
 from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions, check_fdata_same_kind
@@ -186,15 +186,10 @@ class FisherRaoElasticRegistration(
         output_points = self._output_points
 
         # Values of the warping
-        line_energy = L2LineEnergy(
-            penalty=self.penalty,
-            slope_scaling=True,
-        )
-
-        fdatagrid_gamma = dynamic_programming_match(
+        fdatagrid_gamma = elastic_registration_match(
             fdatagrid_srsf,
             self._template_srsf,
-            line_energy_function=line_energy,
+            penalty=self.penalty,
             grid_dim=self.grid_dim,
         )
 

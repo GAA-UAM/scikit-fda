@@ -11,6 +11,13 @@ from numpy.lib.stride_tricks import sliding_window_view
 from scipy.interpolate import PchipInterpolator, make_interp_spline
 from typing_extensions import override
 
+try:
+    from fdasrsf.utility_functions import optimum_reparam
+    _has_fdasrsf = True
+except ImportError:
+    optimum_reparam = None
+    _has_fdasrsf = False
+
 if TYPE_CHECKING:
     from ..representation import FDataGrid
     from ..typing._base import DomainRangeLike
@@ -747,6 +754,63 @@ def dynamic_programming_match(  # noqa: WPS210
         grid_points=grid_points,
     )
 
+def elastic_registration_match(  # noqa: WPS210
+    original: FDataGrid,
+    target: FDataGrid,
+    *,
+    penalty: float = 0,
+    grid_dim: int,
+) -> FDataGrid:
+    """
+    Matching subroutine for elastic registration.
+
+    It uses the ``fdasrsf`` package when possible, as that is 8-10 times
+    faster for large inputs. If not possible, it falls back to using
+    :func:`dynamic_programming_match`, which is written in.
+
+    Args:
+        original: Functions to be aligned.
+        target: Target function(s) to align to.
+        penalty: The penalization factor. The default, 0, is no penalization.
+        grid_dim: Dimension of the grid used in the alignment algorithm. Only
+            the direct lines from points whose grid separation with the
+            candidate point is less or equal than ``grid_dim`` are considered.
+
+    Returns:
+        The warpings that align the functions using the DP algorithm.
+
+    """
+    from ..representation import FDataGrid
+
+    if _has_fdasrsf:
+        assert optimum_reparam
+        warpings = optimum_reparam(
+            np.ascontiguousarray(target.data_matrix[0, ..., 0]),
+            np.ascontiguousarray(normalize_scale(original.grid_points[0])),
+            np.ascontiguousarray(original.data_matrix[..., 0].T),
+            method="DP2",
+            lam=penalty,
+            grid_dim=grid_dim,
+        ).T
+
+        return normalize_warping(
+                FDataGrid(
+                data_matrix=warpings,
+                grid_points=original.grid_points,
+            ),
+        )
+
+    line_energy = L2LineEnergy(
+        penalty=penalty,
+        slope_scaling=True,
+    )
+
+    return dynamic_programming_match(
+        original=original,
+        target=target,
+        line_energy_function=line_energy,
+        grid_dim=grid_dim,
+    )
 
 def invert_warping(
     warping: FDataGrid,

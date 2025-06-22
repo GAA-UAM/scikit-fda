@@ -4,58 +4,15 @@ from typing import Any
 
 import numpy as np
 import scipy.integrate
-from fdasrsf.utility_functions import optimum_reparam
 
 from ..._utils import invert_warping, normalize_scale
-from ..._utils._warping import L2LineEnergy, dynamic_programming_match
+from ..._utils._warping import elastic_registration_match
 from ...misc.metrics import l2_distance, l2_norm
 from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
 from ...representation.interpolation import SplineInterpolation
 from ...typing._numpy import NDArrayFloat
-
-###############################################################################
-# Based on the original implementation of J. Derek Tucker in                  #
-# *fdasrsf_python* (https://github.com/jdtuck/fdasrsf_python)                 #
-# and *ElasticFDA.jl* (https://github.com/jdtuck/ElasticFDA.jl).              #
-###############################################################################
-
-
-def _elastic_alignment_array(
-    template_data: NDArrayFloat,
-    q_data: NDArrayFloat,
-    eval_points: NDArrayFloat,
-    penalty: float,
-    grid_dim: int,
-) -> NDArrayFloat:
-    """
-    Wrap the :func:`optimum_reparam` function of fdasrsf.
-
-    Selects the corresponding routine depending on the dimensions of the
-    arrays.
-
-    Args:
-        template_data: Array with the srsf of the template.
-        q_data: Array with the srsf of the curves
-                to be aligned.
-        eval_points: Discretisation points of the functions.
-        penalty: Penalisation term.
-        grid_dim: Dimension of the grid used in the alignment algorithm.
-
-    Returns:
-        Array with the same shape than q_data with the srsf of
-        the functions aligned to the template(s).
-
-    """
-    return optimum_reparam(  # type: ignore[no-any-return]
-        np.ascontiguousarray(template_data.T),
-        np.ascontiguousarray(eval_points),
-        np.ascontiguousarray(q_data.T),
-        method="DP2",
-        lam=penalty,
-        grid_dim=grid_dim,
-    ).T
 
 
 def _fisher_rao_warping_mean(
@@ -262,18 +219,13 @@ def fisher_rao_karcher_mean(
     # Initialization of iteration
     mu = srsf[np.argmin(distances)]
 
-    line_energy = L2LineEnergy(
-        penalty=penalty,
-        slope_scaling=True,
-    )
-
     # Main iteration
     for _ in range(max_iter):
 
-        gammas = dynamic_programming_match(
+        gammas = elastic_registration_match(
             srsf,
             mu,
-            line_energy_function=line_energy,
+            penalty=penalty,
             grid_dim=grid_dim,
         )
         gammas.interpolation = interpolation

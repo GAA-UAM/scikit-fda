@@ -106,7 +106,7 @@ def _get_color_info(
                 for c, l in zip(
                     group_colors_array,
                     group_names_array,
-                    strict=False,
+                    strict=True,
                 )
             ]
 

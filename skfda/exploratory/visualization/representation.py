@@ -799,10 +799,10 @@ class MixedDataPlot(BasePlot):
     colors (`group_colors`) and labels (`group_names`) for legend display.
 
     Args:
-        df: pd.DataFrame object that we want to plot.
+        df: DataFrame object that we want to plot.
         chart: figure over
             with the graphs are plotted or axis over where the graphs are
-            plotted. If None and ax is also None, the figure is
+            plotted. If ``None`` and ``ax`` is also ``None``, the figure is
             initialized.
         fig: figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also

@@ -142,7 +142,7 @@ plt.show()
 # - and the vector-valued version combining both (P_vec(t)=(P(t), P'(t))).
 #
 # This illustrates two valid ways to include a function and its derivative
-# in mix
+# as part of the same observation.
 
 mixed_fd = pd.DataFrame(
     {

@@ -21,7 +21,7 @@ from sklearn.utils import Bunch
 from skfda.datasets._real_datasets import fetch_growth
 from skfda.datasets._sample_from_fdata import irregular_sample
 from skfda.preprocessing.dim_reduction import FPCA, PACE
-from skfda.representation import FDataGrid, FDataIrregular
+from skfda.representation import FDataGrid
 
 # %%
 # In this example we are going to use functional principal component analysis
@@ -48,7 +48,7 @@ from skfda.representation import FDataGrid, FDataIrregular
 # Analysis, and here it is initially provided in a dense, regular format
 # (FDataGrid).
 dataset: Bunch = fetch_growth()
-fd: FDataIrregular = dataset.data
+fd: FDataGrid = dataset.data
 assert isinstance(fd, FDataGrid), "Expected an FDataGrid object"
 
 fd[:20].plot()
@@ -107,6 +107,8 @@ ax.set_xlabel(fpca.components_.argument_names[0] or "Domain")
 ax.set_ylabel(fpca.components_.coordinate_names[0] or "Value")
 plt.show()
 
+fpca_rec.plot()
+plt.show()
 print(fpca.explained_variance_ratio_)
 
 # %%
@@ -237,6 +239,8 @@ plt.xlabel("No. of Principal Components")
 plt.ylabel("FVE (%)")
 plt.ylim(0, 105)
 plt.show()
+
+print(pace.explained_variance_ratio_[:3])
 
 # %%
 # Lastly, we can also plot the reconstructed curves using the first two

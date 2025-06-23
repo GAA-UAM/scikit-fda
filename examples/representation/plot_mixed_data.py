@@ -139,9 +139,9 @@ plt.show()
 #
 # - a scalar variable: the climate zone (weather type),
 # - functional variables: the temperature :math:`T(t)` and its derivative
-# :math:`T'(t)`,
+#   :math:`T'(t)`,
 # - and the vector-valued function combining both precipitation and its
-# derivative: :math:`P_{\text{vec}}(t) = (P(t), P'(t))`.
+#   derivative: :math:`P_{\text{vec}}(t) = (P(t), P'(t))`.
 #
 # This illustrates two valid ways to include a function and its derivative
 # as part of the same observation.

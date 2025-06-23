@@ -15,7 +15,7 @@ visualize this data using `pandas` and scikit-fda's visualization tools.
 # sphinx_gallery_thumbnail_number = 1
 
 
-# %% [markdown]
+# %%
 # We load the Canadian weather dataset. This dataset includes daily
 # temperature and precipitation curves for 35 weather stations in Canada,
 # along with a scalar variable: the climate zone of each station.
@@ -34,7 +34,7 @@ fd = X.iloc[:, 0].values  # noqa: PD011
 fd_temperatures = fd.coordinates[0]
 fd_precipitations = fd.coordinates[1]
 
-# %% [markdown]
+# %%
 # We visualize the two functional components separately.
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 4))
@@ -44,15 +44,15 @@ fd_precipitations.plot(axes=axes[1])
 fig.tight_layout()
 plt.show()
 
-# %% [markdown]
+# %%
 # To enrich the data with dynamic information, we compute the first derivative
 # of both temperature and precipitation curves. These derivatives can capture
 # local variation patterns such as rising or falling trends.
 
-fd_1st_temperatures = fd_temperatures.derivative(order=1)
-fd_1st_precipitations = fd_precipitations.derivative(order=1)
+fd_1st_temperatures = fd_temperatures.derivative()
+fd_1st_precipitations = fd_precipitations.derivative()
 
-# %% [markdown]
+# %%
 # Derivative curves often benefit from smoothing, especially when we plan to
 # use them in downstream tasks like clustering or regression.
 # We use Fourier basis representations with 5 elements for this purpose.
@@ -87,17 +87,15 @@ fd_1st_precipitations_smooth = smoother_precipitations.fit_transform(
 )
 
 fd_precipitations.argument_names = ("t (day)",)
-fd_1st_precipitations_smooth.argument_names =  ("t (day)",)
+fd_1st_precipitations_smooth.argument_names = ("t (day)",)
 fd_1st_temperatures_smooth.argument_names = ("t (day)",)
 
 fd_precipitations.coordinate_names = ("P(t) (mm.)",)
-fd_1st_precipitations_smooth.coordinate_names = (
-    "P'(t) (mm./days)",
-)
-fd_temperatures.coordinate_names =  ("T(t) (ºC)",)
+fd_1st_precipitations_smooth.coordinate_names = ("P'(t) (mm./days)",)
+fd_temperatures.coordinate_names = ("T(t) (ºC)",)
 fd_1st_temperatures_smooth.coordinate_names = ("T'(t) (ºC/days)",)
 
-# %% [markdown]
+# %%
 # Let's take a look at the smoothed derivatives.
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 4))
@@ -110,7 +108,7 @@ fd_1st_precipitations_smooth.plot(axes=axes[1])
 
 fig.tight_layout()
 plt.show()
-# %% [markdown]
+# %%
 # Now we build a vector-valued functional object that combines the original
 # temperature and its derivative. This type of structure is useful when you
 # want to treat them as a single feature with multiple components.
@@ -126,7 +124,7 @@ fd_vector = FDataGrid(
     grid_points=fd_temperatures.grid_points,
     coordinate_names=fd_precipitations.coordinate_names
     + fd_1st_precipitations_smooth.coordinate_names,
-    argument_names = fd_1st_precipitations_smooth.argument_names,
+    argument_names=fd_1st_precipitations_smooth.argument_names,
 )
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 3))
@@ -135,11 +133,15 @@ fd_vector.plot(axes=axes)
 fig.tight_layout()
 plt.show()
 
-# %% [markdown]
-# We now create a mixed data object using a `pandas.DataFrame`. This includes:
+# %%
+# We now create a mixed data object using a :class:`pandas.DataFrame`. This
+# includes:
+#
 # - a scalar variable: the climate zone (weather type),
-# - functional variables: the temperature (T(t)) and its derivative (T'(t)),
-# - and the vector-valued version combining both (P_vec(t)=(P(t), P'(t))).
+# - functional variables: the temperature :math:`T(t)` and its derivative
+# :math:`T'(t)`,
+# - and the vector-valued function combining both precipitation and its
+# derivative: :math:`P_{\text{vec}}(t) = (P(t), P'(t))`.
 #
 # This illustrates two valid ways to include a function and its derivative
 # as part of the same observation.
@@ -153,16 +155,18 @@ mixed_fd = pd.DataFrame(
     },
 )
 
-# %% [markdown]
-# Finally, we use `plot_mixed_data` to visualize the full mixed dataset. Each
-# column is visualized with an appropriate method, helping us explore the
-# structure in both scalar and functional components.
+# %%
+# Finally, we use
+# :func:`~skfda.exploratory.visualization.representation.plot_mixed_data`
+# to visualize the full mixed dataset. Each column is visualized with an
+# appropriate method, helping us explore the structure in both scalar and
+# functional components.
 
 from skfda.exploratory.visualization.representation import plot_mixed_data
 
 fig, axes = plt.subplots(1, 4, figsize=(28, 7))
 
-plot_mixed_data(mixed_fd, axes= axes)
+plot_mixed_data(mixed_fd, axes=axes)
 fig.suptitle("Canadian Weather", fontsize=24)
 for ax in fig.axes:
     title = ax.get_title()

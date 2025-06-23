@@ -800,33 +800,33 @@ class MixedDataPlot(BasePlot):
 
     Args:
         df: DataFrame object that we want to plot.
-        chart: figure over
+        chart: Figure over
             with the graphs are plotted or axis over where the graphs are
             plotted. If ``None`` and ``ax`` is also ``None``, the figure is
             initialized.
-        fig: figure over with the graphs are
+        fig: Figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
-        axes: axis over where the graphs
+        axes: Axis over where the graphs
             are plotted. If None, see param fig.
-        n_rows: designates the number of rows of the figure
+        n_rows: Designates the number of rows of the figure
             to plot the different dimensions of the image. Only specified
             if fig and ax are None.
-        n_cols: designates the number of columns of the
+        n_cols: Designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
-        group: contains integers from [0 to number of
+        group: Contains integers from [0 to number of
             labels) indicating to which group each sample belongs to. Then,
             the samples with the same label are plotted in the same color.
             If None, the default value, each sample is plotted in the color
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-        group_colors: colors in which groups are
+        group_colors: Colors in which groups are
             represented, there must be one for each group. If None, each
             group is shown with distinct colors in the "Greys" colormap.
-        group_names: name of each of the groups which appear
+        group_names: Name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
-        legend: if `True`, show a legend with the groups. If
+        legend: If `True`, show a legend with the groups. If
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.

@@ -45,9 +45,10 @@ fig.tight_layout()
 plt.show()
 
 # %%
-# To enrich the data with dynamic information, we compute the first derivative
-# of both temperature and precipitation curves. These derivatives can capture
-# local variation patterns such as rising or falling trends.
+# To enrich the data with information about temporal changes, we compute the
+# first derivative of both temperature and precipitation curves. These
+# derivatives can capture local variation patterns such as rising or falling
+# trends.
 
 fd_1st_temperatures = fd_temperatures.derivative()
 fd_1st_precipitations = fd_precipitations.derivative()

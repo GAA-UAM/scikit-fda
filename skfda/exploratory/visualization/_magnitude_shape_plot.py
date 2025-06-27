@@ -77,13 +77,8 @@ class MagnitudeShapePlot(BasePlot):
             contains the points plotted in the graph.
         outliers (1-D array, (fdata.n_samples,)): Contains 1 or 0 to denote
             if a sample is an outlier or not, respecively.
-        colormap(matplotlib.pyplot.LinearSegmentedColormap, optional): Colormap
-            from which the colors of the plot are extracted. Defaults to
-            'seismic'.
-        color (float, optional): Tone of the colormap in which the nonoutlier
-            points are  plotted. Defaults to 0.2.
-        outliercol (float, optional): Tone of the colormap in which the
-            outliers are plotted. Defaults to 0.8.
+        nonoutlier_color: Color for non-outlier points.
+        outlier_color: Color for outlier points.
         xlabel (string, optional): Label of the x-axis. Defaults to 'MO',
             mean of the  directional outlyingness.
         ylabel (string, optional): Label of the y-axis. Defaults to 'VO',
@@ -127,6 +122,8 @@ class MagnitudeShapePlot(BasePlot):
         fig: Figure | None = None,
         axes: Sequence[Axes] | None = None,
         ellipsoid: bool = True,
+        nonoutlier_color: Any = "C0",
+        outlier_color: Any = "C3",
         **kwargs: Any,
     ) -> None:
 
@@ -150,9 +147,10 @@ class MagnitudeShapePlot(BasePlot):
 
         self._fdata = fdata
         self._outliers = outliers
-        self._colormap = matplotlib.colormaps['seismic']
-        self._color = 0.2
-        self._outliercol = 0.8
+
+        self._nonoutlier_color = nonoutlier_color
+        self._outlier_color = outlier_color
+        
         self.xlabel = 'MO'
         self.ylabel = 'VO'
         self.title = (
@@ -184,40 +182,20 @@ class MagnitudeShapePlot(BasePlot):
         return self._outliers  # type: ignore[no-any-return]
 
     @property
-    def colormap(self) -> Colormap:
-        return self._colormap
+    def nonoutlier_color(self) -> Any:
+        return self._nonoutlier_color
 
-    @colormap.setter
-    def colormap(self, value: Colormap) -> None:
-        if not isinstance(value, matplotlib.colors.Colormap):
-            raise ValueError(
-                "colormap must be of type "
-                "matplotlib.colors.Colormap",
-            )
-        self._colormap = value
+    @nonoutlier_color.setter
+    def nonoutlier_color(self, value: Any) -> None:
+        self._nonoutlier_color = value
 
     @property
-    def color(self) -> float:
-        return self._color
+    def outlier_color(self) -> Any:
+        return self._outlier_color
 
-    @color.setter
-    def color(self, value: float) -> None:
-        if value < 0 or value > 1:
-            raise ValueError(
-                "color must be a number between 0 and 1.")
-
-        self._color = value
-
-    @property
-    def outliercol(self) -> float:
-        return self._outliercol
-
-    @outliercol.setter
-    def outliercol(self, value: float) -> None:
-        if value < 0 or value > 1:
-            raise ValueError(
-                "outcol must be a number between 0 and 1.")
-        self._outliercol = value
+    @outlier_color.setter
+    def outlier_color(self, value: Any) -> None:
+        self._outlier_color = value
 
     @property
     def n_samples(self) -> int:
@@ -233,11 +211,10 @@ class MagnitudeShapePlot(BasePlot):
             (self.n_samples, 1),
             dtype=Artist,
         )
-        colors = np.zeros((self.fdata.n_samples, 4))
-        colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
-        colors[np.where(self.outliers == 0)] = self.colormap(self.color)
-
-        colors_rgba = [tuple(i) for i in colors]
+        
+        # Assign colors directly
+        colors = np.full((self.fdata.n_samples,), self.nonoutlier_color, dtype=object)
+        colors[self.outliers == 1] = self.outlier_color
 
         if self.ellipsoid:
             center = self.outlier_detector.cov_.location_
@@ -271,7 +248,7 @@ class MagnitudeShapePlot(BasePlot):
             self.artists[i, 0] = axes[0].scatter(
                 self.points[:, 0].ravel()[i],
                 self.points[:, 1].ravel()[i],
-                color=colors_rgba[i],
+                color=colors[i],
                 picker=True,
                 pickradius=2,
             )
@@ -290,9 +267,8 @@ class MagnitudeShapePlot(BasePlot):
             f"\ncutoff_factor={repr(self.cutoff_factor)},"
             f"\npoints={repr(self.points)},"
             f"\noutliers={repr(self.outliers)},"
-            f"\ncolormap={self.colormap.name},"
-            f"\ncolor={repr(self.color)},"
-            f"\noutliercol={repr(self.outliercol)},"
+            f"\nnonoutlier_color={repr(self.nonoutlier_color)},"
+            f"\noutlier_color={repr(self.outlier_color)},"
             f"\nxlabel={repr(self.xlabel)},"
             f"\nylabel={repr(self.ylabel)},"
             f"\ntitle={repr(self.title)})"

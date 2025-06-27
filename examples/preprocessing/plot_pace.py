@@ -202,6 +202,16 @@ plt.show()
 # Variations in their trajectories appear more smoothed due to the effect of
 # the kernel smoothers used for the mean and covariance surface.
 fig, ax = plt.subplots()
+for i, sample in enumerate(fpca.components_):
+    label = fpca.components_.sample_names[i]
+    sample.plot(axes=ax, label=label)
+
+ax.set_ylim(-0.4, 0.6)
+ax.set_xlabel(fpca.components_.argument_names[0] or "Domain")
+ax.set_ylabel(fpca.components_.coordinate_names[0] or "Value")
+plt.show()
+
+fig, ax = plt.subplots()
 for i, sample in enumerate(pace.components_):
     label = pace.components_.sample_names[i]
     sample.plot(axes=ax, label=label)
@@ -292,13 +302,13 @@ for ax, i in zip(axes, subject_indices, strict=True):
 plt.tight_layout()
 plt.show()
 
+# %%
 # In these two cases, we can see that the reconstructions are remarkably
 # accurate. However, in subject 6 we see that, because no points from the last
 # stages are included, the reconstruction does not capture the slight increase.
 # This stresses the importance of utilising a densely populated dataset for
 # more accurate results.
-
-# %%
+#
 # We can finalise the analysis by plotting the reconstructed curves of the
 # whole dataset, to showcase its similarity to the mean function, as well as
 # highlight the new ways of analysis that this FDataGrid object allows us to
@@ -319,7 +329,7 @@ aligned_pred = fpca_rec.data_matrix[:, idx2]
 mse_per_curve = np.mean((aligned_true - aligned_pred) ** 2, axis=1)
 average_mse = np.mean(mse_per_curve)
 
-print(average_mse)
+print("MSE with FPCA " + str(average_mse))
 
 
 grid1 = fd.grid_points[0]
@@ -335,7 +345,7 @@ aligned_pred = reconstructed.data_matrix[:, idx2]
 mse_per_curve = np.mean((aligned_true - aligned_pred) ** 2, axis=1)
 average_mse = np.mean(mse_per_curve)
 
-print(average_mse)
+print("MSE with PACE " + str(average_mse))
 
 # %%
 # In conclusion, this analysis demonstrates how Functional Principal Component

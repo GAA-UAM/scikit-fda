@@ -249,7 +249,7 @@ plt.tight_layout()
 plt.show()
 
 print(knn_scores)
-
+# %%
 # Analysing the classification scores for each experiment, we observe that,
 # even in the worst case scenario, the classification is more accurate than
 # a random classificator (20% success) or a classificator by majority (32.17%

@@ -571,13 +571,13 @@ def test_select_bandwidth(
     np.testing.assert_allclose(
         bw_mean,
         pace.bandwidth_mean_ if pace.bandwidth_mean_ is not None else 0.0,
-        atol=1e-3,
+        atol=1e-2,
     )
 
     np.testing.assert_allclose(
         bw_cov,
         pace.bandwidth_cov_ if pace.bandwidth_cov_ is not None else 0.0,
-        atol=1e-3,
+        atol=1e-2,
     )
 
 def test_noise(

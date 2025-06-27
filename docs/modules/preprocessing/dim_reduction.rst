@@ -45,6 +45,7 @@ of the covariance between the two data blocks.
    
    skfda.preprocessing.dim_reduction.FPCA
    skfda.preprocessing.dim_reduction.FPLS
+   skfda.preprocessing.dim_reduction.PACE
 
 Difussion methods
 -----------------

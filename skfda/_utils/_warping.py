@@ -196,6 +196,34 @@ def _dp_recover_warpings(
     return na_interpolator.transform(warpings)
 
 
+def _refine_grid(
+    grid: NDArrayFloat,
+    points_between: int,
+) -> NDArrayFloat:
+    """
+    Make a grid finer adding equispaced points between the original ones.
+
+    Args:
+        grid: The grid to refine.
+        points_between: Number of points to add between each pair of points
+            of the grid.
+
+    Returns:
+        A finer grid, including `points_between` equispaced points between each
+        pair of original points. Its length is
+        N + `points_between` * (N - 1), where N is the number of points
+        originally in `grid`.
+
+    """
+    return np.concat((
+        np.linspace(
+            grid[:-1],
+            grid[1:],
+            points_between + 2, # add extremes
+        ).mT[:, :-1].ravel(),
+        grid[-1:],
+    ))
+
 class L2LineEnergy(LineEnergyFunction):
     r"""
     L2 line energy with roughness penalty.
@@ -258,9 +286,9 @@ class L2LineEnergy(LineEnergyFunction):
         ... )
         >>> energies[:, 3]
         array([[[        inf,         inf,         inf,         inf],
-                [        inf,  0.109375  ,  0.30859375,  0.47558594],
-                [        inf,  0.        ,  0.046875  ,  0.10546875],
-                [        inf,  0.03125   ,  0.        ,  0.0078125 ]]])
+                [        inf,  0.084375  ,  0.29234375,  0.45902344],
+                [        inf,  0.        ,  0.041875  ,  0.09421875],
+                [        inf,  0.02125   ,  0.        ,  0.0053125 ]]])
 
         Note that the cells ``(1, 0)`` and ``(2, 1)`` have 0 energy.
         This is because they correspond to linear warpings that align
@@ -279,7 +307,7 @@ class L2LineEnergy(LineEnergyFunction):
         >>> energies[:, 1]
         array([[[        inf,         inf,         inf,         inf],
                 [        inf,         inf,         inf,         inf],
-                [        inf,         inf,         inf,  0.04166667],
+                [        inf,         inf,         inf,  0.02833333],
                 [        inf,         inf,         inf,  0.        ]]])
 
         This has again 0 energy at ``(1, 0)``, because it is possible to
@@ -304,7 +332,7 @@ class L2LineEnergy(LineEnergyFunction):
         ...    row=3,
         ... )
         >>> grid_1[:, 3]
-        array([[[ 0.0078125]]])
+        array([[[ 0.00585938]]])
 
         >>> grid_dim = 2
 
@@ -321,8 +349,8 @@ class L2LineEnergy(LineEnergyFunction):
         ...    row=3,
         ... )
         >>> grid_2[:, 3]
-        array([[[ 0.046875  ,  0.10546875],
-                [ 0.        ,  0.0078125 ]]])
+        array([[[ 0.04224537,  0.09505208],
+                [ 0.        ,  0.00549769]]])
 
         As it can be seen, the results correspond to the lower-right part
         of the complete grid.
@@ -348,9 +376,9 @@ class L2LineEnergy(LineEnergyFunction):
         ... )
         >>> energies[:, 3]
         array([[[        inf,         inf,         inf,         inf],
-                [        inf,  0.109375  ,  0.39438019,  0.72558594],
-                [        inf,  0.08578644,  0.046875  ,  0.14836197],
-                [        inf,  0.28125   ,  0.04289322,  0.0078125 ]]])    
+                [        inf,  0.084375  ,  0.37813019,  0.70902344],
+                [        inf,  0.08578644,  0.041875  ,  0.13711197],
+                [        inf,  0.27125   ,  0.04289322,  0.0053125 ]]])
 
         Note that the terms on the main diagonal are not penalized in this
         case, as there is no difference in slope with respect to the
@@ -382,35 +410,11 @@ class L2LineEnergy(LineEnergyFunction):
             (grid_dim, 0),
             constant_values=np.nan,
         )
-        interval_lenghts = np.diff(
-            self.grid_points,
-            prepend=self.grid_points[0],
-        )
-        self.interval_lenghts_extended = np.pad(
-            interval_lenghts,
-            (grid_dim, 0),
-            constant_values=np.nan,
-        )
 
         self.interpolator = make_interp_spline(
             self.grid_points,
             original.data_matrix[..., 0].mT,
             k=1,
-        )
-
-        self.target_data_matrix_extended = np.concat(
-            (
-            np.full(
-                (
-                    target.data_matrix.shape[0],
-                    grid_dim, 
-                    target.data_matrix.shape[2],
-                ),
-                fill_value=0,
-            ),
-            target.data_matrix,
-            ),
-            axis=1,
         )
 
     def compute_row_quantities(
@@ -426,37 +430,33 @@ class L2LineEnergy(LineEnergyFunction):
         t_i = self.grid_points_extended[row:row + grid_dim, None]
         self.total_interval_length = t_row - t_i
 
-        t = self.grid_points_extended[row:row + grid_dim + 1]
+        self.integration_grid = _refine_grid(
+            self.grid_points_extended[row:row + grid_dim + 1],
+            grid_dim,
+        )
         self.l_matrix = (
-            (t - t_i) / self.total_interval_length
+            (self.integration_grid - t_i) / self.total_interval_length
         )[:, None, :]
 
-        self.y_t = self.target_data_matrix_extended[
-            :,
-            None,
-            None,
-            row:row + grid_dim + 1,
-            0,
-        ]
+        self.y_t = target(self.integration_grid)[:, None, None, :, 0]
+        self.y_t[np.isnan(self.y_t)] = 0
 
-        row_interval_lenghts = self.interval_lenghts_extended[
-            row:row + grid_dim + 1
-        ]
+        row_interval_lenghts = np.diff(
+            self.integration_grid,
+            prepend=self.integration_grid[0],
+        )
         quadrature_weights = row_interval_lenghts / 2
         quadrature_weights[:-1] += row_interval_lenghts[1:] / 2
 
         # We set the weights of unused points to 0
-        quadrature_weights = np.triu(
-            np.tile(quadrature_weights, (grid_dim, 1)),
-        )
+        quadrature_weights = np.tile(quadrature_weights, (grid_dim, 1))
+        for i in range(grid_dim):
+            row_idx = i * (grid_dim + 1)
+            quadrature_weights[i, :row_idx] = 0
 
-        # Final correction: adjust the weight at the extreme
-        # We need to remove t_i - t_{i-1} only at the leftmost point
-        quadrature_weights_diag = np.diagonal(quadrature_weights)
-        np.fill_diagonal(
-            quadrature_weights,
-            quadrature_weights_diag - row_interval_lenghts[:-1] / 2,
-        )
+            # Final correction: adjust the weight at the extreme
+            # We need to remove t_i - t_{i-1} only at the leftmost point
+            quadrature_weights[i, row_idx] = row_interval_lenghts[row_idx + 1] / 2
 
         # Add column dimension
         quadrature_weights = quadrature_weights[:, None, :]

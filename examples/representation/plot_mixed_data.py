@@ -20,22 +20,16 @@ visualize this data using `pandas` and scikit-fda's visualization tools.
 # temperature and precipitation curves for 35 weather stations in Canada,
 # along with a scalar variable: the climate zone of each station.
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd  # type: ignore[import-untyped]
-
-import skfda
 from skfda import datasets
-from skfda.preprocessing.smoothing import BasisSmoother
-from skfda.representation.grid import FDataGrid
 
 X, y = datasets.fetch_weather(return_X_y=True, as_frame=True)
-fd = X.iloc[:, 0].values  # noqa: PD011
+fd = X.iloc[:, 0].values
 fd_temperatures = fd.coordinates[0]
 fd_precipitations = fd.coordinates[1]
 
 # %%
 # We visualize the two functional components separately.
+import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
@@ -57,6 +51,9 @@ fd_1st_precipitations = fd_precipitations.derivative()
 # Derivative curves often benefit from smoothing, especially when we plan to
 # use them in downstream tasks like clustering or regression.
 # We use Fourier basis representations with 5 elements for this purpose.
+
+import skfda
+from skfda.preprocessing.smoothing import BasisSmoother
 
 range_temperatures = (
     fd_temperatures.grid_points[0][0],
@@ -114,6 +111,9 @@ plt.show()
 # temperature and its derivative. This type of structure is useful when you
 # want to treat them as a single feature with multiple components.
 
+import numpy as np
+
+from skfda.representation.grid import FDataGrid
 
 data_matrix = np.concatenate(
     [fd_precipitations.data_matrix, fd_1st_precipitations_smooth.data_matrix],
@@ -146,6 +146,7 @@ plt.show()
 #
 # This illustrates two valid ways to include a function and its derivative
 # as part of the same observation.
+import pandas as pd
 
 mixed_fd = pd.DataFrame(
     {

@@ -163,5 +163,5 @@ colors and display legends for better interpretability.
 
    skfda.exploratory.visualization.representation.MixedDataPlot
 
-See the `Mixed Data Plot Example <../auto_examples/plot_mixed_data.html>`_ for a
+See the example :ref:`sphx-glr-auto-examples-representation-plot-mixed-data-py` for a
 detailed explanation and usage demonstration.

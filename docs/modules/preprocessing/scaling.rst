@@ -2,15 +2,15 @@ Scaling
 =======================
 
 In the context of vector valued functional data and mixed data, scaling and 
-centring becomes a important aspect to consider before applying any analysis.
+centering becomes a important aspect to consider before applying any analysis.
 In classical functional data analysis, centring and scaling functional data 
 is not considered in the literature as a normal practice. When you have a 
 set of functions, where all of them are sampled in the same domain, measure 
 the same phenomenon and are measured in the same units, it is not necessary 
-to centre or scale the data, distances between the functions are already 
-meaningful. However, when we have a vector valued functional dataset or a 
+to center or scale the data: distances between the functions are already 
+meaningful. However, when you have a vector valued functional dataset or a 
 mixed dataset, where each component is measured in different units or scales,
-it becomes necessary to centre and scale the data before applying any analysis.
+it becomes necessary to center and scale the data before applying any analysis.
 
 This module provides transformers that follow the scikit-learn API and apply
 centering and/or scaling to functional data represented as either

@@ -132,6 +132,15 @@ interval using extrapolation methods.
 
    representation/extrapolation
 
+Conversion
+------------
+Convert irregular data to basis representation using mixed effects models.
+
+.. toctree::
+   :maxdepth: 4
+
+   representation/conversion
+
 Deprecated Classes
 ----------------------
 

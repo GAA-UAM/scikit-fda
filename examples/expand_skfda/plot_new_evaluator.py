@@ -1,4 +1,4 @@
-# type: ignore
+# mypy: disable-error-code="arg-type"
 """
 Creating a new interpolation or extrapolation strategy
 ======================================================
@@ -9,12 +9,6 @@ Shows how to add new interpolation and extrapolation strategies.
 # Author: Carlos Ramos Carreño
 # License: MIT
 
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.interpolate import lagrange
-
-from skfda.representation import FDataGrid
-
 # %%
 # In this example, we want to showcase how it is possible to make new
 # interpolation and extrapolation strategies.
@@ -23,7 +17,6 @@ from skfda.representation import FDataGrid
 
 def evaluator_prototype(fdata, eval_points, *, aligned):
     """Prototype of a extrapolation/interpolation strategy."""
-    pass
 
 # %%
 # Here, ``fdata`` is a :class:`~skfda.representation.FData` object,
@@ -39,6 +32,9 @@ def evaluator_prototype(fdata, eval_points, *, aligned):
 # This is in general a bad idea, as when the number of points is high this
 # polynomial has rapid oscillations between the measured points.
 # Moreover, the implementation here is not vectorized and has low performance.
+
+import numpy as np
+from scipy.interpolate import lagrange
 
 
 def evaluator_lagrange(fdata, eval_points, *, aligned):
@@ -68,6 +64,9 @@ def evaluator_lagrange(fdata, eval_points, *, aligned):
 # default for :class:`~skfda.representation.grid.FDataGrid` it already calls
 # the interpolation if no extrapolation is defined.
 
+import matplotlib.pyplot as plt
+
+from skfda.representation import FDataGrid
 
 X = FDataGrid(
     [[0, 1, 2], [0, 1, 8], [0, 0, 0]],
@@ -75,7 +74,8 @@ X = FDataGrid(
     interpolation=evaluator_lagrange,
 )
 
-X.plot()
+fig = X.plot()
+X.scatter(fig=fig)
 plt.show()
 
 # %%

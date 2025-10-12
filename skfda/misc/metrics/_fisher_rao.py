@@ -166,8 +166,8 @@ def fisher_rao_amplitude_distance(
     .. math::
         \mathcal{R}(\gamma) = \|\sqrt{\gamma'}- 1 \|_{\mathbb{L}^2}^2
 
-    See the :footcite:`srivastava+klassen_2016_functionala` for a
-    detailed explanation.
+    See Srivastava and Klassen (chapter 4)\ 
+    :footcite:p:`srivastava+klassen_2016` for a detailed explanation.
 
     If the observations are defined in a :term:`domain` different than (0,1)
     their domains are normalized to this interval with an affine
@@ -264,8 +264,8 @@ def fisher_rao_phase_distance(
 
     where :math:`\gamma_{id}` is the identity warping.
 
-    See :footcite:`srivastava+klassen_2016_functionala` for a detailed
-    explanation.
+    See Srivastava and Klassen (chapter 4)\ 
+    :footcite:p:`srivastava+klassen_2016` for a detailed explanation.
 
     If the observations are defined in a :term:`domain` different than (0,1)
     their domains are normalized to this interval with an affine
@@ -348,8 +348,8 @@ def _fisher_rao_warping_distance(
         d_{\Gamma}(\gamma_i, \gamma_j) = cos^{-1} \left ( \int_0^1
         \sqrt{\gamma_i'(t)\gamma_j'(t)}dt \right )
 
-    See :footcite:`srivastava+klassen_2016_functionala` for a detailed
-    explanation.
+    See Srivastava and Klassen (chapter 4)\ 
+    :footcite:p:`srivastava+klassen_2016` for a detailed explanation.
 
     If the warpings are not defined in [0,1], an affine transformation is made
     to change the :term:`domain`.

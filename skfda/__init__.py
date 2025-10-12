@@ -33,4 +33,4 @@ if TYPE_CHECKING:
         concatenate as concatenate,
     )
 
-__version__ = "0.9.2.dev0"
+__version__ = "0.10.2.dev0"

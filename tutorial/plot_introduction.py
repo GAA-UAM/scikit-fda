@@ -15,7 +15,7 @@ machine learning practicioners in the Python scientific ecosystem.
 # Author: Carlos Ramos Carreño
 # License: MIT
 
-##############################################################################
+# %%
 # What is functional data analysis?
 # ---------------------------------
 #
@@ -50,7 +50,7 @@ machine learning practicioners in the Python scientific ecosystem.
 # multivariate statistics, but also adapting and extending multivariate
 # techniques when possible.
 
-##############################################################################
+# %%
 # What is scikit-fda?
 # -------------------
 #
@@ -73,7 +73,7 @@ machine learning practicioners in the Python scientific ecosystem.
 #       learning library `scikit-learn <https://scikit-learn.org/>`_.
 
 
-##############################################################################
+# %%
 # Anatomy of a function
 # ---------------------
 #
@@ -101,28 +101,29 @@ machine learning practicioners in the Python scientific ecosystem.
 # :math:`\{x_i: \mathcal{T} \subseteq \mathbb{R} \to \mathbb{R}\}_{i=1}^N`
 # (curves or trajectories).
 
-##############################################################################
+# %%
 # As an example, the following code shows the Berkeley Growth dataset, one
 # of the classical datasets used in :term:`FDA`. The curves are heights of
 # 93 boys and girls measured at several points since their birth to
 # their 18th birthday. Here the domain :math:`\mathcal{T}` is the interval
 # :math:`[0, 18]` and both the domain and codomain have a dimension of one.
 
-import skfda
 import matplotlib.pyplot as plt
+
+import skfda
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
 X.plot()
 plt.show()
 
-##############################################################################
+# %%
 # Functions where the domain dimension is greater than one (
 # such as surfaces or higher dimensional objects) are referred to as functions
 # of several variables. Functions where the codomain dimension is greater than
 # one are called vector-valued functions.
 
-##############################################################################
+# %%
 # As an example we show another popular dataset: Canadian Weather. Here each
 # observation correspond to data taken from a different weather station in
 # Canada. For each day of the year we have two values: the average temperature

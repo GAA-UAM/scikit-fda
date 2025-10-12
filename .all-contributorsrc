@@ -387,7 +387,10 @@
       "contributions": [
         "code",
         "ideas",
-        "research"
+        "research",
+        "doc",
+        "example",
+        "test"
       ]
     },
     {
@@ -593,7 +596,10 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/24703335?v=4",
       "profile": "https://github.com/luisheb",
       "contributions": [
-        "doc"
+        "doc",
+        "code",
+        "test",
+        "infra"
       ]
     },
     {
@@ -602,7 +608,30 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/72515278?v=4",
       "profile": "https://github.com/E105D104U125",
       "contributions": [
-        "code"
+        "code",
+        "doc",
+        "test",
+        "example",
+        "research"
+      ]
+    },
+    {
+      "login": "aleexarias",
+      "name": "Alejandro Arias",
+      "avatar_url": "https://avatars.githubusercontent.com/u/79541307?v=4",
+      "profile": "https://github.com/aleexarias",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "rosignol08",
+      "name": "rosignol08",
+      "avatar_url": "https://avatars.githubusercontent.com/u/159790609?v=4",
+      "profile": "https://romaric.site/",
+      "contributions": [
+        "code",
+        "test"
       ]
     }
   ],

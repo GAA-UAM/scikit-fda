@@ -22,6 +22,7 @@ The following functions are used to retrieve specific functional datasets:
    skfda.datasets.fetch_phoneme
    skfda.datasets.fetch_tecator
    skfda.datasets.fetch_weather
+   skfda.datasets.fetch_bone_density
 
 Those functions return a dictionary with at least a "data" field containing the
 instance data, and a "target" field containing the class labels or regression values,
@@ -47,10 +48,10 @@ The following functions are used to make synthetic functional datasets:
 .. autosummary::
    :toctree: autosummary
 	
-   skfda.datasets.euler_maruyama
    skfda.datasets.make_gaussian
    skfda.datasets.make_gaussian_process
    skfda.datasets.make_sinusoidal_process
    skfda.datasets.make_multimodal_samples
    skfda.datasets.make_multimodal_landmarks
    skfda.datasets.make_random_warping
+   skfda.datasets.make_sde_trajectories

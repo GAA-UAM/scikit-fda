@@ -1,18 +1,17 @@
 """Implementation of Lp norms."""
+
 import math
-from builtins import isinstance
-from typing import Union
+from typing import Final
 
 import numpy as np
-import scipy.integrate
-from typing_extensions import Final
 
+from ..._utils import nquad_vec
 from ...representation import FData, FDataBasis, FDataGrid
 from ...typing._metric import Norm
 from ...typing._numpy import NDArrayFloat
 
 
-class LpNorm():
+class LpNorm:
     r"""
     Norm of all the observations in a FDataGrid object.
 
@@ -87,12 +86,13 @@ class LpNorm():
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+        vector_norm: Norm[NDArrayFloat] | float | None = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
         if not np.isinf(p) and p < 1:
-            raise ValueError(f"p (={p}) must be equal or greater than 1.")
+            msg = f"p (={p}) must be equal or greater than 1."
+            raise ValueError(msg)
 
         self.p = p
         self.vector_norm = vector_norm
@@ -103,7 +103,10 @@ class LpNorm():
             f"p={self.p}, vector_norm={self.vector_norm})"
         )
 
-    def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:
+    def __call__(  # noqa: C901
+        self,
+        vector: NDArrayFloat | FData,
+    ) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
         from ...misc import inner_product
 
@@ -120,20 +123,29 @@ class LpNorm():
             vector_norm = self.p
 
         # Special case, the inner product is heavily optimized
-        if self.p == vector_norm == 2:
+        if self.p == vector_norm == 2:  # noqa: PLR2004
             return np.sqrt(inner_product(vector, vector))
 
         if isinstance(vector, FDataBasis):
-            if self.p != 2:
-                raise NotImplementedError
+            domain = vector.basis.domain_range
+            call = vector
 
-            start, end = vector.domain_range[0]
-            integral = scipy.integrate.quad_vec(
-                lambda x: np.power(np.abs(vector(x)), self.p),
-                start,
-                end,
+            def integrand(*args: NDArrayFloat) -> NDArrayFloat:
+                f_args = np.asarray(args)
+                val = call(f_args)
+                try:
+                    f1 = val[:, 0, :]
+                except IndexError:
+                    f1 = val
+
+                return np.power(np.abs(f1), self.p)
+
+            integral = nquad_vec(
+                integrand,
+                domain,
             )
-            res = np.sqrt(integral[0]).flatten()
+
+            res = (np.sum(integral, axis=-1)) ** (1 / self.p)
 
         elif isinstance(vector, FDataGrid):
             data_matrix = vector.data_matrix
@@ -161,16 +173,15 @@ class LpNorm():
             else:
 
                 integrand = vector.copy(
-                    data_matrix=data_matrix ** self.p,
+                    data_matrix=data_matrix**self.p,
                     coordinate_names=(None,),
                 )
                 # Computes the norm, approximating the integral with Simpson's
                 # rule.
                 res = integrand.integrate().ravel() ** (1 / self.p)
         else:
-            raise NotImplementedError(
-                f"LpNorm not implemented for type {type(vector)}",
-            )
+            msg = f"LpNorm not implemented for type {type(vector)}"
+            raise NotImplementedError(msg)
 
         if len(res) == 1:
             return res[0]  # type: ignore[no-any-return]
@@ -184,10 +195,10 @@ linf_norm: Final = LpNorm(math.inf)
 
 
 def lp_norm(
-    vector: Union[NDArrayFloat, FData],
+    vector: NDArrayFloat | FData,
     *,
     p: float,
-    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+    vector_norm: Norm[NDArrayFloat] | float | None = None,
 ) -> NDArrayFloat:
     r"""Calculate the norm of all the observations in a FDataGrid object.
 
@@ -267,7 +278,7 @@ def lp_norm(
             ....
         ValueError: p (=0.5) must be equal or greater than 1.
 
-    See also:
+    See Also:
         :class:`LpNorm`
 
     """

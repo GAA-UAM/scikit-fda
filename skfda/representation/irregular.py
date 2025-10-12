@@ -9,7 +9,16 @@ from __future__ import annotations
 
 import itertools
 import numbers
-from typing import Any, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pandas.api.extensions
@@ -33,6 +42,9 @@ from .grid import FDataGrid
 from .interpolation import SplineInterpolation
 
 T = TypeVar("T", bound='FDataIrregular')
+IrregularToBasisConversionType = Literal[
+    "function-wise", "mixed-effects", "mixed-effects-minimize",
+]
 
 ######################
 # Auxiliary functions#
@@ -587,7 +599,7 @@ class FDataIrregular(FData):  # noqa: WPS214
     def integrate(
         self: T,
         *,
-        domain: Optional[DomainRange] = None,
+        domain: DomainRange | None = None,
     ) -> NDArrayFloat:
         """Integrate the FDataIrregular object.
 
@@ -744,7 +756,11 @@ class FDataIrregular(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def cov(self: T) -> T:
+    def cov(
+        self: T,
+        /,
+        correction: int = 0,
+    ) -> T:
         """Compute the covariance for a FDataIrregular object.
 
         Returns:
@@ -1064,14 +1080,38 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         return ScatterPlotIrregular(self, *args, **kwargs).plot()
 
-    def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
+    def to_basis(
+        self,
+        basis: Basis,
+        *,
+        conversion_type: IrregularToBasisConversionType = "function-wise",
+        **kwargs: Any,
+    ) -> FDataBasis:
         """Return the basis representation of the object.
 
         Args:
             basis (Basis): basis object in which the functional data are
                 going to be represented.
-            kwargs: keyword arguments to be passed to
-                FDataBasis.from_data().
+            conversion_type: method to use for the conversion:
+
+                - "function-wise": (default) each curve is converted independently
+                    (meaning that only the information of each curve is used
+                    for its conversion) with
+                    :class:`~skfda.preprocessing.smoothing.BasisSmoother`.
+                - "mixed-effects": all curves are converted jointly (this means
+                    that the information of all curves is used to convert each
+                    one) using the EM algorithm to fit the mixed effects
+                    model:
+                    :class:`~skfda.representation.conversion.EMMixedEffectsConverter`.
+                - "mixed-effects-minimize": all curves are converted jointly
+                    using the scipy.optimize.minimize to fit the mixed effects
+                    model:
+                    :class:`~skfda.representation.conversion.MinimizeMixedEffectsConverter`.
+            kwargs: keyword arguments to be passed to FDataBasis.from_data()
+                in the case of conversion_type="separately". If conversion_type
+                has another value, the keyword arguments are passed to the fit
+                method of the
+                :class:`~skfda.representation.conversion.MixedEffectsConverter`.
 
         Raises:
             ValueError: Incorrect domain dimension
@@ -1080,9 +1120,40 @@ class FDataIrregular(FData):  # noqa: WPS214
         Returns:
             FDataBasis: Basis representation of the funtional data
             object.
-        """
-        from ..preprocessing.smoothing import BasisSmoother
 
+        .. jupyter-execute::
+
+            from skfda.datasets import fetch_weather, irregular_sample
+            from skfda.representation.basis import FourierBasis
+            import matplotlib.pyplot as plt
+            fd_temperatures = fetch_weather().data.coordinates[0]
+            temp_irregular = irregular_sample(
+                fdata=fd_temperatures,
+                n_points_per_curve=8,
+                random_state=4934755,
+            )
+            basis = FourierBasis(
+                n_basis=5, domain_range=fd_temperatures.domain_range,
+            )
+            temp_basis_repr = temp_irregular.to_basis(
+                basis, conversion_type="mixed-effects",
+            )
+            fig = plt.figure(figsize=(10, 10))
+            for k in range(4):
+                axes = plt.subplot(2, 2, k + 1)
+                fd_temperatures.plot(axes=axes, alpha=0.05, color="black")
+                fd_temperatures[k].plot(
+                    axes=axes, color=f"C{k}",
+                    label="Original data", linestyle="--",
+                )
+                temp_basis_repr[k].plot(
+                    axes=axes, color=f"C{k}",
+                    label="Basis representation",
+                )
+                temp_irregular[k].scatter(axes=axes, color=f"C{k}")
+                plt.legend()
+            plt.show()
+        """
         if self.dim_domain != basis.dim_domain:
             raise ValueError(
                 f"The domain of the function has "
@@ -1102,6 +1173,22 @@ class FDataIrregular(FData):  # noqa: WPS214
         if not basis.is_domain_range_fixed():
             basis = basis.copy(domain_range=self.domain_range)
 
+        if conversion_type in ("mixed-effects", "mixed-effects-minimize"):
+            from ..representation.conversion import (
+                EMMixedEffectsConverter,
+                MinimizeMixedEffectsConverter,
+            )
+            converter_class = (
+                EMMixedEffectsConverter if conversion_type == "mixed-effects"
+                else MinimizeMixedEffectsConverter
+            )
+            converter = converter_class(basis)
+            return converter.fit_transform(self, **kwargs)
+
+        if conversion_type != "function-wise":
+            raise ValueError(f"Invalid conversion type: {conversion_type}")
+
+        from ..preprocessing.smoothing import BasisSmoother
         smoother = BasisSmoother(
             basis=basis,
             **kwargs,

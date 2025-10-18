@@ -224,6 +224,186 @@ def _refine_grid(
         grid[-1:],
     ))
 
+
+def _compute_integral_lockstep(
+    original: FDataGrid,
+    target: FDataGrid,
+    *,
+    row: int,
+    grid_dim: int,
+    starting_point_index: NDArrayInt,
+    warping_intercepts: NDArrayFloat,
+    warping_slopes: NDArrayFloat,
+    slope_scaling: bool,
+) -> NDArrayFloat:
+    r"""
+    Computes the integral in a lockstep manner, to guarantee accuracy.
+
+    We need to compute the integral of a piecewise function. However, the
+    points at which the function changes slope are not the original ones,
+    but the union of the original grid, and the warped one.
+
+    We can compute this iterating along both curves in a lockstep way.
+    This should not be very inefficient, as there are only 2 times
+    `grid_dim` points.
+
+    Args:
+        original: Functions to be aligned.
+        target: Target function(s) to align to.
+        row: The row index of the candidate point.
+        grid_dim: Dimension of the grid used in the alignment
+            algorithm. Only the direct lines from points whose grid
+            separation with the candidate point is less or equal than
+            ``grid_dim`` are considered.
+        starting_point_index: The index where each warping starts.
+        warping_intercepts: Intercepts of the warping functions.
+        warping_slopes: Slopes of the warping functions.
+        slope_scaling: Wether to scale the original data by the square root
+            of the slope of the interval. This is necessary when we work with
+            the SRSF of the curves instead of with the curves themselves.
+
+    Examples:
+        Consider a simple case with 4 irregularly sampled discretization
+        points:
+
+        >>> import numpy as np
+        >>> grid_points = np.array([0, 0.5, 0.75, 1])
+
+        We use the identity function :math:`x(t) = t` and the piecewise
+        linear function :math:`y(t) = \max(0, 2t - 1)`:
+
+        >>> from skfda import FDataGrid
+        >>> original = FDataGrid(grid_points, grid_points=grid_points)
+        >>> target = FDataGrid(
+        ...     np.maximum(0, 2 * grid_points - 1),
+        ...     grid_points=grid_points,
+        ... )
+
+        Consider the case with the identity warping. The integral should be
+        then 1 / 3.
+
+        >>> _compute_integral_lockstep(
+        ...     original=original,
+        ...     target=target,
+        ...     row=len(grid_points) - 1,
+        ...     grid_dim=len(grid_points),
+        ...     starting_point_index=None,
+        ...     warping_intercepts=0,
+        ...     warping_slopes=1,
+        ...     slope_scaling=False,
+        ... )
+
+        Consider the warping :math:`w(t) = 2t - 1`:
+
+    """
+    warping_slopes_root = np.sqrt(warping_slopes)
+    starting_point_index = np.clip(
+        np.arange(row - grid_dim, row, dtype=np.int64), 
+        0,
+        row,
+    )
+    grid_points = original.grid_points[0]
+    starting_point = grid_points[starting_point_index]
+
+    integrals: float | NDArrayFloat = 0
+
+    point_current = grid_points[starting_point_index]
+
+    original_idx_current = np.copy(starting_point_index)
+    target_idx_current = np.copy(starting_point_index)
+
+    original_value_current = original.data_matrix[:, original_idx_current]
+    target_value_current = target.data_matrix[:, target_idx_current]
+
+    # Loop here until the intervals are fully travelled
+    for _ in range(2 * grid_dim):
+
+        original_idx_next = np.clip(original_idx_current + 1, None, row)
+        target_idx_next = np.clip(target_idx_current + 1, None, row)
+
+        original_point_candidate = (
+            warping_intercepts
+            + warping_slopes * grid_points[original_idx_next]
+        )
+        target_point_candidate = grid_points[target_idx_next]
+
+        next_is_original = (
+            original_point_candidate < target_point_candidate
+        )
+        point_next = np.where(
+            next_is_original,
+            original_point_candidate,
+            target_point_candidate,
+        )
+
+        original_value_current = original.data_matrix[:, original_idx_current]
+        target_value_current = target.data_matrix[:, target_idx_current]
+
+        original_slope_current = (
+            original.data_matrix[:, original_idx_next]
+            - original_value_current
+        ) / (original_point_candidate - point_current)[:, None]
+
+        target_slope_current = (
+            target.data_matrix[:, target_idx_next] - target_value_current
+        ) / (target_point_candidate - point_current)[:, None]
+
+        point_step = point_next - point_current
+
+        original_value_next = (
+            original_value_current
+            + original_slope_current * point_step[:, None]
+        )
+        target_value_next = (
+            target_value_current
+            + target_slope_current * point_step[:, None]
+        )
+
+        x_left = (
+            original_value_current * warping_slopes_root
+            if slope_scaling
+            else original_value_current
+        )
+        x_right = (
+            original_value_next * warping_slopes_root
+            if slope_scaling
+            else original_value_next
+        )
+
+        # Integrate (x-y)^2 over an interval where (x-y) is linear.
+        # Thus f(t) = x(t) - y(t) = at + b
+        # And it follows that the integral between t_0 and t_1 of f^2(t) is
+        # I = Δt/3 (f(t_0)^2 + f(t_0)f(t_1) + f(t_1)^2)
+        left = x_left - target_value_current
+        right = x_right - target_value_next
+
+        interval_integral = (
+            point_step[:, None] / 3 * (left**2 + left * right + right**2)
+        )
+
+        # Remove contribution of warpings that do not have this interval
+        interval_integral[:, point_current < starting_point] = 0
+
+        integrals += interval_integral
+
+        # Update times
+        point_current = point_next
+        original_idx_current = np.where(
+            next_is_original,
+            original_idx_next,
+            original_idx_current,
+        )
+        target_idx_current = np.where(
+            next_is_original,
+            target_idx_current,
+            target_idx_next,
+        )
+        original_value_current = original_value_next
+        target_value_current = target_value_next
+
+    return integrals
+
+
 class L2LineEnergy(LineEnergyFunction):
     r"""
     L2 line energy with roughness penalty.
@@ -475,8 +655,9 @@ class L2LineEnergy(LineEnergyFunction):
         r"""
         Compute the line energies for the :math:`L^2` distance.
 
-        This computes, for each row ``i`` and column ``j``, with ``i < row``
-        and ``j < column`` the following distance:
+        The computation is performed in parallel for each column `column`.
+        For each row ``i`` and column ``j``, with ``i < row``
+        and ``j < column`` it computes the following distance:
 
         .. math::
             d(x, y) = \int_{t_i}^{t_{row}} (x(w(t)) - y(t))^2 dt
@@ -489,7 +670,6 @@ class L2LineEnergy(LineEnergyFunction):
             original: Functions to be aligned.
             target: Target function(s) to align to.
             row: The row index of the candidate point.
-            column: The column index of the candidate point.
             grid_dim: Dimension of the grid used in the alignment
                 algorithm. Only the direct lines from points whose grid
                 separation with the candidate point is less or equal than
@@ -529,6 +709,17 @@ class L2LineEnergy(LineEnergyFunction):
 
         warping_slopes = t_column_minus_t_j.mT / self.total_interval_length
         warping_slopes_root = np.sqrt(warping_slopes)
+
+        integral = _compute_integral_lockstep(
+            original=original,
+            target=target,
+            row=row,
+            grid_dim=grid_dim,
+            starting_point_index=all_t_j,
+            warping_intercepts=all_t_j,
+            warping_slopes=warping_slopes,
+            slope_scaling=self.slope_scaling,
+        )
 
         x_t = np.moveaxis(self.interpolator(warpings), -1, 1)
 

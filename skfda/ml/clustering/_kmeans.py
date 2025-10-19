@@ -54,7 +54,7 @@ class BaseKMeans(
         n_init: int = 1,
         max_iter: int = 100,
         tol: float = 1e-4,
-        random_state: RandomStateLike = 0,
+        random_state: RandomStateLike = None,
     ):
         """Initialize the BaseKMeans class.
 
@@ -62,9 +62,9 @@ class BaseKMeans(
             n_clusters: Number of groups into which the samples
                 are classified. Defaults to 2.
             init: Contains the initial centers of the
-                different clusters the algorithm starts with. Its data_marix
+                different clusters the algorithm starts with. Its ``data_matrix``
                 must be of the shape (n_clusters, fdatagrid.ncol,
-                fdatagrid.dim_codomain). Defaults to None, and the centers are
+                fdatagrid.dim_codomain). Defaults to ``None``, and the centers are
                 initialized randomly.
             metric: functional data metric. Defaults to
                 *l2_distance*.
@@ -80,7 +80,7 @@ class BaseKMeans(
             random_state:
                 Determines random number generation for centroid
                 initialization. Use an int to make the randomness
-                deterministic. Defaults to 0.
+                deterministic. Defaults to ``None``.
                 See :term:`Glossary <random_state>`.
         """
         self.n_clusters = n_clusters
@@ -530,9 +530,9 @@ class KMeans(BaseKMeans[Input, NDArrayInt]):
         n_clusters: Number of groups into which the samples are
             classified. Defaults to 2.
         init: Contains the initial centers of the
-            different clusters the algorithm starts with. Its data_marix must
+            different clusters the algorithm starts with. Its ``data_matrix`` must
             be of the shape (n_clusters, fdatagrid.ncol,
-            fdatagrid.dim_codomain). Defaults to None, and the centers are
+            fdatagrid.dim_codomain). Defaults to ``None``, and the centers are
             initialized randomly.
         metric: functional data metric. Defaults to
             *l2_distance*.
@@ -546,7 +546,7 @@ class KMeans(BaseKMeans[Input, NDArrayInt]):
             algorithm.
         random_state:
             Determines random number generation for centroid initialization.
-            Use an int to make the randomness deterministic. Defaults to 0.
+            Use an int to make the randomness deterministic. Defaults to ``None``.
             See :term:`Glossary <random_state>`.
 
     Attributes:
@@ -693,9 +693,9 @@ class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
         n_clusters: Number of groups into which the samples are
             classified. Defaults to 2.
         init: Contains the initial centers of the
-            different clusters the algorithm starts with. Its data_marix must
+            different clusters the algorithm starts with. Its ``data_matrix`` must
             be of the shape (n_clusters, fdatagrid.ncol,
-            fdatagrid.dim_codomain). Defaults to None, and the centers are
+            fdatagrid.dim_codomain). Defaults to ``None``, and the centers are
             initialized randomly.
         metric: functional data metric. Defaults to
             *l2_distance*.
@@ -709,7 +709,7 @@ class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
             algorithm.
         random_state:
             Determines random number generation for centroid initialization.
-            Use an int to make the randomness deterministic. Defaults to 0.
+            Use an int to make the randomness deterministic. Defaults to ``None``.
             See :term:`Glossary <random_state>`.
         fuzzifier: Scalar parameter used to specify the
             degree of fuzziness in the fuzzy algorithm. Defaults to 2.
@@ -763,7 +763,7 @@ class FuzzyCMeans(BaseKMeans[Input, NDArrayFloat]):
         n_init: int = 1,
         max_iter: int = 100,
         tol: float = 1e-4,
-        random_state: RandomStateLike = 0,
+        random_state: RandomStateLike = None,
         fuzzifier: float = 2,
     ) -> None:
         super().__init__(

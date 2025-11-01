@@ -1,23 +1,28 @@
 """Functional data descriptive statistics."""
+
 from __future__ import annotations
 
 import functools
-from builtins import isinstance
-from typing import Callable, TypeVar, Union
+from typing import TYPE_CHECKING, TypeVar
 
 import numpy as np
 from scipy.stats import rankdata
 
 from skfda._utils.ndfunction import average_function_value
 
+from ..._utils import function_to_fdatabasis
 from ...misc.metrics._lp_distances import l2_distance
 from ...representation import FData, FDataBasis, FDataGrid, FDataIrregular
-from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
 
-F = TypeVar('F', bound=FData)
-T = TypeVar('T', bound=Union[NDArrayFloat, FData])
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from ...typing._metric import Metric
+
+F = TypeVar("F", bound=FData)
+T = TypeVar("T", bound=NDArrayFloat | FData)
 
 
 def mean(
@@ -122,7 +127,8 @@ def std(X: F, correction: int = 0) -> F:
         :term:`functional data object` with just one sample.
 
     """
-    raise NotImplementedError("Not implemented for this type")
+    msg = "Not implemented for this type"
+    raise NotImplementedError(msg)
 
 
 @std.register
@@ -130,7 +136,9 @@ def std_fdatagrid(X: FDataGrid, correction: int = 0) -> FDataGrid:
     """Compute the standard deviation of a FDataGrid."""
     return X.copy(
         data_matrix=np.std(
-            X.data_matrix, axis=0, ddof=correction,
+            X.data_matrix,
+            axis=0,
+            ddof=correction,
         )[np.newaxis, ...],
         sample_names=(None,),
     )
@@ -138,12 +146,15 @@ def std_fdatagrid(X: FDataGrid, correction: int = 0) -> FDataGrid:
 
 @std.register
 def std_fdatairregular(
-    X: FDataIrregular, correction: int = 0,
+    X: FDataIrregular,
+    correction: int = 0,
 ) -> FDataIrregular:
     """Compute the standard deviation of a FDataIrregular."""
-    common_points, common_values = X._get_common_points_and_values()
+    common_points, common_values = X._get_common_points_and_values()  # noqa: SLF001
     std_values = np.std(
-        common_values, axis=0, ddof=correction,
+        common_values,
+        axis=0,
+        ddof=correction,
     )
 
     return FDataIrregular(
@@ -161,7 +172,9 @@ def std_fdatabasis(X: FDataBasis, correction: int = 0) -> FDataBasis:
 
     basis = X.basis
     coeff_cov_matrix = np.cov(
-        X.coefficients, rowvar=False, ddof=correction,
+        X.coefficients,
+        rowvar=False,
+        ddof=correction,
     ).reshape((basis.n_basis, basis.n_basis))
 
     def std_function(t_points: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
@@ -191,9 +204,10 @@ def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:
     num_functions_above = X.copy(
         data_matrix=rankdata(
             -X.data_matrix,
-            method='max',
+            method="max",
             axis=0,
-        ) - 1,
+        )
+        - 1,
     )
 
     return (
@@ -222,7 +236,7 @@ def depth_based_median(
     Returns:
         Object containing the computed depth_based median.
 
-    See also:
+    See Also:
         :func:`geometric_median`
 
     """
@@ -242,7 +256,6 @@ def depth_based_median(
 
 
 def _weighted_average(X: T, weights: NDArrayFloat) -> T:
-
     if isinstance(X, FData):
         return (X * weights).sum()
 
@@ -252,7 +265,7 @@ def _weighted_average(X: T, weights: NDArrayFloat) -> T:
 def geometric_median(
     X: T,
     *,
-    tol: float = 1.e-8,
+    tol: float = 1.0e-8,
     metric: Metric[T] = l2_distance,
 ) -> T:
     r"""
@@ -282,7 +295,6 @@ def geometric_median(
         Object containing the computed geometric median.
 
     Example:
-
         >>> from skfda import FDataGrid
         >>> data_matrix = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
         >>> X = FDataGrid(data_matrix)
@@ -290,7 +302,7 @@ def geometric_median(
         >>> median.data_matrix[0, ..., 0]
         array([ 1. ,  1. ,  3. ,  0.5])
 
-    See also:
+    See Also:
         :func:`depth_based_median`
 
     References:
@@ -302,10 +314,11 @@ def geometric_median(
     distances = metric(X, median)
 
     while True:
-        zero_distances = (distances == 0)
+        zero_distances = distances == 0
         n_zeros = np.sum(zero_distances)
         weights_new = (
-            (1 / distances) / np.sum(1 / distances) if n_zeros == 0
+            (1 / distances) / np.sum(1 / distances)
+            if n_zeros == 0
             else (1 / n_zeros) * zero_distances
         )
 
@@ -325,7 +338,8 @@ def trim_mean(
     *,
     depth_method: Depth[F] | None = None,
 ) -> FDataGrid:
-    """Compute the trimmed means based on a depth measure.
+    """
+    Compute the trimmed means based on a depth measure.
 
     The trimmed means consists in computing the mean function without a
     percentage of least deep curves. That is, we first remove the least deep
@@ -352,7 +366,7 @@ def trim_mean(
     if depth_method is None:
         depth_method = ModifiedBandDepth()
 
-    n_samples_to_keep = (len(X) - int(len(X) * proportiontocut))
+    n_samples_to_keep = len(X) - int(len(X) * proportiontocut)
 
     # compute the depth of each curve and store the indexes in descending order
     depth = depth_method(X)
@@ -361,3 +375,213 @@ def trim_mean(
     trimmed_curves = X[indices_descending_depth[:n_samples_to_keep]]
 
     return trimmed_curves.mean()
+
+
+def individual_observation_mean(X: FData) -> NDArrayFloat:
+    r"""
+    Compute the individual mean (integrated average) of each sample.
+
+    For each function in the dataset, this computes its average value over
+    the domain. This is used to remove vertical shifts or normalize each
+    function based on its overall magnitude.
+
+    Mathematically:
+        .. math::
+            m_i = \int_\mathcal{T} X_i(t) \, dt
+
+    Args:
+        X: Functional dataset.
+
+    Returns:
+        A 1D array containing the integrated mean of each observation.
+
+    Raises:
+        TypeError: If `X` is not a supported FData type.
+    """
+    return average_function_value(X)
+
+
+def grand_mean(X: FData) -> NDArrayFloat:
+    r"""
+    Compute the grand mean scalar of the dataset.
+
+    This value is the average of the individual observation means across the
+    entire dataset. It provides a scalar summary of the central tendency
+    of the dataset.
+
+    Mathematically:
+        .. math::
+            m = \frac{1}{N} \sum_{i=1}^{N} m_i
+
+        where m_i is the integral of each function. Therefore the general
+        formula can be expressed as:
+
+        .. math::
+            X_i(t)-m \quad\text{where}\quad m = \frac{1}{N} \sum_{n=1}^{N}
+            \frac{1}{\mu(T)} \int_\mathcal{T} X_n(t) \, dt.
+
+    Args:
+        X: Functional dataset.
+
+    Returns:
+        A scalar representing the grand mean of all functions.
+
+    Raises:
+        TypeError: If `X` is not a supported FData type.
+    """
+    individual_mean = average_function_value(X)
+
+    return np.array(individual_mean.mean())
+
+
+def root_integrated_sample_variance(
+    X: FData,
+    correction: int = 0,
+) -> NDArrayFloat:
+    r"""
+    Compute the root integrated sample variance (RISV) for scaling.
+
+    This method estimates the variability of functional observations over
+    the domain and returns a scalar scaling factor. The output can be used
+    to normalize each function and avoid dominance of components with large
+    amplitude.
+
+    Mathematically:
+        .. math::
+            S = \sqrt{\frac{1}{N - \text{correction}} \sum_{i=1}^N
+                \int_\mathcal{T} (X_i(t) - m(t))^2 \, dt}
+
+        where m(t) is the functional mean.
+
+    This method can be used in vector valued and mixed functional data
+    contexts to allow for fair comparison between different components.
+
+    Args:
+        X: Functional dataset to scale.
+        correction: Degrees of freedom correction. Use 1 for sample variance.
+        Defaults to cero.
+
+    Returns:
+        A 1D NumPy array with the scaling factor for each component.
+
+    Raises:
+        TypeError: If `X` is not a supported FData type.
+    """
+    if isinstance(X, FDataGrid):
+        x_minus_mean = X - X.mean()
+        x_squared = X.copy(
+            data_matrix=(x_minus_mean.data_matrix) ** 2,
+            coordinate_names=(None,),
+        )
+
+    elif isinstance(X, FDataBasis):
+        x_squared = function_to_fdatabasis(
+            lambda x: (X(x) - X.mean()(x)) ** 2,
+            new_basis=X.basis,
+        )
+    else:
+        msg = "Unsupported FData type."
+        raise TypeError(msg)
+
+    values = np.sum(average_function_value(x_squared)) * (
+        1 / (X.n_samples - correction)
+    )
+    scale = np.sqrt(values)
+    return np.atleast_1d(np.array(scale, dtype=np.float64))
+
+
+def root_mean_square_l2(X: FData, correction: int = 0) -> NDArrayFloat:
+    r"""
+    Compute the root mean square (RMS) L2 norm of a functional dataset.
+
+    This method calculates a global scaling factor for functional data by
+    computing the square root of the average integrated squared norm of the
+    functions. Unlike the root integrated sample variance (RISV), this method
+    does not subtract the mean function before squaring, and therefore captures
+    the total magnitude of the functions rather than their variability around
+    the mean.
+
+    Mathematically:
+        .. math::
+            S = \sqrt{ \frac{1}{N} \sum_{i=1}^N \int_{\mathcal{T}} X_i(t)^2 dt}
+
+    This RMS L2 norm is useful when centering is not desired, such as in
+    scaling functional data with non-zero baselines or when preserving vertical
+    offsets.
+
+    Args:
+        X: Functional dataset to be scaled.
+        correction: Degrees of freedom correction. Use 1 for sample variance.
+        Defaults to cero.
+
+    Returns:
+        A 1D NumPy array with the scaling factor for all components.
+
+    Raises:
+        TypeError: If `X` is not a supported FData type.
+
+    """
+    if isinstance(X, FDataGrid):
+        x_squared = X.copy(
+            data_matrix=(X.data_matrix) ** 2,
+            coordinate_names=(None,),
+        )
+
+    elif isinstance(X, FDataBasis):
+        x_squared = function_to_fdatabasis(
+            lambda x: X(x) ** 2,
+            new_basis=X.basis,
+        )
+    else:
+        msg = "Unsupported FData type."
+        raise TypeError(msg)
+
+    values = np.sum(average_function_value(x_squared)) * (
+        1 / (X.n_samples - correction)
+    )
+    scale = np.sqrt(values)
+    return np.atleast_1d(np.array(scale, dtype=np.float64))
+
+
+def individual_root_mean_square_l2(X: FData) -> NDArrayFloat:
+    r"""
+    Compute the individual root mean square of a functional dataset.
+
+    This method calculates a individual RMS scaling factor, where each function
+    is scaled using its own root mean square. This approach captures the
+    magnitude of each observation independently, without aggregating
+    information across the dataset.
+
+    Mathematically:
+        .. math::
+            S_i = \sqrt{\int_{\mathcal{T}} X_i(t)^2 dt}
+
+    Args:
+        X: Functional dataset to be scaled.
+
+
+    Returns:
+        A 1D NumPy array with the scaling factor for each component.
+
+    Raises:
+        TypeError: If `X` is not a supported FData type.
+
+    """
+    if isinstance(X, FDataGrid):
+        x_squared = X.copy(
+            data_matrix=(X.data_matrix) ** 2,
+            coordinate_names=(None,),
+        )
+
+    elif isinstance(X, FDataBasis):
+        x_squared = function_to_fdatabasis(
+            lambda x: X(x) ** 2,
+            new_basis=X.basis,
+        )
+    else:
+        msg = "Unsupported FData type."
+        raise TypeError(msg)
+
+    values = average_function_value(x_squared)
+    scale = np.sqrt(values)
+    return np.atleast_1d(np.array(scale, dtype=np.float64))

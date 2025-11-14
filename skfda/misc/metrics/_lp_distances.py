@@ -24,11 +24,11 @@ class LpDistance(NormInducedMetric[NDArrayFloat | FData]):
 
     Calculates the distance between two functional objects.
 
-    For each pair of observations f and g the distance between them is defined
-    as:
+    For each pair of observations :math:`\mathbf{X}_1` and :math:`\mathbf{X}_2`
+    the distance between them is defined as:
 
     .. math::
-        d(x, y) = \| x - y \|_p
+        d(\mathbf{X}_1, \mathbf{X}_2) = \| \mathbf{X}_1 - \mathbf{X}_2 \|_p
 
     where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 
@@ -74,7 +74,6 @@ class LpDistance(NormInducedMetric[NDArrayFloat | FData]):
         ValueError: ...
 
     """
-
     def __init__(
         self,
         p: float,
@@ -109,7 +108,7 @@ def _pairwise_metric_optimization_lp_fdata(
     elem1: FData,
     elem2: FData | None,
 ) -> NDArrayFloat:
-    from ...misc import inner_product, inner_product_matrix
+    from ...misc import inner_product, inner_product_matrix  # noqa: PLC0415
 
     vector_norm = metric.vector_norm
 
@@ -156,11 +155,12 @@ def lp_distance(
 
     Calculates the distance between two functional objects.
 
-    For each pair of observations f and g the distance between them is defined
-    as:
+    For each pair of observations :math:`\mathbf{X}_1` and :math:`\mathbf{X}_2`
+    the distance between them is defined as:
 
     .. math::
-        d(f, g) = d(g, f) = \| f - g \|_p
+        d(\mathbf{X}_1, \mathbf{X}_2) = d(\mathbf{X}_2, \mathbf{X}_1) = \|
+        \mathbf{X}_1 - \mathbf{X}_2 \|_p
 
     where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 

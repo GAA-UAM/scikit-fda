@@ -10,5 +10,9 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "missing",
         "registration",
         "smoothing",
+        "binning",
     ],
+    submod_attrs={
+        "binning": ["GridBinner"],
+    },
 )

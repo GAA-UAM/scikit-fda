@@ -1,7 +1,8 @@
 """Data Binning Module with GridBinner class."""
 
 import itertools
-from typing import Any, List, Optional, Tuple, Union, cast
+from collections.abc import Sequence
+from typing import Any, Optional, Union, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -9,30 +10,30 @@ from numpy.typing import NDArray
 from skfda._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from skfda.representation import FDataGrid, FDataIrregular
 
-BinsTypeDim1 = Union[int, NDArray[np.float64]]
-BinsType = Union[BinsTypeDim1, Tuple[BinsTypeDim1, ...]]
-NBinsNDim = Union[Tuple[int, ...], List[int]]
-ArrayNDimType = Union[
-    NDArray[np.float64],
-    Tuple[NDArray[np.float64], ...],
-]
-RangeType = Optional[
-    Union[Tuple[float, float], Tuple[Tuple[float, float], ...]]
-]
-ProcessBins = Tuple[
+from ..typing._base import (
+    DomainRange,
+    DomainRangeLike,
+    GridPoints,
+    NDArrayFloat,
+)
+
+BinsTypeDim1 = int | NDArrayFloat
+BinsType = BinsTypeDim1 | tuple[BinsTypeDim1, ...]
+
+NBinsNDim = Sequence[int]
+ArrayNDimType = NDArrayFloat | GridPoints
+
+RangeType = DomainRange | None
+RangeTypeLike = DomainRangeLike | None
+
+ProcessBins = tuple[
     int,
-    Optional[ArrayNDimType],
-    Optional[Tuple[int, ...]],
+    ArrayNDimType | None,
+    tuple[int, ...] | None,
 ]
-OutputGridTypeStr = Union[
-    str,
-    ArrayNDimType,
-]
-ProcessOutputGrid = Tuple[
-    Optional[str],
-    Optional[ArrayNDimType],
-]
-TupleOutputGrid = Tuple[None, Tuple[NDArray[np.float64], ...]]
+OutputGridTypeStr = str | ArrayNDimType
+ProcessOutputGrid = tuple[str | None, ArrayNDimType | None]
+TupleOutputGrid = tuple[None, GridPoints]
 
 
 class GridBinner(  # noqa: WPS230
@@ -83,9 +84,9 @@ class GridBinner(  # noqa: WPS230
         ``n_bins_``: Number of bins. Defined after fitting.
         ``bin_edges_``: Array with the specified or calculated bin edges.
             Defined after fitting.
-        ``min_domain``: List with the minimum value of the domain range of the
+        ``min_domain``: list with the minimum value of the domain range of the
             output FDataGrid for each dimension. Defined after fitting.
-        ``max_domain``: List with the maximum value of the domain range of the
+        ``max_domain``: list with the maximum value of the domain range of the
             output FDataGrid for each dimension. Defined after fitting.
         ``bin_representative``: Mode to compute the value in domain of each
             bin. Can be None if the grid has been specified as array.
@@ -164,8 +165,8 @@ class GridBinner(  # noqa: WPS230
         self.bins = bins
         bins_result = self._process_bins_param(bins)
         self.dim = bins_result[0]
-        self.bin_edges: Optional[ArrayNDimType] = bins_result[1]
-        self.n_bins: Optional[NBinsNDim] = bins_result[2]
+        self.bin_edges: ArrayNDimType | None = bins_result[1]
+        self.n_bins: NBinsNDim | None = bins_result[2]
 
         self._validate_range_param(domain_range, self.dim)
 
@@ -174,9 +175,8 @@ class GridBinner(  # noqa: WPS230
         self.output_grid = grid_result[1]
 
         if bin_aggregation not in {"mean", "median"}:
-            raise ValueError(
-                "Bin aggregation must be one of 'mean' or 'median'.",
-            )
+            error_msg = "Bin aggregation must be one of 'mean' or 'median'."
+            raise ValueError(error_msg)
 
         self.domain_range: RangeType = domain_range
         self.bin_aggregation = bin_aggregation
@@ -198,10 +198,11 @@ class GridBinner(  # noqa: WPS230
         # One dimensional cases
         if isinstance(bins, int):
             if bins < 1:
-                raise ValueError(
+                error_msg = (
                     "Number of bins must be greater than 0 in every dimension "
                     "of the domain.",
                 )
+                raise ValueError(error_msg)
             return 1, None, (bins,)
 
         if isinstance(bins, np.ndarray):
@@ -482,8 +483,8 @@ class GridBinner(  # noqa: WPS230
         Args:
             X: FDataGrid to be binned.
         """
-        self.min_domain: List[float] = []
-        self.max_domain: List[float] = []
+        self.min_domain: list[float] = []
+        self.max_domain: list[float] = []
 
         if self.bin_edges is None:
             if self.domain_range is None:

@@ -8,8 +8,8 @@ import numpy as np
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import invert_warping, normalize_scale
+from ..._utils._warping import elastic_registration_match
 from ...exploratory.stats import fisher_rao_karcher_mean
-from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions, check_fdata_same_kind
 from ...representation import FDataGrid
@@ -185,24 +185,15 @@ class FisherRaoElasticRegistration(
         # Points of discretization
         output_points = self._output_points
 
-        # Discretizacion in evaluation points
-        q_data = fdatagrid_srsf(output_points)[..., 0]
-        template_data = self._template_srsf(output_points)[..., 0]
-
-        if q_data.shape[0] == 1:
-            q_data = q_data[0]
-
-        if template_data.shape[0] == 1:
-            template_data = template_data[0]
-
         # Values of the warping
-        gamma = _elastic_alignment_array(
-            template_data,
-            q_data,
-            normalize_scale(output_points),
-            self.penalty,
-            self.grid_dim,
+        fdatagrid_gamma = elastic_registration_match(
+            fdatagrid_srsf,
+            self._template_srsf,
+            penalty=self.penalty,
+            grid_dim=self.grid_dim,
         )
+
+        gamma = fdatagrid_gamma.data_matrix[..., 0]
 
         # Normalize warping to original interval
         gamma = normalize_scale(

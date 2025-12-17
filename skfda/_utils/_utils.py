@@ -637,3 +637,30 @@ def function_to_fdatabasis(
     coefs = np.linalg.solve(gram_matrix, inner_prod)
 
     return FDataBasis(new_basis, coefs.T)
+
+
+def evaluate_fdatagrid_linear_interpolation(
+    fdatagrid: FDataGrid,
+    evaluation_points: NDArrayFloat,
+) -> NDArrayFloat:
+    """Evaluate the functions at some points using linear interpolation."""
+    data_matrix = fdatagrid.data_matrix[..., 0]
+    grid_points = fdatagrid.grid_points[0]
+
+    indexes = np.searchsorted(grid_points, evaluation_points, side='left')
+    # Allow for extrapolation and extreme cases
+    indexes[indexes < 1] = 1
+    indexes[indexes >= len(grid_points)] = len(grid_points) - 1
+    indexes_prev = indexes - 1
+
+    grid_points_prev = grid_points[indexes_prev]
+
+    interp_parameter = (
+        (evaluation_points - grid_points_prev)
+        / (grid_points[indexes] - grid_points_prev)
+    )
+
+    left = np.take(data_matrix, indices=indexes_prev, axis=1)
+    right = np.take(data_matrix, indices=indexes, axis=1)
+
+    return (1 - interp_parameter) * left + interp_parameter * right

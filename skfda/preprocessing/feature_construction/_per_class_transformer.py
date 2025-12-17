@@ -119,13 +119,13 @@ class PerClassTransformer(
 
         We can also use a transformer that returns a FData object
         when predicting.
-        In our example we are going to use the Fisher Rao Elastic Registration.
+        In our example we are going to use least-squares shift registration.
 
         >>> from skfda.preprocessing.registration import (
-        ...     FisherRaoElasticRegistration,
+        ...     LeastSquaresShiftRegistration,
         ... )
         >>> t2 = PerClassTransformer(
-        ...     FisherRaoElasticRegistration(),
+        ...     LeastSquaresShiftRegistration(),
         ... )
         >>> x_transformed2 = t2.fit_transform(X, y)
 
@@ -149,11 +149,11 @@ class PerClassTransformer(
         >>> neigh2 = KNeighborsClassifier()
         >>> neigh2 = neigh2.fit(X_train2, y_train2)
         >>> neigh2.predict(X_test2)
-        array([ 1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  1,  1,  0,  0,  0,
-                0,  1,  1,  1,  1,  0,  1,  1], dtype=int8)
+        array([ 0,  1,  1,  0,  1,  1,  1,  0,  0,  0,  0,  1,  1,  0,  0,  0, 
+                0, 1,  1,  1,  1,  1,  1,  1], dtype=int8)
 
         >>> round(neigh2.score(X_test2, y_test2), 3)
-        0.875
+        1.0
 
     """
 

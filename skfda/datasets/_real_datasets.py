@@ -1652,7 +1652,8 @@ _cd4_descr = """
 
     Format: A data frame made up of a 366 x 61 matrix of CD4 cell counts.
 
-    The data is obtained from the R package 'refund' from CRAN.
+    The data is obtained from the R package
+    *refund*\footcite{goldsmith+greven+crainiceanu_2023_refund} from CRAN.
 
     Source:
         https://cran.r-project.org/web/packages/refund/index.html

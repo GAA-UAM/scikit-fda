@@ -12,20 +12,23 @@ irregularly sampled data using PACE.
 # sphinx_gallery_thumbnail_number = 5
 
 # %%
+from collections import Counter
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.utils import Bunch
 
-from skfda.datasets._real_datasets import fetch_country_height
+from skfda.datasets import fetch_country_height
+from skfda.ml.classification import KNeighborsClassifier
 from skfda.preprocessing.dim_reduction import PACE
 from skfda.representation import FDataIrregular
 
 # %%
 # This example explores the possibility to apply clustering techniques to
 # sparse, irregularly sampled data using the PACE algorithm, as described in
-# :footcite:ts`yao+muller+wang_2005_pace`.
+# :footcite:ts:`yao+muller+wang_2005_pace`.
 #
 # Throughout this analysis, we will use the Country Height dataset, which
 # contains the average height of 144 countries grouped by decades, from 1810 to
@@ -48,7 +51,8 @@ from skfda.representation import FDataIrregular
 country_height_bunch: Bunch = fetch_country_height()
 country_height: FDataIrregular = country_height_bunch.data
 assert isinstance(
-    country_height, FDataIrregular
+    country_height,
+    FDataIrregular,
 ), "Expected an FDataIrregular object"
 
 target = country_height_bunch.target
@@ -64,8 +68,6 @@ country_height.plot(
     group_names=country_categories,
 )
 plt.show()
-
-from collections import Counter
 
 counter = Counter(target)
 total = len(target)
@@ -157,8 +159,6 @@ print(pace.explained_variance_ratio_[:3])
 # From the FPC scores, we can reconstruct the whole dataset, allowing us to
 # view the data in a regular grid, which is a necessary tool for classification
 # algorithms in the package.
-from skfda.ml.classification import KNeighborsClassifier
-
 n_components_list = [1, 2, 3]
 reconstructed_all = []
 titles = [
@@ -181,9 +181,11 @@ for n in n_components_list:
     reconstructed = pace.inverse_transform(pace_scores)
 
     curve_name = "country"
-    X = pd.DataFrame({
-        curve_name: reconstructed,
-    }).iloc[:, [0]]
+    X = pd.DataFrame(
+        {
+            curve_name: reconstructed,
+        }
+    ).iloc[:, [0]]
     X = X.iloc[:, 0].array
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -229,15 +231,15 @@ for i, ax in enumerate(axes.flat):
                 linewidth=5,
             )
     else:
-        reconstructed_all[i-1].plot(
+        reconstructed_all[i - 1].plot(
             axes=ax,
-            group=knn_preds[i-1],
+            group=knn_preds[i - 1],
             group_names=country_categories,
             group_colors=country_colors,
         )
 
         for label, color in zip(range(5), mean_colors, strict=True):
-            reconstructed_all[i-1][knn_preds[i-1] == label].mean().plot(
+            reconstructed_all[i - 1][knn_preds[i - 1] == label].mean().plot(
                 axes=ax,
                 color=color,
                 linewidth=5,

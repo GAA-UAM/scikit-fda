@@ -12,13 +12,10 @@ irregularly sampled data.
 # sphinx_gallery_thumbnail_number = 6
 
 # %%
-from collections import defaultdict
-
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.utils import Bunch
 
-from skfda.datasets._real_datasets import fetch_growth
+from skfda.datasets import fetch_growth
 from skfda.datasets._sample_from_fdata import irregular_sample
 from skfda.preprocessing.dim_reduction import FPCA, PACE
 from skfda.representation import FDataGrid
@@ -39,16 +36,16 @@ from skfda.representation import FDataGrid
 # studying observations by expressing the data in terms of a basis of K
 # components that explain most of the variation in the data.
 #
-# The PACE algorithm was introduced in :footcite:ts`yao+muller+wang_2005_pace`,
-# and in this example we will use the implementation of the algorithm that
-# follows the same steps as the original algorithm.
+# The PACE algorithm was introduced in
+# :footcite:ts:`yao+muller+wang_2005_pace`, and in this example we will use
+# the implementation of the algorithm that follows the same steps as the
+# original algorithm.
 #
 # The Berkeley Growth Study dataset consists of height measurements over time
 # for a cohort of children. It is a classic dataset in Functional Data
 # Analysis, and here it is initially provided in a dense, regular format
 # (FDataGrid).
-dataset: Bunch = fetch_growth()
-fd: FDataGrid = dataset.data
+fd, _ = fetch_growth(return_X_y=True)
 assert isinstance(fd, FDataGrid), "Expected an FDataGrid object"
 
 fd[:20].plot()
@@ -60,10 +57,11 @@ plt.show()
 # points. This mirrors the sparse and irregular setting often found in
 # real-world longitudinal data.
 random_state = 12
+points_per_curve = 8
 
 irregular_fd = irregular_sample(
     fd,
-    8,
+    points_per_curve,
     random_state=random_state,
 )
 irregular_fd.coordinate_names = fd.coordinate_names
@@ -75,40 +73,28 @@ plt.show()
 
 
 # %%
-# We continue by plotting all raw (t_i, X_i) points from the irregularly
-# sampled dataset. This gives insight into the data sparsity and non-uniform
-# time coverage across individuals.
-plt.figure()
-for t, v in zip(irregular_fd.points, irregular_fd.values, strict=True):
-    t_i = np.asarray(t)
-    v_i = np.asarray(v)
-    plt.scatter(t_i, v_i, alpha=0.7, s=10, color="black")
-
-plt.xlabel("age")
-plt.ylabel("height")
-plt.title("Berkeley Growth Study", pad=20)
-# plt.tight_layout()
+# We continue by plotting all raw :math:`(t_i, X_i)` points from the
+# irregularly sampled dataset. This gives insight into the data sparsity and
+# non-uniform time coverage across individuals.
+irregular_fd.scatter(
+    color="black",
+    s=10,
+    alpha=0.7,
+)
 plt.show()
 
 # %%
 # We apply classical FPCA (intended for regularly sampled data) to the original
 # dense dataset. This gives us a reference point to later compare with PACE.
 n_components = 2
+
 fpca = FPCA(n_components=n_components)
 scores = fpca.fit_transform(fd)
 fpca_rec = fpca.inverse_transform(scores)
-fig, ax = plt.subplots()
-for i, sample in enumerate(fpca.components_):
-    label = fpca.components_.sample_names[i]
-    sample.plot(axes=ax, label=label)
 
-ax.set_ylim(-0.4, 0.6)
-ax.set_xlabel(fpca.components_.argument_names[0] or "Domain")
-ax.set_ylabel(fpca.components_.coordinate_names[0] or "Value")
+fpca.components_.plot()
 plt.show()
 
-fpca_rec.plot()
-plt.show()
 print(fpca.explained_variance_ratio_)
 
 # %%
@@ -132,39 +118,48 @@ fpc_scores = pace.transform(irregular_fd)
 # surface quite densely. This visualization is relevant to justify the
 # effectiveness of the kernel smoother.
 t_mean = np.asarray(pace.mean_.grid_points[0])
-pair_counts: defaultdict[tuple[int, int], int] = defaultdict(int)
+points = np.asarray(irregular_fd.points)
 
-for i, start in enumerate(irregular_fd.start_indices):
-    end = (
-        irregular_fd.start_indices[i + 1]
-        if i + 1 < len(irregular_fd.start_indices)
-        else len(irregular_fd.points)
-    )
-    t_i = np.asarray(irregular_fd.points[start:end])
+pos = np.searchsorted(t_mean, points)
 
-    for s in t_i:
-        for t in t_i:
-            idx_s = np.argmin(np.abs(t_mean - s))
-            idx_t = np.argmin(np.abs(t_mean - t))
-            pair_counts[(int(idx_s), int(idx_t))] += 1
+left = np.clip(pos - 1, 0, len(t_mean) - 1)
+right = np.clip(pos, 0, len(t_mean) - 1)
 
-x, y, c = [], [], []
+choose_right = np.abs(t_mean[right] - points) < np.abs(t_mean[left] - points)
+idx = np.where(choose_right, right, left)
 
-for (i, j), count in pair_counts.items():
-    x.append(t_mean[j])
-    y.append(t_mean[i])
-    c.append(min(count, 5))
+G = len(t_mean)
+pair_counts_mat = np.zeros((G, G))
+
+starts = irregular_fd.start_indices
+for i, start in enumerate(starts):
+    end = starts[i + 1] if i + 1 < len(starts) else len(points)
+
+    ii = idx[start:end]
+    j = ii[:, None]
+    k = ii[None, :]
+
+    np.add.at(pair_counts_mat, (j, k), 1)
+
+
+c_mat = np.minimum(pair_counts_mat, 5)
+i, j = np.nonzero(pair_counts_mat)
+
+x = t_mean[j]
+y = t_mean[i]
+c = c_mat[i, j]
 
 plt.figure()
-scatter = plt.scatter(x, y, c=c, cmap="Blues", s=8, vmin=0, vmax=5)
+sc = plt.scatter(x, y, c=c, cmap="Blues", s=8, vmin=0, vmax=5)
 
-cbar = plt.colorbar(scatter, label="Subjects")
+cbar = plt.colorbar(sc, label="Subjects")
 cbar.set_ticks([0, 1, 2, 3, 4, 5])
 cbar.set_ticklabels(["0", "1", "2", "3", "4", "5+"])
 
-plt.xlabel("T_im")
-plt.ylabel("T_il")
+plt.xlabel("$T_{im}$")
+plt.ylabel("$T_{il}$")
 plt.title("Observed (r, s) Pairs by Subject Frequency")
+
 plt.show()
 
 # %%
@@ -179,7 +174,8 @@ covariance_x, covariance_y = np.meshgrid(
     pace.t_covariance_,
     indexing="ij",
 )
-covariance = pace.covariance_.squeeze()
+
+covariance = pace.covariance_[:, :, 0]
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")
@@ -202,24 +198,21 @@ plt.show()
 # Variations in their trajectories appear more smoothed due to the effect of
 # the kernel smoothers used for the mean and covariance surface.
 fig, ax = plt.subplots()
-for i, sample in enumerate(fpca.components_):
-    label = fpca.components_.sample_names[i]
-    sample.plot(axes=ax, label=label)
+for sample in fpca.components_:
+    sample.plot(axes=ax)
 
 ax.set_ylim(-0.4, 0.6)
-ax.set_xlabel(fpca.components_.argument_names[0] or "Domain")
-ax.set_ylabel(fpca.components_.coordinate_names[0] or "Value")
+ax.set_xlabel(fpca.components_.argument_names[0])
+ax.set_ylabel(fpca.components_.coordinate_names[0])
 plt.show()
 
 fig, ax = plt.subplots()
-for i, sample in enumerate(pace.components_):
-    label = pace.components_.sample_names[i]
-    sample.plot(axes=ax, label=label)
+for sample in pace.components_:
+    sample.plot(axes=ax)
 
 ax.set_ylim(-0.4, 0.6)
-ax.set_xlabel(pace.components_.argument_names[0] or "Domain")
-ax.set_ylabel(pace.components_.coordinate_names[0] or "Value")
-ax.legend()
+ax.set_xlabel(pace.components_.argument_names[0])
+ax.set_ylabel(pace.components_.coordinate_names[0])
 plt.show()
 
 # %%
@@ -269,10 +262,16 @@ mean_values = pace.mean_.data_matrix[0, :, 0]
 fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
 for ax, i in zip(axes, subject_indices, strict=True):
     reconstructed[i].plot(
-        axes=ax, label="Reconstructed", color="C0", linestyle="-",
+        axes=ax,
+        label="Reconstructed",
+        color="C0",
+        linestyle="-",
     )
     irregular_fd[i].scatter(
-        axes=ax, label="Original (irregular)", color="red", marker="o",
+        axes=ax,
+        label="Original (irregular)",
+        color="red",
+        marker="o",
     )
 
     t_all = np.asarray(fd.grid_points[0])
@@ -295,8 +294,8 @@ for ax, i in zip(axes, subject_indices, strict=True):
     ax.plot(t_mean, mean_values, linestyle="--", color="gray", label="Mean")
 
     ax.set_title(f"Subject {i}")
-    ax.set_xlabel(irregular_fd.argument_names[0] or "Domain")
-    ax.set_ylabel(irregular_fd.coordinate_names[0] or "Value")
+    ax.set_xlabel(irregular_fd.argument_names[0])
+    ax.set_ylabel(irregular_fd.coordinate_names[0])
     ax.legend()
 
 plt.tight_layout()
@@ -313,6 +312,12 @@ plt.show()
 # whole dataset, to showcase its similarity to the mean function, as well as
 # highlight the new ways of analysis that this FDataGrid object allows us to
 # perform.
+#
+# Note: the classical FPCA reconstruction is computed using the original dense
+# data (fd), whereas PACE is fitted using irregular/sparse observations and
+# then reconstructs the curves on a grid. Therefore, although both methods
+# recover the global trend well, a higher MSE for PACE is expected in this
+# example.
 reconstructed.plot()
 plt.show()
 

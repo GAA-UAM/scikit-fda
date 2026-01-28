@@ -12,8 +12,6 @@ irregularly sampled data using PACE.
 # sphinx_gallery_thumbnail_number = 5
 
 # %%
-from collections import Counter
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -35,7 +33,8 @@ from skfda.representation import FDataIrregular
 # 1989. The dataset is irregularly sampled, meaning that not all countries have
 # measurements for all decades.
 #
-# The dataset is available in the `skfda.datasets` module.
+# The dataset is available in the ``skfda.datasets`` module through the
+# function :func:`~skfda.datasets.fetch_country_height`.
 #
 # Our goal is to analyse the relationship between the countries and their
 # continent using classification techniques. However, because the dataset is
@@ -50,10 +49,6 @@ from skfda.representation import FDataIrregular
 # classificator by majority.
 country_height_bunch: Bunch = fetch_country_height()
 country_height: FDataIrregular = country_height_bunch.data
-assert isinstance(
-    country_height,
-    FDataIrregular,
-), "Expected an FDataIrregular object"
 
 target = country_height_bunch.target
 
@@ -69,30 +64,30 @@ country_height.plot(
 )
 plt.show()
 
-counter = Counter(target)
+unique, counts = np.unique(target, return_counts=True)
 total = len(target)
 
-for i in range(5):
-    quantity = counter.get(i, 0)
-    perc = (quantity / total) * 100
-    print(f"Continent {i}: {quantity} countries ({perc:.2f}%)")
+countries_by_continent = pd.DataFrame(
+    {
+        "Continent": country_categories[unique],
+        "Number of countries": counts,
+        "Percentage (%)": counts / total * 100,
+    }
+)
 
+countries_by_continent.style.hide(axis="index")
 
 # %%
-# To reinforce the irregularity of the data, we will plot the data points
-# (years and heights) for all countries, where it can be seen that ever since
-# the 1850s, the measurements are much more frequent.
+# To reinforce the irregularity of the data, we will plot the total amount of
+# data points for all countries, where it can be seen that the number of
+# measurements increases in frequency.
 plt.figure()
-for t, v in zip(country_height.points, country_height.values, strict=True):
-    t_i = np.asarray(t)
-    v_i = np.asarray(v)
-    plt.scatter(t_i, v_i, alpha=0.7, s=10, color="black")
-
-plt.xlabel("year")
-plt.ylabel("height_cm")
-plt.title("Average male height by country")
-plt.tight_layout()
+plt.hist(country_height.points, bins=50)
+plt.xlabel("Year")
+plt.ylabel("Number of observations")
+plt.title("Distribution of observation times")
 plt.show()
+
 
 # %%
 # We can now apply the PACE method to the dataset. Due to the fact that the
@@ -143,24 +138,28 @@ plt.show()
 #
 # Combined, the last two components explain the more subtle variations in the
 # data, while the first component explains the main trend.
-fig, ax = plt.subplots()
-for i, sample in enumerate(pace.components_):
-    label = pace.components_.sample_names[i]
-    sample.plot(axes=ax, label=label)
-
-ax.set_xlabel(pace.components_.argument_names[0] or "Domain")
-ax.set_ylabel(pace.components_.coordinate_names[0] or "Value")
-ax.legend()
+pace.components_.plot()
 plt.show()
 
-print(pace.explained_variance_ratio_[:3])
+n_components = 3
+
+explained_variance = pd.DataFrame(
+    {
+        "Component": np.arange(1, n_components + 1),
+        "Explained variance ratio": pace.explained_variance_ratio_[
+            :n_components
+        ],
+    }
+)
+
+explained_variance.style.hide(axis="index")
 
 # %%
 # From the FPC scores, we can reconstruct the whole dataset, allowing us to
 # view the data in a regular grid, which is a necessary tool for classification
 # algorithms in the package.
 n_components_list = [1, 2, 3]
-reconstructed_all = []
+reconstructed_test = []
 titles = [
     "Objective Classification",
     "PACE (1 component)",
@@ -180,10 +179,9 @@ for n in n_components_list:
     pace_scores = pace.fit_transform(country_height)
     reconstructed = pace.inverse_transform(pace_scores)
 
-    curve_name = "country"
     X = pd.DataFrame(
         {
-            curve_name: reconstructed,
+            "country": reconstructed,
         }
     ).iloc[:, [0]]
     X = X.iloc[:, 0].array
@@ -198,14 +196,21 @@ for n in n_components_list:
 
     knn = KNeighborsClassifier()
     knn.fit(X_train, y_train)
-    knn_pred = knn.predict(X_test)
 
+    knn_pred = knn.predict(X_test)
     knn_scores.append(knn.score(X_test, y_test))
     knn_preds.append(knn_pred)
 
-    reconstructed_all.append(X_test)
-    if n == 3:
-        reconstructed_all.append(reconstructed)
+    reconstructed_test.append(X_test)
+
+pace_full = PACE(
+    n_components=3,
+    bandwidth_mean=22.74,
+    bandwidth_cov=28.53,
+)
+scores_full = pace_full.fit_transform(country_height)
+reconstructed_full = pace_full.inverse_transform(scores_full)
+
 
 # %%
 # We finish the analysis by showcasing a visual comparison of classification
@@ -215,42 +220,55 @@ for n in n_components_list:
 # respectively.
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
-for i, ax in enumerate(axes.flat):
-    if i == 0:
-        reconstructed_all[3].plot(
-            axes=ax,
-            group=target,
-            group_names=country_categories,
-            group_colors=country_colors,
-        )
+ax0 = axes.flat[0]
+reconstructed_full.plot(
+    axes=ax0,
+    group=target,
+    group_names=country_categories,
+    group_colors=country_colors,
+)
 
-        for label, color in zip(range(5), mean_colors, strict=True):
-            reconstructed_all[3][target == label].mean().plot(
-                axes=ax,
-                color=color,
-                linewidth=5,
-            )
-    else:
-        reconstructed_all[i - 1].plot(
-            axes=ax,
-            group=knn_preds[i - 1],
-            group_names=country_categories,
-            group_colors=country_colors,
-        )
+for label, color in zip(range(5), mean_colors, strict=True):
+    reconstructed_full[target == label].mean().plot(
+        axes=ax0,
+        color=color,
+        linewidth=5,
+    )
 
-        for label, color in zip(range(5), mean_colors, strict=True):
-            reconstructed_all[i - 1][knn_preds[i - 1] == label].mean().plot(
-                axes=ax,
-                color=color,
-                linewidth=5,
-            )
+ax.set_title(titles[0])
+
+for i, ax in enumerate(axes.flat[1:], start=1):
+    rec_test = reconstructed_test[i - 1]
+    pred = knn_preds[i - 1]
+
+    rec_test.plot(
+        axes=ax,
+        group=pred,
+        group_names=country_categories,
+        group_colors=country_colors,
+    )
+
+    for label, color in zip(range(5), mean_colors, strict=True):
+        rec_test[pred == label].mean().plot(
+            axes=ax,
+            color=color,
+            linewidth=5,
+        )
 
     ax.set_title(titles[i])
 
 plt.tight_layout()
 plt.show()
 
-print(knn_scores)
+scores_table = pd.DataFrame(
+    {
+        "Model": titles[1:],
+        "kNN accuracy": knn_scores,
+    }
+)
+
+scores_table.style.hide(axis="index")
+
 # %%
 # Analysing the classification scores for each experiment, we observe that,
 # even in the worst case scenario, the classification is more accurate than
@@ -266,8 +284,8 @@ print(knn_scores)
 #
 # Focusing solely on the analysis of this particular problem, the results
 # confirm the presence of continent-level patterns in the data, but the
-# moderate accuracy also suggests that intra-continental diversity—such as
-# socioeconomic or ethnic differences—limits the strength of the correlation,
+# moderate accuracy also suggests that intra-continental diversity, such as
+# socioeconomic or ethnic differences, limits the strength of the correlation,
 # leaving room for further refinement or more granular modeling.
 
 # %%

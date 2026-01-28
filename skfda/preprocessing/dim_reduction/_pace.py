@@ -8,10 +8,7 @@ from typing import NamedTuple, cast
 
 import numpy as np
 from numpy import trapezoid
-from scipy.interpolate import (
-    CloughTocher2DInterpolator,
-    make_interp_spline,
-)
+from scipy.interpolate import CloughTocher2DInterpolator, make_interp_spline
 from scipy.optimize import minimize_scalar
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist
@@ -23,11 +20,13 @@ from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 KernelFunction = Callable[[NDArrayFloat], NDArrayFloat]
 
+
 class RawCovarianceLists(NamedTuple):
     t_1: list[list[float]]
     t_2: list[list[float]]
     raw_cov: list[NDArrayFloat]
     subj_idx: list[int]
+
 
 class RawCovarianceResult(NamedTuple):
     t_pairs_neq: NDArrayFloat
@@ -36,6 +35,7 @@ class RawCovarianceResult(NamedTuple):
     weights: NDArrayFloat
     t_pairs_eq: NDArrayFloat
     f_raw_cov_eq: NDArrayFloat
+
 
 def gaussian_kernel(t: NDArrayFloat) -> NDArrayFloat:
     """
@@ -68,86 +68,85 @@ class PACE(  # noqa: WPS230
     conditional expectation. This method is native to FDataIrregular.
 
     For more information about the theoretical foundation for this algorithm,
-    see: footcite:t:`yao+muller+wang_2005_pace`.
+    see :footcite:t:`yao+muller+wang_2005_pace`.
 
     Parameters:
         n_components: If parameter is an integer, it refers to the number of
             principal components to keep from functional principal component
             analysis. If parameter is a float in the range (0.0, 1.0), it
             refers to the minimum proportion of variance explained by the
-            selected principal components. Defaults to None (maximum number
+            selected principal components. Defaults to ``None`` (maximum number
             of principal components that can be extracted).
         assume_noisy: Set to ``False`` when the data is assumed to be
             noiseless. Otherwise, when smoothing the covariance surface, the
             diagonal will be treated separately. Defaults to ``True``.
-        kernel_mean: callable vectorized univariate smoothing kernel function
-            for the mean, of the form :math:`K(t)`, where `t` are the
+        kernel_mean: Callable vectorized univariate smoothing kernel function
+            for the mean, of the form :math:`K(t)`, where :math:`t` are the
             n-dimensional time point, with n being the dimension of the domain.
             Defaults to a Gaussian kernel.
-        bandwidth_mean: bandwidth to use in the smoothing kernel for the mean.
+        bandwidth_mean: Bandwidth to use in the smoothing kernel for the mean.
             If a float is given, it is used as the bandwidth. If a tuple is
             given, it is used as the bandwidth search range, and the bandwidth
             is calculated using the GCV method.
-        kernel_cov: callable vectorized univariate smoothing kernel function
+        kernel_cov: Callable vectorized univariate smoothing kernel function
             for the covariance and calculations regarding its diagonal. It
-            should have the form :math:`K(t)`, where `t` are the
+            should have the form :math:`K(t)`, where :math:`t` are the
             n-dimensional time point, with n being the dimension of the domain.
             To smooth the covariance, each value in the two directions will be
             calculated with the function and the two values will be multiplied,
             acting as an isotropic kernel. Defaults to a Gaussian kernel.
-        bandwidth_cov: bandwidth to use in the smoothing kernel for the
+        bandwidth_cov: Bandwidth to use in the smoothing kernel for the
             covariance. If a float is given, it is used as the bandwidth. If a
             tuple is given, it is used as the bandwidth search range, and the
             bandwidth is calculated using the GCV method.
-        bw_cov_n_grid_points: number of grid points to calculate the bandwidth
+        bw_cov_n_grid_points: Number of grid points to calculate the bandwidth
             for the covariance. This parameter's main purpose is to reduce the
             computational cost of the GCV method. If the parameter
             ``bandwidth_cov`` is provided as a float, this parameter is
-            ignored. Defaults to 30.
-        n_grid_points: number of grid points to calculate the covariance and,
+            ignored. Defaults to ``30``.
+        n_grid_points: Number of grid points to calculate the covariance and,
             subsequently, the eigenfunctions for better approximations. The
             final FPC scores will be given in the original grid points.
-            Defaults to 51.
+            Defaults to ``51``.
         boundary_effect_interval: A 2-element float vector indicating the
             percentage of the time points to be considered as left and right
             boundary regions of the time window of observations. Defaults to
-            (0.0, 1.0), that is, the whole time window.
-        variance_error_interval: A 2-element float vector in [0.0, 1.0]
-            indicating the percent of data truncated during :math:`\\sigma^2`
-            calculation. Defaults to (0.25, 0.75), as is suggested in
+            ``(0.0, 1.0)``, that is, the whole time window.
+        variance_error_interval: A 2-element float vector in :math:`[0.0, 1.0]`
+            indicating the percent of data truncated during :math:`\sigma^2`
+            calculation. Defaults to ``(0.25, 0.75)``, as is suggested in
             footcite:t:`staniswalis+lee_1998_nonparametric_regression`.
 
     Attributes:
         components\_: FDataGrid that contains the principal components.
-        explained_variance\_ : array that contains the amount of variance
+        explained_variance\_ : Array that contains the amount of variance
             explained by each of the selected components.
-        explained_variance_ratio\_ : array that contains the percentage
+        explained_variance_ratio\_ : Array that contains the percentage
             of variance explained by each principal component.
         mean\_: FDataGrid that contains the smoothed mean of the data.
-        bandwidth_mean\_: calculated or user-given bandwidth used for the mean.
-        covariance\_: matrix of shape (``n_grid_points``, ``n_grid_points``,
+        bandwidth_mean\_: Calculated or user-given bandwidth used for the mean.
+        covariance\_: Matrix of shape (``n_grid_points``, ``n_grid_points``,
             codomain dimension) that contains the covariance of the data.
-        t_covariance\_: matrix of shape (``n_grid_points``,
+        t_covariance\_: Matrix of shape (``n_grid_points``,
             domain dimension) that contains the time points of the covariance.
-        bandwidth_cov\_: calculated or user-given bandwidth used for the
+        bandwidth_cov\_: Calculated or user-given bandwidth used for the
             covariance.
-        sigma2\_: calculated error of the covariance.
+        sigma2\_: Calculated error of the covariance.
 
     Examples:
         >>> import numpy as np
         >>> from skfda.representation import FDataIrregular
         >>> from skfda.preprocessing.dim_reduction import PACE
-
+        >>>
         >>> points = np.array([0.0, 1.0, 0.0, 1.0])
         >>> values = np.array([1.0, 0.0, 0.0, 2.0])
         >>> start_indices = np.array([0, 2])
-
+        >>>
         >>> fd = FDataIrregular(
         ...     points=points,
         ...     values=values,
         ...     start_indices=start_indices,
         ... )
-
         >>> pace = PACE(
         ...     n_components=2,
         ...     bandwidth_mean=np.array([0.1, 10]),
@@ -190,9 +189,10 @@ class PACE(  # noqa: WPS230
         tuple_length = 2
 
         if isinstance(bandwidth, Sequence) and (
-            len(bandwidth) != tuple_length or (
-                not all(isinstance(b, (float, int)) for b in bandwidth)
-            ) or bandwidth[0] <= 0 or bandwidth[1] <= bandwidth[0]
+            len(bandwidth) != tuple_length
+            or (not all(isinstance(b, (float, int)) for b in bandwidth))
+            or bandwidth[0] <= 0
+            or bandwidth[1] <= bandwidth[0]
         ):
             error_msg = (
                 "Bandwidth search ranges must be a non-decreasing 2-sequence "
@@ -222,11 +222,9 @@ class PACE(  # noqa: WPS230
         if n_components is None:
             n_components = 1.0
         else:
-            int_leq_0 = (isinstance(n_components, int) and n_components <= 0)
-            float_out_range = (
-                not isinstance(n_components, int) and (
-                    n_components <= 0.0 or n_components >= 1.0
-                )
+            int_leq_0 = isinstance(n_components, int) and n_components <= 0
+            float_out_range = not isinstance(n_components, int) and (
+                n_components <= 0.0 or n_components >= 1.0
             )
             if int_leq_0 or float_out_range:
                 error_msg = (
@@ -248,22 +246,16 @@ class PACE(  # noqa: WPS230
 
         tuple_length = 2
         boundary_incorrect = (
-            len(boundary_effect_interval) != tuple_length or (
-                boundary_effect_interval[0] < 0
-            ) or (
-                boundary_effect_interval[1] > 1
-            ) or (
-                boundary_effect_interval[0] >= boundary_effect_interval[1]
-            )
+            len(boundary_effect_interval) != tuple_length
+            or (boundary_effect_interval[0] < 0)
+            or (boundary_effect_interval[1] > 1)
+            or (boundary_effect_interval[0] >= boundary_effect_interval[1])
         )
         variance_interval_incorrect = (
-            len(variance_error_interval) != tuple_length or (
-                variance_error_interval[0] < 0
-            ) or (
-                variance_error_interval[1] > 1
-            ) or (
-                variance_error_interval[0] >= variance_error_interval[1]
-            )
+            len(variance_error_interval) != tuple_length
+            or (variance_error_interval[0] < 0)
+            or (variance_error_interval[1] > 1)
+            or (variance_error_interval[0] >= variance_error_interval[1])
         )
         if boundary_incorrect or variance_interval_incorrect:
             error_msg = (
@@ -391,7 +383,8 @@ class PACE(  # noqa: WPS230
         )
 
         cut_domain_range = tuple(
-            (float(a), float(b)) for a, b in zip(
+            (float(a), float(b))
+            for a, b in zip(
                 a_bounds,
                 b_bounds,
                 strict=True,
@@ -454,7 +447,11 @@ class PACE(  # noqa: WPS230
         d: int,
         epsilon: float,
     ) -> NDArrayFloat:
-        """Compute local linear smoother estimate at a single point."""
+        """
+        Compute local linear smoother estimate at a single point.
+
+        TODO comment function
+        """
         win = wi[:, None]
 
         k0 = np.sum(wi)
@@ -468,15 +465,14 @@ class PACE(  # noqa: WPS230
         # Build left-hand matrix and right-hand side
         xtwx = np.block(
             [
-                [np.array([[k0]]),
-                k1[None, :]],
+                [np.array([[k0]]), k1[None, :]],
                 [k1[:, None], k2],
             ],
         ) + epsilon * np.eye(d + 1)
         xtwy = np.vstack([s0[None, :], s1])
 
         beta = np.linalg.solve(xtwx, xtwy)
-        return cast("NDArrayFloat", beta[0]) # intercept term
+        return cast("NDArrayFloat", beta[0])  # intercept term
 
     def _mean_lls(
         self,
@@ -548,8 +544,8 @@ class PACE(  # noqa: WPS230
         t_1, t_2, raw_cov, subj_idx = [], [], [], []
 
         for i, start_i in enumerate(start_indices):
-            p_i = points[start_i:end_indices[i]]
-            v_i = values[start_i:end_indices[i]]
+            p_i = points[start_i : end_indices[i]]
+            v_i = values[start_i : end_indices[i]]
 
             _, indices = cKDTree(time_points).query(p_i)
             mean_proj = mean[indices]
@@ -724,9 +720,8 @@ class PACE(  # noqa: WPS230
 
         # Calculate residual sum of squares (RSS)
         rss = np.sum(
-            (cov_values.squeeze() - g_hat_int) * (
-                cov_values.squeeze() - g_hat_int
-            ).T,
+            (cov_values.squeeze() - g_hat_int)
+            * (cov_values.squeeze() - g_hat_int).T,
         )
 
         # Calculate pairwise distances between points
@@ -778,8 +773,7 @@ class PACE(  # noqa: WPS230
         kernel_r = self.kernel_cov(diff_r).T
         kernel_s = self.kernel_cov(diff_s).T
         return cast(
-            "NDArrayFloat",
-            np.einsum("ik,jk->ijk", kernel_r, kernel_s) * win
+            "NDArrayFloat", np.einsum("ik,jk->ijk", kernel_r, kernel_s) * win
         )
 
     def _build_design_matrix(
@@ -869,7 +863,11 @@ class PACE(  # noqa: WPS230
         eigenvalues: NDArrayFloat,
         eigenvectors: NDArrayFloat,
     ) -> tuple[NDArrayFloat, NDArrayFloat]:
-        """Sort and non-negatively clip eigenvalues, reorder eigenvectors."""
+        """
+        Sort and non-negatively clip eigenvalues, reorder eigenvectors.
+
+        TODO comment method
+        """
         eigenvalues = np.maximum(eigenvalues, 0)
         idx = np.argsort(eigenvalues)[::-1]
         return eigenvalues[idx], eigenvectors[:, idx]
@@ -879,7 +877,11 @@ class PACE(  # noqa: WPS230
         eigenvectors: NDArrayFloat,
         t: NDArrayFloat,
     ) -> NDArrayFloat:
-        """Normalize and align the eigenvectors."""
+        """
+        Normalize and align the eigenvectors.
+
+        TODO comment method
+        """
         for i in range(eigenvectors.shape[1]):
             phi_i = eigenvectors[:, i]
             norm = np.sqrt(trapezoid(phi_i**2, x=t))
@@ -895,7 +897,11 @@ class PACE(  # noqa: WPS230
         eigenvectors: NDArrayFloat,
         target_grid: NDArrayFloat,
     ) -> NDArrayFloat:
-        """Spline-interpolate and normalize eigenfunctions on new grid."""
+        """
+        Spline-interpolate and normalize eigenfunctions on new grid.
+
+        TODO comment method
+        """
         n_points = len(target_grid)
         n_components = eigenvectors.shape[1]
         phi = np.empty((n_points, n_components))
@@ -934,7 +940,8 @@ class PACE(  # noqa: WPS230
             raise ValueError(error_msg)
 
         eigenvalues, eigenvectors = self._sort_and_clip_eigenpairs(
-            eigenvalues, eigenvectors,
+            eigenvalues,
+            eigenvectors,
         )
 
         fve = np.cumsum(eigenvalues) / np.sum(eigenvalues)
@@ -961,7 +968,9 @@ class PACE(  # noqa: WPS230
         )
 
         phi = self._interpolate_and_normalize_basis(
-            t_eigen, eigenvectors, self.mean_.grid_points[0],
+            t_eigen,
+            eigenvectors,
+            self.mean_.grid_points[0],
         )
 
         return n_selected_components, fve, lambda_, phi.T
@@ -1041,7 +1050,11 @@ class PACE(  # noqa: WPS230
         r_eval: NDArrayFloat,
         s_eval: NDArrayFloat,
     ) -> tuple[NDArrayFloat, NDArrayFloat]:
-        """Rotate covariance and evaluation coordinates using rotation."""
+        """
+        Rotate covariance and evaluation coordinates using rotation.
+
+        TODO comment method
+        """
         r_mat = np.sqrt(2) / 2 * np.array([[1, 1], [-1, 1]])
         r_cov_coords = np.einsum("ijk,jk->ik", cov_coords, r_mat)
         r_cov_coords = r_cov_coords[:, :, np.newaxis]
@@ -1059,7 +1072,11 @@ class PACE(  # noqa: WPS230
         r_t_eval: NDArrayFloat,
         win: NDArrayFloat,
     ) -> NDArrayFloat:
-        """Compute weights for rotated covariance smoothing."""
+        """
+        Compute weights for rotated covariance smoothing.
+
+        TODO comment method
+        """
         diff_r = (t_pairs[:, 0, None] - r_t_eval[None, :, 0]) / h
         diff_s = (t_pairs[:, 1, None] - r_t_eval[None, :, 1]) / h
         kernel_r = self.kernel_cov(diff_r).T
@@ -1076,7 +1093,11 @@ class PACE(  # noqa: WPS230
         t_pairs: NDArrayFloat,
         r_t_eval: NDArrayFloat,
     ) -> NDArrayFloat:
-        """Build design matrix for rotated coordinates."""
+        """
+        Build design matrix for rotated coordinates.
+
+        TODO comment method
+        """
         n_eval = r_t_eval.shape[0]
         n_obs = t_pairs.shape[0]
         x = np.ones((n_eval, n_obs, 3))
@@ -1113,7 +1134,9 @@ class PACE(  # noqa: WPS230
         Returns:
             n_grid_points x n_grid_points array of smoothed covariance values.
         """
-        r_cov_coords, r_t_eval = self._rotate_coordinates(cov_coords, r_eval, s_eval)
+        r_cov_coords, r_t_eval = self._rotate_coordinates(
+            cov_coords, r_eval, s_eval
+        )
 
         active = np.nonzero(win)[0]
         t_pairs = r_cov_coords[active]
@@ -1404,7 +1427,6 @@ class PACE(  # noqa: WPS230
 
         Returns:
             Principal component scores.
-
         """
         return self.fit(X, y).transform(X, y)
 
@@ -1420,7 +1442,7 @@ class PACE(  # noqa: WPS230
         an array returned by ``transform`` method.
 
         Args:
-            pc_scores: ndarray (n_samples, n_components).
+            pc_scores: NDArray (n_samples, n_components).
 
         Returns:
             A FData object.

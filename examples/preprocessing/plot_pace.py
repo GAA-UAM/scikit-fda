@@ -15,8 +15,7 @@ irregularly sampled data.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skfda.datasets import fetch_growth
-from skfda.datasets._sample_from_fdata import irregular_sample
+from skfda.datasets import fetch_growth, irregular_sample
 from skfda.preprocessing.dim_reduction import FPCA, PACE
 from skfda.representation import FDataGrid
 

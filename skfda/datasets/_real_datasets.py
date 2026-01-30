@@ -1646,21 +1646,24 @@ def fetch_bone_density(
     )
 
 
-_cd4_descr = """
+_cd4_descr_template = """
     CD4 cell counts for 366 subjects between months -18 and 42 since
     seroconversion. Each subject's observations are contained in a single row.
 
     Format: A data frame made up of a 366 x 61 matrix of CD4 cell counts.
 
-    The data is obtained from the R package
-    *refund*\footcite{goldsmith+greven+crainiceanu_2023_refund} from CRAN.
+    The data is obtained from the R package *refund* {cite} from CRAN.
 
-    Source:
-        https://cran.r-project.org/web/packages/refund/index.html
-        Goldsmith, J., Greven, S., and Crainiceanu, C. (2013). Corrected
-        confidence bands for functional data using principal components.
-        Biometrics, 69(1), 41-51.
+    References:
+        {bibliography}
 """
+
+_cd4_descr = _cd4_descr_template.format(
+    cite="[1]",
+    bibliography="[1] Goldsmith, J., Greven, S., and Crainiceanu, C. (2023). "
+    "refund: Regression with Functional Data. R package. "
+    "https://cran.r-project.org/package=refund",
+)
 
 
 def fetch_cd4(
@@ -1721,6 +1724,12 @@ def fetch_cd4(
         feature_names=["cd4"],
         target_names=[],
         DESCR=descr,
+    )
+
+if fetch_cd4.__doc__ is not None:  # docstrings can be stripped off
+    fetch_cd4.__doc__ += _cd4_descr_template.format(
+        cite=":footcite:p:`goldsmith+greven+crainiceanu_2023_refund`",
+        bibliography=".. footbibliography::",
     )
 
 _country_height_descr = """

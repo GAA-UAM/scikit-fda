@@ -45,7 +45,7 @@ from skfda.representation import FDataGrid
 # Analysis, and here it is initially provided in a dense, regular format
 # (FDataGrid).
 fd, _ = fetch_growth(return_X_y=True)
-assert isinstance(fd, FDataGrid), "Expected an FDataGrid object"
+assert isinstance(fd, FDataGrid)
 
 fd[:20].plot()
 plt.show()

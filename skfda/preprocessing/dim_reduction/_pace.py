@@ -115,7 +115,7 @@ class PACE(  # noqa: WPS230
         variance_error_interval: A 2-element float vector in :math:`[0.0, 1.0]`
             indicating the percent of data truncated during :math:`\sigma^2`
             calculation. Defaults to ``(0.25, 0.75)``, as is suggested in
-            footcite:t:`staniswalis+lee_1998_nonparametric_regression`.
+            :footcite:t:`staniswalis+lee_1998_nonparametric_regression`.
 
     Attributes:
         components\_: FDataGrid that contains the principal components.
@@ -152,6 +152,7 @@ class PACE(  # noqa: WPS230
         ...     bandwidth_mean=np.array([0.1, 10]),
         ...     bandwidth_cov=np.array([0.1, 10]),
         ... )
+        >>>
         >>> scores = pace.fit_transform(fd)
         >>> expected = np.array([
         ...     [-0.04886943, -0.00023432],
@@ -159,6 +160,7 @@ class PACE(  # noqa: WPS230
         ... ])
         >>> np.allclose(scores, expected)
         True
+        >>>
         >>> round(float(pace.sigma2_), 3)
         0.973
 

@@ -54,8 +54,7 @@ target = country_height_bunch.target
 
 country_categories = country_height_bunch.target_names.categories
 n_groups = len(country_categories)
-cmap = plt.get_cmap("Set2")
-country_colors = [cmap(i / (n_groups - 1)) for i in range(n_groups)]
+country_colors = list(plt.cm.Set2.colors[:n_groups])
 
 country_height.plot(
     group=target,
@@ -112,7 +111,7 @@ covariance_x, covariance_y = np.meshgrid(
     pace.t_covariance_,
     indexing="ij",
 )
-covariance = pace.covariance_.squeeze()
+covariance = pace.covariance_[:, :, 0]
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")
@@ -166,7 +165,7 @@ titles = [
     "PACE (2 components)",
     "PACE (3 components)",
 ]
-mean_colors = ["#00522c", "#6c84b5", "#238b45", "#8c6d31", "#666666"]
+mean_colors = ["teal", "chocolate", "slateblue", "mediumvioletred", "olivedrab"]
 knn_scores = []
 knn_preds = []
 
@@ -235,7 +234,7 @@ for label, color in zip(range(5), mean_colors, strict=True):
         linewidth=5,
     )
 
-ax.set_title(titles[0])
+ax0.set_title(titles[0])
 
 for i, ax in enumerate(axes.flat[1:], start=1):
     rec_test = reconstructed_test[i - 1]

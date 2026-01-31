@@ -104,6 +104,7 @@ pace = PACE(
     n_components=n_components,
     bandwidth_mean=np.array([0.1, 50]),
     bandwidth_cov=1.5,
+    n_grid_points=51,
 )
 pace.fit(irregular_fd)
 

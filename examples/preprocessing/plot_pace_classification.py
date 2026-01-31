@@ -97,6 +97,8 @@ pace = PACE(
     n_components=0.99,
     bandwidth_mean=np.array([0.1, 100.0]),
     bandwidth_cov=np.array([0.1, 100.0]),
+    n_grid_points=51,
+    bw_cov_n_grid_points=30,
 )
 pace.fit(country_height)
 
@@ -174,6 +176,7 @@ for n in n_components_list:
         n_components=n,
         bandwidth_mean=22.74,
         bandwidth_cov=28.53,
+        n_grid_points=51,
     )
     pace_scores = pace.fit_transform(country_height)
     reconstructed = pace.inverse_transform(pace_scores)
@@ -206,6 +209,7 @@ pace_full = PACE(
     n_components=3,
     bandwidth_mean=22.74,
     bandwidth_cov=28.53,
+    n_grid_points=51,
 )
 scores_full = pace_full.fit_transform(country_height)
 reconstructed_full = pace_full.inverse_transform(scores_full)

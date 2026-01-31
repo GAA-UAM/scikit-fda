@@ -14,6 +14,7 @@ from scipy.optimize import minimize_scalar
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist
 from sklearn.utils.extmath import svd_flip
+from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation import FData
@@ -205,16 +206,17 @@ class PACE(  # noqa: WPS230
         bandwidth: float | NDArrayFloat,
     ) -> tuple[float | None, tuple[float, float] | None]:
         """
-        Check if the bandwidth has the correct form.
+        Validate bandwidth and return value or search range.
 
         Args:
-            bandwidth: Bandwidth to check.
+            bandwidth: Bandwidth to check (float or 2-element sequence).
 
         Returns:
-            A 2-element tuple with the value if the bandwidth is a float, or
-            None otherwise, and the search range if the bandwidth is a tuple,
-            or None otherwise. In the case that the bandwidth is None, the
-            function returns None, (0.1, 10.0) as the default search range.
+            Tuple of (value, range): value if float, else None; range if
+            sequence, else None. For None input, returns (None, (0.1, 10.0)).
+
+        Raises:
+            ValueError: If bandwidth is non-positive or range is invalid.
         """
         if isinstance(bandwidth, float) and bandwidth <= 0:
             error_msg = "Given bandwidth values must be positive."
@@ -267,7 +269,15 @@ class PACE(  # noqa: WPS230
         self.variance_error_interval = variance_error_interval
 
     def _validate_params(self) -> None:
-        """Validate estimator parameters. Called at start of fit()."""
+        """
+        Validate estimator parameters.
+
+        Called at the start of :meth:`fit`. Validates n_components, grid
+        points, interval parameters, and bandwidths.
+
+        Raises:
+            ValueError: If any parameter is invalid.
+        """
         # Validate n_components
         n_components = self.n_components
         if n_components is not None:
@@ -699,12 +709,8 @@ class PACE(  # noqa: WPS230
             assume_noisy: If True, the covariance is computed assuming noise.
 
         Returns:
-            Array of time point pairs.
-            Array of raw covariance values.
-            Array of indices for the data points.
-            Array of weights for the covariance.
-            Array of time point pairs for equal time points.
-            Array of diagonal of raw covariance values.
+            RawCovarianceResult with t_pairs_neq, f_raw_cov_neq, subj_idx,
+            weights, t_pairs_eq, f_raw_cov_eq.
         """
         points = x_work.points
         values = x_work.values
@@ -1026,14 +1032,22 @@ class PACE(  # noqa: WPS230
         n_components: float,
     ) -> tuple[int, NDArrayFloat, NDArrayFloat, NDArrayFloat]:
         """
-        Select the number of principal components.
+        Extract principal components from the covariance matrix.
+
+        Decomposes the covariance, sorts and clips eigenvalues, interpolates
+        eigenfunctions to the mean grid, and selects components by count or
+        FVE threshold.
 
         Args:
             cov_matrix: The smoothed covariance matrix.
-            n_components: Threshold for variance explained or number to retain.
+            n_components: Number of components (int) or FVE threshold (float).
 
         Returns:
-            Number of components, cumulative FVE, eigenvalues, eigenfunctions.
+            Tuple of (n_components, fve, eigenvalues, eigenfunctions).
+
+        Raises:
+            ValueError: If eigenvalues/eigenvectors are invalid or
+                n_components exceeds available components.
         """
         t_eigen = self.t_covariance_.ravel()  # 1D time grid
         h = (t_eigen.max() - t_eigen.min()) / (len(t_eigen) - 1)
@@ -1304,16 +1318,24 @@ class PACE(  # noqa: WPS230
         """
         Compute the ``n_components`` first principal components and saves them.
 
+        Fits the PACE model by estimating the mean and covariance via local
+        linear smoothing, extracting eigenfunctions, and computing noise
+        variance when ``assume_noisy`` is True.
+
         Args:
             X: The functional data object to be analysed.
             y: Ignored. Only present because of fit function convention.
 
         Returns:
             self
+
+        Raises:
+            ValueError: If parameters are invalid, sample size is too small,
+                or covariance matrix has invalid eigenvalues.
         """
         self._validate_params()
 
-        # Handle n_components default
+        # Handle n_components default (None -> 1.0 for FVE threshold)
         n_comp = self.n_components
         n_components = n_comp if n_comp is not None else 1.0
 
@@ -1437,7 +1459,7 @@ class PACE(  # noqa: WPS230
         n_components, explained_variance_ratio_ = pc_data[:2]
         eigenvalues, phi = pc_data[2:]
 
-        self.n_components = n_components
+        self.n_components = int(n_components)
         self.explained_variance_ratio_ = explained_variance_ratio_
         self.explained_variance_ = eigenvalues
 
@@ -1547,6 +1569,9 @@ class PACE(  # noqa: WPS230
         """
         Compute the ``n_components`` first principal components scores.
 
+        Projects each trajectory onto the fitted eigenfunctions using the
+        BLUP (Best Linear Unbiased Predictor) formula for irregular data.
+
         Args:
             X: The functional data object to be analysed.
             y: Ignored. Only present because of fit function convention.
@@ -1554,7 +1579,11 @@ class PACE(  # noqa: WPS230
         Returns:
             Principal component scores. Data matrix of shape
             ``(n_samples, n_components)``.
+
+        Raises:
+            ValueError: If the estimator has not been fitted.
         """
+        check_is_fitted(self)
         return self._compute_fpc_scores(X)
 
     def fit_transform(
@@ -1563,14 +1592,20 @@ class PACE(  # noqa: WPS230
         y: object = None,
     ) -> NDArrayFloat:
         """
-        Compute the n_components first principal components and their scores.
+        Fit the model and compute principal component scores.
+
+        Equivalent to calling :meth:`fit` followed by :meth:`transform`.
 
         Args:
             X: The functional data object to be analysed.
-            y: Ignored
+            y: Ignored. Only present because of fit function convention.
 
         Returns:
-            Principal component scores.
+            Principal component scores of shape ``(n_samples, n_components)``.
+
+        Raises:
+            ValueError: If parameters are invalid, sample size is too small,
+                or covariance matrix has invalid eigenvalues.
         """
         return self.fit(X, y).transform(X, y)
 
@@ -1581,16 +1616,20 @@ class PACE(  # noqa: WPS230
         """
         Compute the recovery from the fitted principal components scores.
 
-        In other words, it maps ``pc_scores``, from the fitted functional
-        PCs' space, back to the input functional space. ``pc_scores`` might be
-        an array returned by ``transform`` method.
+        Maps ``pc_scores`` from the fitted functional PCs' space back to the
+        input functional space. ``pc_scores`` may be an array returned by
+        :meth:`transform`.
 
         Args:
-            pc_scores: NDArray (n_samples, n_components).
+            pc_scores: Array of shape ``(n_samples, n_components)``.
 
         Returns:
-            A FData object.
+            Reconstructed functional data as FDataGrid.
+
+        Raises:
+            ValueError: If the estimator has not been fitted.
         """
+        check_is_fitted(self)
         phi = self.components_.data_matrix[..., 0]
         mean = self.mean_.data_matrix[0, :, 0]  # (n_grid,)
         reconstructed = pc_scores @ phi + mean

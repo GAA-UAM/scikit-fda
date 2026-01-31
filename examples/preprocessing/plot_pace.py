@@ -14,6 +14,7 @@ irregularly sampled data.
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from skfda.datasets import fetch_growth, irregular_sample
 from skfda.preprocessing.dim_reduction import FPCA, PACE
@@ -94,7 +95,13 @@ fpca_rec = fpca.inverse_transform(scores)
 fpca.components_.plot()
 plt.show()
 
-print(fpca.explained_variance_ratio_)
+fpca_variance = pd.DataFrame(
+    {
+        "Component": np.arange(1, n_components + 1),
+        "Explained variance ratio": fpca.explained_variance_ratio_,
+    }
+)
+fpca_variance.style.hide(axis="index")
 
 # %%
 # We now apply the PACE algorithm to the irregularly sampled dataset. The
@@ -243,7 +250,13 @@ plt.ylabel("FVE (%)")
 plt.ylim(0, 105)
 plt.show()
 
-print(pace.explained_variance_ratio_[:3])
+pace_variance = pd.DataFrame(
+    {
+        "Component": np.arange(1, pace.n_components + 1),
+        "Explained variance ratio": pace.explained_variance_ratio_[: pace.n_components],
+    }
+)
+pace_variance.style.hide(axis="index")
 
 # %%
 # Lastly, we can also plot the reconstructed curves using the first two
@@ -332,10 +345,7 @@ aligned_true = fd.data_matrix[:, idx1]
 aligned_pred = fpca_rec.data_matrix[:, idx2]
 
 mse_per_curve = np.mean((aligned_true - aligned_pred) ** 2, axis=1)
-average_mse = np.mean(mse_per_curve)
-
-print("MSE with FPCA " + str(average_mse))
-
+mse_fpca = np.mean(mse_per_curve)
 
 grid1 = fd.grid_points[0]
 grid2 = reconstructed.grid_points[0]
@@ -348,9 +358,15 @@ aligned_true = fd.data_matrix[:, idx1]
 aligned_pred = reconstructed.data_matrix[:, idx2]
 
 mse_per_curve = np.mean((aligned_true - aligned_pred) ** 2, axis=1)
-average_mse = np.mean(mse_per_curve)
+mse_pace = np.mean(mse_per_curve)
 
-print("MSE with PACE " + str(average_mse))
+mse_table = pd.DataFrame(
+    {
+        "Model": ["FPCA", "PACE"],
+        "MSE": [mse_fpca, mse_pace],
+    }
+)
+mse_table.style.hide(axis="index")
 
 # %%
 # In conclusion, this analysis demonstrates how Functional Principal Component

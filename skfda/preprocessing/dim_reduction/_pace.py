@@ -201,6 +201,33 @@ class PACE(  # noqa: WPS230
         .. footbibliography::
     """
 
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        n_components: float | None = None,
+        assume_noisy: bool = True,
+        kernel_mean: KernelFunction = gaussian_kernel,
+        bandwidth_mean: float | NDArrayFloat,
+        kernel_cov: KernelFunction = gaussian_kernel,
+        bandwidth_cov: float | NDArrayFloat,
+        bw_cov_n_grid_points: int | None = None,
+        n_grid_points: int | None = None,
+        reconstruction_grid: int | NDArrayFloat | None = None,
+        boundary_effect_interval: Sequence[float] = (0.0, 1.0),
+        variance_error_interval: Sequence[float] = (0.25, 0.75),
+    ) -> None:
+        self.n_components = n_components
+        self.assume_noisy = assume_noisy
+        self.kernel_mean = kernel_mean
+        self.bandwidth_mean = bandwidth_mean
+        self.kernel_cov = kernel_cov
+        self.bandwidth_cov = bandwidth_cov
+        self.bw_cov_n_grid_points = bw_cov_n_grid_points
+        self.n_grid_points = n_grid_points
+        self.reconstruction_grid = reconstruction_grid
+        self.boundary_effect_interval = boundary_effect_interval
+        self.variance_error_interval = variance_error_interval
+
     def _check_bandwidth(
         self,
         bandwidth: float | NDArrayFloat,
@@ -240,33 +267,6 @@ class PACE(  # noqa: WPS230
             return bandwidth, None
 
         return None, (bandwidth[0], bandwidth[1])
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        n_components: float | None = None,
-        assume_noisy: bool = True,
-        kernel_mean: KernelFunction = gaussian_kernel,
-        bandwidth_mean: float | NDArrayFloat,
-        kernel_cov: KernelFunction = gaussian_kernel,
-        bandwidth_cov: float | NDArrayFloat,
-        bw_cov_n_grid_points: int | None = None,
-        n_grid_points: int | None = None,
-        reconstruction_grid: int | NDArrayFloat | None = None,
-        boundary_effect_interval: Sequence[float] = (0.0, 1.0),
-        variance_error_interval: Sequence[float] = (0.25, 0.75),
-    ) -> None:
-        self.n_components = n_components
-        self.assume_noisy = assume_noisy
-        self.kernel_mean = kernel_mean
-        self.bandwidth_mean = bandwidth_mean
-        self.kernel_cov = kernel_cov
-        self.bandwidth_cov = bandwidth_cov
-        self.bw_cov_n_grid_points = bw_cov_n_grid_points
-        self.n_grid_points = n_grid_points
-        self.reconstruction_grid = reconstruction_grid
-        self.boundary_effect_interval = boundary_effect_interval
-        self.variance_error_interval = variance_error_interval
 
     def _validate_params(self) -> None:
         """
@@ -335,87 +335,6 @@ class PACE(  # noqa: WPS230
         bw_cov_result = self._check_bandwidth(self.bandwidth_cov)
         self.bandwidth_cov_, self.bandwidth_cov_interval_ = bw_cov_result
 
-    def _select_bandwidth_mean(
-        self,
-        points: NDArrayFloat,
-        values: NDArrayFloat,
-    ) -> float:
-        """
-        Select mean bandwidth via GCV if not already specified.
-
-        If bandwidth_mean_ is None (i.e., a search range was provided),
-        performs GCV-based bandwidth selection and applies Gaussian correction.
-
-        Args:
-            points: Observation time points.
-            values: Observation values.
-
-        Returns:
-            Selected or pre-specified bandwidth for mean smoothing.
-        """
-        if self.bandwidth_mean_ is not None:
-            return self.bandwidth_mean_
-
-        bandwidth: float = minimize_scalar(
-            self._mean_gcv_score,
-            args=(points, values),
-            bounds=self.bandwidth_mean_interval_,
-            method="bounded",
-        ).x
-
-        # Empirical correction for Gaussian kernel (see PACE Matlab package)
-        if self.kernel_mean == gaussian_kernel:
-            bandwidth *= 1.1
-
-        return bandwidth
-
-    def _select_bandwidth_cov(
-        self,
-        cov_grid: NDArrayFloat,
-        raw_cov_coords: NDArrayFloat,
-        raw_cov_values: NDArrayFloat,
-        win: NDArrayFloat,
-        t_eval: NDArrayFloat,
-    ) -> float:
-        """
-        Select covariance bandwidth via GCV if not already specified.
-
-        If bandwidth_cov_ is None (i.e., a search range was provided),
-        performs GCV-based bandwidth selection and applies Gaussian correction.
-
-        Args:
-            cov_grid: Grid for GCV evaluation.
-            raw_cov_coords: Raw covariance coordinates.
-            raw_cov_values: Raw covariance values.
-            win: Weights for covariance.
-            t_eval: Time points for mean (used for range).
-
-        Returns:
-            Selected or pre-specified bandwidth for covariance smoothing.
-        """
-        if self.bandwidth_cov_ is not None:
-            return self.bandwidth_cov_
-
-        # Suppress RuntimeWarnings during GCV optimization. These occur due
-        # to numerical issues (division by zero, invalid values) when
-        # evaluating the GCV score at extreme bandwidth values. The optimizer
-        # handles these cases by treating them as poor candidates.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            bandwidth: float = minimize_scalar(
-                self._cov_gcv_score,
-                args=(cov_grid, raw_cov_coords, raw_cov_values, win, t_eval),
-                bounds=self.bandwidth_cov_interval_,
-                method="bounded",
-                tol=1e-1,
-            ).x
-
-        # Empirical correction for Gaussian kernel (see PACE Matlab package)
-        if self.kernel_cov == gaussian_kernel:
-            bandwidth *= 1.1
-
-        return bandwidth
-
     def _slice_fdata_irregular(
         self,
         data: FDataIrregular,
@@ -447,43 +366,6 @@ class PACE(  # noqa: WPS230
         )
 
         return data.restrict(new_domain_range)
-
-    def _mean_gcv_score(
-        self,
-        h: float,
-        t_obs: NDArrayFloat,
-        y_obs: NDArrayFloat,
-    ) -> float:
-        """
-        Compute the Generalized Cross-Validation (GCV) score.
-
-        Compute the Generalized Cross-Validation (GCV) score for a given
-        bandwidth.
-
-        Args:
-            h: Bandwidth to evaluate
-            t_obs: Observed time points
-            y_obs: Observed function values
-
-        Returns:
-            GCV score for the given bandwidth.
-        """
-        if h <= 0:  # Bandwidth must be positive
-            return np.inf
-
-        # Compute smoothed estimates for each observed point
-        y_hat = self._mean_lls(h, t_obs, t_obs, y_obs, self.kernel_mean)
-
-        # Compute residual sum of squares (RSS)
-        rss = np.sum((y_obs - y_hat) ** 2)
-
-        # Approximate trace of smoother matrix
-        domain_diff = np.max(pdist(t_obs))
-        k0 = self.kernel_mean(np.zeros((1, 1, t_obs.shape[1])))[0]
-        n_obs = t_obs.shape[0]
-
-        denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
-        return float(rss / denom) if denom > 0 else np.inf
 
     def _compute_local_estimate(
         self,
@@ -579,6 +461,77 @@ class PACE(  # noqa: WPS230
             )
 
         return estimates
+
+    def _mean_gcv_score(
+        self,
+        h: float,
+        t_obs: NDArrayFloat,
+        y_obs: NDArrayFloat,
+    ) -> float:
+        """
+        Compute the Generalized Cross-Validation (GCV) score.
+
+        Compute the Generalized Cross-Validation (GCV) score for a given
+        bandwidth.
+
+        Args:
+            h: Bandwidth to evaluate
+            t_obs: Observed time points
+            y_obs: Observed function values
+
+        Returns:
+            GCV score for the given bandwidth.
+        """
+        if h <= 0:  # Bandwidth must be positive
+            return np.inf
+
+        # Compute smoothed estimates for each observed point
+        y_hat = self._mean_lls(h, t_obs, t_obs, y_obs, self.kernel_mean)
+
+        # Compute residual sum of squares (RSS)
+        rss = np.sum((y_obs - y_hat) ** 2)
+
+        # Approximate trace of smoother matrix
+        domain_diff = np.max(pdist(t_obs))
+        k0 = self.kernel_mean(np.zeros((1, 1, t_obs.shape[1])))[0]
+        n_obs = t_obs.shape[0]
+
+        denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
+        return float(rss / denom) if denom > 0 else np.inf
+
+    def _select_bandwidth_mean(
+        self,
+        points: NDArrayFloat,
+        values: NDArrayFloat,
+    ) -> float:
+        """
+        Select mean bandwidth via GCV if not already specified.
+
+        If bandwidth_mean_ is None (i.e., a search range was provided),
+        performs GCV-based bandwidth selection and applies Gaussian correction.
+
+        Args:
+            points: Observation time points.
+            values: Observation values.
+
+        Returns:
+            Selected or pre-specified bandwidth for mean smoothing.
+        """
+        if self.bandwidth_mean_ is not None:
+            return self.bandwidth_mean_
+
+        bandwidth: float = minimize_scalar(
+            self._mean_gcv_score,
+            args=(points, values),
+            bounds=self.bandwidth_mean_interval_,
+            method="bounded",
+        ).x
+
+        # Empirical correction for Gaussian kernel (see PACE Matlab package)
+        if self.kernel_mean == gaussian_kernel:
+            bandwidth *= 1.1
+
+        return bandwidth
 
     def _collect_raw_covariance(
         self,
@@ -750,74 +703,6 @@ class PACE(  # noqa: WPS230
             f_raw_cov_eq=f_raw_cov_eq,
         )
 
-    def _cov_gcv_score(
-        self,
-        h: float,
-        t_eval: NDArrayFloat,
-        cov_coords: NDArrayFloat,
-        cov_values: NDArrayFloat,
-        win: NDArrayFloat,
-        time_points: NDArrayFloat,
-    ) -> float:
-        """
-        Compute GCV score for bandwidth h for covariance smoothing.
-
-        Args:
-            h: Bandwidth to evaluate
-            t_eval: Query points where smoother is evaluated.
-            cov_coords: Coordinates of the covariance.
-            cov_values: Values of the covariance.
-            win: Weights for the covariance.
-            time_points: Time points for the mean (used to obtain range).
-
-        Returns:
-            Scalar GCV score.
-        """
-        if h <= 0:
-            return np.inf
-
-        # Evaluate smoothed covariance at same locations
-        g_hat = self._cov_lls(
-            h,
-            t_eval,
-            t_eval,
-            cov_coords,
-            cov_values,
-            win,
-        )[:, :, 0]  # Remove codomain dimension (n, n, q) -> (n, n)
-
-        # Interpolation grid points
-        x, y = np.meshgrid(t_eval, t_eval)
-        grid_points = np.c_[x.ravel(), y.ravel()]
-
-        # Interpolate at the grid points
-        interpolator = CloughTocher2DInterpolator(grid_points, g_hat.ravel())
-        g_hat_int = interpolator(cov_coords[:, :, 0])  # Remove trailing dim
-
-        # Calculate residual sum of squares (RSS)
-        cov_values_flat = cov_values[:, 0]  # Remove codomain dimension
-        rss = np.sum(
-            (cov_values_flat - g_hat_int)
-            * (cov_values_flat - g_hat_int).T,
-        )
-
-        # Calculate pairwise distances between points
-        domain_diff = np.max(pdist(time_points))
-        k0 = self.kernel_cov(np.zeros((1, 1, cov_coords.shape[2])))[0]
-        n_obs = len(cov_values)
-        if n_obs == 0:
-            error_msg = (
-                "Unable to perform computations with one measurement per "
-                "observation on noisy data."
-            )
-            raise ValueError(error_msg)
-        # Normalize by number of observations and bandwidth
-        denom = 1 - (1 / n_obs) * ((domain_diff * k0) / h) ** 2
-
-        if denom > 0:
-            return float((rss / denom**2).item())
-        return np.inf
-
     def _compute_cov_weights(
         self,
         h: float,
@@ -940,6 +825,121 @@ class PACE(  # noqa: WPS230
         cov = beta[:, :, 0]
         cov_t = np.transpose(cov, (1, 0, 2))
         return np.array((cov + cov_t) / 2.0)  # noqa: WPS432
+
+    def _cov_gcv_score(
+        self,
+        h: float,
+        t_eval: NDArrayFloat,
+        cov_coords: NDArrayFloat,
+        cov_values: NDArrayFloat,
+        win: NDArrayFloat,
+        time_points: NDArrayFloat,
+    ) -> float:
+        """
+        Compute GCV score for bandwidth h for covariance smoothing.
+
+        Args:
+            h: Bandwidth to evaluate
+            t_eval: Query points where smoother is evaluated.
+            cov_coords: Coordinates of the covariance.
+            cov_values: Values of the covariance.
+            win: Weights for the covariance.
+            time_points: Time points for the mean (used to obtain range).
+
+        Returns:
+            Scalar GCV score.
+        """
+        if h <= 0:
+            return np.inf
+
+        # Evaluate smoothed covariance at same locations
+        g_hat = self._cov_lls(
+            h,
+            t_eval,
+            t_eval,
+            cov_coords,
+            cov_values,
+            win,
+        )[:, :, 0]  # Remove codomain dimension (n, n, q) -> (n, n)
+
+        # Interpolation grid points
+        x, y = np.meshgrid(t_eval, t_eval)
+        grid_points = np.c_[x.ravel(), y.ravel()]
+
+        # Interpolate at the grid points
+        interpolator = CloughTocher2DInterpolator(grid_points, g_hat.ravel())
+        g_hat_int = interpolator(cov_coords[:, :, 0])  # Remove trailing dim
+
+        # Calculate residual sum of squares (RSS)
+        cov_values_flat = cov_values[:, 0]  # Remove codomain dimension
+        rss = np.sum(
+            (cov_values_flat - g_hat_int)
+            * (cov_values_flat - g_hat_int).T,
+        )
+
+        # Calculate pairwise distances between points
+        domain_diff = np.max(pdist(time_points))
+        k0 = self.kernel_cov(np.zeros((1, 1, cov_coords.shape[2])))[0]
+        n_obs = len(cov_values)
+        if n_obs == 0:
+            error_msg = (
+                "Unable to perform computations with one measurement per "
+                "observation on noisy data."
+            )
+            raise ValueError(error_msg)
+        # Normalize by number of observations and bandwidth
+        denom = 1 - (1 / n_obs) * ((domain_diff * k0) / h) ** 2
+
+        if denom > 0:
+            return float((rss / denom**2).item())
+        return np.inf
+
+    def _select_bandwidth_cov(
+        self,
+        cov_grid: NDArrayFloat,
+        raw_cov_coords: NDArrayFloat,
+        raw_cov_values: NDArrayFloat,
+        win: NDArrayFloat,
+        t_eval: NDArrayFloat,
+    ) -> float:
+        """
+        Select covariance bandwidth via GCV if not already specified.
+
+        If bandwidth_cov_ is None (i.e., a search range was provided),
+        performs GCV-based bandwidth selection and applies Gaussian correction.
+
+        Args:
+            cov_grid: Grid for GCV evaluation.
+            raw_cov_coords: Raw covariance coordinates.
+            raw_cov_values: Raw covariance values.
+            win: Weights for covariance.
+            t_eval: Time points for mean (used for range).
+
+        Returns:
+            Selected or pre-specified bandwidth for covariance smoothing.
+        """
+        if self.bandwidth_cov_ is not None:
+            return self.bandwidth_cov_
+
+        # Suppress RuntimeWarnings during GCV optimization. These occur due
+        # to numerical issues (division by zero, invalid values) when
+        # evaluating the GCV score at extreme bandwidth values. The optimizer
+        # handles these cases by treating them as poor candidates.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            bandwidth: float = minimize_scalar(
+                self._cov_gcv_score,
+                args=(cov_grid, raw_cov_coords, raw_cov_values, win, t_eval),
+                bounds=self.bandwidth_cov_interval_,
+                method="bounded",
+                tol=1e-1,
+            ).x
+
+        # Empirical correction for Gaussian kernel (see PACE Matlab package)
+        if self.kernel_cov == gaussian_kernel:
+            bandwidth *= 1.1
+
+        return bandwidth
 
     def _sort_and_clip_eigenpairs(
         self,
@@ -1099,74 +1099,6 @@ class PACE(  # noqa: WPS230
 
         return n_selected_components, fve, lambda_, phi.T
 
-    def _get_sigma2(  # noqa: PLR0913
-        self,
-        h: float,
-        t_eval: NDArrayFloat,
-        cov_coords: NDArrayFloat,
-        cov_values: NDArrayFloat,
-        t_diag: NDArrayFloat,
-        cov_diag: NDArrayFloat,
-        win: NDArrayFloat,
-        domain_range: NDArrayFloat,
-    ) -> float:
-        """
-        Estimate the variance of the covariance matrix.
-
-        Args:
-            h: Bandwidth for the kernel. It is the same one used to smooth the
-                covariance.
-            t_eval: Query points where diagonal is evaluated, expected to be
-                (num eval points x 1)-dimensional.
-            cov_coords: Coordinates of the covariance.
-            cov_values: Values of the covariance.
-            t_diag: Coordinates of the raw covariance diagonal.
-            cov_diag: Values of the raw covariance diagonal.
-            win: Weights for the covariance.
-            domain_range: Domain range of the data.
-
-        Returns:
-            The estimated variance.
-        """
-        smooth_diag = self._mean_lls(
-            h,
-            t_eval,
-            t_diag,
-            cov_diag,
-            self.kernel_cov,
-        )
-
-        rotated_cov_diag = self._rotated_cov_lls(
-            h,
-            t_eval,
-            t_eval,
-            cov_coords,
-            cov_values,
-            win,
-        )
-
-        min_domain, max_domain = domain_range[0]
-        domain_width = max_domain - min_domain
-        a = min_domain + domain_width * self.variance_error_interval[0]
-        b = max_domain - domain_width * (1 - self.variance_error_interval[1])
-
-        # Build FDataGrid for the difference and integrate using library method
-        diff_values = (smooth_diag - rotated_cov_diag).ravel()
-        diff_fd = FDataGrid(
-            data_matrix=diff_values.reshape(1, -1),
-            grid_points=t_eval.ravel(),
-        )
-        sigma2 = diff_fd.integrate(domain=((a, b),))[0, 0] * 2 / domain_width
-
-        if sigma2 < 0:
-            warnings.warn(
-                "The estimated variance is negative. Setting it to 0.",
-                UserWarning,
-                stacklevel=2,
-            )
-            sigma2 = 0
-        return float(sigma2)
-
     def _rotate_coordinates(
         self,
         cov_coords: NDArrayFloat,
@@ -1309,6 +1241,74 @@ class PACE(  # noqa: WPS230
             beta = np.linalg.pinv(xtwx) @ xtwy
 
         return np.array(beta[:, 0])
+
+    def _get_sigma2(  # noqa: PLR0913
+        self,
+        h: float,
+        t_eval: NDArrayFloat,
+        cov_coords: NDArrayFloat,
+        cov_values: NDArrayFloat,
+        t_diag: NDArrayFloat,
+        cov_diag: NDArrayFloat,
+        win: NDArrayFloat,
+        domain_range: NDArrayFloat,
+    ) -> float:
+        """
+        Estimate the variance of the covariance matrix.
+
+        Args:
+            h: Bandwidth for the kernel. It is the same one used to smooth the
+                covariance.
+            t_eval: Query points where diagonal is evaluated, expected to be
+                (num eval points x 1)-dimensional.
+            cov_coords: Coordinates of the covariance.
+            cov_values: Values of the covariance.
+            t_diag: Coordinates of the raw covariance diagonal.
+            cov_diag: Values of the raw covariance diagonal.
+            win: Weights for the covariance.
+            domain_range: Domain range of the data.
+
+        Returns:
+            The estimated variance.
+        """
+        smooth_diag = self._mean_lls(
+            h,
+            t_eval,
+            t_diag,
+            cov_diag,
+            self.kernel_cov,
+        )
+
+        rotated_cov_diag = self._rotated_cov_lls(
+            h,
+            t_eval,
+            t_eval,
+            cov_coords,
+            cov_values,
+            win,
+        )
+
+        min_domain, max_domain = domain_range[0]
+        domain_width = max_domain - min_domain
+        a = min_domain + domain_width * self.variance_error_interval[0]
+        b = max_domain - domain_width * (1 - self.variance_error_interval[1])
+
+        # Build FDataGrid for the difference and integrate using library method
+        diff_values = (smooth_diag - rotated_cov_diag).ravel()
+        diff_fd = FDataGrid(
+            data_matrix=diff_values.reshape(1, -1),
+            grid_points=t_eval.ravel(),
+        )
+        sigma2 = diff_fd.integrate(domain=((a, b),))[0, 0] * 2 / domain_width
+
+        if sigma2 < 0:
+            warnings.warn(
+                "The estimated variance is negative. Setting it to 0.",
+                UserWarning,
+                stacklevel=2,
+            )
+            sigma2 = 0
+        return float(sigma2)
 
     def fit(
         self,

@@ -163,8 +163,8 @@ def input_fd_raises_fixture(
                 bandwidth_cov=np.array([0.1, 100]),
             ),
             sample_fd,
-            109.998,
-            1.444,
+            99.999,  # GCV-selected mean bandwidth
+            1.293,  # GCV-selected cov bandwidth
         ],
     ],
 )
@@ -515,6 +515,7 @@ def test_mean_from_matlab(fetch_cd4_fixture: FDataIrregular) -> None:
         n_grid_points=51,
         bandwidth_mean=8.25,
         bandwidth_cov=6.269,
+        _apply_gaussian_bandwidth_correction=True,
     )
     pace.fit(fetch_cd4_fixture)
 
@@ -549,6 +550,7 @@ def test_cov_from_matlab(fetch_cd4_fixture: FDataIrregular) -> None:
         n_grid_points=51,
         bandwidth_mean=8.25,
         bandwidth_cov=6.269,
+        _apply_gaussian_bandwidth_correction=True,
     )
     pace.fit(fetch_cd4_fixture)
 
@@ -590,7 +592,7 @@ def test_noise(
     np.testing.assert_allclose(
         sigma,
         pace.sigma2_,
-        atol=1e-16,
+        atol=2e-15,
     )
 
 

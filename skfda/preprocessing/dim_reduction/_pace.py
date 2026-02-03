@@ -17,6 +17,12 @@ from sklearn.utils.extmath import svd_flip
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
+from ...preprocessing.smoothing import (
+    PooledCovarianceSmoother,
+    PooledMeanSmoother,
+    local_linear_smooth_covariance_2d,
+    local_linear_smooth_irregular_nd,
+)
 from ...representation import FData
 from ...representation.interpolation import SplineInterpolation
 from ...representation.irregular import FDataGrid, FDataIrregular
@@ -215,6 +221,7 @@ class PACE(  # noqa: WPS230
         reconstruction_grid: int | NDArrayFloat | None = None,
         boundary_effect_interval: Sequence[float] = (0.0, 1.0),
         variance_error_interval: Sequence[float] = (0.25, 0.75),
+        _apply_gaussian_bandwidth_correction: bool = False,
     ) -> None:
         self.n_components = n_components
         self.assume_noisy = assume_noisy
@@ -227,6 +234,9 @@ class PACE(  # noqa: WPS230
         self.reconstruction_grid = reconstruction_grid
         self.boundary_effect_interval = boundary_effect_interval
         self.variance_error_interval = variance_error_interval
+        self._apply_gaussian_bandwidth_correction = (
+            _apply_gaussian_bandwidth_correction
+        )
 
     def _check_bandwidth(
         self,
@@ -367,101 +377,6 @@ class PACE(  # noqa: WPS230
 
         return data.restrict(new_domain_range)
 
-    def _compute_local_estimate(
-        self,
-        xi: NDArrayFloat,
-        yi: NDArrayFloat,
-        wi: NDArrayFloat,
-        d: int,
-        epsilon: float,
-    ) -> NDArrayFloat:
-        """
-        Compute local linear smoother estimate at a single point.
-
-        Uses weighted least squares to fit a local linear model and returns
-        the intercept (smoothed value at the evaluation point).
-
-        Args:
-            xi: Centered differences between observation and evaluation points.
-            yi: Observed function values.
-            wi: Kernel weights for the observations.
-            d: Dimensionality of the domain.
-            epsilon: Regularization parameter for numerical stability.
-
-        Returns:
-            The smoothed estimate (intercept from local linear fit).
-        """
-        win = wi[:, None]
-
-        k0 = np.sum(wi)
-        k1 = np.sum(win * xi, axis=0)
-        k2 = np.einsum("ni,nj->ij", win * xi, xi)
-
-        s0 = np.sum(win * yi, axis=0)
-        s1 = np.einsum("ni,nj->ij", win * xi, yi)
-
-        # Solve linear system for beta0 (intercept)
-        # Build left-hand matrix and right-hand side
-        xtwx = np.block(
-            [
-                [np.array([[k0]]), k1[None, :]],
-                [k1[:, None], k2],
-            ],
-        ) + epsilon * np.eye(d + 1)
-        xtwy = np.vstack([s0[None, :], s1])
-
-        beta = np.linalg.solve(xtwx, xtwy)
-        return cast("NDArrayFloat", beta[0])  # intercept term
-
-    def _mean_lls(
-        self,
-        h: float,
-        t_eval: NDArrayFloat,
-        t_obs: NDArrayFloat,
-        y_obs: NDArrayFloat,
-        kernel: KernelFunction,
-    ) -> NDArrayFloat:
-        """
-        Local linear smoother for mean estimation.
-
-        Args:
-            h: Bandwidth for the kernel.
-            t_eval: Query points where smoother is evaluated.
-            t_obs: Observed time points.
-            y_obs: Observed function values.
-            kernel: Kernel function to use for smoothing.
-
-        Returns:
-            Array with smooth estimates for each query point.
-        """
-        epsilon = 1e-8
-
-        t_eval = np.atleast_2d(t_eval)
-        t_obs = np.atleast_2d(t_obs)
-        y_obs = np.atleast_2d(y_obs)
-
-        n_eval, d = t_eval.shape
-        _, q = y_obs.shape
-
-        # (n_eval, n_obs, d): differences for each eval-obs pair
-        diffs = t_eval[:, None, :] - t_obs[None, :, :]
-
-        # Compute kernel weights
-        weights = kernel(diffs / h)
-
-        estimates = np.empty((n_eval, q))
-
-        for i in range(n_eval):
-            estimates[i] = self._compute_local_estimate(
-                xi=diffs[i],
-                yi=y_obs,
-                wi=weights[i],
-                d=d,
-                epsilon=epsilon,
-            )
-
-        return estimates
-
     def _mean_gcv_score(
         self,
         h: float,
@@ -486,7 +401,15 @@ class PACE(  # noqa: WPS230
             return np.inf
 
         # Compute smoothed estimates for each observed point
-        y_hat = self._mean_lls(h, t_obs, t_obs, y_obs, self.kernel_mean)
+        y_hat = local_linear_smooth_irregular_nd(
+            t_obs,
+            y_obs,
+            t_obs,
+            h,
+            self.kernel_mean,
+        )
+        if np.ndim(y_hat) == 1:
+            y_hat = y_hat[:, np.newaxis]
 
         # Compute residual sum of squares (RSS)
         rss = np.sum((y_obs - y_hat) ** 2)
@@ -527,8 +450,11 @@ class PACE(  # noqa: WPS230
             method="bounded",
         ).x
 
-        # Empirical correction for Gaussian kernel (see PACE Matlab package)
-        if self.kernel_mean == gaussian_kernel:
+        # Empirical correction for Gaussian kernel (Matlab PACE compatibility)
+        if (
+            self._apply_gaussian_bandwidth_correction
+            and self.kernel_mean == gaussian_kernel
+        ):
             bandwidth *= 1.1
 
         return bandwidth
@@ -703,129 +629,6 @@ class PACE(  # noqa: WPS230
             f_raw_cov_eq=f_raw_cov_eq,
         )
 
-    def _compute_cov_weights(
-        self,
-        h: float,
-        r_eval: NDArrayFloat,
-        s_eval: NDArrayFloat,
-        t_pairs: NDArrayFloat,
-        win: NDArrayFloat,
-    ) -> NDArrayFloat:
-        """
-        Compute the kernel weight matrix for local linear covariance smoothing.
-
-        This method calculates the product of kernel weights centered at the
-        evaluation points `r_eval` and `s_eval`, scaled by the bandwidth `h`,
-        and weighted by the observation weights `win`.
-
-        Args:
-            h: Bandwidth parameter for the kernel.
-            r_eval: Array of shape (n_eval, d) representing evaluation points
-                in the r-direction.
-            s_eval: Array of shape (n_eval, d) representing evaluation points
-                in the s-direction.
-            t_pairs: Array of shape (n_obs, 2, d) with observed time point
-                pairs.
-            win: Array of shape (n_obs,) with observation weights.
-
-        Returns:
-            Array of shape (n_eval, n_eval, n_obs) with kernel weight products
-                for each evaluation pair.
-        """
-        diff_r = (t_pairs[:, 0, None] - r_eval[None, :]) / h
-        diff_s = (t_pairs[:, 1, None] - s_eval[None, :]) / h
-        kernel_r = self.kernel_cov(diff_r).T
-        kernel_s = self.kernel_cov(diff_s).T
-        return cast(
-            "NDArrayFloat",
-            np.einsum("ik,jk->ijk", kernel_r, kernel_s) * win,
-        )
-
-    def _build_design_matrix(
-        self,
-        t_pairs: NDArrayFloat,
-        r_eval: NDArrayFloat,
-        s_eval: NDArrayFloat,
-        n_eval: int,
-        n_obs: int,
-    ) -> NDArrayFloat:
-        """
-        Construct the design matrix for local linear regression.
-
-        The design matrix contains a constant term and linear terms for both
-        r- and s-directions, centered at the evaluation points. It is used in
-        the weighted least squares estimation of the covariance surface.
-
-        Args:
-            t_pairs: Array of shape (n_obs, 2, d) with observed time point
-                pairs.
-            r_eval: Array of shape (n_eval, d) with r-direction evaluation
-                points.
-            s_eval: Array of shape (n_eval, d) with s-direction evaluation
-                points.
-            n_eval: Number of evaluation points
-                (i.e., len(r_eval) == len(s_eval)).
-            n_obs: Number of observed point pairs.
-
-        Returns:
-            Array of shape (n_eval, n_eval, n_obs, 3) representing the design
-            matrix with columns [1, t_r - r_eval, t_s - s_eval].
-        """
-        x = np.ones((n_eval, n_eval, n_obs, 3))
-        for i in range(n_eval):
-            for j in range(n_eval):
-                x[:, j, :, 1, None] = t_pairs[None, :, 0] - r_eval[:, None]
-                x[i, :, :, 2, None] = t_pairs[None, :, 1] - s_eval[:, None]
-        return x
-
-    def _cov_lls(
-        self,
-        h: float,
-        r_eval: NDArrayFloat,
-        s_eval: NDArrayFloat,
-        cov_coords: NDArrayFloat,
-        cov_values: NDArrayFloat,
-        win: NDArrayFloat,
-    ) -> NDArrayFloat:
-        """
-        Local linear smoother for covariance estimation.
-
-        Args:
-            h: Bandwidth for the kernel.
-            r_eval: First array of query points where smoother is evaluated.
-            s_eval: Second array of query points where smoother is evaluated.
-            cov_coords: Coordinates of the covariance.
-            cov_values: Values of the covariance.
-            win: Weights for the covariance.
-
-        Returns:
-            n_grid_points x n_grid_points array of smoothed covariance values.
-        """
-        active = np.nonzero(win)[0]
-        t_pairs = cov_coords[active, :]
-        cov_values = cov_values[active]
-        win = win[active]
-
-        n_eval, _ = r_eval.shape
-        n_obs, _ = cov_values.shape
-
-        weights = self._compute_cov_weights(h, r_eval, s_eval, t_pairs, win)
-        x = self._build_design_matrix(t_pairs, r_eval, s_eval, n_eval, n_obs)
-
-        x_t = np.transpose(x, (0, 1, 3, 2))
-        xtw = x_t * weights[:, :, None, :]
-        xtwx = xtw @ x
-        xtwy = xtw @ cov_values
-
-        try:
-            beta = np.linalg.solve(xtwx, xtwy)
-        except np.linalg.LinAlgError:
-            beta = np.linalg.pinv(xtwx) @ xtwy
-
-        cov = beta[:, :, 0]
-        cov_t = np.transpose(cov, (1, 0, 2))
-        return np.array((cov + cov_t) / 2.0)  # noqa: WPS432
-
     def _cov_gcv_score(
         self,
         h: float,
@@ -853,13 +656,14 @@ class PACE(  # noqa: WPS230
             return np.inf
 
         # Evaluate smoothed covariance at same locations
-        g_hat = self._cov_lls(
-            h,
-            t_eval,
-            t_eval,
+        g_hat = local_linear_smooth_covariance_2d(
             cov_coords,
             cov_values,
-            win,
+            t_eval,
+            t_eval,
+            h,
+            self.kernel_cov,
+            weights_obs=win,
         )[:, :, 0]  # Remove codomain dimension (n, n, q) -> (n, n)
 
         # Interpolation grid points
@@ -935,8 +739,11 @@ class PACE(  # noqa: WPS230
                 tol=1e-1,
             ).x
 
-        # Empirical correction for Gaussian kernel (see PACE Matlab package)
-        if self.kernel_cov == gaussian_kernel:
+        # Empirical correction for Gaussian kernel (Matlab PACE compatibility)
+        if (
+            self._apply_gaussian_bandwidth_correction
+            and self.kernel_cov == gaussian_kernel
+        ):
             bandwidth *= 1.1
 
         return bandwidth
@@ -1271,11 +1078,11 @@ class PACE(  # noqa: WPS230
         Returns:
             The estimated variance.
         """
-        smooth_diag = self._mean_lls(
-            h,
-            t_eval,
+        smooth_diag = local_linear_smooth_irregular_nd(
             t_diag,
             cov_diag,
+            t_eval,
+            h,
             self.kernel_cov,
         )
 
@@ -1294,10 +1101,18 @@ class PACE(  # noqa: WPS230
         b = max_domain - domain_width * (1 - self.variance_error_interval[1])
 
         # Build FDataGrid for the difference and integrate using library method
+        n_eval = t_eval.shape[0]
+        smooth_diag = np.atleast_1d(smooth_diag).ravel()[:n_eval]
+        rotated_cov_diag = np.atleast_1d(rotated_cov_diag).ravel()[:n_eval]
         diff_values = (smooth_diag - rotated_cov_diag).ravel()
+        grid_1d = (
+            t_eval.ravel()[:n_eval]
+            if t_eval.ndim == 1
+            else t_eval[:, 0]
+        )
         diff_fd = FDataGrid(
             data_matrix=diff_values.reshape(1, -1),
-            grid_points=t_eval.ravel(),
+            grid_points=(grid_1d,),
         )
         sigma2 = diff_fd.integrate(domain=((a, b),))[0, 0] * 2 / domain_width
 
@@ -1350,7 +1165,6 @@ class PACE(  # noqa: WPS230
         x_work = self._slice_fdata_irregular(X)
 
         # Determine reconstruction grid for mean/eigenfunctions
-        # The mean has to be calculated over the whole domain
         if self.reconstruction_grid is None:
             # Default: use all unique observation points
             t_eval = np.sort(np.unique(X.points, axis=0), axis=0)
@@ -1375,24 +1189,13 @@ class PACE(  # noqa: WPS230
             x_work.values,
         )
 
-        mean = self._mean_lls(
-            self.bandwidth_mean_,
-            t_eval,
-            x_work.points,
-            x_work.values,
-            self.kernel_mean,
+        mean_smoother = PooledMeanSmoother(
+            bandwidth=self.bandwidth_mean_,
+            kernel=self.kernel_mean,
+            output_points=t_eval,
         )
-
-        self.mean_ = FDataGrid(
-            data_matrix=mean.reshape(1, -1, 1),
-            grid_points=t_eval.ravel(),
+        self.mean_ = mean_smoother.fit_transform(x_work).copy(
             domain_range=X.domain_range,
-            dataset_name=X.dataset_name,
-            argument_names=X.argument_names,
-            coordinate_names=X.coordinate_names,
-            sample_names=["Mean function"],
-            extrapolation=X.extrapolation,
-            interpolation=X.interpolation,
         )
 
         raw_cov_data = self._compute_raw_covariances(
@@ -1408,13 +1211,18 @@ class PACE(  # noqa: WPS230
         raw_diag_coords = raw_cov_data.t_pairs_eq
         raw_diag_values = raw_cov_data.f_raw_cov_eq
 
+        if self.assume_noisy and len(raw_cov_coords) == 0:
+            error_msg = (
+                "Unable to perform computations with one measurement per "
+                "observation on noisy data."
+            )
+            raise ValueError(error_msg)
+
         # Resolve n_grid_points (None means full grid from unique time points)
         n_grid_pts = self.n_grid_points
         if n_grid_pts is None:
             n_grid_pts = len(np.unique(x_work.points, axis=0))
 
-        # Create n-dimensional work grid to calculate covariance surface in
-        # Create grid of domain points for covariance evaluation
         axes = [
             np.linspace(start, end, n_grid_pts)
             for start, end in x_work.domain_range
@@ -1422,8 +1230,6 @@ class PACE(  # noqa: WPS230
         mesh = np.meshgrid(*axes, indexing="ij")
         self.t_covariance_ = np.stack([m.ravel() for m in mesh], axis=-1)
 
-        # Select bandwidth for covariance (via GCV if range was provided)
-        # Resolve bw_cov_n_grid_points for GCV grid (None means full cov grid)
         bw_cov_n_pts = self.bw_cov_n_grid_points
         if bw_cov_n_pts is None:
             bw_cov_n_pts = len(self.t_covariance_)
@@ -1442,14 +1248,26 @@ class PACE(  # noqa: WPS230
             t_eval,
         )
 
-        self.covariance_ = self._cov_lls(
-            self.bandwidth_cov_,
-            self.t_covariance_,
-            self.t_covariance_,
-            raw_cov_coords,
-            raw_cov_values,
-            win,
+        cov_smoother = PooledCovarianceSmoother(
+            bandwidth=self.bandwidth_cov_,
+            kernel=self.kernel_cov,
+            output_points_r=self.t_covariance_,
+            output_points_s=self.t_covariance_,
         )
+        try:
+            self.covariance_ = cov_smoother.fit_transform(
+                raw_cov_coords,
+                raw_cov_values,
+                sample_weight=win,
+            )
+        except ValueError as e:
+            if "observation" in str(e).lower():
+                error_msg = (
+                    "Unable to perform computations with one measurement per "
+                    "observation on noisy data."
+                )
+                raise ValueError(error_msg) from e
+            raise
 
         pc_data = self._get_pc(
             self.covariance_,

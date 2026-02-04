@@ -10,6 +10,8 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import numpy as np
+from scipy.interpolate import CloughTocher2DInterpolator
+from scipy.spatial.distance import pdist
 
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation.grid import FDataGrid
@@ -164,12 +166,21 @@ def local_linear_smooth_covariance_2d(
     *,
     weights_obs: NDArrayFloat | None = None,
 ) -> NDArrayFloat:
-    """
+    r"""
     Local linear smoothing for a 2D covariance surface (product kernel).
 
-    Fits a local linear model at each (r, s) evaluation pair using
-    kernel weights K((t_r - r)/h) * K((t_s - s)/h). The result is
-    symmetrized. Used for pooled covariance estimation (e.g. PACE).
+    At each evaluation pair :math:`(r, s)`, fits a local linear model using
+    product kernel weights. For observation :math:`i` with coordinates
+    :math:`(t_{r,i}, t_{s,i})`, the weight is
+
+    .. math::
+        w_i(r, s) = K\!\left(\frac{t_{r,i} - r}{h}\right)
+        \, K\!\left(\frac{t_{s,i} - s}{h}\right),
+
+    where :math:`K` is the kernel and :math:`h` the bandwidth. The estimate
+    :math:`\hat{G}(r, s)` is symmetrized as
+    :math:`(\hat{G}(r,s) + \hat{G}(s,r)) / 2`.
+    Used for pooled covariance estimation (e.g. PACE).
 
     Parameters
     ----------
@@ -254,9 +265,7 @@ def local_linear_smooth_covariance_2d(
     ) / bandwidth  # (n_obs, n_s, d)
     diff_s = np.transpose(diff_s, (1, 0, 2))
     kernel_s = kernel(diff_s)
-    weights = (
-        np.einsum("ik,jk->ijk", kernel_r, kernel_s) * win_filt
-    )
+    weights = np.einsum("ik,jk->ijk", kernel_r, kernel_s) * win_filt
 
     # Design matrix: at (i,j,k) row is [1, t_r[k]-r_i, t_s[k]-s_j] (first dim)
     x = np.ones((n_r, n_s, n_obs, 3))
@@ -389,6 +398,78 @@ class PooledCovarianceSmoother(BaseEstimator):
             cov_values,
             sample_weight=sample_weight,
         ).transform()
+
+    def score(
+        self,
+        cov_coords: NDArrayFloat,
+        cov_values: NDArrayFloat,
+        sample_weight: NDArrayFloat | None,
+        time_points: NDArrayFloat,
+        t_eval: NDArrayFloat,
+        bandwidth: float,
+    ) -> float:
+        r"""Generalized cross-validation score for the covariance surface.
+
+        The denominator is
+        :math:`1 - (1/n)\bigl((\Delta \cdot K(0))/h\bigr)^2` for the 2D
+        covariance smoother.
+
+        Args:
+            cov_coords: Observation coordinate pairs :math:`(t_r, t_s)`,
+                shape (n_obs, 2, d).
+            cov_values: Raw covariance values at each pair.
+            sample_weight: Per-observation weights (e.g. for GCV).
+            time_points: Time points of the mean (used for domain range).
+            t_eval: Grid points at which to evaluate the surface for GCV.
+            bandwidth: Bandwidth to evaluate.
+
+        Returns:
+            :math:`-\mathrm{GCV}` (to be maximized), or :math:`-\infty`
+            if bandwidth :math:`\le 0` or the denominator is not positive.
+        """
+        if bandwidth <= 0:
+            return -np.inf
+        t_eval = np.asarray(t_eval, dtype=float).ravel()
+        t_eval_2d = np.atleast_2d(t_eval).T if t_eval.ndim == 1 else t_eval
+        g_hat = local_linear_smooth_covariance_2d(
+            cov_coords,
+            cov_values,
+            t_eval_2d,
+            t_eval_2d,
+            bandwidth,
+            self.kernel,
+            weights_obs=sample_weight,
+        )[:, :, 0]
+        x, y = np.meshgrid(t_eval, t_eval)
+        grid_points = np.c_[x.ravel(), y.ravel()]
+        interpolator = CloughTocher2DInterpolator(
+            grid_points,
+            g_hat.ravel(),
+        )
+        # (r, s) pairs for interpolation: shape (n_obs, 2) in 1D domain
+        cov_coords_interp = (
+            cov_coords[:, :, 0]
+            if cov_coords.shape[2] == 1
+            else cov_coords.reshape(cov_coords.shape[0], -1)[:, :2]
+        )
+        g_hat_int = interpolator(cov_coords_interp)
+        cov_values_flat = np.asarray(cov_values, dtype=float).ravel()[
+            : cov_coords.shape[0]
+        ]
+        rss = float(np.sum((cov_values_flat - g_hat_int) ** 2))
+        n_obs = cov_coords.shape[0]
+        if n_obs == 0:
+            return -np.inf
+        time_points_2d = np.asarray(time_points, dtype=float)
+        if time_points_2d.ndim == 1:
+            time_points_2d = time_points_2d.reshape(-1, 1)
+        domain_diff = float(np.max(pdist(time_points_2d)))
+        k0 = self.kernel(np.zeros((1, 1, cov_coords.shape[2])))[0]
+        denom = 1.0 - (1.0 / n_obs) * ((domain_diff * k0) / bandwidth) ** 2
+        if denom <= 0:
+            return -np.inf
+        gcv = rss / (denom**2)
+        return -float(np.asarray(gcv).item())
 
 
 class PooledMeanSmoother(
@@ -558,3 +639,57 @@ class PooledMeanSmoother(
             :class:`~skfda.representation.grid.FDataGrid` with one sample.
         """
         return self.fit(X, y).transform(X, y)
+
+    def score(
+        self,
+        points_obs: NDArrayFloat,
+        values_obs: NDArrayFloat,
+        bandwidth: float,
+    ) -> float:
+        r"""Generalized cross-validation score for the pooled mean.
+
+        Uses the formula presented for regular data in
+        :class:`~skfda.preprocessing.smoothing.validation
+        .LinearSmootherGeneralizedCVScorer` with the default penalization:
+        :math:`\mathrm{GCV} = (\mathrm{RSS}/n) / (1 - \mathrm{tr}(S)/n)^2`,
+        with an effective trace approximation for the irregular local linear
+        smoother. Returns :math:`-\mathrm{GCV}`.
+
+        Args:
+            points_obs: Observation points, shape (n_obs,) or (n_obs, d).
+            values_obs: Observed values, shape (n_obs,) or (n_obs, q).
+            bandwidth: Bandwidth to evaluate.
+
+        Returns:
+            :math:`-\mathrm{GCV}` (to be maximized), or :math:`-\infty`
+            if bandwidth :math:`\le 0` or the denominator is not positive.
+        """
+        if bandwidth <= 0:
+            return -np.inf
+        points_obs = np.asarray(points_obs, dtype=float)
+        values_obs = np.asarray(values_obs, dtype=float)
+        if points_obs.ndim == 1:
+            points_obs = points_obs[:, np.newaxis]
+        y_hat = local_linear_smooth_irregular_nd(
+            points_obs,
+            values_obs,
+            points_obs,
+            bandwidth,
+            self.kernel,
+        )
+        if np.ndim(y_hat) == 1:
+            y_hat = y_hat[:, np.newaxis]
+        if values_obs.ndim == 1:
+            values_obs = values_obs[:, np.newaxis]
+        rss = float(np.sum((values_obs - y_hat) ** 2))
+        n_obs = points_obs.shape[0]
+        if n_obs <= 0:
+            return -np.inf
+        domain_diff = float(np.max(pdist(points_obs)))
+        k0 = self.kernel(np.zeros((1, 1, points_obs.shape[1])))[0]
+        trace_eff = (domain_diff * k0) / bandwidth
+        denom = 1.0 - trace_eff / n_obs
+        if denom <= 0:
+            return -np.inf
+        gcv = (rss / n_obs) / (denom**2)
+        return -float(np.asarray(gcv).item())

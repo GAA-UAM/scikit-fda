@@ -9,10 +9,8 @@ from typing import cast
 
 import numpy as np
 from numpy import trapezoid
-from scipy.interpolate import CloughTocher2DInterpolator
 from scipy.optimize import minimize_scalar
 from scipy.spatial import cKDTree
-from scipy.spatial.distance import pdist
 from sklearn.utils.extmath import svd_flip
 from sklearn.utils.validation import check_is_fitted
 
@@ -20,7 +18,6 @@ from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...preprocessing.smoothing import (
     PooledCovarianceSmoother,
     PooledMeanSmoother,
-    local_linear_smooth_covariance_2d,
     local_linear_smooth_irregular_nd,
 )
 from ...representation import FData
@@ -30,9 +27,9 @@ from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 KernelFunction = Callable[[NDArrayFloat], NDArrayFloat]
 
-# Small regularization constant used when assume_noisy=False to ensure
-# numerical stability in the score computation (avoids singular matrices).
-NOISELESS_REGULARIZATION = 1e-8
+# Regularization constant used when assume_noisy=False to ensure numerical
+# stability.
+REGULARIZATION_TERM = 1e-8
 
 
 @dataclass
@@ -119,10 +116,6 @@ class PACE(  # noqa: WPS230
             covariance. If a float is given, it is used as the bandwidth. If a
             tuple is given, it is used as the bandwidth search range, and the
             bandwidth is calculated using the GCV method.
-            The GCV (Generalized Cross-Validation) method used here is
-            conceptually similar to the
-            :class:`~skfda.preprocessing.smoothing.validation.\
-            LinearSmootherGeneralizedCVScorer`.
             See :footcite:t:`febrero-bande+oviedodelafuente_2012_statistical`
             for background on cross-validation methods for smoothing.
         bw_cov_n_grid_points: Number of grid points to calculate the bandwidth
@@ -386,8 +379,8 @@ class PACE(  # noqa: WPS230
         """
         Compute the Generalized Cross-Validation (GCV) score.
 
-        Compute the Generalized Cross-Validation (GCV) score for a given
-        bandwidth.
+        Delegates to :meth:`PooledMeanSmoother.score` the computation of the
+        GCV score.
 
         Args:
             h: Bandwidth to evaluate
@@ -397,30 +390,13 @@ class PACE(  # noqa: WPS230
         Returns:
             GCV score for the given bandwidth.
         """
-        if h <= 0:  # Bandwidth must be positive
+        if h <= 0:
             return np.inf
-
-        # Compute smoothed estimates for each observed point
-        y_hat = local_linear_smooth_irregular_nd(
-            t_obs,
-            y_obs,
-            t_obs,
-            h,
-            self.kernel_mean,
+        mean_smoother = PooledMeanSmoother(
+            bandwidth=1.0,
+            kernel=self.kernel_mean,
         )
-        if np.ndim(y_hat) == 1:
-            y_hat = y_hat[:, np.newaxis]
-
-        # Compute residual sum of squares (RSS)
-        rss = np.sum((y_obs - y_hat) ** 2)
-
-        # Approximate trace of smoother matrix
-        domain_diff = np.max(pdist(t_obs))
-        k0 = self.kernel_mean(np.zeros((1, 1, t_obs.shape[1])))[0]
-        n_obs = t_obs.shape[0]
-
-        denom = (1 - (domain_diff * k0) / (n_obs * h)) ** 2
-        return float(rss / denom) if denom > 0 else np.inf
+        return -mean_smoother.score(t_obs, y_obs, h)
 
     def _select_bandwidth_mean(
         self,
@@ -641,6 +617,9 @@ class PACE(  # noqa: WPS230
         """
         Compute GCV score for bandwidth h for covariance smoothing.
 
+        Delegates to :meth:`PooledCovarianceSmoother.score` the computation of
+        the GCV score using the pattern smoother.score().
+
         Args:
             h: Bandwidth to evaluate
             t_eval: Query points where smoother is evaluated.
@@ -654,36 +633,6 @@ class PACE(  # noqa: WPS230
         """
         if h <= 0:
             return np.inf
-
-        # Evaluate smoothed covariance at same locations
-        g_hat = local_linear_smooth_covariance_2d(
-            cov_coords,
-            cov_values,
-            t_eval,
-            t_eval,
-            h,
-            self.kernel_cov,
-            weights_obs=win,
-        )[:, :, 0]  # Remove codomain dimension (n, n, q) -> (n, n)
-
-        # Interpolation grid points
-        x, y = np.meshgrid(t_eval, t_eval)
-        grid_points = np.c_[x.ravel(), y.ravel()]
-
-        # Interpolate at the grid points
-        interpolator = CloughTocher2DInterpolator(grid_points, g_hat.ravel())
-        g_hat_int = interpolator(cov_coords[:, :, 0])  # Remove trailing dim
-
-        # Calculate residual sum of squares (RSS)
-        cov_values_flat = cov_values[:, 0]  # Remove codomain dimension
-        rss = np.sum(
-            (cov_values_flat - g_hat_int)
-            * (cov_values_flat - g_hat_int).T,
-        )
-
-        # Calculate pairwise distances between points
-        domain_diff = np.max(pdist(time_points))
-        k0 = self.kernel_cov(np.zeros((1, 1, cov_coords.shape[2])))[0]
         n_obs = len(cov_values)
         if n_obs == 0:
             error_msg = (
@@ -691,12 +640,21 @@ class PACE(  # noqa: WPS230
                 "observation on noisy data."
             )
             raise ValueError(error_msg)
-        # Normalize by number of observations and bandwidth
-        denom = 1 - (1 / n_obs) * ((domain_diff * k0) / h) ** 2
-
-        if denom > 0:
-            return float((rss / denom**2).item())
-        return np.inf
+        t_eval_2d = t_eval if t_eval.ndim > 1 else np.atleast_2d(t_eval).T
+        cov_smoother = PooledCovarianceSmoother(
+            bandwidth=1.0,
+            kernel=self.kernel_cov,
+            output_points_r=t_eval_2d,
+            output_points_s=t_eval_2d,
+        )
+        return -cov_smoother.score(
+            cov_coords,
+            cov_values,
+            win,
+            time_points,
+            t_eval,
+            h,
+        )
 
     def _select_bandwidth_cov(
         self,
@@ -747,29 +705,6 @@ class PACE(  # noqa: WPS230
             bandwidth *= 1.1
 
         return bandwidth
-
-    def _sort_and_clip_eigenpairs(
-        self,
-        eigenvalues: NDArrayFloat,
-        eigenvectors: NDArrayFloat,
-    ) -> tuple[NDArrayFloat, NDArrayFloat]:
-        """
-        Sort and non-negatively clip eigenvalues, reorder eigenvectors.
-
-        Eigenvalues are clipped to be non-negative (numerical artifacts can
-        produce small negative values) and sorted in descending order.
-        Eigenvectors are reordered to match.
-
-        Args:
-            eigenvalues: Array of eigenvalues from covariance decomposition.
-            eigenvectors: Matrix of eigenvectors (columns).
-
-        Returns:
-            Tuple of (sorted eigenvalues, reordered eigenvectors).
-        """
-        eigenvalues = np.maximum(eigenvalues, 0)
-        idx = np.argsort(eigenvalues)[::-1]
-        return eigenvalues[idx], eigenvectors[:, idx]
 
     def _normalize_and_orient(
         self,
@@ -827,7 +762,7 @@ class PACE(  # noqa: WPS230
         )
 
         # Evaluate at target grid: returns (n_components, n_target, 1)
-        phi = fd(target_grid)[:, :, 0].T  # -> (n_target, n_components)
+        phi = fd(target_grid)[:, :, 0].T
 
         # Vectorized L2 normalization
         norms = np.sqrt(trapezoid(phi**2, x=target_grid, axis=0))
@@ -869,10 +804,9 @@ class PACE(  # noqa: WPS230
             )
             raise ValueError(error_msg)
 
-        eigenvalues, eigenvectors = self._sort_and_clip_eigenpairs(
-            eigenvalues,
-            eigenvectors,
-        )
+        idx = np.argsort(eigenvalues)[::-1]
+        eigenvalues = eigenvalues[idx]
+        eigenvectors = eigenvectors[:, idx]
 
         fve = np.cumsum(eigenvalues) / np.sum(eigenvalues)
         if isinstance(n_components, int):
@@ -1100,16 +1034,12 @@ class PACE(  # noqa: WPS230
         a = min_domain + domain_width * self.variance_error_interval[0]
         b = max_domain - domain_width * (1 - self.variance_error_interval[1])
 
-        # Build FDataGrid for the difference and integrate using library method
+        # Build FDataGrid for the difference and integrate
         n_eval = t_eval.shape[0]
         smooth_diag = np.atleast_1d(smooth_diag).ravel()[:n_eval]
         rotated_cov_diag = np.atleast_1d(rotated_cov_diag).ravel()[:n_eval]
         diff_values = (smooth_diag - rotated_cov_diag).ravel()
-        grid_1d = (
-            t_eval.ravel()[:n_eval]
-            if t_eval.ndim == 1
-            else t_eval[:, 0]
-        )
+        grid_1d = t_eval.ravel()[:n_eval] if t_eval.ndim == 1 else t_eval[:, 0]
         diff_fd = FDataGrid(
             data_matrix=diff_values.reshape(1, -1),
             grid_points=(grid_1d,),
@@ -1337,15 +1267,15 @@ class PACE(  # noqa: WPS230
 
         # Pre-compute shared data
         lambda_ = np.diag(self.explained_variance_)
-        mean_values = self.mean_.data_matrix[0, :, 0]  # (n_grid,)
-        phi_values = self.components_.data_matrix[..., 0]  # (n_comp, n_grid)
+        mean_values = self.mean_.data_matrix[0, :, 0]
+        phi_values = self.components_.data_matrix[..., 0]
 
         # Build KDTree once for all nearest-neighbor lookups
         tree = cKDTree(t_mean.reshape(-1, 1))
 
         # Handle noiseless case
         if self.assume_noisy is False:
-            self.sigma2_ = NOISELESS_REGULARIZATION
+            self.sigma2_ = REGULARIZATION_TERM
 
         fpc_scores = np.zeros((n_samples, n_components))
 

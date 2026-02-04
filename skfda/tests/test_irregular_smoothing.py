@@ -286,6 +286,49 @@ class TestPooledMeanSmoother:
             )
 
 
+class TestPooledMeanSmootherGCV:
+    """GCV via PooledMeanSmoother.score()."""
+
+    def test_score_formula_matches_package_gcv(self) -> None:
+        """score() uses (RSS/n)/(1-trace/n)^2 and returns -GCV."""
+        from scipy.spatial.distance import pdist
+
+        from skfda.preprocessing.dim_reduction._pace import gaussian_kernel
+
+        np.random.seed(1)
+        n = 8
+        points = np.sort(np.random.uniform(0, 5, (n, 1)))
+        values = np.random.randn(n, 1)
+        bandwidth = 1.5
+        smoother = PooledMeanSmoother(
+            bandwidth=1.0,
+            kernel=gaussian_kernel,
+        )
+        score_val = smoother.score(points, values, bandwidth)
+        gcv = -score_val
+        y_hat = local_linear_smooth_irregular_nd(
+            points, values, points, bandwidth, gaussian_kernel
+        )
+        if np.ndim(y_hat) == 1:
+            y_hat = y_hat[:, np.newaxis]
+        rss = float(np.sum((values - y_hat) ** 2))
+        domain_diff = float(np.max(pdist(points)))
+        k0 = gaussian_kernel(np.zeros((1, 1, 1)))[0]
+        trace_eff = (domain_diff * k0) / bandwidth
+        expected_gcv = (rss / n) / (1 - trace_eff / n) ** 2
+        np.testing.assert_almost_equal(gcv, expected_gcv, decimal=10)
+
+    def test_score_returns_neg_inf_when_denom_nonpositive(self) -> None:
+        """score() returns -np.inf when bandwidth or denominator is invalid."""
+        from skfda.preprocessing.dim_reduction._pace import gaussian_kernel
+
+        points = np.array([[0.0], [1.0], [2.0]])
+        values = np.array([[1.0], [2.0], [1.0]])
+        smoother = PooledMeanSmoother(bandwidth=1.0, kernel=gaussian_kernel)
+        assert smoother.score(points, values, 0.0) == -np.inf
+        assert smoother.score(points, values, -1.0) == -np.inf
+
+
 ##############################################################################
 # local_linear_smooth_covariance_2d and PooledCovarianceSmoother
 ##############################################################################
@@ -421,3 +464,93 @@ class TestPooledCovarianceSmoother:
             rtol=1e-10,
             atol=1e-10,
         )
+
+
+
+class TestPooledCovarianceSmootherGCV:
+    """GCV via PooledCovarianceSmoother.score()."""
+
+    def test_score_formula_matches_previous(self) -> None:
+        """score() uses RSS/denom^2 and returns -GCV."""
+        from scipy.interpolate import CloughTocher2DInterpolator
+        from scipy.spatial.distance import pdist
+
+        from skfda.preprocessing.dim_reduction._pace import gaussian_kernel
+
+        np.random.seed(456)
+        t = np.linspace(0, 5, 5)
+        cov_coords = np.array(
+            [[ti, tj] for ti in t for tj in t],
+            dtype=float,
+        ).reshape(-1, 2, 1)
+        n_pairs = cov_coords.shape[0]
+        cov_values = (
+            np.exp(-0.5 * (cov_coords[:, 0, 0] - cov_coords[:, 1, 0]) ** 2)
+            + 0.1 * np.random.randn(n_pairs)
+        ).reshape(-1, 1)
+        win = np.ones(n_pairs)
+        t_eval = t.reshape(-1, 1)
+        time_points = t
+        h = 1.2
+
+        smoother = PooledCovarianceSmoother(
+            bandwidth=1.0,
+            kernel=gaussian_kernel,
+            output_points_r=t_eval,
+            output_points_s=t_eval,
+        )
+        score_val = smoother.score(
+            cov_coords, cov_values, win, time_points, t_eval, h
+        )
+        gcv = -score_val
+
+        # Manual formula: same as previous PACE implementation
+        g_hat = local_linear_smooth_covariance_2d(
+            cov_coords,
+            cov_values,
+            t_eval,
+            t_eval,
+            h,
+            gaussian_kernel,
+            weights_obs=win,
+        )[:, :, 0]
+        x, y = np.meshgrid(t_eval.ravel(), t_eval.ravel())
+        grid_points = np.c_[x.ravel(), y.ravel()]
+        interpolator = CloughTocher2DInterpolator(grid_points, g_hat.ravel())
+        g_hat_int = interpolator(cov_coords[:, :, 0])
+        cov_values_flat = np.asarray(cov_values, dtype=float).ravel()[:n_pairs]
+        rss = float(np.sum((cov_values_flat - g_hat_int) ** 2))
+        n = n_pairs
+        time_2d = np.asarray(time_points).reshape(-1, 1)
+        domain_diff = float(np.max(pdist(time_2d)))
+        k0 = gaussian_kernel(np.zeros((1, 1, 1)))[0]
+        denom = 1.0 - (1.0 / n) * ((domain_diff * k0) / h) ** 2
+        expected_gcv = rss / (denom**2)
+
+        np.testing.assert_allclose(gcv, expected_gcv, rtol=1e-12, atol=1e-14)
+
+    def test_score_returns_neg_inf_when_invalid(self) -> None:
+        """score() returns -np.inf when bandwidth <= 0."""
+        from skfda.preprocessing.dim_reduction._pace import gaussian_kernel
+
+        t = np.linspace(0, 1, 3)
+        cov_coords = np.array(
+            [[ti, tj] for ti in t for tj in t],
+            dtype=float,
+        ).reshape(-1, 2, 1)
+        cov_values = np.ones((cov_coords.shape[0], 1))
+        win = np.ones(cov_coords.shape[0])
+        t_eval = t.reshape(-1, 1)
+
+        smoother = PooledCovarianceSmoother(
+            bandwidth=0.2,
+            kernel=gaussian_kernel,
+            output_points_r=t_eval,
+            output_points_s=t_eval,
+        )
+        assert smoother.score(
+            cov_coords, cov_values, win, t, t_eval, 0.0
+        ) == -np.inf
+        assert smoother.score(
+            cov_coords, cov_values, win, t, t_eval, -1.0
+        ) == -np.inf

@@ -45,6 +45,32 @@ are used, the matrix does not need to be explicitly computed.
 
    skfda.preprocessing.smoothing.BasisSmoother
 
+Irregular data smoothers
+------------------------
+
+For irregularly observed or sparse functional data (e.g.
+:class:`~skfda.representation.irregular.FDataIrregular`), the following
+smoothers pool observations across curves and estimate a mean or covariance
+surface using local linear smoothing. They are used internally by
+:class:`~skfda.preprocessing.dim_reduction.PACE` and can also be used
+standalone. Bandwidth selection can be done via the :meth:`score` method
+(GCV, same convention as the rest of the package).
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.preprocessing.smoothing.PooledMeanSmoother
+   skfda.preprocessing.smoothing.PooledCovarianceSmoother
+
+Low-level functions for irregular local linear smoothing (e.g. for custom
+pipelines or non-FData inputs):
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.preprocessing.smoothing.local_linear_smooth_irregular_nd
+   skfda.preprocessing.smoothing.local_linear_smooth_covariance_2d
+
 Validation
 ----------
 

@@ -1,311 +1,214 @@
 from typing import Callable, Protocol, Final, Literal
 
-from ...representation import FData
-from score_model import ScoreNet
+from ..._utils._sklearn_adapter import BaseEstimator
 
 import torch
 from torch import Tensor
 
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from functools import partial
-
-@dataclass
-class DiffusionState:
-    """Class to hold the state of a diffusion process at a given time step.
-
-    Attributes:
-        t: The current time step as a tensor, shape (N,)
-        x: The current functional data as a tensor, shape (N, M)
-        mu_t: The mean of the diffusion process at time t, shape (N, M)
-        sigma_t: The square root of the covariance matrix of the diffusion
-                  process at time t, shape (N, M, M)
-        inv_sigma_t: The inverse of the square root of the covariance matrix
-                     of the diffusion process at time t, shape (N, M, M)
-    """
-    t: Tensor
-    x: Tensor
-    mu_t: Tensor
-    sigma_t: Tensor
-    inv_sigma_t: Tensor
 
 class DiffusionProcess(Protocol):
+    """Protocol for a diffusion process used in generative models.
+
+    It defines the drift and diffusion terms of an SDE.
+    """
+    def drift(self, x: Tensor, t: Tensor) -> Tensor:
+        """Computes the drift term of the SDE at time t."""
+        ...
+
+    def diffusion(self, t: Tensor) -> Tensor:
+        """Computes the diffusion term of the SDE at time t."""
+        ...
+
+
+class CustomDiffusionProcess(DiffusionProcess):
     """Common interface of a diffusion process to be used in generative models.
 
-    It defines the necessary methods to be used in the FunDiffusion class to
-    generate synthetic functional data.
+    It defines the drift and diffusion terms of an SDE.
     """
-    # TODO(): Decide whether T should be Final or not
-    # Decide whether other T different than 1 should be allowed
-    T: Final[int] # Final time of the diffusion process
-
-    # TODO(): Decide whether we want to forward from t_0 != 0
-    def forward(self, x: Tensor, t: Tensor) -> DiffusionState:
-        """Applies the forward diffusion process to the input data.
+    def __init__(self,
+                 drift: Callable[[Tensor, Tensor], Tensor],
+                 diffusion: Callable[[Tensor], Tensor]):
+        """Initializes the diffusion process with the given drift and diffusion functions.
 
         Args:
-            x: The input functional data as a tensor, shape (N, M)
-            t: The time steps at which to apply the diffusion, shape (N,)
-
-        Returns:
-            :class:`DiffusionState` with the diffusion state at time t.
+            drift: A function that takes the current state x and time t, 
+            and returns the drift term of the SDE, shape (N, M) or (N,).
+            diffusion: A function that takes the current time t and 
+            returns the diffusion term of the SDE, shape (N,), (N, M) or (N, M, M).
         """
-        ...
+        self.f = drift
+        self.g = diffusion
 
-    # TODO(): Decide what to do with inv_sigma_t for score_model
-    # For training it can be done using DiffusionState but for sampling
-    # we don't call the forward method so we need to compute it somehow else
-    def inv_sigma_t(self, t: Tensor) -> Tensor:
-        """Computes the inverse of a sqrt of the covariance matrix at time t.
-
-        It can have shape (N, M, M), (N,M) or (N,).
-
-        If (N, M, M) is returned, it represents the full inverse covariance
-        matrix.
-
-        If (N, M) is returned, it represents only the values of the diagonal
-        of the matrix. Hence the behavior is the same as if a diagonal matrix
-        is used.
-
-        If (N,) is returned, it represents a scalar multiple of the identity
-        matrix. Hence the behavior is the same as if a scalar multiple of the
-        identity matrix is used.
+    def drift(self, x: Tensor, t: Tensor) -> Tensor:
+        """Computes the drift term of the SDE at time t.
 
         Args:
-            t: The time steps as a tensor, shape (N,)
-
-        Returns:
-            inv_sigma_t: The inverse of the square root of the covariance
-                         matrix at time t, shape (N, M, M) or (N, M) or (N,).
-        """
-        ...
-
-
-    # TODO(): Decide whether the labels should be generated, passed or neither
-    # For now we assume that neither.
-    def sample_final_distribution(self, n_samples: int, device: torch.device | str = "cpu") -> Tensor:
-        """Samples data from the final distribution of the diffusion process.
-
-        Args:
-            n_samples: The number of samples to generate.
-            device: The device on which to create the samples. Default is "cpu".
-
-        Returns:
-            X: Tensor with samples from the final distribution.
-        """
-        ...
-
-    # TODO(): Decide whether to return DiffusionState or just x at t_0
-    def backward(self,
-                 score_model: ScoreNet,
-                 x: Tensor,
-                 t: Tensor | float | None = None,
-                 t_0: Tensor | float = 0.0,
-                 y: Tensor | None = None) -> DiffusionState:
-        """Applies the backward diffusion process to the perturbed data.
-
-        Args:
-            score_model: The score network used to estimate the score
-                         function of the diffusion process.
-            x: The perturbed data at time t as a tensor. Shape (N, M)
-            t: The time at which the data is perturbed as a 0-dimensional
-               tensor or a float. Default is `None`. If `None`, it is assumed
-                to be the final time T of the diffusion process.
-            t_0: The time till which we want to reverse the diffusion process
-                as a 0-dimensional tensor or a float.
-            y: Optional tensor with the class labels of the data, shape (N,)
-               Default is `None`.
-
-        Returns:
-            :class:`DiffusionState` with the diffusion state at time t_0.
-        """
-        ...
-
-
-class EulerMaruyamaDiffusionProcess(ABC):
-    """Abstract base class for diffusion processes using Euler-Maruyama.
-
-    This class defines the interface for diffusion processes that use the
-    Euler-Maruyama method for simulating the backward diffusion process.
-    It requires subclasses to implement the drift and diffusion coefficient.
-    """
-    T: int # Final time of the diffusion process
-    # TODO(): Decide whether this is a class attribute or an argument in backward
-    integration_steps: int # Number of integration steps for Euler-Maruyama
-
-    # TODO(): Do I need to write here forward and sample from final distribution again?
-    @abstractmethod
-    def forward(self, x: Tensor, t: Tensor) -> DiffusionState:
-        """Applies the forward diffusion process using Euler-Maruyama.
-
-        Args:
-            x: The input functional data as a tensor, shape (N, M)
-            t: The time steps at which to apply the diffusion, shape (N,)
-
-        Returns:
-            :class:`DiffusionState` with the diffusion state at time t.
-        """
-        ...
-
-    @abstractmethod
-    def sample_final_distribution(self, n_samples: int, device: torch.device | str = "cpu") -> Tensor:
-        """Samples data from the final distribution of the diffusion process.
-
-        Args:
-            n_samples: The number of samples to generate.
-            device: The device on which to create the samples. Default is "cpu".
-
-        Returns:
-            X: Tensor with samples from the final distribution.
-        """
-        ...
-
-    # TODO: Decide whether to accept the commented shapes
-    # or just (N, M) despite losing some efficiency
-    @abstractmethod
-    def backward_drift_coef(self,
-                            score_model: ScoreNet, 
-                            x: Tensor,
-                            t: Tensor,
-                            y: Tensor | None = None) -> Tensor:
-        """Computes the drift coefficient of the SDE at time t.
-
-        The output shape must be (N, M)
-
-        Args:
-            score_model: The score-based model used to estimate the score
-                         function.
             x: The current functional data as a tensor, shape (N, M)
             t: The current time steps as a tensor, shape (N,)
-            y: Optional tensor with the class labels of the data, shape (N,)
-               Default is `None`.
 
         Returns:
-            The drift coefficient as a tensor Shape (N, M)
-
+            The drift term as a tensor Shape (N, M) or (N,)
         """
-        ...
+        return self.f(x, t)
 
-    # TODO: Decide whether to acept the commented shapes
-    # or just (N, M, M) despite losing some efficiency
-    @abstractmethod
-    def backward_diffusion_coef(self, t: Tensor) -> Tensor:
-        """Computes the backward diffusion coefficient of the SDE at time t.
+    def diffusion(self, t: Tensor) -> Tensor:
+        """Computes the diffusion term of the SDE at time t.
 
-        The output shape can be (N, M, M), (N, M), (N,) or scalar.
+        Output shape can be (N, M, M), (N, M) or (N,).
 
-        In the case (N, M) is returned, it represents only the diagonal
-        of the diffusion matrix.
-        In the case (N,) is returned, it represents a scalar multiple of
-        the identity matrix.
-        In the case of a scalar the behavior is the same as in the case
-        of (N,) with all values equal to that scalar.
+        If (N,) is returned, it represents a scalar
+        multiple of the identity matrix. Hence, when used
+        its behavior should be the same as if a scalar
+        multiple of the identity matrix is returned.
+
+        If (N, M) is returned, it represents only the diagonal
+        of the diffusion matrix. Hence, when used its behavior
+        should be the same as if a diagonal matrix is returned.
 
         Args:
             t: The current time steps as a tensor, shape (N,)
 
         Returns:
-            The diffusion coefficient as a tensor, shape (N, M, M).
+            The diffusion term as a tensor Shape (N,), (N, M) or (N, M, M)
+        """
+        return self.g(t)
+
+
+# TODO(): Decide whether an abstrac class or Protocol is better for this
+class ForwardDiffusionProcess(DiffusionProcess, BaseEstimator):
+    """Defines the forward diffusion process of a generative model.
+
+    This method represents a diffusion process with gaussian
+    conditional distributions. It defines the methods
+    mean_cond and sigma_cond of the conditional distribution at time t.
+    where mean is mean of the distribution and sigma is a square root
+    of the covariance matrix.
+
+    It also defines a method to compute the inverse of the square root
+    of the covariance matrix at time t.
+
+    Also defines the method to sample from the limiting distribution.
+    """
+    @abstractmethod
+    def drift(self, x: Tensor, t: Tensor) -> Tensor:
+        """Computes the drift term of the SDE at time t."""
+        ...
+
+    @abstractmethod
+    def diffusion(self, t: Tensor) -> Tensor:
+        """Computes the diffusion term of the SDE at time t."""
+        ...
+
+    @abstractmethod
+    def mean_cond(self, x: Tensor, t: Tensor) -> Tensor:
+        """Computes the mean of the conditional distribution at time t.
+
+        It computes the mean of the distribution of X(t) given X(0) = x.
+
+        Args:
+            x: The current functional data as a tensor, shape (N, M)
+            t: The current time steps as a tensor, shape (N,)
+
+        Returns:
+            The mean of the conditional distribution at time t, shape (N, M)
         """
         ...
 
-    def backward(self,
-                 score_model: ScoreNet,
-                 x: Tensor,
-                 t: Tensor | float,
-                 t_0: Tensor | float = 0.0,
-                 y: Tensor | None = None) -> Tensor:
-        """Applies the backward diffusion process using Euler-Maruyama.
+    @abstractmethod
+    def sigma_cond(self, t: Tensor) -> Tensor:
+        """Computes the square root of the covariance matrix of the conditional distribution at time t.
+
+        It computes the square root of the covariance matrix of the
+        distribution of X(t) given X(0) = x.
+
+        Output shape can be (N, M, M), (N, M) or (N,).
+
+        If (N,) is returned, it represents a scalar
+        multiple of the identity matrix. Hence, when used
+        its behavior should be the same as if a scalar
+        multiple of the identity matrix is returned.
+
+        If (N, M) is returned, it represents only the diagonal
+        of the diffusion matrix. Hence, when used its behavior
+        should be the same as if a diagonal matrix is returned.
 
         Args:
-            score_model: The score-based model used to estimate the score
-                         function.
-            x: The perturbed data at time t as a tensor. Shape (N, M)
-            t: The time at which the data is perturbed as a 0-dimensional
-               tensor or a float.
-            t_0: The time till which we want to reverse the diffusion process
-                as a 0-dimensional tensor or a float.
-            y: Optional tensor with the class labels of the data, shape (N,)
-               Default is `None`.
+            t: The current time steps as a tensor, shape (N,)
 
         Returns:
-            :class:`DiffusionState` with the diffusion state at time t_0.
+            The square root of the covariance matrix of the conditional
+            distribution at time t, shape (N,), (N, M) or (N, M, M)
         """
-        device = x.device
+        ...
 
-        if isinstance(t, float):
-            t = torch.tensor(t, device=device)
-        if isinstance(t_0, float):
-            t_0 = torch.tensor(t_0, device=device)
-        if t.ndim != 0 or t_0.ndim != 0:
-            raise ValueError("t and t_0 must be either floats or 0-dimensional tensors")
+    @abstractmethod
+    def inv_sigma_cond(self, t: Tensor) -> Tensor:
+        """Computes the inverse of the square root of the covariance matrix of the conditional distribution at time t.
 
-        backward_drift = partial(self.backward_drift_coef,
-                                 score_model=score_model,
-                                 y=y)
+        It computes the inverse of the square root of the covariance matrix of the
+        distribution of X(t) given X(0) = x.
 
-        backward_diffusion = self.backward_diffusion_coef
-        # TODO():Adapt this to the implemented tool.
-        return euler_maruyama_integration(
-            x,
-            t,
-            t_0,
-            backward_drift,
-            backward_diffusion,
-            self.integration_steps,
-        )
+        Output shape can be (N, M, M), (N, M) or (N,).
 
+        If (N,) is returned, it represents a scalar
+        multiple of the identity matrix. Hence, when used
+        its behavior should be the same as if a scalar
+        multiple of the identity matrix is returned.
 
-def euler_maruyama_integration(
-    x: Tensor,
-    t_0: Tensor,
-    t_end: Tensor,
-    drift: Callable[[Tensor, Tensor], Tensor],
-    diffusion: Callable[[Tensor], Tensor],
-    n_steps: int,
-) -> Tensor:
-    """Performs Euler-Maruyama integration of an SDE.
+        If (N, M) is returned, it represents only the diagonal
+        of the diffusion matrix. Hence, when used its behavior
+        should be the same as if a diagonal matrix is returned.
 
-    Args:
-        x: The initial data at time t as a tensor, shape (N, M)
-        t_0: The initial time steps as a tensor, shape (N,)
-        t_end: The final time steps as a tensor, shape (N,)
-        drift: The drift function of the SDE.
-        diffusion: The diffusion coefficient function of the SDE.
-        n_steps: The number of integration steps.
+        Args:
+            t: The current time steps as a tensor, shape (N,)
 
-    Returns:
-        The integrated data at time t_0 as a tensor, shape (N, M)
-    """
-    N, M = x.shape
-    device = x.device
-    times = torch.linspace(t_0, t_end, n_steps + 1, device=device)
-    dt = times[1] - times[0] # Can be negative
-    # Note: sqrt(|dt|) because variance is always positive
-    sqrt_dt = torch.sqrt(torch.abs(dt))
+        Returns:
+            The inverse of the square root of the covariance matrix of the conditional
+            distribution at time t, shape (N,), (N, M) or (N, M, M)
+        """
+        ...
 
-    # Brownian increment: dW ~ N(0, |dt|)
-    dw = torch.randn((n_steps, N, M), dtype=x.dtype, device=device) * sqrt_dt
-    x_t = x.clone()
-    for n in range(n_steps):
-        t = times[n]
+    @abstractmethod
+    def sample_limit_distribution(
+        self,
+        n_samples: int,
+        device: torch.device | str = "cpu",
+    ) -> Tensor:
+        """Samples data from the limit distribution of the diffusion process.
 
-        drift_t = drift(x_t, t)  # Shape (N, M)
-        diffusion_t = diffusion(t)  # Shape (N, M, M)
-        if diffusion_t.dim() in (0, 1, 2):
-            # Scalar, (N,) or (N,M) shape
-            # Element-wise multiplication
-            diff_score = diffusion_t * dw[n]
-        else:
-            # Full (N, M, M) shape
-            # Matrix-vector multiplication
-            diff_score = torch.einsum("bi,bij->bj", dw[n], diffusion_t)
-        x_t = x_t + drift_t * dt + diff_score  # Shape (N, M)
+        The output shape must be (n_samples, M) where M is the dimension of the data.
+        It is learned at the fit method.
 
-    return x_t
+        Args:
+            n_samples: The number of samples to generate.
+            device: The device on which to create the samples. Default is "cpu".
+
+        Returns:
+            X: Tensor with samples from the limit distribution, shape (n_samples, M)
+        """
+        ...
+
+    def fit(self, x: Tensor) -> "ForwardDiffusionProcess":
+        """Fits the parameters of the diffusion process to the data.
+
+        This method can be used to fit the parameters of the
+        diffusion process to the data.For the most basic, it learns the
+        dimensionality of the data for sampling from limit distribution.
+        More advanced diffusion process can learn other parameters such as
+        the beta(t) schedule for variance-preserving.
+
+        Args:
+            x: The input functional data as a tensor, shape (N, M)
+
+        Returns:
+            self: The fitted diffusion process.
+        """
+        self.M = x.shape[1]  # Learn the dimension of the data
+        return self
 
 
-class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
+class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
     r"""Implements a variance-preserving diffusion process.
 
     Based on the following forward SDE equation:
@@ -324,19 +227,16 @@ class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
     # TODO(): Decide whether to allow other T values
     T: Final[int] = 1
 
-    def __init__(self,
-                M:int,
-                beta_schedule: Literal["linear", "cosine"] = "linear",
-                beta_0: float = 0.01,
-                beta_T: float = 3.0,
-                integration_steps: int = 1000,
-                device: torch.device | str = 'cpu',
-                ):
+    def __init__(
+        self,
+        beta_schedule: Literal["linear", "cosine"] = "linear",
+        beta_0: float = 0.001,
+        beta_T: float = 10.,
+        integration_steps: int = 1000,
+    ):
         """Initializes the variance-preserving diffusion process.
 
         Args:
-            M: The dimension of the data. Needed to sample
-            from the final distribution.
             beta_schedule: The schedule for beta(t). Can be 'linear' or
                         'cosine'. Default is 'linear'.
             beta_0: The value of beta(0). Used only if `beta_schedule`
@@ -349,14 +249,11 @@ class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
         """
         if beta_schedule not in ("linear", "cosine"):
             raise ValueError(f"Unknown beta schedule: {beta_schedule}")
-        # TODO(): Decide if I should pass as a class attribute or argument
-        # in the sample_final_distribution method
-        self.M = M
         self.beta_schedule = beta_schedule
         self.beta_0 = beta_0
         self.beta_T = beta_T
         self.integration_steps = integration_steps
-        self.device = device
+        self.M = None  # Will be set in fit method
 
     def _beta_t(self, t: Tensor) -> Tensor:
         """Computes the value of beta(t) at time t.
@@ -373,72 +270,64 @@ class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
             # TODO(): What should I do with eps here?
             s = 0.008
             eps = 1e-5
-            beta_t = torch.pi / (self.T * (s + 1))* torch.tan(torch.pi*0.5 * (t / self.T + s) / (s + 1 + eps))
+            beta_t = (torch.pi / (self.T * (s + 1)) *
+                      torch.tan(
+                                torch.pi * 0.5 *
+                                (t / self.T + s) / (s + 1 + eps),
+                                )
+                      )
             beta_t = torch.clamp(beta_t, min=0.0, max=1.0)
         else:
             raise ValueError(f"Unknown beta schedule: {self.beta_schedule}")
         return beta_t
 
-    def backward_drift_coef(self,
-                            score_model: ScoreNet,
-                            x: Tensor,
-                            t: Tensor,
-                            y: Tensor | None = None,
-                            ) -> Tensor:
-        r"""Computes the drift coefficient of the backward SDE at time t.
+    def drift(self, x: Tensor, t: Tensor) -> Tensor:
+        r"""Computes the drift term of the SDE at time t.
 
-        If the forward SDE is defined as:
-        :math:`d\mathbf{X}(t) = -\frac{1}{2}\beta(t)\mathbf{X}(t)dt + \sqrt{\beta(t)}d\mathbf{W}(t)`
+        For the variance-preserving diffusion process, the drift term is given by:
+        :math:`\mathbf{f}(\mathbf{X}(t), t) = -\frac{1}{2} \beta(t) \mathbf{X}(t)`
+        """
+        return -0.5 * self._beta_t(t).unsqueeze(1) * x
 
-        Then the backward SDE is defined as:
-        :math:`d\mathbf{X}(t) = \left[-\frac{1}{2}\beta(t)\mathbf{X}(t) - \beta(t)\nabla_{\mathbf{X}}\log p_t(\mathbf{X}(t)|y)\right]dt + \sqrt{\beta(t)}d\mathbf{W}(t)`
+    def diffusion(self, t: Tensor) -> Tensor:
+        r"""Computes the diffusion term of the SDE at time t.
 
-        Hence, the drift coefficient is:
-        :math:`-\frac{1}{2}\beta(t)\mathbf{X}(t) - \beta(t)\nabla_{\mathbf{X}}\log p_t(\mathbf{X}(t)|y)`
+        For the variance-preserving diffusion process, the diffusion term is given by:
+        :math:`g(t) = \sqrt{\beta(t)}`
+        """
+        return torch.sqrt(self._beta_t(t))
+
+    def mean_cond(self, x: Tensor, t: Tensor) -> Tensor:
+        r"""Computes the mean of the conditional distribution at time t.
+
+        For the variance-preserving diffusion process, the mean of the
+        conditional distribution is given by:
+        :math:`\mu_t = \exp(-0.5 * \int_0^t \beta(s) ds) * x`
 
         Args:
-            score_model: The score-based model used to estimate the score
-                         function.
-            x: The current functional data as a tensor, shape (N, M)
-            t: The current time steps as a tensor, shape (N,)
-            y: Optional tensor with the class labels of the data, shape (N,)
-               Default is `None`.
+            x: The data to condition on as a tensor, shape (N, M)
+            t: The time steps as a tensor, shape (N,)
 
         Returns:
-            The drift coefficient as a tensor Shape (N, M)
+            mu_t: The mean of the diffusion process at time t, shape (N,M)
         """
-        beta = self._beta_t(t)  # Shape (N,)
-        score = score_model(x, t, y)  # Shape (N, M)
+        if self.beta_schedule == "linear":
+            beta_0 = self.beta_0
+            beta_T = self.beta_T
 
-        return -0.5 * beta.unsqueeze(1) * x - beta.unsqueeze(1) * score  # Shape (N, M)
+            integral_beta = beta_0 * t + 0.5 * (beta_T - beta_0) * (t ** 2) / self.T
 
-    def backward_diffusion_coef(self, t: Tensor) -> Tensor:
-        r"""Computes the diffusion coefficient of the backward SDE at time t.
+            mu_t = torch.exp(-0.5 * integral_beta)  # Shape (N,)
 
-        If the forward SDE is defined as:
-        :math:`d\mathbf{X}(t) = -\frac{1}{2}\beta(t)\mathbf{X}(t)dt + \sqrt{\beta(t)}d\mathbf{W}(t)`
+        elif self.beta_schedule == "cosine":
+            s = torch.tensor(0.008)
+            f_t = torch.cos(((t / self.T + s) / (1 + s)) * (torch.pi / 2)) ** 2
+            f_0 = torch.cos((s / (1 + s)) * (torch.pi / 2)) ** 2
 
-        Then the backward SDE is defined as:
-        :math:`d\mathbf{X}(t) = \left[-\frac{1}{2}\beta(t)\mathbf{X}(t) - \beta(t)\nabla_{\mathbf{X}}\log p_t(\mathbf{X}(t)|y)\right]dt + \sqrt{\beta(t)}d\mathbf{W}(t)`
+            mu_t = torch.sqrt(f_t / f_0)  # Shape (N,)
+        return mu_t.unsqueeze(1) * x
 
-        Hence, the diffusion coefficient is:
-        :math:`\sqrt{\beta(t)}`
-
-        Args:
-            score_model: The score-based model used to estimate the score
-                         function.
-            x: The current functional data as a tensor, shape (N, M)
-            t: The current time steps as a tensor, shape (N,)
-            y: Optional tensor with the class labels of the data, shape (N,)
-               Default is `None`.
-
-        Returns:
-            The diffusion coefficient as a tensor Shape (N,)
-        """
-        beta = self._beta_t(t)  # Shape (N,)
-        return torch.sqrt(beta)  # Shape (N,)
-
-    def inv_sigma_t(self, t: Tensor) -> Tensor:
+    def inv_sigma_cond(self, t: Tensor) -> Tensor:
         r"""Computes the inverse of the square root of the covariance matrix at time t.
 
         For the variance-preserving diffusion process, the covariance matrix
@@ -449,6 +338,11 @@ class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
         Hence, the inverse of the square root of the covariance matrix is
         given by the square root of the inverse of :math:`\sigma_t^2`.
 
+        For stability reasons, we clamp the values of :math:`\sigma_t` to be
+        at least 1e-4 to avoid division by zero or extremely large
+        values of inv_sigma_t, which can cause instability in the
+        training process.
+
         Args:
             t: The time steps as a tensor, shape (N,)
 
@@ -457,10 +351,11 @@ class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
                          matrix at time t, shape (N,)
         """
         # Compute the integral of beta from 0 to t using the trapezoidal rule
-        sigma_t = self._sigma_t(t)  # Shape (N,)
-        return 1.0 / sigma_t  # Shape (N,)
+        sigma_t = self.sigma_cond(t)  # Shape (N,)
+        sigma_t_safe = torch.clamp(sigma_t, min=1e-5)  # Avoid division by zero
+        return 1.0 / sigma_t_safe  # Shape (N,)
 
-    def _sigma_t(self, t: Tensor) -> Tensor:
+    def sigma_cond(self, t: Tensor) -> Tensor:
         r"""Computes the square root of the covariance matrix at time t.
 
         For the variance-preserving diffusion process, the covariance matrix
@@ -469,7 +364,7 @@ class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
         \left(1 - \exp(-\int_0^t \beta(s) ds)\right)`
 
         In the case of a linear schedule for beta(t), the integral can be computed
-        analytically as:
+        analytically as:/home/diego-linux/Documentos/Universidad/Quinto/TFG_INFO/TFG_Info/code/SDE_B_Method_C/metrics.py
         :math:`\int_0^t \beta(s) ds = \beta_0 * t + \frac{(beta_T - beta_0) * t^2}{2T}`
         Hence sigma_t^2 can be computed as:
         :math:`\sigma_t^2 = \left(1 - \exp(-(\beta_0 * t +  \frac{(beta_T - beta_0) * t^2}{2T}))\right)`
@@ -488,76 +383,30 @@ class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
                          matrix at time t, shape (N,)
         """
         if self.beta_schedule == "linear":
+
             beta_0 = self.beta_0
             beta_T = self.beta_T
+
             integral_beta = beta_0 * t + 0.5 * (beta_T - beta_0) * (t ** 2) / self.T
+
             return torch.sqrt(1 - torch.exp(-integral_beta))  # Shape (N,)
-        elif self.beta_schedule == "cosine":
-            s = 0.008
+
+        if self.beta_schedule == "cosine":
+            s = torch.tensor(0.008)
             f_t = torch.cos(((t / self.T + s) / (1 + s)) * (torch.pi / 2)) ** 2
             f_0 = torch.cos((s / (1 + s)) * (torch.pi / 2)) ** 2
+
             sigma_t_squared = 1 - f_t / f_0  # Shape (N,)
+
             return torch.sqrt(sigma_t_squared)  # Shape (N,)
-        else:
-            raise ValueError(f"Unknown beta schedule: {self.beta_schedule}")
 
-    def _mu_t(self, t: Tensor) -> Tensor:
-        r"""Computes the mean of the diffusion process at time t.
+        raise ValueError(f"Unknown beta schedule: {self.beta_schedule}")
 
-        For the variance-preserving diffusion process, the mean at time t is
-        given by:
-        :math:`\mu_t = \exp(-0.5 * \int_0^t \beta(s) ds)`
-
-        Args:
-            t: The time steps as a tensor, shape (N,)
-
-        Returns:
-            mu_t: The mean of the diffusion process at time t, shape (N,)
-        """
-        if self.beta_schedule == "linear":
-            beta_0 = self.beta_0
-            beta_T = self.beta_T
-            integral_beta = beta_0 * t + 0.5 * (beta_T - beta_0) * (t ** 2) / self.T
-            return torch.exp(-0.5 * integral_beta)  # Shape (N,)
-        elif self.beta_schedule == "cosine":
-            s = 0.008
-            f_t = torch.cos(((t / self.T + s) / (1 + s)) * (torch.pi / 2)) ** 2
-            f_0 = torch.cos((s / (1 + s)) * (torch.pi / 2)) ** 2
-            return torch.sqrt(f_t / f_0)  # Shape (N,)
-        else:
-            raise ValueError(f"Unknown beta schedule: {self.beta_schedule}")
-
-    def forward(self, x: Tensor, t: Tensor) -> DiffusionState:
-        r"""Applies the forward diffusion process to the input data.
-
-        For the variance-preserving diffusion process, the forward diffusion
-        process is given by:
-        :math:`\mathbf{X}(t) = \mu_t \mathbf{X}(0) + \sigma_t \mathbf{Z}`
-        where :math:`\mathbf{Z} \sim \mathcal{N}(0, I)`
-        
-        Read _mu_t and _sigma_t methods for more details.
-
-        Args:
-            x: The input functional data as a tensor, shape (N, M)
-            t: The time steps at which to apply the diffusion, shape (N,)
-        Returns:
-            :class:`DiffusionState` with the diffusion state at time t.
-        """
-        mu_t = self._mu_t(t)  # Shape (N,)
-        sigma_t = self._sigma_t(t)  # Shape (N,)
-        z = torch.randn_like(x)  # Shape (N, M)
-        x_t = mu_t.unsqueeze(1) * x + sigma_t.unsqueeze(1) * z # Shape (N, M)
-        inv_sigma_t = 1.0 / sigma_t  # Shape (N,)
-        return DiffusionState(
-            t=t,
-            x=x_t,
-            mu_t=mu_t,
-            sigma_t=sigma_t,
-            inv_sigma_t=inv_sigma_t,
-        )
-
-    # TODO(): Decide how to acces the value of M.
-    def sample_final_distribution(self, n_samples: int) -> Tensor:
+    def sample_limit_distribution(
+            self,
+            n_samples: int,
+            device: torch.device | str = "cpu",
+    ) -> Tensor:
         r"""Samples data from the final distribution of the diffusion process.
 
         For the variance-preserving diffusion process, the final distribution
@@ -566,9 +415,18 @@ class VariancePreservingDiffusionProcess(EulerMaruyamaDiffusionProcess):
 
         Args:
             n_samples: The number of samples to generate.
+            grid_size: The number of discretization points of the functional data.
+                          Refers to the M dimension of the data.
+            device: The device on which to create the samples.
+                    Default is "cpu".
 
         Returns:
             X: Tensor with samples from the final distribution.
-            Shape (n_samples, M)
+            Shape (n_samples, grid_size)
         """
-        return torch.randn((n_samples, self.M), device=self.device)
+        # TODO(): Decide wheteher to check if M is None or if it has an attribute.
+        if not hasattr(self, "M"):
+            raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
+        if self.M is None:
+            raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
+        return torch.randn((n_samples, self.M), device=device)

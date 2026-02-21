@@ -12,6 +12,7 @@ from torch import nn
 from torch import Tensor
 from typing import Callable
 
+
 class GaussianRandomFourierFeatures(nn.Module):
     """Gaussian random Fourier features for encoding time steps."""
 
@@ -26,7 +27,8 @@ class GaussianRandomFourierFeatures(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         x_proj = x[:, None] * self.rff_weights[None, :] * 2 * torch.pi
-        return torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)
+        gaus =  torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)
+        return gaus
 
 
 class Dense(nn.Module):
@@ -40,14 +42,14 @@ class Dense(nn.Module):
         return self.dense(x)[..., None]
 
 
-class ScoreNet(nn.Module):
+class ScoreModel(nn.Module):
     """A time-dependent score-based model built upon U-Net architecture."""
 
     def __init__(
         self,
         inv_sigma_t: Callable[[Tensor], Tensor],
-        channels: tuple[int]=(32, 64, 128, 256),
-        embed_dim: int=100, device: str | torch.device ="cpu",
+        channels: tuple[int] = (32, 64, 128, 256),
+        embed_dim: int = 100, device: str | torch.device = "cpu",
     ):
         """Initialize a time-dependent score-based network.
 
@@ -60,7 +62,7 @@ class ScoreNet(nn.Module):
                        main diagonal is returned or a scalar in which case
                        it is assumed to be a multiple of the identity matrix.
           channels: The number of channels for feature maps of each resolution.
-          embed_dim: The dimensionality of Gaussian random Fourier feature 
+          embed_dim: The dimensionality of Gaussian random Fourier feature
           embeddings.
         """
         kernel_sizes = (17, 9, 9, 5)
@@ -170,7 +172,6 @@ class ScoreNet(nn.Module):
         """
         # Obtain the Gaussian random Fourier feature embedding for t
         embed = self.act(self.embed(t))
-
         # Add channel dimension if input does not have it
         if x.dim() == 2:
             x_in = x.unsqueeze(1)
@@ -185,7 +186,6 @@ class ScoreNet(nn.Module):
         h1 = self.gnorm1(h1)
 
         h1 = self.act(h1)
-
         h2 = self.conv2(h1)
         h2 += self.dense2(embed)
         h2 = self.gnorm2(h2)
@@ -224,14 +224,19 @@ class ScoreNet(nn.Module):
 
         # Skip connection from the encoding path
         h = self.tconv1(torch.cat([h, h1], dim=1))
-
         # Normalize output
         # Remove channel dimension (N,1,M) -> (N,M)
         h = h.squeeze(1)
+        p = 1.
+        if self.inv_sigma_t is not None:
+            p = self.inv_sigma_t(t)
 
-        p = self.inv_sigma_t(t)
-        if p.dim() in (0, 1, 2):
-            # Scalar, (N,) or (N,M) shape
+        if p.dim() == 1:
+            # (N,) shape
+            p = p.unsqueeze(1)  # Shape (N,1)
+
+        if p.dim() in (0, 2):
+            # Scalar, (N,1) or (N,M) shape
             # Element-wise multiplication
             h = h * p
         elif p.dim() == 3:
@@ -239,6 +244,9 @@ class ScoreNet(nn.Module):
             # Batched matrix vector product
             h = torch.einsum("nij,ni->nj", p, h)
 
+        # TODO(): Consider if we want to raise an error if NaN values are encountered in the output
+        if h.isnan().any():
+            raise ValueError("NaN values encountered in score network output.")
         # Add channel dimension back if input had it
         return h.unsqueeze(1) if x.dim() != h.dim() else h
 

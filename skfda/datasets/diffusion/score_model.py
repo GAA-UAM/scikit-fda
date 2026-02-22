@@ -11,7 +11,7 @@ import torch
 from torch import nn
 from torch import Tensor
 from typing import Callable
-
+from abc import ABC, abstractmethod
 
 class GaussianRandomFourierFeatures(nn.Module):
     """Gaussian random Fourier features for encoding time steps."""
@@ -42,13 +42,32 @@ class Dense(nn.Module):
         return self.dense(x)[..., None]
 
 
-class ScoreModel(nn.Module):
+class ScoreModel(nn.Module, ABC):
+    """Abstract base class for time-dependent score-based models."""
+
+    @abstractmethod
+    def forward(self, x: Tensor, t: Tensor, y: Tensor | None = None) -> Tensor:
+        """Forward pass of the score-based model.
+
+        Args:
+          x: The input functional data as a tensor, shape (N, M) or (N, 1, M).
+          t: The time steps as a tensor, shape (N,).
+          y: Optional tensor with the class labels of the data, shape (N,). Default is `None`.
+
+        Returns:
+          The output of the score-based model, shape (N, M).
+        """
+        pass
+
+
+class ScoreModelBig(nn.Module):
     """A time-dependent score-based model built upon U-Net architecture."""
 
     def __init__(
         self,
         inv_sigma_t: Callable[[Tensor], Tensor],
         channels: tuple[int] = (32, 64, 128, 256),
+        n_groups: tuple[int] = (4, 32, 32, 32),
         embed_dim: int = 100, device: str | torch.device = "cpu",
     ):
         """Initialize a time-dependent score-based network.
@@ -65,7 +84,7 @@ class ScoreModel(nn.Module):
           embed_dim: The dimensionality of Gaussian random Fourier feature
           embeddings.
         """
-        kernel_sizes = (17, 9, 9, 5)
+        kernel_sizes = (9, 9, 9, 9)
         super().__init__()
         self.device = device
         # Gaussian random Fourier feature embedding layer for time
@@ -83,7 +102,7 @@ class ScoreModel(nn.Module):
             bias=False,
         )
         self.dense1 = Dense(embed_dim, channels[0])
-        self.gnorm1 = nn.GroupNorm(4, num_channels=channels[0])
+        self.gnorm1 = nn.GroupNorm(n_groups[0], num_channels=channels[0])
         self.conv2 = nn.Conv1d(
             channels[0],
             channels[1],
@@ -93,7 +112,7 @@ class ScoreModel(nn.Module):
             bias=False,
         )
         self.dense2 = Dense(embed_dim, channels[1])
-        self.gnorm2 = nn.GroupNorm(32, num_channels=channels[1])
+        self.gnorm2 = nn.GroupNorm(n_groups[1], num_channels=channels[1])
         self.conv3 = nn.Conv1d(
             channels[1],
             channels[2],
@@ -103,7 +122,7 @@ class ScoreModel(nn.Module):
             bias=False,
         )
         self.dense3 = Dense(embed_dim, channels[2])
-        self.gnorm3 = nn.GroupNorm(32, num_channels=channels[2])
+        self.gnorm3 = nn.GroupNorm(n_groups[2], num_channels=channels[2])
         self.conv4 = nn.Conv1d(
             channels[2],
             channels[3],
@@ -113,44 +132,44 @@ class ScoreModel(nn.Module):
             bias=False,
         )
         self.dense4 = Dense(embed_dim, channels[3])
-        self.gnorm4 = nn.GroupNorm(32, num_channels=channels[3])
+        self.gnorm4 = nn.GroupNorm(n_groups[3], num_channels=channels[3])
 
         # Decoding layers where the resolution increases
         self.tconv4 = nn.ConvTranspose1d(
             channels[3],
             channels[2],
-            9,
-            padding=3,
-            stride=4,
+            kernel_size=kernel_sizes[3],
+            padding=kernel_sizes[3]//2,
+            stride=kernel_sizes[3]//2,
             bias=False,
-            output_padding=3,
+            output_padding=kernel_sizes[3]//2-1,
         )
         self.dense5 = Dense(embed_dim, channels[2])
-        self.tgnorm4 = nn.GroupNorm(32, num_channels=channels[2])
+        self.tgnorm4 = nn.GroupNorm(n_groups[3], num_channels=channels[2])
         self.tconv3 = nn.ConvTranspose1d(
             channels[2] + channels[2],
             channels[1],
-            9,
-            padding=3,
-            stride=4,
+            kernel_size=kernel_sizes[2],
+            padding=kernel_sizes[2]//2,
+            stride=kernel_sizes[2]//2,
             bias=False,
-            output_padding=3,
+            output_padding=kernel_sizes[2]//2-1,
         )
         self.dense6 = Dense(embed_dim, channels[1])
-        self.tgnorm3 = nn.GroupNorm(32, num_channels=channels[1])
+        self.tgnorm3 = nn.GroupNorm(n_groups[2], num_channels=channels[1])
         self.tconv2 = nn.ConvTranspose1d(
             channels[1] + channels[1],
             channels[0],
-            9,
-            padding=3,
-            stride=4,
+            kernel_size=kernel_sizes[1],
+            padding=kernel_sizes[1]//2,
+            stride=kernel_sizes[1]//2,
             bias=False,
-            output_padding=3,
+            output_padding=kernel_sizes[1]//2-1,
         )
         self.dense7 = Dense(embed_dim, channels[0])
-        self.tgnorm2 = nn.GroupNorm(32, num_channels=channels[0])
+        self.tgnorm2 = nn.GroupNorm(n_groups[1], num_channels=channels[0])
         self.tconv1 = nn.ConvTranspose1d(
-            channels[0] + channels[0], 1, 9, padding=4, stride=1,
+            channels[0] + channels[0], 1, kernel_sizes[0], padding=kernel_sizes[0]//2, stride=1, bias=False,
         )
 
         # The swish activation function
@@ -227,10 +246,11 @@ class ScoreModel(nn.Module):
         # Normalize output
         # Remove channel dimension (N,1,M) -> (N,M)
         h = h.squeeze(1)
-        p = 1.
+        
         if self.inv_sigma_t is not None:
             p = self.inv_sigma_t(t)
-
+        else:
+            p = torch.ones_like(h)
         if p.dim() == 1:
             # (N,) shape
             p = p.unsqueeze(1)  # Shape (N,1)

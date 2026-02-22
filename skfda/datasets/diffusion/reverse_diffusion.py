@@ -5,7 +5,7 @@ from typing_extensions import Protocol
 from torch import Tensor
 import torch
 
-from .diffusion_process import CustomDiffusionProcess, DiffusionProcess
+from .diffusion_process import CustomDiffusionProcess, DiffusionProcess, ForwardDiffusionProcess
 from .score_model import ScoreModel
 
 
@@ -24,7 +24,7 @@ class ReverseDiffusionProcess(Protocol):
         x_t: Tensor,
         t_1: Tensor | float,
         y: Tensor | None = None,
-        t_0: Tensor | float = 0,
+        t_0: Tensor | float = 1e-3,
     ) -> Tensor:
         """Reverse the diffusion process from time t_1 to time t_0.
 
@@ -55,7 +55,7 @@ class SDEIntegrator(Protocol):
         Args:
             diff_process: The diffusion process defining the SDE.
             x_t: The initial sample at time t_1, shape (N, M) or (N, 1, M).
-            t_1: The initial time step, shape (N,).
+            t_1: The initial time step float or tensor, shape (N,).
             t_0: The final time step to integrate to.
 
         Returns:
@@ -77,7 +77,7 @@ class ODEIntegrator(Protocol):
         Args:
             f: The function defining the ODE, takes (x,t) and returns dx/dt.
             x_t: The initial sample at time t_1, shape (N, M) or (N, 1, M).
-            t_1: The initial time step, shape (N,).
+            t_1: The initial time step float or tensor, shape (N,).
             t_0: The final time step to integrate to.
         """
         ...
@@ -90,12 +90,12 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
 
     def reverse(
         self,
-        diff_process: DiffusionProcess,
+        diff_process: ForwardDiffusionProcess,
         score_model: ScoreModel,
         x_t: Tensor,
         t_1: Tensor | float,
         y: Tensor | None = None,
-        t_0: Tensor | float = 0,
+        t_0: Tensor | float = 1e-3,
     ) -> Tensor:
         """Integrate the reverse process using the SDE integrator.
 
@@ -106,7 +106,7 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
             x_t: The noisy sample at time t_1, shape (N, M) or (N, 1, M).
             t_1: The time step of the noisy sample, shape (N,).
             y: Optional labels for conditional generation, shape (N,).
-            t_0: The time step to integrate back to, default is 0.
+            t_0: The time step to integrate back to, default is 1e-3.
 
         Returns:
             The denoised sample at time t_0, shape (N, M) or (N, 1, M).
@@ -131,8 +131,38 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
             drift=backward_drift,
             diffusion=diff_process.diffusion,
         )
-        return self.integrator(reverse_process, x_t, t_1, t_0)
+        t_0_safe = t_0
+        # TODO(): Decide what to do whith this.
+        if t_0 < 1e-3:
+            t_0_safe = 1e-3
+        x_t0 = self.integrator(reverse_process, x_t, t_1, t_0_safe)
+        # 2. Final Denoising Step (Tweedie's Formula)
+        # Create a time tensor filled with our stopping time
+        if t_0 < t_0_safe:
+            t_tensor =torch.ones_like(x_t[:, 0]) * t_0  # Shape (N,)
 
+            # Get the network's score prediction at t_0
+            score = score_model(x_t0, t_tensor, y)
+
+            # Get the standard deviation at t_0
+            sigma_t0 = diff_process.sigma_cond(t_tensor)
+            if sigma_t0.dim() == 1:
+                sigma_t0 = sigma_t0.unsqueeze(1)
+
+            if sigma_t0.dim() < 3:  # Diagonal case
+                # Element-wise multiplication
+                sigma_score = (sigma_t0 ** 2) * score
+            else:                # Full (N, M, M) shape
+                sigma_sqr = torch.einsum("bij,bkj->bik", sigma_t0, sigma_t0)
+                sigma_score = torch.einsum("bi,bij->bj", score, sigma_sqr)
+
+            # Get the mean scaling factor at t_0. 
+            # We pass a tensor of ones to mean_cond to extract just the multiplier.
+            mu_t0_scale = diff_process.mean_cond(torch.ones_like(x_t0), t_tensor)
+
+            # Apply the formula to jump directly to the clean x_0
+            return (x_t0 + sigma_score) / mu_t0_scale
+        return x_t0
 
 class ODEReverseDiffusionProcess(ReverseDiffusionProcess):
     """Implementation of the reverse process using ODE integration."""
@@ -141,12 +171,12 @@ class ODEReverseDiffusionProcess(ReverseDiffusionProcess):
 
     def reverse(
         self,
-        diff_process: DiffusionProcess,
+        diff_process: ForwardDiffusionProcess,
         score_model: ScoreModel,
         x_t: Tensor,
         t_1: Tensor | float,
         y: Tensor | None = None,
-        t_0: Tensor | float = 0,
+        t_0: Tensor | float = 1e-3,
     ) -> Tensor:
         """Integrate the reverse process using the ODE integrator.
 
@@ -157,7 +187,7 @@ class ODEReverseDiffusionProcess(ReverseDiffusionProcess):
             x_t: The noisy sample at time t_1, shape (N, M) or (N, 1, M).
             t_1: The time step of the noisy sample, shape (N,).
             y: Optional labels for conditional generation, shape (N,).
-            t_0: The time step to integrate back to, default is 0.
+            t_0: The time step to integrate back to, default is 1e-3.
 
         Returns:
             The denoised sample at time t_0, shape (N, M) or (N, 1, M).

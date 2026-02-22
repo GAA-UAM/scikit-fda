@@ -2,6 +2,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .diffusion_process import VarianceExplodingDiffusionProcess
+
 from ...representation.grid import FDataGrid
 import torch
 from .synthetic_data import generate_sin_function, generate_lines_function
@@ -14,7 +16,17 @@ from . import metrics
 from matplotlib.gridspec import GridSpec
 
 
-def plot_combined_metrics_comparison(real_data, syn_data_list:  list, ylim, n_plots , metrics_list: list[dict], char_names: list[str], path, figsize=(20, 8)):
+def plot_combined_metrics_comparison(
+        real_data,
+        syn_data_list:  list,
+        ylim,
+        n_plots ,
+        metrics_real : dict,
+        metrics_list: list[dict],
+        char_names: list[str],
+        path,
+        name: str,
+        figsize=(20, 8)):
     '''
     Plots combined metrics comparison in two rows, 
     the first one shows real data and all synthetic data models,
@@ -25,7 +37,7 @@ def plot_combined_metrics_comparison(real_data, syn_data_list:  list, ylim, n_pl
         syn_data_list: List of synthetic functional data (list of skfda.FDataGrid).
         ylim:  Y-axis limits for the comparison plot.
         n_plots: Number of functions to plot in the first row.
-        metrics_list: List of dictionaries containing model metrics.
+        metrics_real: Dictionary containing metrics for training real data.
         char_names: List of characteristic names for labeling.
         path: Path to save the generated plots.
         figsize: Figure size tuple (width, height).
@@ -105,10 +117,9 @@ def plot_combined_metrics_comparison(real_data, syn_data_list:  list, ylim, n_pl
         ax = axs_row2[1 + char_idx]
         
         # Calculate bins based on min/max across all models
-        min_val = min([min(metrics['wasserstein_distance_batched'][:, char_idx]) for metrics in metrics_list])
         max_val = max([max(metrics['wasserstein_distance_batched'][:, char_idx]) for metrics in metrics_list])
-        bins = np.linspace(min_val, max_val, min(50, 2 * n_batches)).reshape(-1)
-        bins = np.linspace(0,1, 50)  # Fixed bins from 0 to 1 for better comparison across models
+        max_val = max(max_val, 1.0)  # Ensure max_val is at least 1 for better visualization
+        bins = np.linspace(0, max_val, 50).reshape(-1)
         for i, metrics in enumerate(metrics_list):
             ax.hist(
                 metrics['wasserstein_distance_batched'][:, char_idx],
@@ -118,6 +129,14 @@ def plot_combined_metrics_comparison(real_data, syn_data_list:  list, ylim, n_pl
                 color=colors[i % len(colors)],
                 density=False
             )
+        ax.hist(
+            metrics_real['wasserstein_distance_batched'][:, char_idx],
+            bins=bins,
+            alpha=0.6,
+            label='Real Data',
+            color='black',
+            density=False
+        )
         
         ax.set_title(f'Wasserstein Distance - {char_names[char_idx]}', fontsize=14)
         ax.set_ylabel('Number of Batches', fontsize=12)
@@ -126,6 +145,7 @@ def plot_combined_metrics_comparison(real_data, syn_data_list:  list, ylim, n_pl
         ax.legend()
     
     plt.tight_layout()
+    plt.savefig(f"{path}/{name}.png")
     plt.show()
 
 
@@ -143,21 +163,22 @@ if __name__ == "__main__":
     print("Device: {}".format(device))
     data = generate_sin_function(
         n_samples=1000,
-        frequency_range=3.5*np.pi,
-        phase_range=0,
+        amplitude_range=(0.5, 2),
+        frequency_range=(3.5*np.pi, 4.5*np.pi),
+        phase_range=(0,np.pi/2),
         noise=False,
     )
     intercept = (-1,1)
-    slope = (-1,1)
+    slope = (0,0)
     data = generate_lines_function(n_samples=1000, n_points=128, intercept_range=intercept, slope_range=slope)
-    a = np.array([-1,-1])
-    b = np.array([1,1])
+    a = np.array([intercept[0], slope[0]])
+    b = np.array([intercept[1], slope[1]])
     diffusion_model = FDataGenerator(n_jobs=n_threads, device=device)
     diffusion_model.fit(data)
     generated_data = diffusion_model.generate(n_samples=100)
-    w_dist = get_wasserstein_distance(generated_data, "lines", a, b, {'has_slope': True})
-    w_dist_real = get_wasserstein_distance(data, "lines", a, b, {'has_slope': True})
-    noise_metric = metrics.get_noise_metric(generated_data, "lines", {'has_slope': True})
+    w_dist = get_wasserstein_distance(generated_data, "sin", a, b, {})
+    w_dist_real = get_wasserstein_distance(data, "sin", a, b, {})
+    noise_metric = metrics.get_noise_metric(generated_data, "sin",{})
     # Aggregate metrics for the current model
     models_metrics = []
     aggregated_metrics = {
@@ -166,15 +187,37 @@ if __name__ == "__main__":
         'wasserstein_distance_batched': w_dist[None,],  # Add batch dimension for consistency
     }
     models_metrics.append(aggregated_metrics)
-
-    aggregated_metrics_real = {
+    g_data_list = [generated_data]
+    diffusion_model = FDataGenerator(diff_process=VarianceExplodingDiffusionProcess(), scale_by_inv_sigma=False, n_jobs=n_threads, device=device)
+    diffusion_model.fit(data)
+    generated_data = diffusion_model.generate(n_samples=100)
+    g_data_list.append(generated_data)
+    w_dist = get_wasserstein_distance(generated_data, "lines", a, b, {'has_slope': True})
+    noise_metric = metrics.get_noise_metric(generated_data, "lines",{'has_slope': True})
+    print("Wasserstein distance for generated data: ", w_dist)
+    # Aggregate metrics for the current model
+    aggregated_metrics = {
+        'model_name': "ve",
+        'nosie': noise_metric,
+        'wasserstein_distance_batched': w_dist[None,],  # Add batch dimension for consistency
+    }
+    models_metrics.append(aggregated_metrics)
+    metrics_real = {
         'model_name': "real",
         'nosie': 0.0,  # No noise in real data
         'wasserstein_distance_batched': w_dist_real[None,],  # Add batch dimension for consistency
     }
-    models_metrics.append(aggregated_metrics_real)
     y_min = data.data_matrix.min() - 0.5
     y_max = data.data_matrix.max() + 0.5
-    plot_combined_metrics_comparison(data,[generated_data],(y_min, y_max), 100, models_metrics, ["intercept", "slope"], "./", figsize=(20,8))
+    plot_combined_metrics_comparison(
+        data,
+        g_data_list,
+        (y_min, y_max),
+        20,
+        metrics_real,
+        models_metrics, ["intercept", "slope"],
+        "./skfda/datasets/diffusion/Experiments",
+        f"Big_intercept_({a[0]},{b[0]})_slope_({a[1]:.1f}pi,{b[1]:.1f}pi)_comparison",
+        figsize=(20,8))
 
 

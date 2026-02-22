@@ -5,7 +5,7 @@ from ...representation.grid import FDataGrid
 from ...typing._numpy import NDArrayFloat
 
 from .diffusion_process import ForwardDiffusionProcess, VariancePreservingDiffusionProcess
-from .score_model import ScoreModel
+from .score_model import ScoreModel, ScoreModelBig
 from .reverse_diffusion import ReverseDiffusionProcess, SDEReverseDiffusionProcess, EulerMaruyamaIntegrator
 
 import torch
@@ -34,6 +34,7 @@ class FDataGenerator(BaseEstimator):
         self,
         diff_process: ForwardDiffusionProcess = VariancePreservingDiffusionProcess(),
         normalize: bool = True,
+        scale_by_inv_sigma: bool = True,
         max_iter: int = 200,
         n_jobs: int = 0,
         device: torch.device | str = "cpu",
@@ -46,14 +47,23 @@ class FDataGenerator(BaseEstimator):
                 VariancePreservingDiffusionProcess.
             normalize: Whether to normalize the data to [-1, 1] before training
                 the diffusion model. Default is True.
+            scale_by_inv_sigma: Whether to scale the score by the inverse of the
+                noise level sigma_t during training. This can help stabilize
+                training when the noise level is very small. Default is True.
+            max_iter: The maximum number of iterations (epochs) to train the
+                score model. Default is 200.
+            n_jobs: The number of worker processes to use for data loading.
+                Default is 0 (the main process will be used). If set to -1, the
+                number of workers will be set to the number of CPU cores available.
+            device: The device to use for training and sampling. Default is "cpu".
         """
         super().__init__()
         self.diff_process = diff_process
         self.normalize = normalize
+        self.scale_by_inv_sigma = scale_by_inv_sigma
         self.max_iter = max_iter
         self.n_jobs = n_jobs
         self.device = device
-
         self._bias = 0.0  # Normalization bias
         self._scale = 1.0  # Normalization scale
 
@@ -87,9 +97,11 @@ class FDataGenerator(BaseEstimator):
         self.grid_points = X.grid_points[0]
         grid_size = len(self.grid_points)
 
-        self.score_model = ScoreModel(
+        self.score_model = ScoreModelBig(
             embed_dim=grid_size,
-            inv_sigma_t=self.diff_process.inv_sigma_cond,
+            channels=(32, 64, 128, 256),
+            n_groups=(4, 32, 32, 32),
+            inv_sigma_t=self.diff_process.inv_sigma_cond if self.scale_by_inv_sigma else None,
             device=self.device,
         )
         # Preprocess the data and create a DataLoader for training
@@ -118,7 +130,7 @@ class FDataGenerator(BaseEstimator):
         # TODO(): DELETE THIS WHEN DONE TESTING
         tqdm_epoch = tqdm.trange(self.max_iter)
 
-        eps = 1e-9
+        eps = 1e-3
         # Training loop
         for _ in tqdm_epoch:
             # Epoch metrics
@@ -218,7 +230,6 @@ class FDataGenerator(BaseEstimator):
         mu_t = self.diff_process.mean_cond(x, t)
         sigma_t = self.diff_process.sigma_cond(t)
         z = torch.randn_like(x)  # Shape (N, M)
-
         # TODO(): Create a function that does this
         if sigma_t.dim() == 1:
             # (N,) shape
@@ -227,7 +238,7 @@ class FDataGenerator(BaseEstimator):
         if sigma_t.dim() in (0, 2):
             # Scalar, (N,1) or (N,M) shape
             # Element-wise multiplication
-            score_time_z = z * sigma_t
+            score_time_z = sigma_t * z
         elif sigma_t.dim() == 3:
             # (N, M, M) shape
             # Batched matrix vector product
@@ -300,6 +311,7 @@ class FDataGenerator(BaseEstimator):
                 self.diff_process.T,
                 y,
             )
+            
         # Denormalize the data if normalization was applied
 
         # Convert the generated samples to an FDataGrid object

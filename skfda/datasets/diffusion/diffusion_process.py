@@ -222,29 +222,28 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
     In this class :math;`T` is taken to be 1.
 
     When using `cosine` schedule the values of :math:`\beta(0)` and
-    :math:`\beta(T)` are ignored.
+    :math:`\beta(T)` are used to clamp the values of :math:`\beta(t)` to be between
+    them. This is done to avoid extremely large values of :math:`\beta(t)` at 
+    the end of the diffusion process which can cause instability on the reverse process.
     """
     # TODO(): Decide whether to allow other T values
     T: Final[int] = 1
 
     def __init__(
         self,
-        beta_schedule: Literal["linear", "cosine"] = "linear",
-        beta_0: float = 0.001,
-        beta_T: float = 10.,
-        integration_steps: int = 1000,
+        beta_schedule: Literal["linear", "cosine"] = "cosine",
+        beta_0: float = 0.,
+        beta_T: float = 8.,
     ):
         """Initializes the variance-preserving diffusion process.
 
         Args:
             beta_schedule: The schedule for beta(t). Can be 'linear' or
-                        'cosine'. Default is 'linear'.
+                        'cosine'. Default is 'cosine'.
             beta_0: The value of beta(0). Used only if `beta_schedule`
-                    is 'linear'. Default is 0.01.
+                    is 'linear'. Default is 0.1.
             beta_T: The value of beta(T). Used only if `beta_schedule`
-                    is 'linear'. Default is 3.0.
-            integration_steps: The number of integration steps for the
-                                Euler-Maruyama method. Default is 1000.
+                    is 'linear'. Default is 10.0.
             device: The device to run the computations on. Default is 'cpu'.
         """
         if beta_schedule not in ("linear", "cosine"):
@@ -252,7 +251,6 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
         self.beta_schedule = beta_schedule
         self.beta_0 = beta_0
         self.beta_T = beta_T
-        self.integration_steps = integration_steps
         self.M = None  # Will be set in fit method
 
     def _beta_t(self, t: Tensor) -> Tensor:
@@ -269,14 +267,13 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
         elif self.beta_schedule == "cosine":
             # TODO(): What should I do with eps here?
             s = 0.008
-            eps = 1e-5
             beta_t = (torch.pi / (self.T * (s + 1)) *
                       torch.tan(
                                 torch.pi * 0.5 *
-                                (t / self.T + s) / (s + 1 + eps),
+                                (t / self.T + s) / (s + 1),
                                 )
                       )
-            beta_t = torch.clamp(beta_t, min=0.0, max=1.0)
+            beta_t = torch.clamp(beta_t, min=self.beta_0, max=self.beta_T)  # Clamp beta_t to be between 0 and beta_T
         else:
             raise ValueError(f"Unknown beta schedule: {self.beta_schedule}")
         return beta_t
@@ -327,34 +324,6 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             mu_t = torch.sqrt(f_t / f_0)  # Shape (N,)
         return mu_t.unsqueeze(1) * x
 
-    def inv_sigma_cond(self, t: Tensor) -> Tensor:
-        r"""Computes the inverse of the square root of the covariance matrix at time t.
-
-        For the variance-preserving diffusion process, the covariance matrix
-        at time t is given by:
-        :math:`\sigma_t^2 =\int_0^t \beta(s) \exp(\int_s^t\beta(u) du) ds =
-        \left(1 - \exp(-\int_0^t \beta(s) ds)\right)`
-
-        Hence, the inverse of the square root of the covariance matrix is
-        given by the square root of the inverse of :math:`\sigma_t^2`.
-
-        For stability reasons, we clamp the values of :math:`\sigma_t` to be
-        at least 1e-4 to avoid division by zero or extremely large
-        values of inv_sigma_t, which can cause instability in the
-        training process.
-
-        Args:
-            t: The time steps as a tensor, shape (N,)
-
-        Returns:
-            inv_sigma_t: The inverse of the square root of the covariance
-                         matrix at time t, shape (N,)
-        """
-        # Compute the integral of beta from 0 to t using the trapezoidal rule
-        sigma_t = self.sigma_cond(t)  # Shape (N,)
-        sigma_t_safe = torch.clamp(sigma_t, min=1e-5)  # Avoid division by zero
-        return 1.0 / sigma_t_safe  # Shape (N,)
-
     def sigma_cond(self, t: Tensor) -> Tensor:
         r"""Computes the square root of the covariance matrix at time t.
 
@@ -364,7 +333,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
         \left(1 - \exp(-\int_0^t \beta(s) ds)\right)`
 
         In the case of a linear schedule for beta(t), the integral can be computed
-        analytically as:/home/diego-linux/Documentos/Universidad/Quinto/TFG_INFO/TFG_Info/code/SDE_B_Method_C/metrics.py
+        analytically as:
         :math:`\int_0^t \beta(s) ds = \beta_0 * t + \frac{(beta_T - beta_0) * t^2}{2T}`
         Hence sigma_t^2 can be computed as:
         :math:`\sigma_t^2 = \left(1 - \exp(-(\beta_0 * t +  \frac{(beta_T - beta_0) * t^2}{2T}))\right)`
@@ -396,11 +365,39 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             f_t = torch.cos(((t / self.T + s) / (1 + s)) * (torch.pi / 2)) ** 2
             f_0 = torch.cos((s / (1 + s)) * (torch.pi / 2)) ** 2
 
-            sigma_t_squared = 1 - f_t / f_0  # Shape (N,)
+            sigma_t_squared = 1 - (f_t / f_0)  # Shape (N,)
 
             return torch.sqrt(sigma_t_squared)  # Shape (N,)
 
         raise ValueError(f"Unknown beta schedule: {self.beta_schedule}")
+
+    def inv_sigma_cond(self, t: Tensor) -> Tensor:
+        r"""Computes the inverse of the square root of the covariance matrix at time t.
+
+        For the variance-preserving diffusion process, the covariance matrix
+        at time t is given by:
+        :math:`\sigma_t^2 =\int_0^t \beta(s) \exp(\int_s^t\beta(u) du) ds =
+        \left(1 - \exp(-\int_0^t \beta(s) ds)\right)`
+
+        Hence, the inverse of the square root of the covariance matrix is
+        given by the square root of the inverse of :math:`\sigma_t^2`.
+
+        For stability reasons, we clamp the values of :math:`\sigma_t` to be
+        at least 1e-3 to avoid division by zero or extremely large
+        values of inv_sigma_t, which can cause instability in the
+        training process.
+
+        Args:
+            t: The time steps as a tensor, shape (N,)
+
+        Returns:
+            inv_sigma_t: The inverse of the square root of the covariance
+                         matrix at time t, shape (N,)
+        """
+        # Compute the integral of beta from 0 to t using the trapezoidal rule
+        sigma_t = self.sigma_cond(t)  # Shape (N,)
+        sigma_t_safe = torch.clamp(sigma_t, min=1e-3)  # Avoid division by zero
+        return 1.0 / sigma_t_safe  # Shape (N,)
 
     def sample_limit_distribution(
             self,
@@ -430,3 +427,176 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
         if self.M is None:
             raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
         return torch.randn((n_samples, self.M), device=device)
+
+class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
+    r"""Implements a variance-exploding diffusion process.
+
+    Based on the following forward SDE equation:
+    :math:`d\mathbf{X}(t) = \sqrt{g(t)}d\mathbf{W}(t)`
+
+    where :math:`g(t)` is a time-dependent function controlling
+    the noise level.
+
+    The linear and exponential schedules for :math:`g(t)` are implemented.
+    In addition the :math:`g(0)` and :math:`g(T)` values can be set.
+    In this class :math;`T` is taken to be 1.
+    """
+    # TODO(): Decide whether to allow other T values
+    T: Final[int] = 1
+
+    def __init__(
+        self,
+        g_schedule: Literal["linear", "exponential"] = "exponential",
+        g_0: float = 0.0001,
+        g_T: float = 10.,
+    ):
+        """Initializes the variance-exploding diffusion process.
+
+        Args:
+            g_schedule: The schedule for g(t). Can be 'linear' or
+                        'exponential'. Default is 'linear'.
+            g_0: The value of g(0).
+            g_T: The value of g(T).
+        """
+        if g_schedule not in ("linear", "exponential"):
+            raise ValueError(f"Unknown g schedule: {g_schedule}")
+        self.g_schedule = g_schedule
+        self.g_0 = g_0
+        self.g_T = g_T
+        
+
+        self.M = None  # Will be set in fit method
+
+    def drift(self, x: Tensor, t: Tensor) -> Tensor:
+        r"""Computes the drift term of the SDE at time t.
+
+        For the variance-exploding diffusion process, the drift term is zero:
+        :math:`\mathbf{f}(\mathbf{X}(t), t) = 0`
+        """
+        return torch.zeros_like(x)
+
+    def diffusion(self, t: Tensor) -> Tensor:
+        r"""Computes the diffusion term of the SDE at time t.
+
+        For the variance-exploding diffusion process, the diffusion term is given by:
+        :math:`g(t) = g(0) + (g(T) - g(0)) * t / T` for linear schedule
+        :math:`g(t) = g(0) * (g(T) / g(0)) ** (t / T)` for exponential schedule
+        """
+        if self.g_schedule == "linear":
+            return self.g_0 + (self.g_T - self.g_0) * t / self.T
+        elif self.g_schedule == "exponential":
+            return self.g_0 * torch.pow(self.g_T / self.g_0, t / self.T)
+        else:
+            raise ValueError(f"Unknown g schedule: {self.g_schedule}")
+
+    def mean_cond(self, x: Tensor, t: Tensor) -> Tensor:
+        r"""Computes the mean of the conditional distribution at time t.
+
+        For the variance-exploding diffusion process, the mean of the
+        conditional distribution is given by:
+        :math:`\mu_t = x`
+
+        Args:
+            x: The data to condition on as a tensor, shape (N, M)
+            t: The time steps as a tensor, shape (N,)
+
+        Returns:
+            mu_t: The mean of the diffusion process at time t, shape (N,M)
+        """
+        return x
+
+    def sigma_cond(self, t: Tensor) -> Tensor:
+        r"""Computes the square root of the covariance matrix at time t.
+
+        For the variance-exploding diffusion process, the covariance matrix
+        at time t is given by:
+        :math:`\sigma_t^2 = \int_0^t g^2(s) ds`
+
+        Hence for the linear schedule, sigma_t^2 can be computed as:
+        :math: `g^2(t) = (g(0) + (g(T) - g(0)) * t / T)^2 = 
+        g(0)^2 + 2 * g(0) * (g(T) - g(0)) * t / T + ((g(T) - g(0))^2 * t^2) / T^2`
+        :math:`\sigma_t^2 = g(0)^2 * t^2 + g(0) * (g(T) - g(0)) * t^2 / T + ((g(T) - g(0))^2 * t^3) / (3 * T^2)`
+        For the exponential schedule, sigma_t^2 can be computed as:
+        :math:`g^2(t) = (g(0) * (g(T) / g(0)) ** (t / T))^2 = g(0)^2 * (g(T) / g(0)) ** (2t / T)`
+        :math:`\sigma_t^2 = (g(0)^2 * T / (2 \ln(g(T) / g(0)))) * ((g(T) / g(0)) ** (2 * t / T) - 1)`
+
+        Args:
+            t: The time steps as a tensor, shape (N,)
+
+        Returns:
+            sigma_t: The square root of the covariance matrix at time t, shape (N,)
+        """
+        if self.g_schedule == "linear":
+            return torch.sqrt(
+                self.g_0**2 * t +
+                self.g_0 * (self.g_T - self.g_0) * t ** 2 / self.T +
+                (self.g_T - self.g_0)**2 * t ** 3 / (3 * self.T ** 2),
+                )
+        if self.g_schedule == "exponential":
+            if self.g_0 != self.g_T:
+
+                log_term = torch.log(self.g_T / self.g_0 * torch.ones_like(t))
+                return torch.sqrt(
+                    ((self.g_0 ** 2) * self.T / (2 * log_term)) *
+                    ((self.g_T / self.g_0) ** (2 * t / self.T) - 1),
+                    )
+            return torch.zeros_like(t)
+        else:
+            raise ValueError(f"Unknown g schedule: {self.g_schedule}")
+
+    def inv_sigma_cond(self, t: Tensor) -> Tensor:
+        r"""Computes the inverse of the square root of the covariance matrix at time t.
+
+        For the variance-exploding diffusion process, the covariance matrix
+        at time t is given by:
+        :math:`\sigma_t^2 = \int_0^t g^2(s) ds`
+
+        Hence, the inverse of the square root of the covariance matrix is
+        given by the square root of the inverse of :math:`\sigma_t^2`.
+
+        For stability reasons, we clamp the values of :math:`\sigma_t` to be
+        at least 1e-3 to avoid division by zero or extremely large
+        values of inv_sigma_t, which can cause instability in the
+        training process.
+
+        Args:
+            t: The time steps as a tensor, shape (N,)
+
+        Returns:
+            inv_sigma_t: The inverse of the square root of the covariance
+                         matrix at time t, shape (N,)
+        """
+        sigma_t = self.sigma_cond(t)  # Shape (N,)
+        sigma_t_safe = torch.clamp(sigma_t, min=1e-3)  # Avoid division by zero
+        return 1.0 / sigma_t_safe  # Shape (N,)
+    
+    def sample_limit_distribution(
+        self,
+        n_samples: int,
+        device: torch.device | str = "cpu",
+    ) -> Tensor:
+        r"""Samples data from the final distribution of the diffusion process.
+
+        For the variance-exploding diffusion process, the final distribution
+        at time T is given by a normal distribution with mean 0 and covariance
+        matrix given by the integral of g(s) from 0 to T.
+
+        Args:
+            n_samples: The number of samples to generate.
+            grid_size: The number of discretization points of the functional data.
+                          Refers to the M dimension of the data.
+            device: The device on which to create the samples.
+                    Default is "cpu".
+
+        Returns:
+            X: Tensor with samples from the final distribution.
+            Shape (n_samples, grid_size)
+        """
+        if not hasattr(self, "M"):
+            raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
+        if self.M is None:
+            raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
+        
+        sigma_T = self.sigma_cond(torch.tensor([self.T], device=device)).item()  # Shape (1,)
+        return torch.randn((n_samples, self.M), device=device) * sigma_T
+    

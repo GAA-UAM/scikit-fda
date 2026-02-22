@@ -19,7 +19,7 @@ class BackwardIntegrator(ABC):
         the denoised sample at time t_0.
     """
     @abstractmethod
-    def bkwrd_integrate(
+    def backward_integrate(
         self,
         diff_process: DiffusionProcess,
         score_model: ScoreModel,
@@ -61,7 +61,7 @@ class EulerMaruyamaBackwardIntegrator(BackwardIntegrator):
     # And another to reverse_process or just this method that does both things.
     # The method to integrate can be used for other purposes
     # not only for the reverse process.
-    def bkwrd_integrate(
+    def backward_integrate(
         self,
         diff_process: DiffusionProcess,
         score_model: ScoreModel,

@@ -47,9 +47,11 @@ class FDataGenerator(BaseEstimator):
                 VariancePreservingDiffusionProcess.
             normalize: Whether to normalize the data to [-1, 1] before training
                 the diffusion model. Default is True.
-            scale_by_inv_sigma: Whether to scale the score by the inverse of the
-                noise level sigma_t during training. This can help stabilize
-                training when the noise level is very small. Default is True.
+            scale_by_inv_sigma: Whether to scale the output of the Neuronal Network
+                by the inverse of the noise level sigma_t. This means, the network is
+                the noise added and after scaling by 1/sigma_t, we get the score. If
+                set to False, no scaling is applied and the output of the network is the 
+                raw score. Default is True.
             max_iter: The maximum number of iterations (epochs) to train the
                 score model. Default is 200.
             n_jobs: The number of worker processes to use for data loading.
@@ -146,7 +148,7 @@ class FDataGenerator(BaseEstimator):
 
                 # Generate a random time step for each sample in the batch
                 # TODO(): Is this the best way to sample, I don't like to use T here
-                # Sample from uniform(0, T-eps)
+                # Sample from uniform(eps, T)
                 t = (
                         torch.rand(x_dev.shape[0], device=self.device) *
                         (self.diff_process.T - eps)

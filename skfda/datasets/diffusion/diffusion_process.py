@@ -4,6 +4,7 @@ from ..._utils._sklearn_adapter import BaseEstimator
 
 import torch
 from torch import Tensor
+import numpy as np
 
 from abc import ABC, abstractmethod
 
@@ -535,10 +536,10 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
         if self.g_schedule == "exponential":
             if self.g_0 != self.g_T:
 
-                log_term = torch.log(self.g_T / self.g_0 * torch.ones_like(t))
+                log_term = np.log(self.g_T / self.g_0)
                 return torch.sqrt(
                     ((self.g_0 ** 2) * self.T / (2 * log_term)) *
-                    ((self.g_T / self.g_0) ** (2 * t / self.T) - 1),
+                    (((self.g_T / self.g_0) ** (2 * t / self.T)) - 1),
                     )
             return torch.zeros_like(t)
         else:
@@ -600,3 +601,38 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
         sigma_T = self.sigma_cond(torch.tensor([self.T], device=device)).item()  # Shape (1,)
         return torch.randn((n_samples, self.M), device=device) * sigma_T
     
+
+class VarianceExplodingDiffusionProcessAA3(ForwardDiffusionProcess):
+    T: Final[int] = 1
+    def __init__(self, sigma = 20.):
+        self.sigma = sigma
+        self.M = None  # Will be set in fit method
+
+    def drift(self, x: Tensor, t: Tensor) -> Tensor:
+        return torch.zeros_like(x)
+    
+    def diffusion(self, t: Tensor) -> Tensor:
+        return self.sigma**t
+    
+    def mean_cond(self, x: Tensor, t: Tensor) -> Tensor:
+        return x
+    
+    def sigma_cond(self, t: Tensor) -> Tensor:
+        return torch.sqrt(0.5 * (self.sigma**(2 * t) - 1.0) / np.log(self.sigma))
+    
+    def inv_sigma_cond(self, t: Tensor) -> Tensor:
+        sigma_t = self.sigma_cond(t)  # Shape (N,)
+        sigma_t_safe = torch.clamp(sigma_t, min=1e-3)  # Avoid division by zero
+        return 1.0 / sigma_t_safe  # Shape (N,)
+    def sample_limit_distribution(
+        self,
+        n_samples: int,
+        device: torch.device | str = "cpu",
+    ) -> Tensor:
+        if not hasattr(self, "M"):
+            raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
+        if self.M is None:
+            raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
+        
+        sigma_T = self.sigma_cond(torch.tensor([1.], device=device)).item()  # Shape (1,)
+        return torch.randn((n_samples, self.M), device=device) * sigma_T

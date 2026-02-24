@@ -120,12 +120,12 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
                 diff = diff.unsqueeze(1)  # Shape (N, 1) for broadcasting
 
             if diff.dim() < 3:  # Diagonal case
-                diff_score = diff**2 * score
+                diff2_score = diff**2 * score
             else:  # General case
                 diff_sqr = torch.einsum("bij,bkj->bik", diff, diff)
-                diff_score = torch.einsum("bi,bij->bj", score, diff_sqr)
+                diff2_score = torch.einsum("bi,bij->bj", score, diff_sqr)
 
-            return drift - diff_score
+            return drift - diff2_score
 
         reverse_process = CustomDiffusionProcess(
             drift=backward_drift,

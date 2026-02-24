@@ -220,7 +220,7 @@ def extract_step_characteristics(fdata: skfda.FDataGrid, steps_t: np.ndarray) ->
 
     return step_levels
 
-def get_noise_metric(fdata: skfda.FDataGrid, dataset : str, kwargs) -> np.ndarray:
+def get_noise_metric(fdata: skfda.FDataGrid, dataset : str, kwargs, characteristics: np.ndarray = None) -> np.ndarray:
     """
     Get the noise metric for the functional data.
     The noise metric is defined as the mean squared error between the original functions
@@ -229,12 +229,14 @@ def get_noise_metric(fdata: skfda.FDataGrid, dataset : str, kwargs) -> np.ndarra
     Args:
         fdata: FDataGrid object containing the functional data.
         dataset: Type of dataset. Options are 'sin', 'constant', 'lines', 'bessel', 'step'.
-        characteristics: ndarray object containing the characteristics of the functional data. Shape (n_samples, c).
         kwargs: Additional arguments for specific datasets.
+        characteristics: Optional pre-computed characteristics. If None, they will be extracted.
+            Shape (n_samples, c).
     Returns:
         ndarray object containing the noise metric. Shape (n_samples,).
     """
-    characteristics = get_characteristics(fdata, dataset, kwargs)
+    if characteristics is None:
+        characteristics = get_characteristics(fdata, dataset, kwargs)
     if dataset == 'sin':
         return get_sin_noise_metric(fdata, characteristics)
     elif dataset == 'lines':
@@ -266,11 +268,12 @@ def get_metrics(fdata: skfda.FDataGrid, dataset_name: str, a: np.ndarray, b: np.
     """
     characteristics = get_characteristics(fdata, dataset_name, kwargs)
     w_dist = wasserstein_to_uniform(characteristics, a, b)
-    noise_metric = get_noise_metric(fdata, dataset_name, characteristics, kwargs)
+    noise_metric = get_noise_metric(fdata, dataset_name, kwargs, characteristics=characteristics)
 
     metrics = {
         'wasserstein_distance': w_dist,
-        'noise_metric': noise_metric
+        'noise_metric': noise_metric,
+        'characteristics': characteristics,
     }
 
     return metrics

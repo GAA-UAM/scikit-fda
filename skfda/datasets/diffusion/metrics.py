@@ -90,58 +90,84 @@ def extract_sin_characteristics(fdata: skfda.FDataGrid) -> np.ndarray:
     """
     Extract amplitude, frequency and phase from sinus functional data.
 
+    Uses a two-stage approach:
+      1. Hann-windowed FFT (zero-padded) for a coarse frequency estimate.
+      2. Fine grid search around the coarse estimate, fitting
+         y = a*sin(ω*t) + b*cos(ω*t) via linear regression at each
+         candidate ω and picking the one with lowest MSE.
+    Amplitude and phase are then derived from the optimal regression
+    coefficients: A = sqrt(a² + b²), φ = atan2(b, a).
+
     Args:
         fdata: FDataGrid object containing the sinus functional data.
     Returns:
-        ndarray object containing amplitude, frequency and phase. Shape (n_samples, 3).
+        ndarray of shape (n_samples, 3) with columns
+        [amplitude, angular_frequency (rad/s), phase (in [0, 2π])].
     """
-    Y = fdata.data_matrix[..., 0]
-    x = fdata.grid_points[0]
+    Y = fdata.data_matrix[..., 0]          # (n_samples, n_points)
+    x = fdata.grid_points[0]               # (n_points,)
     n_samples, n_points = Y.shape
-    # 2. Vectorized Amplitude
-    # Calculate max and min across the grid_points axis (axis 1)
-    amplitudes = (np.max(Y, axis=1) - np.min(Y, axis=1)) / 2
-    # shape of amplitudes is (n_samples,)
+    dt = x[1] - x[0]
 
-    # 3. Vectorized FFT
-    # Subtract the mean of each sample (broadcasting)
+    # ---- Stage 1: coarse frequency via Hann-windowed FFT ----
     Y_centered = Y - np.mean(Y, axis=1, keepdims=True)
-    n_padded = 100 * n_points  # Padding to increase frequency resolution
-    # Compute FFT on the whole matrix at once along axis 1
-    fft_coeffs = np.fft.fft(Y_centered, n=n_padded, axis=1)
+    window = np.hanning(n_points)           # reduces spectral leakage
+    Y_windowed = Y_centered * window[np.newaxis, :]
 
-    # Compute frequencies once (they are the same for all samples)
-    frequencies = np.fft.fftfreq(n_padded, d=(x[1] - x[0]))
+    n_padded = 100 * n_points               # heavy zero-padding for smooth spectrum
+    fft_coeffs = np.fft.fft(Y_windowed, n=n_padded, axis=1)
 
-    # Create a mask for positive frequencies (indices 1 to n/2)
-    # We only care about the positive half for finding the dominant frequency
+    frequencies = np.fft.fftfreq(n_padded, d=dt)
     pos_mask = frequencies > 0
     pos_freqs = frequencies[pos_mask]
+    pos_mags = np.abs(fft_coeffs[:, pos_mask])
 
-    # Slice the FFT coefficients to keep only positive frequency columns
-    # Shape becomes (n_samples, n_positive_freqs)
-    pos_coeffs = fft_coeffs[:, pos_mask]
+    peak_indices = np.argmax(pos_mags, axis=1)             # (n_samples,)
+    w_coarse = pos_freqs[peak_indices] * 2 * np.pi         # rad/s per sample
 
-    # 4. Find Dominant Frequency & Phase
-    # Find the index of the max magnitude for each sample
-    # peak_indices shape is (n_samples,)
-    peak_indices = np.argmax(np.abs(pos_coeffs), axis=1)
+    # ---- Stage 2: fine grid search + linear regression ----
+    df_rad = (pos_freqs[1] - pos_freqs[0]) * 2 * np.pi    # one FFT bin in rad/s
+    n_fine = 201                                            # search points
+    offsets = np.linspace(-df_rad, df_rad, n_fine)          # symmetric around coarse
 
-    # Map indices to actual frequency values
-    dominant_freqs = pos_freqs[peak_indices]
-    # Convert to radians from 2pi*f -> w 
-    dominant_freqs_rads = dominant_freqs * 2 * np.pi
-    # Extract the complex value at the peak index to get the phase
-    # We use advanced indexing: [range(N), peak_indices]
-    peak_complex_vals = pos_coeffs[np.arange(n_samples), peak_indices]
-    # Phases of cosines so we need to add pi/2
-    phases = np.angle(peak_complex_vals) + np.pi/2
-    # We want phases in [0, 2pi]
-    phases = np.mod(phases, 2 * np.pi)
+    best_mse = np.full(n_samples, np.inf)
+    best_w = w_coarse.copy()
+    best_a = np.zeros(n_samples)
+    best_b = np.zeros(n_samples)
 
-    # 5. Stack results
-    # Stack the three arrays into shape (n_samples, 3)
-    characteristics = np.column_stack((amplitudes, dominant_freqs_rads, phases))
+    for offset in offsets:
+        w_test = w_coarse + offset                          # (n_samples,)
+        S = np.sin(w_test[:, np.newaxis] * x[np.newaxis, :])  # (n_samples, n_points)
+        C = np.cos(w_test[:, np.newaxis] * x[np.newaxis, :])
+
+        # Vectorized normal equations for y = a*S + b*C
+        SS = np.sum(S * S, axis=1)
+        SC = np.sum(S * C, axis=1)
+        CC = np.sum(C * C, axis=1)
+        Sy = np.sum(S * Y, axis=1)
+        Cy = np.sum(C * Y, axis=1)
+
+        det = SS * CC - SC * SC
+        safe_det = np.where(np.abs(det) < 1e-12, 1.0, det)
+        a = (CC * Sy - SC * Cy) / safe_det
+        b = (SS * Cy - SC * Sy) / safe_det
+
+        residuals = Y - a[:, np.newaxis] * S - b[:, np.newaxis] * C
+        mse = np.mean(residuals ** 2, axis=1)
+
+        improved = mse < best_mse
+        best_mse = np.where(improved, mse, best_mse)
+        best_w = np.where(improved, w_test, best_w)
+        best_a = np.where(improved, a, best_a)
+        best_b = np.where(improved, b, best_b)
+
+    # ---- Derive amplitude and phase from regression coefficients ----
+    amplitudes = np.sqrt(best_a ** 2 + best_b ** 2)
+    phases = np.arctan2(best_b, best_a) % (2 * np.pi)
+    # Snap phases very close to 2π back to 0 (numerical noise in atan2)
+    phases = np.where(2 * np.pi - phases < 1e-3, 0.0, phases)
+
+    characteristics = np.column_stack((amplitudes, best_w, phases))
     return characteristics
 
 def extract_lines_characteristics(fdata: skfda.FDataGrid, has_slope: bool) -> np.ndarray:
@@ -299,9 +325,8 @@ def get_sin_noise_metric(fdata: skfda.FDataGrid, characteristics: np.ndarray) ->
     frequencies = characteristics[:, 1]
     phases = characteristics[:, 2]
 
-    # Reconstruct functions
-    Y_reconstructed = np.zeros_like(Y)
-    Y_reconstructed = amplitudes[:, np.newaxis] * np.sin(2 * np.pi * frequencies[:, np.newaxis] * x + phases[:, np.newaxis])
+    # Reconstruct functions: frequencies are already in rad/s (ω), no extra 2π
+    Y_reconstructed = amplitudes[:, np.newaxis] * np.sin(frequencies[:, np.newaxis] * x + phases[:, np.newaxis])
     # Compute mean squared error
     mse = np.mean((Y - Y_reconstructed) ** 2, axis=1)
 
@@ -382,57 +407,99 @@ def get_step_noise_metric(fdata: skfda.FDataGrid, characteristics: np.ndarray, s
 
     return mse
 if __name__ == "__main__":
-    from synthetic_data import generate_data
+    from .synthetic_data import generate_data
     import matplotlib.pyplot as plt
 
-    N = 1000
+    # ==================== TEST: Sin characteristic extraction ====================
+    print("=" * 60)
+    print("TEST: extract_sin_characteristics + get_sin_noise_metric")
+    print("=" * 60)
+
+    # 1. Generate sine data with known parameters (no noise)
+    N = 500
     n_points = 100
-    dataset_name = 'lines'
-    num_batches_to_gen = 100
-    _, fd_1 = generate_data(N* num_batches_to_gen, n_points, dataset_name, intercept_range = (1-1e-6,1+ 1e-6), slope_range = (-1e-6, 1e-6), noise = True)
-    _, fd_2 = generate_data(N* num_batches_to_gen, n_points, dataset_name, intercept_range = (1-1e-6, 1+ 1e-6), slope_range = (-1e-6, 1e-6))
-   
-    a_gen = np.array([1-1e-6, -1e-6])  # Lower bound for intercept
-    b_gen = np.array([1+1e-6, 1e-6])  # Upper bound for intercept
-    wessier_results_1 = np.zeros((num_batches_to_gen,len(a_gen)))
-    wessier_results_2 = np.zeros((num_batches_to_gen,len(a_gen)))
-    for n in range(num_batches_to_gen):
-        if n == 0:
-            fd_1_batch = fd_1[0:N]
-            fd_2_batch = fd_2[0:N]
+    A_range = (0.5, 2.0)
+    w_range = (3.5 * np.pi, 4.5 * np.pi)  # angular frequency (rad/s)
+    phi_range = (0, 0.3 * np.pi)
 
-        else:
-            fd_1_batch = fd_1[n*N:(n+1)*N]
-            fd_2_batch = fd_2[n*N:(n+1)*N]
+    params, fd_sin = generate_data(
+        N, n_points, 'sin',
+        amplitude_range=A_range,
+        frequency_range=w_range,
+        phase_range=phi_range,
+        noise=False,
+    )
 
-        batch_wess_1 = get_wasserstein_distance(fd_1_batch, dataset_name, a_gen, b_gen, {'has_slope': True})
-        batch_wess_2 = get_wasserstein_distance(fd_2_batch, dataset_name, a_gen, b_gen, {'has_slope': True})
-        wessier_results_1[n] = batch_wess_1
-        wessier_results_2[n] = batch_wess_2
-    
-    # For each character, plot an histogram with different color for each model
-    bins = np.linspace(min(wessier_results_1.min(), wessier_results_2.min()), max(wessier_results_1.max(), wessier_results_2.max()), min(50, 5*num_batches_to_gen)).reshape(-1) 
-    fig, axis = plt.subplots(2, len(a_gen), figsize=(8, 6))
-    fd_1[:100].plot(axes=axis[0,0], color='blue', alpha=0.3)
-    axis[0,0].set_title('Generated Data with Noise')
-    fd_2[:100].plot(axes=axis[0,1], color='orange', alpha=0.3)
-    axis[0,1].set_title('Generated Data without Noise')
-    for i, axs in enumerate(axis[1, :]):
-        axs.hist(wessier_results_1[:, i],
-                bins=bins,
-                alpha=0.5,
-                label='1',
-                color='blue',
-                density=False)
-        axs.hist(wessier_results_2[:, i],
-                bins=bins,
-                alpha=0.5,
-                label='2',
-                color='orange',
-                density=False)
-        axs.set_title('Wasserstein Distance to Uniform Distribution')
-        axs.set_xlabel('Wasserstein Distance')
-        axs.set_ylabel('Frequency')
-        axs.legend()
+    # 2. Extract characteristics
+    chars = extract_sin_characteristics(fd_sin)
+    amplitudes_ext = chars[:, 0]
+    freqs_ext = chars[:, 1]
+    phases_ext = chars[:, 2]
+    t = params  # grid points
+
+    print(f"\nExtracted ranges:")
+    print(f"  Amplitude: [{amplitudes_ext.min():.4f}, {amplitudes_ext.max():.4f}]  "
+          f"(expected [{A_range[0]}, {A_range[1]}])")
+    print(f"  Frequency: [{freqs_ext.min():.4f}, {freqs_ext.max():.4f}]  "
+          f"(expected [{w_range[0]:.4f}, {w_range[1]:.4f}])")
+    print(f"  Phase:     [{phases_ext.min():.4f}, {phases_ext.max():.4f}]  "
+          f"(expected [{phi_range[0]:.4f}, {phi_range[1]:.4f}])")
+
+    # 3. Noise metric should be near zero for clean data
+    mse = get_sin_noise_metric(fd_sin, chars)
+    print(f"\nNoise MSE (no noise, should be ~0):")
+    print(f"  Mean: {mse.mean():.8f},  Max: {mse.max():.8f}")
+
+    # 4. Test with a single known function: A=1.5, w=4*pi, phi=0.2
+    A_true, w_true, phi_true = 1.5, 4 * np.pi, 0.2
+    y_single = A_true * np.sin(w_true * t + phi_true)
+    fd_single = skfda.FDataGrid(
+        data_matrix=y_single.reshape(1, -1, 1),
+        grid_points=t,
+    )
+    chars_single = extract_sin_characteristics(fd_single)
+    A_ext, w_ext, phi_ext = chars_single[0]
+    mse_single = get_sin_noise_metric(fd_single, chars_single)[0]
+
+    print(f"\nSingle known function test:")
+    print(f"  Amplitude: {A_ext:.6f}  (true: {A_true})")
+    print(f"  Frequency: {w_ext:.6f}  (true: {w_true:.6f})")
+    print(f"  Phase:     {phi_ext:.6f}  (true: {phi_true:.6f})")
+    print(f"  MSE:       {mse_single:.10f}")
+
+    # 5. Assertions
+    tol_A = 0.01
+    tol_w = 0.01
+    tol_phi = 0.01
+    tol_mse_single = 1e-6
+    tol_mse_batch = 1e-3  # batch includes harder edge-case frequencies
+
+    assert abs(A_ext - A_true) < tol_A, \
+        f"Amplitude error: {abs(A_ext - A_true):.6f} > {tol_A}"
+    assert abs(w_ext - w_true) < tol_w, \
+        f"Frequency error: {abs(w_ext - w_true):.6f} > {tol_w}"
+    # Phase comparison must handle circular wraparound (0 ≈ 2π)
+    phi_err = min(abs(phi_ext - phi_true), 2 * np.pi - abs(phi_ext - phi_true))
+    assert phi_err < tol_phi, \
+        f"Phase error: {phi_err:.6f} > {tol_phi}"
+    assert mse_single < tol_mse_single, \
+        f"Single MSE too large: {mse_single:.10f} > {tol_mse_single}"
+    assert mse.mean() < tol_mse_batch, \
+        f"Batch mean MSE too large: {mse.mean():.10f} > {tol_mse_batch}"
+
+    print("\n✓ All assertions passed!")
+
+    # 6. Visual check: overlay original vs reconstructed for a few samples
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    for idx, ax in enumerate(axes):
+        y_orig = fd_sin.data_matrix[idx, :, 0]
+        A_i, w_i, phi_i = chars[idx]
+        y_recon = A_i * np.sin(w_i * t + phi_i)
+        ax.plot(t, y_orig, label='Original', linewidth=2)
+        ax.plot(t, y_recon, '--', label='Reconstructed', linewidth=2)
+        ax.set_title(f"Sample {idx}: A={A_i:.2f}, ω={w_i:.2f}, φ={phi_i:.2f}")
+        ax.legend()
+        ax.grid(alpha=0.3)
+    plt.suptitle("Sin Characteristic Extraction Test", fontsize=14)
     plt.tight_layout()
     plt.show()

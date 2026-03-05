@@ -126,7 +126,7 @@ class FDataGenerator(BaseEstimator):
         # Decide if the FDataGrid is passed ot a preprocess data.
         data_elem= next(iter(data_loader))
         x = data_elem[0] if isinstance(data_elem, (list, tuple)) else data_elem
-        self.diff_process.fit(x)
+        self.diff_process.fit(x.to(self.device))
 
         # Add tqdm for progress bar
         # TODO(): DELETE THIS WHEN DONE TESTING

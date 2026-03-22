@@ -206,10 +206,64 @@ class ODEReverseDiffusionProcess(ReverseDiffusionProcess):
                 diff_sqr = torch.einsum("bij,bkj->bik", diff, diff)
                 diff_score = torch.einsum("bi,bij->bj", score, diff_sqr)
 
-            return drift - diff_score
+            return drift - 0.5 * diff_score
 
         return self.integrator(backward_drift, x_t, t_1, t_0)
 
+
+
+class RK4Integrator(ODEIntegrator):
+    """Classical 4th-order Runge-Kutta ODE integrator.
+
+    Follows the ``ODEIntegrator`` protocol: ``__call__(f, x_t, t_1, t_0)``
+    where ``f(t, x)`` returns *dx/dt*.
+    """
+
+    def __init__(self, n_steps: int = 1000) -> None:
+        self.n_steps = n_steps
+
+    def __call__(
+        self,
+        f: Callable[[Tensor, Tensor], Tensor],
+        x_t: Tensor,
+        t_1: Tensor | float,
+        t_0: Tensor | float,
+    ) -> Tensor:
+        """Integrate the ODE using the classical RK4 method.
+
+        Args:
+            f: The function defining the ODE, takes ``(t, x)`` and
+                returns *dx/dt*.
+            x_t: The initial sample at time *t_1*, shape ``(N, M)``.
+            t_1: The initial time step.
+            t_0: The final time step to integrate to.
+
+        Returns:
+            The integrated sample at time *t_0*, shape ``(N, M)``.
+        """
+        N = x_t.shape[0]
+        device = x_t.device
+        times = torch.linspace(
+            float(t_1), float(t_0), self.n_steps + 1, device=device,
+        )
+        dt = times[1] - times[0]
+        x = x_t.clone()
+        for n in range(self.n_steps):
+            t_n = times[n].item()
+            t_mid = t_n + 0.5 * dt.item()
+            t_next = t_n + dt.item()
+
+            t_vec = torch.full((N,), t_n, device=device)
+            t_mid_vec = torch.full((N,), t_mid, device=device)
+            t_next_vec = torch.full((N,), t_next, device=device)
+
+            k1 = f(t_vec, x)
+            k2 = f(t_mid_vec, x + 0.5 * dt * k1)
+            k3 = f(t_mid_vec, x + 0.5 * dt * k2)
+            k4 = f(t_next_vec, x + dt * k3)
+
+            x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return x
 
 
 class EulerMaruyamaIntegrator(SDEIntegrator):
@@ -295,7 +349,7 @@ def euler_maruyama_integration(
         else:
             # Full (N, M, M) shape
             # Matrix-vector multiplication
-            diff_dW = torch.einsum("bi,bij->bj", dw[n], diffusion_t)
+            diff_dW = torch.einsum("bij,bj->bi", diffusion_t, dw[n])
         x_t = x_t + drift_t * dt + diff_dW  # Shape (N, M)
 
     return x_t

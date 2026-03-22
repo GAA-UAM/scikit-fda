@@ -1,12 +1,10 @@
-from .backward_integrator import EulerMaruyamaBackwardIntegrator
-
 from ..._utils._sklearn_adapter import BaseEstimator
 from ...representation.grid import FDataGrid
 from ...typing._numpy import NDArrayFloat
 
 from .diffusion_process import ForwardDiffusionProcess, VariancePreservingDiffusionProcess
-from .score_model import ScoreModel, ScoreModelBig
-from .reverse_diffusion import ReverseDiffusionProcess, SDEReverseDiffusionProcess, EulerMaruyamaIntegrator
+from .score_model import ScoreModel
+from .reverse_diffusion import ReverseDiffusionProcess, SDEReverseDiffusionProcess, EulerMaruyamaIntegrator, ODEReverseDiffusionProcess, RK4Integrator
 
 import torch
 from torch import Tensor
@@ -99,7 +97,7 @@ class FDataGenerator(BaseEstimator):
         self.grid_points = X.grid_points[0]
         grid_size = len(self.grid_points)
 
-        self.score_model = ScoreModelBig(
+        self.score_model = ScoreModel(
             embed_dim=grid_size,
             channels=(32, 64, 128, 256),
             n_groups=(4, 32, 32, 32),
@@ -273,6 +271,7 @@ class FDataGenerator(BaseEstimator):
             self,
             n_samples: int,
             reverse_process: ReverseDiffusionProcess = SDEReverseDiffusionProcess(EulerMaruyamaIntegrator()),
+            #reverse_process: ReverseDiffusionProcess = ODEReverseDiffusionProcess(RK4Integrator()),
             y: NDArrayFloat | None = None,
     ) -> FDataGrid:
         """Generates new samples of functional data using the diffusion model.
@@ -314,7 +313,6 @@ class FDataGenerator(BaseEstimator):
                 y,
             )
             
-        # Denormalize the data if normalization was applied
 
         # Convert the generated samples to an FDataGrid object
         data_matrix = x_0.detach().cpu().numpy().reshape(n_samples, -1, 1)

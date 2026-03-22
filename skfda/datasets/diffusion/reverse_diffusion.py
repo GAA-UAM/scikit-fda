@@ -164,7 +164,7 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
             return (x_t0 + sigma_score) / mu_t0_scale
         return x_t0
 
-class ODEReverseDiffusionProcess(ReverseDiffusionProcess):
+class ProbabilityFlowODEReverseProcess(ReverseDiffusionProcess):
     """Implementation of the reverse process using ODE integration."""
     def __init__(self, integrator: ODEIntegrator):
         self.integrator = integrator

@@ -4,7 +4,7 @@ from ...typing._numpy import NDArrayFloat
 
 from .diffusion_process import ForwardDiffusionProcess, VariancePreservingDiffusionProcess
 from .score_model import ScoreModel
-from .reverse_diffusion import ReverseDiffusionProcess, SDEReverseDiffusionProcess, EulerMaruyamaIntegrator, ODEReverseDiffusionProcess, RK4Integrator
+from .reverse_diffusion import ReverseDiffusionProcess, SDEReverseDiffusionProcess, EulerMaruyamaIntegrator, ProbabilityFlowODEReverseProcess, RK4Integrator
 
 import torch
 from torch import Tensor
@@ -271,7 +271,7 @@ class FDataGenerator(BaseEstimator):
             self,
             n_samples: int,
             reverse_process: ReverseDiffusionProcess = SDEReverseDiffusionProcess(EulerMaruyamaIntegrator()),
-            #reverse_process: ReverseDiffusionProcess = ODEReverseDiffusionProcess(RK4Integrator()),
+            #reverse_process: ReverseDiffusionProcess = ProbabilityFlowODEReverseProcess(RK4Integrator()),
             y: NDArrayFloat | None = None,
     ) -> FDataGrid:
         """Generates new samples of functional data using the diffusion model.

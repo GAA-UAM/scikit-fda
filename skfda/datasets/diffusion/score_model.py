@@ -60,7 +60,7 @@ class ScoreModel(nn.Module, ABC):
         pass
 
 
-class ScoreModelBig(nn.Module):
+class ScoreModel(nn.Module):
     """A time-dependent score-based model built upon U-Net architecture."""
 
     def __init__(

@@ -192,6 +192,7 @@ class ProbabilityFlowODEReverseProcess(ReverseDiffusionProcess):
         Returns:
             The denoised sample at time t_0, shape (N, M) or (N, 1, M).
         """
+        #TODO(): DIEGO (HACER (x,t) o (t,x))
         def backward_drift(t: Tensor, x: Tensor) -> Tensor:
             score  = score_model(x, t, y)
             drift = diff_process.drift(x, t)
@@ -225,29 +226,29 @@ class RK4Integrator(ODEIntegrator):
     def __call__(
         self,
         f: Callable[[Tensor, Tensor], Tensor],
-        x_t: Tensor,
-        t_1: Tensor | float,
+        x_0: Tensor,
         t_0: Tensor | float,
+        t_1: Tensor | float,
     ) -> Tensor:
         """Integrate the ODE using the classical RK4 method.
 
         Args:
             f: The function defining the ODE, takes ``(t, x)`` and
                 returns *dx/dt*.
-            x_t: The initial sample at time *t_1*, shape ``(N, M)``.
-            t_1: The initial time step.
-            t_0: The final time step to integrate to.
+            x_0: The initial sample at time *t_0*, shape ``(N, M)``.
+            t_0: The initial time step.
+            t_1: The final time step to integrate to.
 
         Returns:
-            The integrated sample at time *t_0*, shape ``(N, M)``.
+            The integrated sample at time *t_1*, shape ``(N, M)``.
         """
-        N = x_t.shape[0]
-        device = x_t.device
+        N = x_0.shape[0]
+        device = x_0.device
         times = torch.linspace(
-            float(t_1), float(t_0), self.n_steps + 1, device=device,
+            float(t_0), float(t_1), self.n_steps + 1, device=device,
         )
         dt = times[1] - times[0]
-        x = x_t.clone()
+        x = x_0.clone()
         for n in range(self.n_steps):
             t_n = times[n].item()
             t_mid = t_n + 0.5 * dt.item()
@@ -274,25 +275,25 @@ class EulerMaruyamaIntegrator(SDEIntegrator):
     def __call__(
         self,
         diff_process: DiffusionProcess,
-        x_t: Tensor,
-        t_1: Tensor | float,
+        x_0: Tensor,
         t_0: Tensor | float,
+        t_1: Tensor | float,
     ) -> Tensor:
         """Integrate the SDE using Euler-Maruyama method.
 
         Args:
             diff_process: The diffusion process defining the SDE.
-            x_t: The initial sample at time t_1, shape (N, M) or (N, 1, M).
-            t_1: The initial time step, shape (N,).
-            t_0: The final time step to integrate to.
+            x_0: The initial sample at time t_0, shape (N, M) or (N, 1, M).
+            t_0: The initial time step, shape (N,).
+            t_1: The final time step to integrate to.
 
         Returns:
-            The integrated sample at time t_0, shape (N, M) or (N, 1, M).
+            The integrated sample at time t_1, shape (N, M) or (N, 1, M).
         """
         return euler_maruyama_integration(
-            x=x_t,
-            t_0=t_1,
-            t_end=t_0,
+            x=x_0,
+            t_0=t_0,
+            t_end=t_1,
             drift=diff_process.drift,
             diffusion=diff_process.diffusion,
             n_steps=self.n_steps,
@@ -319,7 +320,7 @@ def euler_maruyama_integration(
         n_steps: The number of integration steps.
 
     Returns:
-        The integrated data at time t_0 as a tensor, shape (N, M)
+        The integrated data at time t_end as a tensor, shape (N, M)
     """
     N, M = x.shape
     device = x.device

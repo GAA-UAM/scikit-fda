@@ -5,6 +5,11 @@ from typing_extensions import Protocol
 from torch import Tensor
 import torch
 
+from skfda.misc.validation import validate_random_state
+
+from .torch_adapter import make_torch_generator
+from ...typing._base import RandomStateLike
+
 from .diffusion_process import CustomDiffusionProcess, DiffusionProcess, ForwardDiffusionProcess
 from .score_model import ScoreModel
 
@@ -23,8 +28,8 @@ class ReverseDiffusionProcess(Protocol):
         score_model: ScoreModel,
         x_t: Tensor,
         t_1: Tensor | float,
-        y: Tensor | None = None,
         t_0: Tensor | float = 1e-3,
+        y: Tensor | None = None,
     ) -> Tensor:
         """Reverse the diffusion process from time t_1 to time t_0.
 
@@ -34,8 +39,8 @@ class ReverseDiffusionProcess(Protocol):
             function.
             x_t: The noisy sample at time t_1, shape (N, M) or (N, 1, M).
             t_1: The time step of the noisy sample, shape (N,).
+            t_0: The time step to integrate back to, default is 1e-3.
             y: Optional labels for conditional generation, shape (N, C).
-            t_0: The time step to integrate back to, default is 0.
 
         Returns:
             The denoised sample at time t_0, shape (N, M) or (N, 1, M).
@@ -94,8 +99,8 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
         score_model: ScoreModel,
         x_t: Tensor,
         t_1: Tensor | float,
-        y: Tensor | None = None,
         t_0: Tensor | float = 1e-3,
+        y: Tensor | None = None,
     ) -> Tensor:
         """Integrate the reverse process using the SDE integrator.
 
@@ -131,10 +136,8 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
             drift=backward_drift,
             diffusion=diff_process.diffusion,
         )
-        t_0_safe = t_0
         # TODO(): Decide what to do whith this.
-        if t_0 < 1e-3:
-            t_0_safe = 1e-3
+        t_0_safe = max(t_0, 1e-3)
         x_t0 = self.integrator(reverse_process, x_t, t_1, t_0_safe)
         # 2. Final Denoising Step (Tweedie's Formula)
         # Create a time tensor filled with our stopping time
@@ -175,8 +178,8 @@ class ProbabilityFlowODEReverseProcess(ReverseDiffusionProcess):
         score_model: ScoreModel,
         x_t: Tensor,
         t_1: Tensor | float,
-        y: Tensor | None = None,
         t_0: Tensor | float = 1e-3,
+        y: Tensor | None = None,
     ) -> Tensor:
         """Integrate the reverse process using the ODE integrator.
 
@@ -269,8 +272,9 @@ class RK4Integrator(ODEIntegrator):
 
 class EulerMaruyamaIntegrator(SDEIntegrator):
     """Simple implementation of the Euler-Maruyama method for SDE integration."""
-    def __init__(self, n_steps: int = 1000):
+    def __init__(self, n_steps: int = 1000, random_state: RandomStateLike = None) -> None:
         self.n_steps = n_steps
+        self.random_state = validate_random_state(random_state)
 
     def __call__(
         self,
@@ -284,73 +288,46 @@ class EulerMaruyamaIntegrator(SDEIntegrator):
         Args:
             diff_process: The diffusion process defining the SDE.
             x_0: The initial sample at time t_0, shape (N, M) or (N, 1, M).
-            t_0: The initial time step, shape (N,).
-            t_1: The final time step to integrate to.
+            t_0: The initial time step as a float.
+            t_1: The final time step to integrate to as a float.
 
         Returns:
             The integrated sample at time t_1, shape (N, M) or (N, 1, M).
         """
-        return euler_maruyama_integration(
-            x=x_0,
-            t_0=t_0,
-            t_end=t_1,
-            drift=diff_process.drift,
-            diffusion=diff_process.diffusion,
-            n_steps=self.n_steps,
-        )
+        N, M = x_0.shape
+        device = x_0.device
+        times = torch.linspace(t_0, t_1, self.n_steps + 1, device=device)
+        dt = times[1] - times[0]  # Can be negative
+        # Note: sqrt(|dt|) because variance is always positive
+        sqrt_dt = torch.sqrt(torch.abs(dt))
+        generator = make_torch_generator(self.random_state, device=device) 
+        # Brownian increment: dW ~ N(0, |dt|)
+        dw = torch.randn(
+            (self.n_steps, N, M),
+            dtype=x_0.dtype,
+            device=device,
+            generator=generator,
+        ) * sqrt_dt
+        x_t = x_0.clone()
+        for n in range(self.n_steps):
+            t = torch.full((N,), times[n].item(), device=device)
 
+            drift_t = diff_process.drift(x=x_t, t=t)  # Shape (N, M)
+            diffusion_t = diff_process.diffusion(t=t)
 
+            # Handle different shapes of diffusion_t: (N,), (N, M) or (N, M, M)
+            if diffusion_t.dim() == 1:
+                # Scalar shape (N,)
+                # Reshape to (N, 1) for broadcasting
+                diffusion_t = diffusion_t.unsqueeze(1)
+            if diffusion_t.dim() < 3:  # Diagonal case
+                # Scalar, (N,1) or (N,M) shape
+                # Element-wise multiplication
+                diff_dW = diffusion_t * dw[n]
+            else:
+                # Full (N, M, M) shape
+                # Matrix-vector multiplication
+                diff_dW = torch.einsum("bij,bj->bi", diffusion_t, dw[n])
+            x_t = x_t + drift_t * dt + diff_dW  # Shape (N, M)
 
-def euler_maruyama_integration(
-    x: Tensor,
-    t_0: Tensor,
-    t_end: Tensor,
-    drift: Callable[[Tensor, Tensor], Tensor],
-    diffusion: Callable[[Tensor], Tensor],
-    n_steps: int,
-) -> Tensor:
-    """Performs Euler-Maruyama integration of an SDE.
-
-    Args:
-        x: The initial data at time t as a tensor, shape (N, M)
-        t_0: The initial time steps as a tensor, shape (N,)
-        t_end: The final time steps as a tensor, shape (N,)
-        drift: The drift function of the SDE.
-        diffusion: The diffusion coefficient function of the SDE.
-        n_steps: The number of integration steps.
-
-    Returns:
-        The integrated data at time t_end as a tensor, shape (N, M)
-    """
-    N, M = x.shape
-    device = x.device
-    times = torch.linspace(t_0, t_end, n_steps + 1, device=device)
-    dt = times[1] - times[0]  # Can be negative
-    # Note: sqrt(|dt|) because variance is always positive
-    sqrt_dt = torch.sqrt(torch.abs(dt))
-
-    # Brownian increment: dW ~ N(0, |dt|)
-    dw = torch.randn((n_steps, N, M), dtype=x.dtype, device=device) * sqrt_dt
-    x_t = x.clone()
-    for n in range(n_steps):
-        t = torch.full((N,), times[n].item(), device=device)
-
-        drift_t = drift(x=x_t, t=t)  # Shape (N, M)
-        diffusion_t = diffusion(t=t)
-
-        # Handle different shapes of diffusion_t: (N,), (N, M) or (N, M, M)
-        if diffusion_t.dim() == 1:
-            # Scalar shape (N,)
-            # Reshape to (N, 1) for broadcasting
-            diffusion_t = diffusion_t.unsqueeze(1)
-        if diffusion_t.dim() < 3:  # Diagonal case
-            # Scalar, (N,1) or (N,M) shape
-            # Element-wise multiplication
-            diff_dW = diffusion_t * dw[n]
-        else:
-            # Full (N, M, M) shape
-            # Matrix-vector multiplication
-            diff_dW = torch.einsum("bij,bj->bi", diffusion_t, dw[n])
-        x_t = x_t + drift_t * dt + diff_dW  # Shape (N, M)
-
-    return x_t
+        return x_t

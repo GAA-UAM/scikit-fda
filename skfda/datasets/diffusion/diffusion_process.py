@@ -1,6 +1,9 @@
 from typing import Callable, Protocol, Final, Literal
 
+from ...typing._base import RandomStateLike
+
 from ..._utils._sklearn_adapter import BaseEstimator
+from .torch_adapter import make_torch_generator
 
 import torch
 from torch import Tensor
@@ -109,6 +112,42 @@ class ForwardDiffusionProcess(DiffusionProcess, BaseEstimator):
         self.M = x.shape[1]  # Learn the dimension of the data
         return self
 
+    def serialize_fit_data(self) -> dict:
+        """Serializes the data learned in the `fit` method to a dictionary.
+
+        This method should return a dictionary with the data necessary to
+        store the parameters learned in the `fit` method. This is useful for
+        saving the fitted diffusion process to disk or for transferring the
+        learned parameters to another instance of the same class.
+
+        Returns:
+            A dictionary with the data learned in the `fit` method.
+        """
+        if not hasattr(self, "M"):
+            raise ValueError("The diffusion process must be fitted to the data before serializing the fit data. Call the fit method with the training data.")
+        return {"M": self.M}
+
+    def deserialize_fit_data(self, data: dict) -> None:
+        """Deserializes the data learned in the `fit` method from a dictionary.
+
+        This method should load the parameters learned in the `fit` method
+        from a dictionary, which is the format returned by the
+        `serialize_fit_data` method.
+        This method should be such that using `fit` and then
+        `serialize_fit_data` returns a dictionary that when
+        loaded into a new instance of the class with
+        `deserialize_fit_data` leaves the new diffusion process in an equivalent
+        state to what the original had after calling `fit`.
+
+        Args:
+            data: A dictionary with the data learned in the `fit` method.
+        """
+        if " M " not in data:
+            raise ValueError("The key 'M' is missing from the data dictionary. This key is required to load the parameters of the diffusion process.")
+        if not isinstance(data["M"], int):
+            raise ValueError(f"The value of 'M' in the data dictionary should be an integer representing the dimension of the data. Got {type(data['M'])} instead.")
+        self.M = data["M"]
+
     @abstractmethod
     def drift(self, x: Tensor, t: Tensor) -> Tensor:
         """Computes the drift term of the SDE at time t."""
@@ -197,7 +236,7 @@ class ForwardDiffusionProcess(DiffusionProcess, BaseEstimator):
         """Samples data from the limit distribution of the diffusion process.
 
         The output shape must be (n_samples, M) where M is the dimension of the data.
-        It is learned at the fit method.
+        It is learned at the `fit` method.
 
         Args:
             n_samples: The number of samples to generate.
@@ -207,6 +246,8 @@ class ForwardDiffusionProcess(DiffusionProcess, BaseEstimator):
             X: Tensor with samples from the limit distribution, shape (n_samples, M)
         """
         ...
+
+
 
 
 
@@ -234,25 +275,26 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
     def __init__(
         self,
         beta_schedule: Literal["linear", "cosine"] = "cosine",
-        beta_0: float = 0.,
-        beta_T: float = 8.,
+        beta_min: float = 0.,
+        beta_max: float = 20.,
     ):
         """Initializes the variance-preserving diffusion process.
 
         Args:
             beta_schedule: The schedule for beta(t). Can be 'linear' or
                         'cosine'. Default is 'cosine'.
-            beta_0: The value of beta(0). Used only if `beta_schedule`
-                    is 'linear'. Default is 0.1.
-            beta_T: The value of beta(T). Used only if `beta_schedule`
+            beta_min: The value of beta(0). Used only if `beta_schedule`
+                    is 'linear'. Default is 0.
+            beta_max: The value of beta(T). Used only if `beta_schedule`
                     is 'linear'. Default is 10.0.
-            device: The device to run the computations on. Default is 'cpu'.
+            random_state: The random state to use for reproducible results. Default is None.
         """
+        # TODO() Decide what to do with the device
         if beta_schedule not in ("linear", "cosine"):
             raise ValueError(f"Unknown beta schedule: {beta_schedule}")
         self.beta_schedule = beta_schedule
-        self.beta_0 = beta_0
-        self.beta_T = beta_T
+        self.beta_min = beta_min
+        self.beta_max = beta_max
         self.M = None  # Will be set in fit method
         self.s = torch.tensor(1e-3)  # Small constant for numerical stability in cosine schedule
 
@@ -266,7 +308,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             The value of beta(t) as a tensor, shape (N,)
         """
         if self.beta_schedule == "linear":
-            beta_t = self.beta_0 + (self.beta_T - self.beta_0) * t / self.T
+            beta_t = self.beta_min + (self.beta_max - self.beta_min) * t / self.T
         elif self.beta_schedule == "cosine":
             beta_t = (torch.pi / (self.T * (self.s + 1)) *
                       torch.tan(
@@ -274,7 +316,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
                                 (t / self.T + self.s) / (self.s + 1),
                                 )
                       )
-            beta_t = torch.clamp(beta_t, min=self.beta_0, max=self.beta_T)  # Clamp beta_t to be between 0 and beta_T
+            beta_t = torch.clamp(beta_t, min=self.beta_min, max=self.beta_max)  # Clamp beta_t to be between 0 and beta_max
         else:
             raise ValueError(f"Unknown beta schedule: {self.beta_schedule}")
         return beta_t
@@ -310,10 +352,8 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             mu_t: The mean of the diffusion process at time t, shape (N,M)
         """
         if self.beta_schedule == "linear":
-            beta_0 = self.beta_0
-            beta_T = self.beta_T
 
-            integral_beta = beta_0 * t + 0.5 * (beta_T - beta_0) * (t ** 2) / self.T
+            integral_beta = self.beta_min * t + 0.5 * (self.beta_max - self.beta_min) * (t ** 2) / self.T
 
             mu_t = torch.exp(-0.5 * integral_beta)  # Shape (N,)
 
@@ -322,7 +362,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             f_0 = torch.cos((self.s / (1 + self.s)) * (torch.pi / 2)) ** 2
 
             mu_t = torch.sqrt(f_t / f_0)  # Shape (N,)
-        return mu_t.unsqueeze(1) * x
+        return mu_t.unsqueeze(-1) * x
 
     def sigma_cond(self, t: Tensor) -> Tensor:
         r"""Computes the square root of the covariance matrix at time t.
@@ -334,9 +374,9 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
 
         In the case of a linear schedule for beta(t), the integral can be computed
         analytically as:
-        :math:`\int_0^t \beta(s) ds = \beta_0 * t + \frac{(beta_T - beta_0) * t^2}{2T}`
+        :math:`\int_0^t \beta(s) ds = \beta_min * t + \frac{(beta_max - beta_min) * t^2}{2T}`
         Hence sigma_t^2 can be computed as:
-        :math:`\sigma_t^2 = \left(1 - \exp(-(\beta_0 * t +  \frac{(beta_T - beta_0) * t^2}{2T}))\right)`
+        :math:`\sigma_t^2 = \left(1 - \exp(-(\beta_min * t +  \frac{(beta_max - beta_min) * t^2}{2T}))\right)`
 
         In the case of a cosine schedule for beta(t), the integral is given by:
         :math:`\int_0^t \beta(s) ds = -\ln\left(\frac{f(t)}{f(0)}\right)`
@@ -352,11 +392,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
                          matrix at time t, shape (N,)
         """
         if self.beta_schedule == "linear":
-
-            beta_0 = self.beta_0
-            beta_T = self.beta_T
-
-            integral_beta = beta_0 * t + 0.5 * (beta_T - beta_0) * (t ** 2) / self.T
+            integral_beta = self.beta_min * t + 0.5 * (self.beta_max - self.beta_min) * (t ** 2) / self.T
 
             return torch.sqrt(1 - torch.exp(-integral_beta))  # Shape (N,)
 
@@ -402,6 +438,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             self,
             n_samples: int,
             device: torch.device | str = "cpu",
+            random_state: RandomStateLike = None,
     ) -> Tensor:
         r"""Samples data from the final distribution of the diffusion process.
 
@@ -415,6 +452,8 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
                           Refers to the M dimension of the data.
             device: The device on which to create the samples.
                     Default is "cpu".
+            random_state: The random state to use for reproducible results.
+                     Default is None.
 
         Returns:
             X: Tensor with samples from the final distribution.
@@ -425,7 +464,8 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
         if self.M is None:
             raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
-        return torch.randn((n_samples, self.M), device=device)
+        generator = make_torch_generator(random_state, device=device)  # Use a different generator for sampling from the limit distribution to avoid affecting the generator used for training
+        return torch.randn((n_samples, self.M), device=device, generator=generator)
 
 class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
     r"""Implements a variance-exploding diffusion process.
@@ -446,8 +486,8 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
     def __init__(
         self,
         g_schedule: Literal["linear", "exponential"] = "exponential",
-        g_0: float = 0.0001,
-        g_T: float = 25.,
+        g_0: float = 0.1,
+        g_T: float = 15.,
     ):
         """Initializes the variance-exploding diffusion process.
 
@@ -456,9 +496,12 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
                         'exponential'. Default is 'linear'.
             g_0: The value of g(0).
             g_T: The value of g(T).
+            random_state: The random state to use for reproducible results. Default is None.
+
         """
         if g_schedule not in ("linear", "exponential"):
             raise ValueError(f"Unknown g schedule: {g_schedule}")
+        
         self.g_schedule = g_schedule
         self.g_0 = g_0
         self.g_T = g_T
@@ -512,7 +555,7 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
         :math:`\sigma_t^2 = \int_0^t g^2(s) ds`
 
         Hence for the linear schedule, sigma_t^2 can be computed as:
-        :math: `g^2(t) = (g(0) + (g(T) - g(0)) * t / T)^2 = 
+        :math: `g^2(t) = (g(0) + (g(T) - g(0)) * t / T)^2 =
         g(0)^2 + 2 * g(0) * (g(T) - g(0)) * t / T + ((g(T) - g(0))^2 * t^2) / T^2`
         :math:`\sigma_t^2 = g(0)^2 * t^2 + g(0) * (g(T) - g(0)) * t^2 / T + ((g(T) - g(0))^2 * t^3) / (3 * T^2)`
         For the exponential schedule, sigma_t^2 can be computed as:
@@ -573,6 +616,7 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
         self,
         n_samples: int,
         device: torch.device | str = "cpu",
+        random_state: RandomStateLike = None,
     ) -> Tensor:
         r"""Samples data from the final distribution of the diffusion process.
 
@@ -586,6 +630,8 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
                           Refers to the M dimension of the data.
             device: The device on which to create the samples.
                     Default is "cpu".
+            random_state: The random state to use for reproducible results.
+                     Default is None.
 
         Returns:
             X: Tensor with samples from the final distribution.
@@ -595,9 +641,9 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
             raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
         if self.M is None:
             raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
-
+        genetator = make_torch_generator(random_state, device=device)  # Use a different generator for sampling from the limit distribution to avoid affecting the generator used for training
         sigma_T = self.sigma_cond(torch.tensor([self.T], device=device)).item()  # Shape (1,)
-        return torch.randn((n_samples, self.M), device=device) * sigma_T
+        return torch.randn((n_samples, self.M), device=device, generator=genetator) * sigma_T
 
 # Helper function for interpolation of the integrals of D(t) and F(t) in
 # the DiagonalDiffusionProcess class.
@@ -653,7 +699,7 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
     def __init__(
             self,
             D_t: Callable[[Tensor], Tensor],
-            g_t: Callable[[Tensor], Tensor] | None,
+            g_t: Callable[[Tensor], Tensor],
             n_integration_points: int = 1000,
     ):
         """Initializes the diagonal diffusion process.
@@ -671,13 +717,7 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         """
         # TODO(): Decide whether to validate D_t and g_t here or in the fit method.
         self.D_t = D_t
-        if g_t is None:
-            def g_t_vp(t):
-                D_t_val = self.D_t(t)
-                return torch.sqrt(torch.clamp(-2 * D_t_val, min=0))
-            self.g_t = g_t_vp
-        else:
-            self.g_t = g_t
+        self.g_t = g_t
         # TODO(): Decide whether to check if D_t and g_t return a tensor of shape (N, M).
         self.n_integration_points = n_integration_points
         self.M = None  # Will be set in fit method
@@ -699,6 +739,49 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         self._precompute_D_integral()
         self._precompute_F_integral()
         return self
+
+    def serialize_fit_data(self) -> dict:
+        """Serializes the data learned in the `fit` method to a dictionary.
+
+        This method should return a dictionary with the data necessary to
+        store the parameters learned in the `fit` method. This is useful for
+        saving the fitted diffusion process to disk or for transferring the
+        learned parameters to another instance of the same class.
+
+        Returns:
+            A dictionary with the data learned in the `fit` method.
+        """
+        data = super().serialize_fit_data()
+        data["device"] = self.device
+        return data
+
+    def deserialize_fit_data(self, data: dict) -> None:
+        """Deserializes the data learned in the `fit` method from a dictionary.
+
+        This method should load the parameters learned in the `fit` method
+        from a dictionary, which is the format returned by the
+        `serialize_fit_data` method.
+        This method should be such that using `fit` and then
+        `serialize_fit_data` returns a dictionary that when
+        loaded into a new instance of the class with
+        `deserialize_fit_data` leaves the new diffusion process in an equivalent
+        state to what the original had after calling `fit`.
+
+        Args:
+            data: A dictionary with the data learned in the `fit` method.
+        """
+        if "M" not in data:
+            raise ValueError("The key 'M' is missing from the data dictionary.")
+        if not isinstance(data["M"], int):
+            raise ValueError(f"The value of 'M' in the data dictionary must be an integer, but got {type(data['M'])}.")
+        if "device" not in data:
+            raise ValueError("The key 'device' is missing from the data dictionary.")
+        if not isinstance(data["device"], torch.device) or data["device"] not in ("cpu", "cuda"):
+            raise ValueError(f"The value of 'device' in the data dictionary must be a torch.device with type 'cpu' or 'cuda', but got {data['device']}.")
+        self.M = data["M"]
+        self.device = data["device"]
+        self._precompute_D_integral()
+        self._precompute_F_integral()
 
     def drift(self, x: Tensor, t: Tensor) -> Tensor:
         """Computes the drift term of the SDE at time t.
@@ -875,6 +958,7 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         self,
         n_samples: int,
         device: torch.device | str = "cpu",
+        random_state: RandomStateLike = None,
     ) -> Tensor:
         r"""Samples data from the final distribution of the diffusion process.
 
@@ -888,6 +972,8 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
                           Refers to the M dimension of the data.
             device: The device on which to create the samples.
                     Default is "cpu".
+            random_state: The random state to use for reproducible results.
+                    Default is None.
 
         Returns:
             X: Tensor with samples from the final distribution.
@@ -897,9 +983,9 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
             raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
         if self.M is None:
             raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
-
+        generator = make_torch_generator(random_state, device=device)
         sigma_T = self.sigma_cond(torch.tensor([self.T], device=device))  # Shape (1, M)
-        return torch.randn((n_samples, self.M), device=device) * sigma_T  # Shape (n_samples, M)
+        return torch.randn((n_samples, self.M), device=device, generator=generator) * sigma_T  # Shape (n_samples, M)
 
 
 # Helper function to compute the eigen decomposition of the matrix defined by K and rho.
@@ -1051,265 +1137,12 @@ def build_B_t_from_K_rho(
         return B_matrices
     return B_t
 
-
-
-class SpatialCouplingDiffusionProcess(ForwardDiffusionProcess):
-    """Implements a diffusion process with a non diagonal drift term.
-
-    The drift term is given by a linear term with a matrix B(t) with the following structure:
-        K(t  ρ  ρ² ρ³ ... ρ^(M/2) ρ^(M/2-1) ... ρ² ρ
-        ρ  K(t)  ρ  ρ² ... ρ^(M/2) ρ^(M/2-1) ... ρ³ ρ²
-        .
-        .
-        .
-        ρ² ρ³ ... ρ^(M/2) ρ^(M/2-1) ... ρ² ρ  K(t)  ρ
-        ρ  ρ² ... ρ^(M/2) ρ^(M/2-1) ... ρ³ ρ² ρ  K(t)
-
-    where K(t) is a function of time  controling the diagonal drift 
-    and ρ(t) is another function of controlling the coupling between the dimensions.
-
-    This matrix has the property that it can be diagonalized by a constant real orthogonal 
-    matrix, which means that the computations can be done in the eigenvector space where the 
-    drift term is diagonal. This allows to add spatial coupling while keeping the computational
-    cost reasonable.
-    """
-    T: Final[int] = 1
-
-    def __init__(
-            self,
-            K_t: Callable[[Tensor], Tensor],
-            rho_t: Callable[[Tensor], Tensor],
-            g_t: Callable[[Tensor], Tensor] | None = None,
-            diagonal_basis_g_t: bool = False,
-            isotropic_limit_covariance: bool = True,
-            n_integration_points: int = 1000,
-    ):
-        """Initializes the spatial coupling diffusion process.
-
-        Args:
-            K_t: A function that takes the current time t and returns the value 
-                of K(t) as a tensor, shape (N,).
-            rho_t: A function that takes the current time t and returns the
-                value of ρ(t) as a tensor, shape (N,).
-            g_t: A function that takes the current time t and returns the
-                value of g(t), de diffusion term as a tensor, shape (N,), (N, M).
-                Defaults to None, in which case it is assumed that the variance
-                preserving case is used on the diagonal basis, where g(t) = sqrt(-2 * D(t))
-                and D(t) is given by the eigenvalues of the matrix defined by K(t) and rho(t).
-            diagonal_basis_g_t: If True, g(t) is assumed to be diagonal in the
-                    basis that diagonalizes the drift term, shape (N, M) or (N,).
-                    If False, g(t) is assumed to be isotropic, shape (N,). 
-                    Default is True.
-            isotropic_limit_covariance: If True, the limit covariance is isotropic.
-                In this case g(t) is ignored and the diffusion term is chosen so 
-                the limit distribution is a normal with mean 0 and covariance I.
-                If False, g(t) is used and the limit covariance may not be 
-                isotropic. Default is True.
-            n_integration_points: The number of points to use for numerical
-                integration when computing the mean and covariance of the 
-                conditional distribution. Default is 1000.
-        """
-        # TODO(): Decide whether to validate K_t, rho_t and g_t here or in the fit method.
-        self.K_t = K_t
-        self.rho_t = rho_t
-        # TODO(): Should I check if g_t is None when isotropic_limit_covariance is True?
-        self.g_t = g_t
-        self.diagonal_basis_g_t = diagonal_basis_g_t
-        # TODO(): Decide whether to check that if diagonal_basis_g_t is True,
-        # g_t returns a tensor of shape (N, M) or (N,) and if it is False,
-        # g_t returns a tensor of shape (N,).
-        self.isotropic_limit_covariance = isotropic_limit_covariance
-        self.n_integration_points = n_integration_points
-        self.M = None  # Will be set in fit method
-
-
-    def fit(self, x: Tensor) -> "SpatialCouplingDiffusionProcess":
-        """Fits the parameters of the diffusion process to the data.
-
-        This method is used to learn the dimensionality of the data
-        in order to sample from the limit distribution and
-        to compute the matrix B(t) of the drift term.
-
-        Args:
-            x: The input functional data as a tensor, shape (N, M)
-
-        Returns:
-            self: The fitted diffusion process.
-        """
-        super().fit(x)  # Learn the dimension of the data
-        self.device = x.device  # Learn the device of the data
-        self.Q, self.lambdas = get_eigen_decomposition(
-            self.K_t,
-            self.rho_t,
-            self.M,
-            self.device,
-        )
-        self.QT = self.Q.T
-        # If we are using isotropic limit covariance, we need to 
-        # use None in g_t so the diagonal diffusion process is variance
-        # preserving and has an isotropic limit covariance.
-        diag_g_t = None if self.isotropic_limit_covariance else self.g_t
-        # TODO(): Might need to check g_t here if diagonal_basis_g_t is True.
-        self.diagonal_process = DiagonalDiffusionProcess(
-            D_t=self.lambdas,
-            g_t=diag_g_t,
-            n_integration_points=self.n_integration_points,
-        ).fit(x)
-
-        # TODO(): Decide to compute B(t) this way or using K(t) and rho(t).
-        # self.B_t = build_B_t_from_K_rho(self.K_t, self.rho_t, self.M, self.device)
-        self.B_t = lambda t: self.Q @ torch.diag_embed(self.lambdas(t)) @ self.QT
-
-        return self
-
-    def drift(self, x: Tensor, t: Tensor) -> Tensor:
-        r"""Computes the drift term of the SDE at time t.
-        
-        For the spatial coupling diffusion process, the drift term is given by:
-        :math:`\mathbf{f}(\mathbf{X}(t), t) = B(t) \mathbf{X}(t)`
-        where B(t) is the matrix defined by K(t) and rho(t).
-        """
-        B_t = self.B_t(t)  # Shape (N, M, M)
-        return torch.einsum('nij,nj->ni', B_t, x)
-
-    def diffusion(self, t: Tensor) -> Tensor:
-        r"""Computes the diffusion term of the SDE at time t.
-
-        For the spatial coupling diffusion process, the diffusion term is given by:
-        :math:`\mathbf{g}(t) = g(t)` if diagonal_basis_g_t is False, where g(t) is a function of time.
-        If diagonal_basis_g_t is True, the diffusion term is given by:
-        :math:`\mathbf{g}(t) = Q g(t)`, where g(t) is a function of time and I is the identity matrix.
-
-        Args:
-            t: The time steps as a tensor, shape (N,)
-
-        Returns:
-            g_t: The diffusion term at time t, shape (N, M, M), (N, M) or (N,)
-        """
-        if self.diagonal_basis_g_t:
-            # The diffusion term is diagonal in the basis that diagonalizes the drift,
-            # so we need to transform it back to the original basis.
-            # If Y = Q^T X is the eigenbasis, the SDE for Y has diffusion g_diag.
-            # Transforming back: dX = Q dY, so the diffusion in X-space is Q @ diag(g).
-            diag_g_t = self.g_t(t)  # Shape (N, M) or (N,)
-            if diag_g_t.dim() == 1:
-                # TODO(): ESTO ESTA MAL FALTA Q
-                return diag_g_t
-            diag_g_t = torch.diag_embed(diag_g_t)  # Shape (N, M, M)
-            return self.Q @ diag_g_t  # Shape (M, M) @ (N, M, M) -> (N, M, M)
-
-        if self.isotropic_limit_covariance:
-            # The diffusion term is diagonal in the eigenbasis (VP per eigenvalue).
-            # Transform back to original basis: G_original = Q @ diag(g).
-            diag_g_t = self.diagonal_process.diffusion(t) # Shape (N, M) or (N,)
-            if diag_g_t.dim() == 1:
-                # TODO(): ESTO ESTA MAL FALTA Q
-                return diag_g_t
-            diag_g_t = torch.diag_embed(diag_g_t)  # Shape (N, M, M)
-            return self.Q @ diag_g_t  # Shape (M, M) @ (N, M, M) -> (N, M, M)
-
-        else:
-            return self.g_t(t)
-
-    def mean_cond(self, x: Tensor, t: Tensor) -> Tensor:
-        """Computes the mean of the conditional distribution at time t.
-
-        Using the eigen decomposition of the drift term,
-        we can compute the mean of the conditional distribution in the
-        eigenvector space where the drift is diagonal and then transform
-        it back to the original space.
-
-        With Y_0 = Q^T @ X_0
-        E[X(t) | X_0] = E[Q @ Y(t) | X_0] = Q @ E[Y(t) | Y_0]
-
-        Args:
-            x : The initial condition X_0, shape (N, M)
-            t : The current time, shape (N,)
-
-        Returns:
-            mean_t (Tensor): The mean of the conditional distribution at time t, shape (N, M).
-        """
-        # We can compute the mean of the conditional distribution in the eigenvector space where the drift is diagonal and then transform it back to the original space.
-        y = x @ self.Q  # Shape (N, M) @ (M, M) -> (N, M)
-        mean_eigen = self.diagonal_process.mean_cond(y, t)  # Shape (N, M)
-        return mean_eigen @ self.QT  # Shape (N, M) @ (M, M) -> (N, M)
-
-    def sigma_cond(self, t: Tensor) -> Tensor:
-        """Computes a square root of the covariance matrix of X(t).
-
-        As Cov[X(t)] = Q @ Cov[Y(t)] @ Q^T,
-        And Cov[Y(t)] is diagonal and Q is orthogonal,
-        We want to return the square root of Cov[X(t)].
-        Hence if Sigma_Y(t) is the square root of the diagonal of Cov[Y(t)],
-        Sigma_X(t) = Q @ diag(Sigma_Y(t)) @ Q^T
-
-        Args:
-            t : The current time, shape (N,) or (N, 1)
-
-        Returns:
-            Tensor: The square root of the diagonal of Cov[X(t)], shape (N, M, M)
-        """
-        # Get diagonal std from diagonal diffusion process
-        sigma_Y_t = self.diagonal_process.sigma_cond(t)  # shape (N, M)
-        # Build diag(Sigma_Y(t)) matrices
-        sigma_Y_t_diag = torch.diag_embed(sigma_Y_t)  # shape (N, M, M)
-        # Compute Sigma_X(t) = Q @ diag(Sigma_Y(t)) @ Q^T (in row convention)
-        return self.Q @ sigma_Y_t_diag @ self.QT  # shape (N, M, M)
-
-    def inv_sigma_cond(self, t: Tensor) -> Tensor:
-        """It computes the inverse of the square root of the covariance matrix of X(t).
-
-        Since Cov[X(t)] = Q @ Cov[Y(t)] @ Q^T,
-        And Cov[Y(t)] is diagonal and Q is orthogonal,
-        Cov[X(t)]^{-1/2} = Q @ Cov[Y(t)]^{-1/2} @ Q^T
-        Where Cov[Y(t)]^{-1/2} is diagonal with elements 1 / sigma_Y_i(t)
-        """
-        # Get diagonal std from diagonal diffusion process
-        inv_sigma_Y_t = self.diagonal_process.inv_sigma_cond(t)  # shape (N, M)
-        # Build diag(Cov[Y(t)]^{-1/2}) matrices
-        inv_sigma_Y_t_diag = torch.diag_embed(inv_sigma_Y_t)  # shape (N, M, M)
-        # Compute Cov[X(t)]^{-1/2} = Q @ diag(Cov[Y(t)]^{-1/2}) @ Q^T
-        return self.Q @ inv_sigma_Y_t_diag @ self.QT  # shape (N, M, M)
-
-    def sample_limit_distribution(
-        self,
-        n_samples: int,
-        device: torch.device | str = "cpu",
-    ) -> Tensor:
-        r"""Samples data from the final distribution of the diffusion process.
-
-        For the variance-preserving diffusion process, the final distribution
-        at time T is given by a normal distribution with mean 0 and covariance
-        matrix given by the integral of g(s) from 0 to T.
-
-        Args:
-            n_samples: The number of samples to generate.
-            grid_size: The number of discretization points of the functional data.
-                          Refers to the M dimension of the data.
-            device: The device on which to create the samples.
-                    Default is "cpu".
-
-        Returns:
-            X: Tensor with samples from the final distribution.
-            Shape (n_samples, grid_size)
-        """
-        if not hasattr(self, "M"):
-            raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
-        if self.M is None:
-            raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
-        sigma_T = self.sigma_cond(torch.tensor([self.T], device=device))  # Shape (1, M, M)
-        noise = torch.randn((n_samples, self.M), device=device)  # Shape (n_samples, M)
-        return noise @ sigma_T.squeeze(0)  # Shape (n_samples, M)
-
-
-
-
-def get_eigenvalues_simetric_matrix_given_half_eigenvalues(
+def _duplicate_symmetric_eigenvalues(
         lambda_half: Callable[[Tensor], Tensor],
         M: int,
-        device: torch.device | str = 'cpu'
+        device: torch.device | str = 'cpu',
     ) -> Callable[[Tensor], Tensor]:
-    """Duplicates the eigenvalues of a simetric matrix given the first M/2+1 eigenvalues.
+    """Duplicates the eigenvalues of a symmetric matrix given the first M/2+1 eigenvalues.
 
     Parameters:
     ------------
@@ -1336,8 +1169,8 @@ def get_eigenvalues_simetric_matrix_given_half_eigenvalues(
         return lambdas_val
     return lambdas
 
-def get_eigenvalues_simetric_circulant_matrix_given_half_row(c_half: Callable[[Tensor], Tensor], M: int, device: torch.device | str = 'cpu') -> Callable[[Tensor], Tensor]:
-    """Compute the eigen decomposition of a circulant matrix defined by a row function.
+def _duplicate_symmetric_row_and_get_eigenvalues(c_half: Callable[[Tensor], Tensor], M: int, device: torch.device | str = 'cpu') -> Callable[[Tensor], Tensor]:
+    """Compute the eigen decomposition of a circulant matrix defined by a half row function.
 
         c_0(t)  c_1(t)  c_2(t) ... c_(M/2)(t) c_(M/2-1)(t) ... c_2(t) c_1(t)
         c_1(t)  c_0(t)  c_1(t)   c_2(t)  ... c_(M/2-1)(t)  c_(M/2)(t) ... c_3(t)  c_2(t)
@@ -1370,10 +1203,10 @@ def get_eigenvalues_simetric_circulant_matrix_given_half_row(c_half: Callable[[T
         return torch.fft.fft(row).real
     return lambdas
 
-def get_real_part_of_fourier_basis(M: int, device: torch.device | str = 'cpu') -> Tensor:
-    """Computes the real part of the Fourier basis for a given size M.
+def get_cosine_basis(M: int, device: torch.device | str = 'cpu') -> Tensor:
+    """Computes the cosine basis for a given size M.
 
-    The real part of the Fourier basis is an orthogonal matrix that diagonalizes
+    The cosine basis is an orthogonal matrix that diagonalizes
     circulant symmetric matrices. It has the following structure:
         c_0  c_1  c_2 ... c_(M/2) c_(M/2-1) ... c_2 c_1
         c_1  c_0  c_1   c_2  ... c_(M/2-1)  c_(M/2) ... c_3  c_2
@@ -1462,7 +1295,7 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             n_integration_points: int = 1000,
     ):
         """Initializes the circulant symmetric matrix diffusion process.
-    
+
         Args:
             drift_term: A function that takes the current time t and returns
                 the value of M/2 + 1 coefficients needed to build the circulant
@@ -1489,7 +1322,8 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             n_integration_points: The number of points to use for numerical
                 integration when computing the mean and covariance of the
                 conditional distribution. Default is 1000.
-    """
+        """
+        self.random_state = random_state
         self.drift_term = drift_term
         self.diffusion_term = diffusion_term
         self.fourier_drift = fourier_drift
@@ -1498,7 +1332,7 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         self.M = None  # Will be set in fit method
 
 
-    def fit(self, x: Tensor) -> "SpatialCouplingDiffusionProcess":
+    def fit(self, x: Tensor) -> "CirculantSymmetricMatrixDiffusionProcess":
         """Fits the parameters of the diffusion process to the data.
 
         This method is used to learn the dimensionality of the data
@@ -1513,28 +1347,28 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         """
         super().fit(x)  # Learn the dimension of the data
         self.device = x.device  # Learn the device of the data
-        self.Q = get_real_part_of_fourier_basis(self.M, self.device)  # Shape (M, M)
+        self.Q = get_cosine_basis(self.M, self.device)  # Shape (M, M)
         if self.fourier_drift:
-            self.lambdas = get_eigenvalues_simetric_matrix_given_half_eigenvalues(
+            self.lambdas = _duplicate_symmetric_eigenvalues(
                 lambda_half=self.drift_term,
                 M=self.M,
                 device=self.device
             )
         else:
-             self.lambdas = get_eigenvalues_simetric_circulant_matrix_given_half_row(
+             self.lambdas = _duplicate_symmetric_row_and_get_eigenvalues(
                 c_half=self.drift_term,
                 M=self.M,
                 device=self.device,
             )
-        
+
         if self.fourier_diffusion:
-            self.diag_gt = get_eigenvalues_simetric_matrix_given_half_eigenvalues(
+            self.diag_gt = _duplicate_symmetric_eigenvalues(
                 lambda_half=self.diffusion_term,
                 M=self.M,
                 device=self.device,
             )
         else:
-            self.diag_gt = get_eigenvalues_simetric_circulant_matrix_given_half_row(
+            self.diag_gt = _duplicate_symmetric_row_and_get_eigenvalues(
                 c_half=self.diffusion_term,
                 M=self.M,
                 device=self.device,
@@ -1546,11 +1380,61 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             D_t=self.lambdas,
             g_t=self.diag_gt,
             n_integration_points=self.n_integration_points,
-        ).fit(x)
+            random_state=self.random_state,
+        ).fit(x @ self.Q)  # Fit in the eigenbasis
 
         self.B_t = lambda t: self.Q @ torch.diag_embed(self.lambdas(t)) @ self.QT
-        self.G = lambda t: self.Q @ torch.diag_embed(self.diag_gt(t))  # Shape (M, M) @ (N, M, M) -> (N, M, M)
+
+        # Shape (M, M) @ (N, M, M) -> (N, M, M)
+        self.G = lambda t: self.Q @ torch.diag_embed(self.diag_gt(t))
         return self
+
+    def serialize_fit_data(self) -> dict:
+        """Serializes the data learned in the `fit` method to a dictionary.
+
+        This method should return a dictionary with the data necessary to
+        store the parameters learned in the `fit` method. This is useful for
+        saving the fitted diffusion process to disk or for transferring the
+        learned parameters to another instance of the same class.
+
+        Returns:
+            A dictionary with the data learned in the `fit` method.
+        """
+        data = super().serialize_fit_data()
+        data["device"] = self.device
+        return data
+
+    def deserialize_fit_data(self, data: dict) -> None:
+        """Deserializes the data learned in the `fit` method from a dictionary.
+
+        This method should load the parameters learned in the `fit` method
+        from a dictionary, which is the format returned by the
+        `serialize_fit_data` method.
+        This method should be such that using `fit` and then
+        `serialize_fit_data` returns a dictionary that when
+        loaded into a new instance of the class with
+        `deserialize_fit_data` leaves the new diffusion process in an equivalent
+        state to what the original had after calling `fit`.
+
+        Args:
+            data: A dictionary with the data learned in the `fit` method.
+        """
+        if "M" not in data:
+            raise ValueError("The key 'M' is missing from the data dictionary.")
+        if not isinstance(data["M"], int):
+            raise ValueError(f"The value of 'M' in the data dictionary must be an integer, but got {type(data['M'])}.")
+        if "device" not in data:
+            raise ValueError("The key 'device' is missing from the data dictionary.")
+        if not isinstance(data["device"], torch.device) or data["device"] not in ("cpu", "cuda"):
+            raise ValueError(f"The value of 'device' in the data dictionary must be a torch.device with type 'cpu' or 'cuda', but got {data['device']}.")
+        self.M = data["M"]
+        self.device = data["device"]
+        x_toy = torch.zeros((1, self.M), device=self.device)
+        self.fit(x_toy)
+        # This will compute the eigen decomposition and precompute the
+        # matrices needed for the drift and diffusion terms, which are the
+        # main parameters learned in the fit method.
+
 
     def drift(self, x: Tensor, t: Tensor) -> Tensor:
         r"""Computes the drift term of the SDE at time t.
@@ -1645,6 +1529,7 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         self,
         n_samples: int,
         device: torch.device | str = "cpu",
+        random_state: RandomStateLike = None,
     ) -> Tensor:
         r"""Samples data from the final distribution of the diffusion process.
 
@@ -1658,6 +1543,8 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
                           Refers to the M dimension of the data.
             device: The device on which to create the samples.
                     Default is "cpu".
+            random_state: The random state to use for reproducible results.
+                    Default is None.
 
         Returns:
             X: Tensor with samples from the final distribution.
@@ -1668,5 +1555,9 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         if self.M is None:
             raise ValueError("The diffusion process must be fitted to the data before sampling from the final distribution. Call the fit method with the training data.")
         sigma_T = self.sigma_cond(torch.tensor([self.T], device=device))  # Shape (1, M, M)
-        noise = torch.randn((n_samples, self.M), device=device)  # Shape (n_samples, M)
+        generator = make_torch_generator(random_state, device=device)
+        noise = torch.randn((n_samples, self.M), device=device, generator=generator)  # Shape (n_samples, M)
+        # TODO(): Check if I can optimize this by chaning basis:
+        # Y = self.diagonal_process.sample_limit_distribution(n_samples, device)  # Shape (n_samples, M)
+        # X = Y @ self.QT  # Shape (n_samples, M) @ (M, M) -> (n_samples, M)
         return noise @ sigma_T.squeeze(0)  # Shape (n_samples, M)

@@ -13,15 +13,25 @@ from torch import Tensor
 from typing import Callable
 from abc import ABC, abstractmethod
 
+from skfda.datasets.diffusion.torch_adapter import make_torch_generator
+from skfda.typing._base import RandomStateLike
+
+
+class Swish(nn.Module):
+    """Module form of swish activation to keep the model serializable."""
+
+    def forward(self, x: Tensor) -> Tensor:
+        return x * torch.sigmoid(x)
+
 class GaussianRandomFourierFeatures(nn.Module):
     """Gaussian random Fourier features for encoding time steps."""
 
-    def __init__(self, embed_dim: int, scale: float = 30.0):
+    def __init__(self, embed_dim: int, scale: float = 30.0, torch_generator: torch.Generator | None = None):
         super().__init__()
         # Randomly sample weights during initialization. These weights are fixed
         # during optimization and are not trainable.
         self.rff_weights = nn.Parameter(
-            torch.randn(embed_dim // 2) * scale,
+            torch.randn(embed_dim // 2, generator=torch_generator) * scale,
             requires_grad=False,
         )
 
@@ -60,15 +70,17 @@ class ScoreModel(nn.Module, ABC):
         pass
 
 
-class ScoreModel(nn.Module):
+class ScoreModelConv(nn.Module):
     """A time-dependent score-based model built upon U-Net architecture."""
 
     def __init__(
         self,
         inv_sigma_t: Callable[[Tensor], Tensor],
         channels: tuple[int] = (32, 64, 128, 256),
+        kernel_sizes: tuple[int] = (9, 9, 9, 9),
         n_groups: tuple[int] = (4, 32, 32, 32),
         embed_dim: int = 100, device: str | torch.device = "cpu",
+        random_state: RandomStateLike = None,
     ):
         """Initialize a time-dependent score-based network.
 
@@ -83,14 +95,22 @@ class ScoreModel(nn.Module):
           channels: The number of channels for feature maps of each resolution.
           embed_dim: The dimensionality of Gaussian random Fourier feature
           embeddings.
+          kernel_sizes: The kernel sizes for the convolutional layers.
+          n_groups: The number of groups for group normalization in each layer.
+          random_state: The random state to use for reproducibility 
+          of the Gaussian random Fourier features. Default is None.
         """
-        kernel_sizes = (9, 9, 9, 9)
         super().__init__()
+        torch_generator = make_torch_generator(random_state, device=device)
         self.device = device
+        self.embed_dim = embed_dim
+        self.channels = channels
+        self.n_groups = n_groups
         # Gaussian random Fourier feature embedding layer for time
+        embed_dim_even = embed_dim + (embed_dim % 2)  # Ensure embed_dim is even for sin/cos split
         self.embed = nn.Sequential(
-            GaussianRandomFourierFeatures(embed_dim=embed_dim),
-            nn.Linear(embed_dim, embed_dim),
+            GaussianRandomFourierFeatures(embed_dim=embed_dim_even, torch_generator=torch_generator),
+            nn.Linear(embed_dim_even, embed_dim),
         )
         # Encoding layers where the resolution decreases
         self.conv1 = nn.Conv1d(
@@ -172,10 +192,18 @@ class ScoreModel(nn.Module):
             channels[0] + channels[0], 1, kernel_sizes[0], padding=kernel_sizes[0]//2, stride=1, bias=False,
         )
 
-        # The swish activation function
-        self.act = lambda x: x * torch.sigmoid(x)
+        # Keep activation as an nn.Module so checkpoints remain serializable.
+        self.act = Swish()
         self.inv_sigma_t = inv_sigma_t
         self.to(device)
+
+    def get_config(self) -> dict[str, int | tuple[int, ...]]:
+        """Return constructor arguments needed to rebuild the architecture."""
+        return {
+            "embed_dim": self.embed_dim,
+            "channels": tuple(self.channels),
+            "n_groups": tuple(self.n_groups),
+        }
 
     def forward(self, x:Tensor, t:Tensor, y:Tensor | None = None) -> Tensor:
         """Forward pass of the score-based model.
@@ -189,6 +217,10 @@ class ScoreModel(nn.Module):
         Returns:
           The output of the score-based model, shape (N, M).
         """
+        if not torch.is_tensor(t):
+            t = torch.tensor(t, device=x.device, dtype=x.dtype)
+        if t.dim() == 0:
+            t = t.expand(x.shape[0])
         # Obtain the Gaussian random Fourier feature embedding for t
         embed = self.act(self.embed(t))
         # Add channel dimension if input does not have it

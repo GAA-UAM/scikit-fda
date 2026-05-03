@@ -13,8 +13,10 @@ from torch import Tensor
 from typing import Callable
 from abc import ABC, abstractmethod
 
-from skfda.datasets.diffusion.torch_adapter import make_torch_generator
-from skfda.typing._base import RandomStateLike
+from skfda.misc.validation import validate_random_state
+
+from .torch_adapter import make_torch_generator
+from ...typing._base import RandomStateLike
 
 
 class Swish(nn.Module):
@@ -26,12 +28,13 @@ class Swish(nn.Module):
 class GaussianRandomFourierFeatures(nn.Module):
     """Gaussian random Fourier features for encoding time steps."""
 
-    def __init__(self, embed_dim: int, scale: float = 30.0, torch_generator: torch.Generator | None = None):
+    def __init__(self, embed_dim: int, scale: float = 30.0, random_state: RandomStateLike = None, device: str | torch.device = "cpu"):
         super().__init__()
         # Randomly sample weights during initialization. These weights are fixed
         # during optimization and are not trainable.
+        _gen = make_torch_generator(random_state, device=device)
         self.rff_weights = nn.Parameter(
-            torch.randn(embed_dim // 2, generator=torch_generator) * scale,
+            torch.randn(embed_dim // 2, generator=_gen, device=device) * scale,
             requires_grad=False,
         )
 
@@ -101,7 +104,8 @@ class ScoreModelConv(nn.Module):
           of the Gaussian random Fourier features. Default is None.
         """
         super().__init__()
-        torch_generator = make_torch_generator(random_state, device=device)
+        random_state = validate_random_state(random_state)
+        
         self.device = device
         self.embed_dim = embed_dim
         self.channels = channels
@@ -109,7 +113,7 @@ class ScoreModelConv(nn.Module):
         # Gaussian random Fourier feature embedding layer for time
         embed_dim_even = embed_dim + (embed_dim % 2)  # Ensure embed_dim is even for sin/cos split
         self.embed = nn.Sequential(
-            GaussianRandomFourierFeatures(embed_dim=embed_dim_even, torch_generator=torch_generator),
+            GaussianRandomFourierFeatures(embed_dim=embed_dim_even, random_state=random_state, device=device),
             nn.Linear(embed_dim_even, embed_dim),
         )
         # Encoding layers where the resolution decreases

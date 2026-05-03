@@ -142,7 +142,7 @@ class ForwardDiffusionProcess(DiffusionProcess, BaseEstimator):
         Args:
             data: A dictionary with the data learned in the `fit` method.
         """
-        if " M " not in data:
+        if "M" not in data:
             raise ValueError("The key 'M' is missing from the data dictionary. This key is required to load the parameters of the diffusion process.")
         if not isinstance(data["M"], int):
             raise ValueError(f"The value of 'M' in the data dictionary should be an integer representing the dimension of the data. Got {type(data['M'])} instead.")
@@ -276,7 +276,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
         self,
         beta_schedule: Literal["linear", "cosine"] = "cosine",
         beta_min: float = 0.,
-        beta_max: float = 20.,
+        beta_max: float = 10.,
     ):
         """Initializes the variance-preserving diffusion process.
 
@@ -287,7 +287,6 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
                     is 'linear'. Default is 0.
             beta_max: The value of beta(T). Used only if `beta_schedule`
                     is 'linear'. Default is 10.0.
-            random_state: The random state to use for reproducible results. Default is None.
         """
         # TODO() Decide what to do with the device
         if beta_schedule not in ("linear", "cosine"):
@@ -496,7 +495,6 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
                         'exponential'. Default is 'linear'.
             g_0: The value of g(0).
             g_T: The value of g(T).
-            random_state: The random state to use for reproducible results. Default is None.
 
         """
         if g_schedule not in ("linear", "exponential"):
@@ -776,7 +774,7 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
             raise ValueError(f"The value of 'M' in the data dictionary must be an integer, but got {type(data['M'])}.")
         if "device" not in data:
             raise ValueError("The key 'device' is missing from the data dictionary.")
-        if not isinstance(data["device"], torch.device) or data["device"] not in ("cpu", "cuda"):
+        if not isinstance(data["device"], torch.device) or data["device"].type not in ("cpu", "cuda"):
             raise ValueError(f"The value of 'device' in the data dictionary must be a torch.device with type 'cpu' or 'cuda', but got {data['device']}.")
         self.M = data["M"]
         self.device = data["device"]
@@ -1323,7 +1321,6 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
                 integration when computing the mean and covariance of the
                 conditional distribution. Default is 1000.
         """
-        self.random_state = random_state
         self.drift_term = drift_term
         self.diffusion_term = diffusion_term
         self.fourier_drift = fourier_drift
@@ -1380,7 +1377,6 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             D_t=self.lambdas,
             g_t=self.diag_gt,
             n_integration_points=self.n_integration_points,
-            random_state=self.random_state,
         ).fit(x @ self.Q)  # Fit in the eigenbasis
 
         self.B_t = lambda t: self.Q @ torch.diag_embed(self.lambdas(t)) @ self.QT
@@ -1425,7 +1421,7 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             raise ValueError(f"The value of 'M' in the data dictionary must be an integer, but got {type(data['M'])}.")
         if "device" not in data:
             raise ValueError("The key 'device' is missing from the data dictionary.")
-        if not isinstance(data["device"], torch.device) or data["device"] not in ("cpu", "cuda"):
+        if not isinstance(data["device"], torch.device) or data["device"].type not in ("cpu", "cuda"):
             raise ValueError(f"The value of 'device' in the data dictionary must be a torch.device with type 'cpu' or 'cuda', but got {data['device']}.")
         self.M = data["M"]
         self.device = data["device"]

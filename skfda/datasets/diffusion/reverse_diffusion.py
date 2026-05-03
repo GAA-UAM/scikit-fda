@@ -1,16 +1,15 @@
 
+from functools import singledispatchmethod
 from typing import Callable
 from typing_extensions import Protocol
 
 from torch import Tensor
 import torch
 
-from skfda.misc.validation import validate_random_state
-
 from .torch_adapter import make_torch_generator
 from ...typing._base import RandomStateLike
 
-from .diffusion_process import CustomDiffusionProcess, DiffusionProcess, ForwardDiffusionProcess
+from .diffusion_process import CirculantSymmetricMatrixDiffusionProcess, CustomDiffusionProcess, DiffusionProcess, ForwardDiffusionProcess, get_cosine_basis
 from .score_model import ScoreModel
 
 
@@ -93,9 +92,11 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
     def __init__(self, integrator: SDEIntegrator):
         self.integrator = integrator
 
+    @singledispatchmethod
     def reverse(
         self,
-        diff_process: ForwardDiffusionProcess,
+        diff_process: DiffusionProcess,
+        /,                                # <--- Positional-only marker
         score_model: ScoreModel,
         x_t: Tensor,
         t_1: Tensor | float,
@@ -166,15 +167,60 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
             # Apply the formula to jump directly to the clean x_0
             return (x_t0 + sigma_score) / mu_t0_scale
         return x_t0
+    
+
+    # TODO(): Conceptualy handle CirculantSymmetricDiffusionProcess on the diagonal space
+    @reverse.register
+    def _reverse_circulant(
+            self,
+            diff_process: CirculantSymmetricMatrixDiffusionProcess,
+            score_model: ScoreModel,
+            x_t: Tensor,
+            t_1: Tensor | float,
+            t_0: Tensor | float = 1e-3,
+            y: Tensor | None = None,
+    ) -> Tensor:
+        """Integrate the reverse process on the diagonal space using the SDE integrator.
+
+        Args:
+            diff_process: The diffusion process defining the forward SDE.
+            score_model: The score-based model used to estimate the score
+            function.
+            x_t: The noisy sample at time t_1, shape (N, M) or (N, 1, M).
+            t_1: The time step of the noisy sample, shape (N,).
+            y: Optional labels for conditional generation, shape (N,).
+            t_0: The time step to integrate back to, default is 1e-3.
+
+        Returns:
+            The denoised sample at time t_0, shape (N, M) or (N, 1, M).
+        """
+        Q = get_cosine_basis(x_t.shape[1], device=x_t.device)  # Shape (M, M)
+
+        # Project the noisy sample to the diagonal space
+        x_t_diag = x_t @ Q  # Shape (N, M)
+        
+        def score_model_diag(x_diag: Tensor, t: Tensor, y: Tensor | None) -> Tensor:
+            # Project back to original space
+            x = x_diag @ Q.T  # Shape (N, M)
+            score = score_model(x, t, y)  # Shape (N, M)
+            # Project the score to the diagonal space
+            return score @ Q  # Shape (N, M)
+        # Use the default reverse method on the diagonal process
+        x_0_diag = self.reverse(diff_process.diagonal_process, score_model_diag, x_t_diag, t_1, t_0, y)
+
+        # Project back to the original space
+        return x_0_diag @ Q.T  # Shape (N, M)
 
 class ProbabilityFlowODEReverseProcess(ReverseDiffusionProcess):
     """Implementation of the reverse process using ODE integration."""
     def __init__(self, integrator: ODEIntegrator):
         self.integrator = integrator
 
+    @singledispatchmethod
     def reverse(
         self,
-        diff_process: ForwardDiffusionProcess,
+        diff_process: DiffusionProcess,
+        /,                                # <--- Positional-only marker
         score_model: ScoreModel,
         x_t: Tensor,
         t_1: Tensor | float,
@@ -213,6 +259,46 @@ class ProbabilityFlowODEReverseProcess(ReverseDiffusionProcess):
             return drift - 0.5 * diff_score
 
         return self.integrator(backward_drift, x_t, t_1, t_0)
+    # TODO(): Conceptualy handle CirculantSymmetricDiffusionProcess on the diagonal space
+    @reverse.register
+    def _reverse_circulant(
+            self,
+            diff_process: CirculantSymmetricMatrixDiffusionProcess,
+            score_model: ScoreModel,
+            x_t: Tensor,
+            t_1: Tensor | float,
+            t_0: Tensor | float = 1e-3,
+            y: Tensor | None = None,
+    ) -> Tensor:
+        """Integrate the reverse process on the diagonal space using the ODE integrator.
+
+        Args:
+            diff_process: The diffusion process defining the forward SDE.
+            score_model: The score-based model used to estimate the score
+            function.
+            x_t: The noisy sample at time t_1, shape (N, M) or (N, 1, M).
+            t_1: The time step of the noisy sample, shape (N,).
+            y: Optional labels for conditional generation, shape (N,).
+            t_0: The time step to integrate back to, default is 1e-3.
+
+        Returns:
+            The denoised sample at time t_0, shape (N, M) or (N, 1, M).
+        """
+        Q = get_cosine_basis(x_t.shape[1], device=x_t.device)  # Shape (M, M)
+        # Project the noisy sample to the diagonal space
+        x_t_diag = x_t @ Q  # Shape (N, M)
+        def score_model_diag(x_diag: Tensor, t: Tensor, y: Tensor | None) -> Tensor:
+            # Project back to original space
+            x = x_diag @ Q.T  # Shape (N, M)
+            score = score_model(x, t, y)  # Shape (N, M)
+            # Project the score to the diagonal space
+            return score @ Q  # Shape (N, M)
+        # Use the default reverse method on the diagonal process
+        x_0_diag = self.reverse(diff_process.diagonal_process, score_model_diag, x_t_diag, t_1, t_0, y)
+
+        # Project back to the original space
+        return x_0_diag @ Q.T  # Shape (N, M)
+
 
 
 
@@ -272,9 +358,18 @@ class RK4Integrator(ODEIntegrator):
 
 class EulerMaruyamaIntegrator(SDEIntegrator):
     """Simple implementation of the Euler-Maruyama method for SDE integration."""
-    def __init__(self, n_steps: int = 1000, random_state: RandomStateLike = None) -> None:
+    def __init__(
+        self,
+        n_steps: int = 1000,
+        random_state: RandomStateLike = None,
+        device: torch.device | str = "cpu",
+    ) -> None:
         self.n_steps = n_steps
-        self.random_state = validate_random_state(random_state)
+        self.random_state = random_state
+        if isinstance(device, str):
+            device = torch.device(device)
+        self.device = device
+
 
     def __call__(
         self,
@@ -296,11 +391,11 @@ class EulerMaruyamaIntegrator(SDEIntegrator):
         """
         N, M = x_0.shape
         device = x_0.device
+        generator = make_torch_generator(self.random_state, device=device)
         times = torch.linspace(t_0, t_1, self.n_steps + 1, device=device)
         dt = times[1] - times[0]  # Can be negative
         # Note: sqrt(|dt|) because variance is always positive
         sqrt_dt = torch.sqrt(torch.abs(dt))
-        generator = make_torch_generator(self.random_state, device=device) 
         # Brownian increment: dW ~ N(0, |dt|)
         dw = torch.randn(
             (self.n_steps, N, M),

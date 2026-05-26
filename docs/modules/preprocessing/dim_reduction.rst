@@ -15,6 +15,11 @@ datum.
 The variable selection transformers implemented in scikit-fda are the
 following:
 
+Some variable selection methods are often referred to by acronyms in the
+literature and examples. In particular, ``MaximaHunting`` is abbreviated as
+MH, ``RecursiveMaximaHunting`` as RMH, and ``RKHSVariableSelection`` as RK-VS
+(RKHS variable selection, where RKHS means Reproducing Kernel Hilbert Space).
+
 .. autosummary::
    :toctree: autosummary
 

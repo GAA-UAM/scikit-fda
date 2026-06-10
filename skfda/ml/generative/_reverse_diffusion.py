@@ -20,11 +20,11 @@ from ._score_model import ScoreModel
 
 
 class ReverseDiffusionProcess(ABC):
-    """Protocol for the reverse process of a diffusion model.
+    """Abstract base class for the reverse process of a diffusion model.
 
-    It defines the method `reverse` that takes a diffusion process,
-    a score model, a noisy sample at time t_1, its label and it returns
-    the denoised sample at time t_0.
+    Subclasses implement :meth:`reverse`, which takes a diffusion process,
+    a score model, a noisy sample at time ``t_1`` and its optional labels,
+    and returns the denoised sample at time ``t_0``.
     """
     _T0_SAFE: float = 1e-3
 
@@ -73,22 +73,22 @@ class ReverseDiffusionProcess(ABC):
     @abstractmethod
     def reverse(
         self,
-        diffusion_process: ForwardDiffusionProcess,
+        diff_process: ForwardDiffusionProcess,
         score_model: ScoreModel,
         x_t: Tensor,
         t_1: Tensor | float,
-        t_0: Tensor | float = 1e-3,
+        t_0: Tensor | float = 0.,
         y: Tensor | None = None,
     ) -> Tensor:
         """Reverse the diffusion process from time t_1 to time t_0.
 
         Args:
-            diffusion_process: The diffusion process defining the forward SDE.
+            diff_process: The diffusion process defining the forward SDE.
             score_model: The score-based model used to estimate the score
             function.
             x_t: The noisy sample at time t_1, shape (N, M) or (N, 1, M).
             t_1: The time step of the noisy sample, shape (N,).
-            t_0: The time step to integrate back to, default is 1e-3.
+            t_0: The time step to integrate back to, default is 0.
             y: Optional labels for conditional generation, shape (N, C).
 
         Returns:

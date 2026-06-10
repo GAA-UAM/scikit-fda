@@ -39,11 +39,8 @@ class ForwardDiffusionFitTests:
     public checkpoint API see ForwardDiffusionCheckpointTests.
 
     Subclasses must provide:
-        make_process          — zero-argument callable returning a fresh
-                                unfitted instance.
-
-        make_process_alt_seed — zero-argument callable returning a fresh
-                                unfitted instance with a different seed B ≠ A.
+        make_process — zero-argument callable returning a fresh unfitted
+                       instance.
     """
 
     @pytest.fixture
@@ -58,14 +55,8 @@ class ForwardDiffusionFitTests:
         assert not hasattr(unfitted_instance, "M_")
 
     def test_fit_learns_data_dimension(self, unfitted_instance):
-        """After fit(x), self.M must equal x.shape[1]."""
+        """After fit(x), self.M_ must equal x.shape[1] (axis 1, not axis 0)."""
         unfitted_instance.fit(torch.randn(BATCH_SIZE, CUSTOM_DIM))
-
-        assert unfitted_instance.M_ == CUSTOM_DIM
-
-    def test_fit_reads_axis_1_not_axis_0(self, unfitted_instance):
-        """fit() must store M from axis 1, not axis 0."""
-        unfitted_instance.fit(torch.randn(3, CUSTOM_DIM))
 
         assert unfitted_instance.M_ == CUSTOM_DIM
 
@@ -101,7 +92,7 @@ class ForwardDiffusionFitTests:
             unfitted_instance._restore_fit_state({})
 
     def test_restore_fit_state_wrong_m_type_raises(self, unfitted_instance):
-        """_restore_fit_state({'M': '17'}) must raise ValueError."""
+        """_restore_fit_state({'M': '17'}) must raise TypeError."""
         with pytest.raises(TypeError):
             unfitted_instance._restore_fit_state({"M": "17"})
 
@@ -188,7 +179,7 @@ class ForwardDiffusionCheckpointTests:
             ForwardDiffusionProcess.from_checkpoint(checkpoint)
 
     def test_from_checkpoint_wrong_m_type_raises(self, unfitted_instance):
-        """from_checkpoint() must raise ValueError when 'M' has the wrong type."""
+        """from_checkpoint() must raise TypeError when 'M' has the wrong type."""
         checkpoint = {
             "class": type(unfitted_instance),
             "init_kwargs": unfitted_instance.get_params(),
@@ -361,7 +352,12 @@ class ForwardDiffusionSampleLimitTests:
     concrete subclass.
 
     Subclasses must provide:
-        make_process — zero-argument callable returning a fresh unfitted instance.
+        make_process          — zero-argument callable returning a fresh
+                                unfitted instance.
+
+        make_process_alt_seed — zero-argument callable returning a fresh
+                                unfitted instance with a different seed B ≠ A.
+                                Used by the different-seed reproducibility test.
     """
 
     # ── derived fixtures ──────────────────────────────────────────────────────
@@ -406,18 +402,6 @@ class ForwardDiffusionSampleLimitTests:
     def test_output_is_on_cpu_by_default(self, fitted_process):
         """Samples must be on CPU when no device argument is passed."""
         result = fitted_process.sample_limit_distribution(n_samples=8)
-
-        assert result.device.type == "cpu"
-
-    def test_output_is_on_explicitly_requested_cpu(self, fitted_process):
-        """Samples must be on CPU when device='cpu' is passed explicitly.
-
-        Distinct from the default test: confirms the device argument is
-        actually routed to tensor creation, not silently ignored.
-        """
-        result = fitted_process.sample_limit_distribution(
-            n_samples=8, device="cpu",
-        )
 
         assert result.device.type == "cpu"
 

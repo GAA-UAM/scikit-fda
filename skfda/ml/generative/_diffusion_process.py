@@ -740,14 +740,12 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
 
         Args:
             n_samples: The number of samples to generate.
-            grid_size: The number of discretization points of the
-                functional data. Refers to the M dimension of the data.
             device: The device on which to create the samples.
                     Default is "cpu".
 
         Returns:
-            X: Tensor with samples from the final distribution.
-            Shape (n_samples, grid_size)
+            X: Tensor with samples from the final distribution,
+            shape (n_samples, M).
 
         Examples:
             Raises ``NotFittedError`` before fitting:
@@ -821,6 +819,13 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
 
         if g_schedule not in ("linear", "exponential"):
             msg = f"Unknown g schedule: {g_schedule}"
+            raise ValueError(msg)
+
+        if g_schedule == "exponential" and (g_0 <= 0 or g_T <= 0):
+            msg = (
+                "g_0 and g_T must be strictly positive for the exponential "
+                f"schedule; got g_0={g_0}, g_T={g_T}."
+            )
             raise ValueError(msg)
 
         self.g_schedule = g_schedule
@@ -950,14 +955,12 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
 
         Args:
             n_samples: The number of samples to generate.
-            grid_size: The number of discretization points of the
-                functional data. Refers to the M dimension of the data.
             device: The device on which to create the samples.
                     Default is "cpu".
 
         Returns:
-            X: Tensor with samples from the final distribution.
-            Shape (n_samples, grid_size)
+            X: Tensor with samples from the final distribution,
+            shape (n_samples, M).
         """
         check_is_fitted(self, attributes=["M_", "generator_"])
         # Noise is sampled in CPU to ensure reproducibility across devices,

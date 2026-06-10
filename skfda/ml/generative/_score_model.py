@@ -140,8 +140,9 @@ class ScoreModel(nn.Module, ABC):
             calling this method.
 
         Raises:
-            ValueError: If required keys are missing or the stored class is
-                not a subclass of :class:`ScoreModel`.
+            ValueError: If required keys are missing.
+            TypeError: If the stored class is not a subclass of
+                :class:`ScoreModel`.
         """
         required = {"class", "init_kwargs", "fit_state"}
         missing = required - data.keys()

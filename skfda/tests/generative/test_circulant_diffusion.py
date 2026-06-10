@@ -9,11 +9,11 @@ from skfda.ml.generative._diffusion_process import (
     CirculantSymmetricMatrixDiffusionProcess,
     DiagonalDiffusionProcess,
     ForwardDiffusionProcess,
+    _duplicate_symmetric_eigenvalues,
+    _duplicate_symmetric_row_and_get_eigenvalues,
     _eigenspace_to_fft,
     _fft_to_eigenspace,
     _get_cosine_basis,
-    _duplicate_symmetric_eigenvalues,
-    _duplicate_symmetric_row_and_get_eigenvalues,
 )
 
 from ._constants import BATCH_SIZE, CUSTOM_DIM, DATA_DIM, SEED
@@ -23,7 +23,6 @@ from .diffusion_test_mixins import (
     ForwardDiffusionOperatorTests,
     ForwardDiffusionSampleLimitTests,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Module-level fixtures and factory

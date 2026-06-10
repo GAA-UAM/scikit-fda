@@ -7,6 +7,7 @@ import warnings
 import numpy as np
 import pytest
 import torch
+from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from torch.utils.data import TensorDataset
 
@@ -123,20 +124,22 @@ class _StubReverseProcess(ReverseDiffusionProcess):
 
 
 class _SpyingVP(VariancePreservingDiffusionProcess):
-    """VP subclass that records per-call sample counts passed to fit().
+    """VP subclass that records the sample counts passed to fit().
 
-    Delegates to the parent so gen.fit() can complete without error.
+    fit() operates on a clone of the user's process, so per-instance state
+    would not survive cloning; counts are accumulated at the class level
+    instead. The constructor signature is inherited unchanged so the class
+    stays clonable by scikit-learn. Reset ``fit_call_sample_counts`` before
+    each use.
 
     Attribute:
         fit_call_sample_counts: list[int] — per-call sample counts in order.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fit_call_sample_counts: list[int] = []
+    fit_call_sample_counts: list[int] = []
 
     def fit(self, x):  # type: ignore[override]
-        self.fit_call_sample_counts.append(x.shape[0])
+        _SpyingVP.fit_call_sample_counts.append(x.shape[0])
         return super().fit(x)
 
 
@@ -152,11 +155,27 @@ class TestInitialization:
     # Default and custom diff_process
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_default_diff_process_is_vp(self):
-        """Default diff_process must be VariancePreservingDiffusionProcess."""
+    def test_default_diff_process_is_none_until_fit(self):
+        """diff_process=None is stored verbatim and resolved to VP at fit().
+
+        Per the scikit-learn convention the constructor must not transform
+        its arguments; the default is materialised as the fitted
+        ``diff_process_`` attribute instead.
+        """
         gen = FunctionalDiffusionGenerator()
 
-        assert isinstance(gen.diff_process, VariancePreservingDiffusionProcess)
+        assert gen.diff_process is None
+        assert not hasattr(gen, "diff_process_")
+
+    def test_fit_resolves_default_diff_process_to_vp(self, small_grid):
+        """After fit(), diff_process_ must be a VariancePreservingDiffusion."""
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
+
+        gen.fit(small_grid)
+
+        assert isinstance(
+            gen.diff_process_, VariancePreservingDiffusionProcess,
+        )
 
     def test_custom_diff_process_is_stored_by_identity(self):
         """A provided diff_process must be stored as the exact same object."""
@@ -173,10 +192,16 @@ class TestInitialization:
     # normalize / standardize mutual exclusion
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_normalize_and_standardize_both_true_raises(self):
-        """normalize=True and standardize=True must raise ValueError."""
+    def test_normalize_and_standardize_both_true_raises(self, small_grid):
+        """normalize=True and standardize=True must raise ValueError at fit.
+
+        Validation happens in fit (not __init__) to keep the constructor free
+        of logic, per the scikit-learn convention.
+        """
+        gen = FunctionalDiffusionGenerator(normalize=True, standardize=True)
+
         with pytest.raises(ValueError):
-            FunctionalDiffusionGenerator(normalize=True, standardize=True)
+            gen.fit(small_grid)
 
     def test_normalize_false_standardize_false_accepted(self):
         """Both flags False (raw-data mode) must be accepted without error."""
@@ -478,7 +503,12 @@ class TestFit:
     # ─────────────────────────────────────────────────────────────────────────
 
     def test_fit_diff_process_receives_full_dataset(self, small_grid):
-        """diff_process.fit() must be called with all N training samples."""
+        """The fitted diff_process clone must receive all N training samples.
+
+        fit() clones the user's process, so the spy records into a shared
+        class-level list rather than on the original instance.
+        """
+        _SpyingVP.fit_call_sample_counts.clear()
         spy = _SpyingVP(beta_schedule="linear", beta_min=0.1, beta_max=10.0)
         gen = FunctionalDiffusionGenerator(
             diff_process=spy,
@@ -489,7 +519,7 @@ class TestFit:
 
         gen.fit(small_grid)
 
-        total_samples_seen = sum(spy.fit_call_sample_counts)
+        total_samples_seen = sum(_SpyingVP.fit_call_sample_counts)
         assert total_samples_seen == _N_SAMPLES  # 20; bug yields 4
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -508,6 +538,49 @@ class TestFit:
             gen_b.score_model_.parameters(),
         ):
             assert torch.equal(param_a, param_b)
+
+    def test_fit_does_not_mutate_user_diff_process(self, small_grid):
+        """fit() must clone diff_process and leave the user's instance unfit.
+
+        The fitted state lives on the clone exposed as diff_process_; the
+        object passed by the user must not gain an 'M_' attribute.
+        """
+        vp = VariancePreservingDiffusionProcess(seed=0)
+        gen = FunctionalDiffusionGenerator(
+            diff_process=vp, max_iter=1, seed=SEED,
+        )
+
+        gen.fit(small_grid)
+
+        assert not hasattr(vp, "M_")
+        assert gen.diff_process_ is not vp
+        assert hasattr(gen.diff_process_, "M_")
+
+    def test_refit_on_different_grid_size_updates_grid(self):
+        """Refitting on a different grid size must update grid_points_.
+
+        A second fit must fully replace the fitted state rather than retain
+        the first grid's dimension.
+        """
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
+
+        t32 = np.linspace(0, 1, 32)
+        grid32 = FDataGrid(
+            data_matrix=np.tile(np.sin(2 * np.pi * t32), (10, 1)),
+            grid_points=[t32],
+        )
+        t24 = np.linspace(0, 1, 24)
+        grid24 = FDataGrid(
+            data_matrix=np.tile(np.sin(2 * np.pi * t24), (10, 1)),
+            grid_points=[t24],
+        )
+
+        gen.fit(grid32)
+        gen.fit(grid24)
+        result = gen.generate(n_samples=2)
+
+        assert len(gen.grid_points_) == 24  # noqa: PLR2004
+        assert result.data_matrix.shape == (2, 24, 1)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TestLossFunction
@@ -654,6 +727,19 @@ class TestGenerate:
 
         assert stub.call_count == 1
 
+    def test_generate_with_labels_raises_for_default_model(
+        self, fitted_generator,
+    ):
+        """generate(y=...) must raise for the unconditional default model.
+
+        The default UNetScoreModel does not support label conditioning, so
+        the generate path must surface the same NotImplementedError as fit.
+        """
+        y = np.array([0.0, 1.0], dtype=np.float32)
+
+        with pytest.raises(NotImplementedError):
+            fitted_generator.generate(n_samples=2, y=y)
+
     # ─────────────────────────────────────────────────────────────────────────
     # Inverse transform — normalize path
     # ─────────────────────────────────────────────────────────────────────────
@@ -793,6 +879,23 @@ class TestGenerateEvolution:
                 "the inverse transform may not have been applied to this snapshot."
             )
 
+    @pytest.mark.parametrize(
+        "timesteps",
+        [np.array([]), np.array([1.0])],
+        ids=["empty", "single"],
+    )
+    def test_rejects_fewer_than_two_timesteps(
+        self, fitted_generator, timesteps,
+    ):
+        """generate_evolution() needs at least a start and an end timestep.
+
+        Fewer than two entries cannot define a trajectory; the docstring
+        promises a snapshot per entry, so silently returning one snapshot
+        would be misleading.
+        """
+        with pytest.raises(ValueError):
+            fitted_generator.generate_evolution(2, timesteps=timesteps)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TestSaveLoad
@@ -855,7 +958,7 @@ class TestSaveLoad:
     # ─────────────────────────────────────────────────────────────────────────
 
     def test_load_raises_for_invalid_checkpoint_format(self, tmp_checkpoint):
-        """load() must raise ValueError when the file contains a non-dict object."""
+        """load() must raise TypeError when the file contains a non-dict object."""
         torch.save("not_a_dict", tmp_checkpoint)
 
         with pytest.raises(TypeError, match="Invalid checkpoint format"):
@@ -945,6 +1048,26 @@ class TestSaveLoad:
             "been correctly restored."
         )
 
+    def test_generate_after_load_continues_saved_stream(
+        self, fitted_generator, tmp_checkpoint,
+    ):
+        """A loaded generator must continue the saved RNG stream.
+
+        The checkpoint is taken after one generate() call, so the next draw
+        from the original and from the loaded generator must agree. Each
+        generate() builds a fresh seed-identical integrator, so the only
+        persistent stream is the diffusion process generator restored from
+        the checkpoint — this catches a restore that re-seeds from scratch.
+        """
+        fitted_generator.generate(n_samples=4)  # advance the process RNG
+        fitted_generator.save(tmp_checkpoint)
+        expected = fitted_generator.generate(n_samples=4)
+
+        gen2 = FunctionalDiffusionGenerator.load(tmp_checkpoint)
+        actual = gen2.generate(n_samples=4)
+
+        assert np.array_equal(expected.data_matrix, actual.data_matrix)
+
     # ─────────────────────────────────────────────────────────────────────────
     # diff_process instance injection
     # ─────────────────────────────────────────────────────────────────────────
@@ -974,9 +1097,47 @@ class TestSaveLoad:
             tmp_checkpoint, diff_process=fresh_proc,
         )
 
-        x_test = torch.randn(2, gen2.diff_process.M_)
+        x_test = torch.randn(2, gen2.diff_process_.M_)
         t_test = torch.full((2,), 0.5)
-        gen2.diff_process.mean_cond(x_test, t_test)  # must not raise
+        gen2.diff_process_.mean_cond(x_test, t_test)  # must not raise
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TestSklearnCompat
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestSklearnCompat:
+    """scikit-learn estimator-protocol conformance for the generator."""
+
+    def test_clone_returns_equivalent_unfitted_estimator(self):
+        """clone() must return a new, unfitted estimator with equal params.
+
+        Relies on the constructor storing its arguments verbatim (no defaults
+        resolved, no validation) so the clone round-trips through get_params.
+        """
+        ve = VarianceExplodingDiffusionProcess(g_schedule="exponential")
+        gen = FunctionalDiffusionGenerator(
+            diff_process=ve, max_iter=3, batch_size=8, seed=7,
+        )
+
+        cloned = clone(gen)
+
+        assert cloned is not gen
+        assert cloned.max_iter == 3  # noqa: PLR2004
+        assert cloned.batch_size == 8  # noqa: PLR2004
+        assert cloned.seed == 7  # noqa: PLR2004
+        assert type(cloned.diff_process) is type(gen.diff_process)
+        assert not hasattr(cloned, "diff_process_")
+
+    def test_set_params_round_trip(self):
+        """get_params/set_params must round-trip and accept overrides."""
+        gen = FunctionalDiffusionGenerator(max_iter=3, seed=7)
+
+        gen.set_params(**gen.get_params())  # must not raise
+        gen.set_params(max_iter=9)
+
+        assert gen.max_iter == 9  # noqa: PLR2004
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -396,7 +396,7 @@ class TestDiagonalSampleLimit(ForwardDiffusionSampleLimitTests):
             return DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diffusion_term, seed=SEED)
 
         return factory
-    
+
     @pytest.fixture
     def make_process_alt_seed(self, dim_callables):
         """Factory with D=-0.5, g=1.0; closed-form _cov(t) = 1 - exp(-t) ≈ 0.6321 at T=1."""
@@ -1257,71 +1257,44 @@ class TestValidateCallable:
         with pytest.raises(ValueError, match=rf"\({N}, 1\)"):
             _validate_diagonal_callable(x_batch, fn, "drift_term")
 
-    def test_raises_for_none_return(self, x_batch):
-        """fn returning None must raise ValueError (not AttributeError).
+    @pytest.mark.parametrize(
+        "bad_return",
+        [
+            None,            # missing isinstance guard → AttributeError on .ndim
+            1.0,             # Python float
+            1,               # Python int
+            [[1.0] * DATA_DIM] * BATCH_SIZE,  # list, lacks .ndim
+            np.ones((BATCH_SIZE, DATA_DIM)),  # ndarray, lacks .device
+        ],
+        ids=["none", "float", "int", "list", "ndarray"],
+    )
+    def test_raises_typeerror_for_non_tensor_return(self, x_batch, bad_return):
+        """A non-tensor return must raise TypeError naming the callable.
 
-        A missing isinstance guard would reach out.ndim on None and raise AttributeError.
+        The isinstance guard must precede any attribute access (.ndim, .device),
+        otherwise these return types would raise AttributeError instead.
         """
-        name = "my_broken_D_t"
-        fn = lambda t: None
+        name = "my_broken_term"
+        fn = lambda t: bad_return
 
         with pytest.raises(TypeError, match=name):
             _validate_diagonal_callable(x_batch, fn, name)
 
-    def test_raises_for_float_return(self, x_batch):
-        """fn returning a Python float must raise ValueError.
+    @pytest.mark.parametrize(
+        ("bad_tensor", "shape_pattern"),
+        [
+            (torch.zeros(0, DATA_DIM), r"\(0,"),  # empty (0, M)
+            (torch.zeros(()), r"\(\)"),           # zero-dimensional
+        ],
+        ids=["empty", "zero_dim"],
+    )
+    def test_raises_valueerror_with_shape_in_message(
+        self, x_batch, bad_tensor, shape_pattern,
+    ):
+        """A wrong-shape tensor must raise ValueError reporting the bad shape."""
+        fn = lambda t: bad_tensor
 
-        A guard written as 'if out is None: raise ...' would fix None but fail here.
-        """
-        fn = lambda t: 1.0
-
-        with pytest.raises(TypeError):
-            _validate_diagonal_callable(x_batch, fn, "diffusion_term")
-
-    def test_raises_for_int_return(self, x_batch):
-        """fn returning a Python int must raise ValueError."""
-        fn = lambda t: 1
-
-        with pytest.raises(TypeError):
-            _validate_diagonal_callable(x_batch, fn, "drift_term")
-
-    def test_raises_for_list_return(self, x_batch):
-        """fn returning a Python list must raise ValueError with the callable name.
-
-        Lists lack .ndim; without an isinstance guard the code raises AttributeError.
-        """
-        N, M = x_batch.shape
-        name = "diffusion_term"
-        fn = lambda t: [[1.0] * M] * N
-
-        with pytest.raises(TypeError, match=name):
-            _validate_diagonal_callable(x_batch, fn, name)
-
-    def test_raises_for_numpy_array_return(self, x_batch):
-        r"""fn returning a NumPy array must raise ValueError (not AttributeError).
-
-        NumPy arrays have .ndim and .shape but lack .device. Without an isinstance
-        guard the code raises AttributeError at the device check, not at shape
-        validation. The isinstance guard must come before any attribute access.
-        """
-        N, M = x_batch.shape
-        fn = lambda t: np.ones((N, M))
-
-        with pytest.raises(TypeError):
-            _validate_diagonal_callable(x_batch, fn, "drift_term")
-
-    def test_raises_for_empty_tensor_with_shape_in_message(self, x_batch):
-        r"""fn returning shape (0, M) must raise ValueError with the shape in the message."""
-        fn = lambda t: torch.zeros(0, DATA_DIM)
-
-        with pytest.raises(ValueError, match=r"\(0,"):
-            _validate_diagonal_callable(x_batch, fn, "diffusion_term")
-
-    def test_raises_for_zero_dimensional_tensor_with_shape_in_message(self, x_batch):
-        r"""fn returning torch.zeros(()) must raise ValueError with shape () in the message."""
-        fn = lambda t: torch.zeros(())
-
-        with pytest.raises(ValueError, match=r"\(\)"):
+        with pytest.raises(ValueError, match=shape_pattern):
             _validate_diagonal_callable(x_batch, fn, "drift_term")
 
 
@@ -1352,7 +1325,7 @@ class TestBatchLinearInterp1d:
         Query points are off-grid midpoints so a bug that only returns exact
         grid values would fail here. atol=1e-6: only float rounding, no truncation error.
         """
-        K, M = 50, 4
+        K = 50  # M = 4 (number of slopes)
         slopes     = torch.tensor([1.0, -2.0, 0.5, 3.0])
         intercepts = torch.tensor([0.0,  1.0, 2.0, -1.0])
         t_grid = torch.linspace(0.0, 1.0, K).contiguous()
@@ -1446,7 +1419,7 @@ class TestBatchLinearInterp1d:
         When dt < eps=1e-10, falls back to weight=0.5 to avoid Inf from division by zero.
         dt=1e-11 triggers the fallback.
         """
-        M      = 3
+        # M = 3 (number of interpolated functions)
         t_grid = torch.tensor([0.0, 0.5, 0.5 + 1e-11, 1.0]).contiguous()
         f_grid = torch.tensor([
             [0.0, 0.0, 0.0],

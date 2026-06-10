@@ -6,6 +6,7 @@ from typing import cast
 
 import numpy as np
 import torch
+from sklearn.base import clone
 from sklearn.utils.validation import check_is_fitted
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset, TensorDataset
@@ -89,7 +90,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
 
     where the functions :math:`\mu_t` and :math:`\sigma_t` are defined
     by the chosen
-    :class:`~skfda.ml.generative.diffusion_process.ForwardDiffusionProcess`.
+    :class:`~skfda.ml.generative.ForwardDiffusionProcess`.
 
     **Training objective.** The score network is trained to minimise the
     denoising score-matching loss
@@ -115,11 +116,11 @@ class FunctionalDiffusionGenerator(BaseEstimator):
     Parameters:
         diff_process: Forward diffusion process that defines
             :math:`\mu_t` and :math:`\sigma_t`.  Defaults to
-            :class:`~skfda.ml.generative.diffusion_process.VariancePreservingDiffusionProcess`.
+            :class:`~skfda.ml.generative.VariancePreservingDiffusionProcess`.
         score_model: Pre-built score network.  Must implement
             ``forward(x, t, y=None)`` and return a tensor with the same
             shape as ``x``.  If ``None``, a default
-            :class:`~skfda.ml.generative.score_model.UNetScoreModel`
+            :class:`~skfda.ml.generative.UNetScoreModel`
             is constructed during :meth:`fit`.
         normalize: Normalize training data to :math:`[-1, 1]` before
             fitting.  Mutually exclusive with ``standardize``.
@@ -138,6 +139,9 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         seed: Random seed for reproducibility.  Defaults to ``None``.
 
     Attributes:
+        diff_process\_: Fitted clone of the forward diffusion process used
+            for training and generation (available after :meth:`fit`).  The
+            ``diff_process`` constructor argument is never mutated.
         score_model\_: Trained score network (available after
             :meth:`fit`).
         grid_points\_: Discretization grid of the training data
@@ -180,19 +184,10 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         seed: int | None = None,
     ) -> None:
         super().__init__()
-        self.diff_process = (
-            diff_process
-            if diff_process is not None
-            else VariancePreservingDiffusionProcess()
-        )
+        self.diff_process = diff_process
         self.score_model = score_model
         self.normalize = normalize
         self.standardize = standardize
-
-        if self.normalize and self.standardize:
-            msg = "normalize and standardize cannot both be True."
-            raise ValueError(msg)
-
         self.max_iter = max_iter
         self.n_jobs = n_jobs
         self.device = device
@@ -217,7 +212,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
 
         return _build_default_score_model(
             n_points=n_points,
-            diff_process=self.diff_process,
+            diff_process=self.diff_process_,
             device=self.device,
             seed=seed,
         )
@@ -263,15 +258,20 @@ class FunctionalDiffusionGenerator(BaseEstimator):
             X: Training functional data.  Must be a univariate
                 (``dim_domain=1``, ``dim_codomain=1``)
                 :class:`~skfda.representation.FDataGrid`.
-            y: Class labels for each sample.  When provided, the score
-                model receives the labels and can learn a
-                class-conditional distribution.  Defaults to ``None``.
+            y: Class labels for each sample.  When provided, the labels are
+                forwarded to the score model so it can learn a
+                class-conditional distribution.  This requires a label-aware
+                ``score_model``; the default
+                :class:`~skfda.ml.generative.UNetScoreModel` is unconditional
+                and raises :exc:`NotImplementedError` when ``y`` is passed.
+                Defaults to ``None``.
 
         Returns:
             The fitted estimator (``self``), following the scikit-learn
             convention.
 
         Raises:
+            ValueError: If both ``normalize`` and ``standardize`` are True.
             ValueError: If ``X`` is not a univariate functional object
                 (``dim_domain != 1`` or ``dim_codomain != 1``).
             ValueError: If the score model has no trainable parameters.
@@ -295,6 +295,10 @@ class FunctionalDiffusionGenerator(BaseEstimator):
             True
 
         """
+        if self.normalize and self.standardize:
+            msg = "normalize and standardize cannot both be True."
+            raise ValueError(msg)
+
         if X.dim_domain != 1 or X.dim_codomain != 1:
             msg = (
                 "FunctionalDiffusionGenerator only supports"
@@ -303,6 +307,16 @@ class FunctionalDiffusionGenerator(BaseEstimator):
             raise ValueError(msg)
         self.grid_points_ = X.grid_points[0]
         grid_size = len(self.grid_points_)
+
+        # Resolve the default and work on a clone, so the user's diff_process
+        # is never mutated (its fitted state would otherwise leak across fits
+        # or between estimators sharing the same instance).
+        base_process = (
+            self.diff_process
+            if self.diff_process is not None
+            else VariancePreservingDiffusionProcess()
+        )
+        self.diff_process_ = clone(base_process)
 
         self.score_model_ = self._build_or_get_score_model(
             n_points=grid_size, seed=self.seed,
@@ -337,7 +351,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         # but we keep it outside the loop in case of future changes.
         assert isinstance(dataset, TensorDataset)
         x_all = dataset.tensors[0].to(self.device)
-        self.diff_process.fit(x_all)
+        self.diff_process_.fit(x_all)
 
         # For the dry-run validation, a single slice is enough
         x_val = x_all[:self.batch_size]
@@ -376,7 +390,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
                         x.shape[0],
                         device=self.device,
                         generator=train_generator,
-                    ) * (self.diff_process.T - eps)
+                    ) * (self.diff_process_.T - eps)
                 ) + eps
 
                 loss = self._loss_function(
@@ -458,17 +472,17 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         Returns:
             Scalar loss tensor.
         """
-        mu_t = self.diff_process.mean_cond(x, t)
+        mu_t = self.diff_process_.mean_cond(x, t)
         z = torch.randn(
             x.shape,
             device=x.device,
             dtype=x.dtype,
             generator=generator,
         )
-        score_time_z = self.diff_process.multiply_sigma(z, t)
+        score_time_z = self.diff_process_.multiply_sigma(z, t)
         x_t = mu_t + score_time_z
         score = score_model(x_t, t, y)
-        score_time_sigma = self.diff_process.multiply_sigma(score, t)
+        score_time_sigma = self.diff_process_.multiply_sigma(score, t)
 
         return torch.mean(
             torch.sum(
@@ -492,21 +506,22 @@ class FunctionalDiffusionGenerator(BaseEstimator):
 
         If ``y`` is provided the number of generated samples equals
         ``len(y)`` and the score model is conditioned on the supplied
-        labels (requires that the model was fitted with labels) and
-        the `ScoreModel` needs to accept the labels as input.
+        labels.  This requires a custom ``score_model`` that accepts labels;
+        the default :class:`~skfda.ml.generative.UNetScoreModel` is
+        unconditional and raises :exc:`NotImplementedError` when ``y`` is
+        passed.
 
         Args:
             n_samples: Number of samples to generate.  Ignored when
                 ``y`` is provided.
             reverse_process: Reverse-time solver used to denoise the
                 initial noise back to data space.  If ``None``, a
-                :class:`~skfda.ml.generative.reverse_diffusion.SDEReverseDiffusionProcess`
+                :class:`~skfda.ml.generative.SDEReverseDiffusionProcess`
                 with an Euler-Maruyama integrator
-                :class:`~skfda.ml.generative.integrators.EulerMaruyamaIntegrator`
+                :class:`~skfda.ml.generative.EulerMaruyamaIntegrator`
                 is used.
-            y: Class labels for conditional generation.  Must match the
-                label encoding used during :meth:`fit`.  Defaults to
-                ``None``.
+            y: Class labels for conditional generation.  Requires a
+                label-aware ``score_model``.  Defaults to ``None``.
 
         Returns:
             :class:`~skfda.representation.FDataGrid` containing the
@@ -551,7 +566,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         else:
             y_torch = None
         # Sample from the limit distribution of the forward process.
-        x_t = self.diff_process.sample_limit_distribution(
+        x_t = self.diff_process_.sample_limit_distribution(
             n_samples,
             self.device,
         )
@@ -559,10 +574,10 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         # the computation graph and significantly reduces memory usage.
         with torch.no_grad():
             x_0 = reverse_process.reverse(
-                self.diff_process,
+                self.diff_process_,
                 score_model=self.score_model_,
                 x_t=x_t,
-                t_1=self.diff_process.T,
+                t_1=self.diff_process_.T,
                 y=y_torch,
             )
 
@@ -614,8 +629,17 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         Raises:
             sklearn.exceptions.NotFittedError: If the model has not been
                 fitted yet.
+            ValueError: If ``timesteps`` has fewer than two entries (at least
+                a start and an end are required to define a trajectory).
         """
         check_is_fitted(self, attributes=["score_model_", "grid_points_"])
+
+        if len(timesteps) < 2:  # noqa: PLR2004
+            msg = (
+                "timesteps must contain at least two entries (a start and an "
+                f"end); got {len(timesteps)}."
+            )
+            raise ValueError(msg)
 
         if reverse_process is None:
             reverse_process = SDEReverseDiffusionProcess(
@@ -630,7 +654,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         else:
             y_torch = None
         # Draw initial noise from the forward process limit distribution.
-        x_current = self.diff_process.sample_limit_distribution(
+        x_current = self.diff_process_.sample_limit_distribution(
             n_samples,
             self.device,
         )
@@ -646,7 +670,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
                 # Store the state at the current timestep
                 evolution_tensors.append(x_current.clone())
                 x_current = reverse_process.reverse(
-                    self.diff_process,
+                    self.diff_process_,
                     score_model=self.score_model_,
                     x_t=x_current,
                     t_1=t_current,
@@ -712,7 +736,8 @@ class FunctionalDiffusionGenerator(BaseEstimator):
             warnings.warn(
                 "Saving a generator fitted with seed=None. "
                 "Exact sample reproducibility after load is not guaranteed "
-                "because the global numpy RNG state was used during training. "
+                "because the torch RNGs were seeded non-deterministically "
+                "during training. "
                 "Pass an integer seed for full reproducibility.",
                 UserWarning,
                 stacklevel=2,
@@ -733,7 +758,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
             "bias": float(getattr(self, "_bias_", 0.0)),
             "scale": float(getattr(self, "_scale_", 1.0)),
             # Component checkpoints
-            "diff_process": self.diff_process.to_checkpoint(),
+            "diff_process": self.diff_process_.to_checkpoint(),
             "score_model": self.score_model_.to_checkpoint(),
             "seed": self.seed,
         }
@@ -850,6 +875,10 @@ class FunctionalDiffusionGenerator(BaseEstimator):
             device=target_device,
             seed=checkpoint["seed"],
         )
+
+        # The restored process is already fitted; expose it as the fitted
+        # attribute so generate() uses it directly (fit() is not re-run).
+        gen.diff_process_ = restored_diff_process
 
         score_model = ScoreModel.from_checkpoint(checkpoint["score_model"])
         score_model.on_load(restored_diff_process)

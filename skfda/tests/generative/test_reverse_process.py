@@ -191,20 +191,12 @@ def circulant_process(
     return process.fit(x_batch)
 
 
-def _make_em_integrator(
-    n_steps: int = 50,
-    seed: int | None = None,
-) -> EulerMaruyamaIntegrator:
-    """Return a fresh EulerMaruyamaIntegrator."""
-    return EulerMaruyamaIntegrator(n_steps=n_steps, seed=seed)
-
-
 def _make_sde_reverse(
     n_steps: int = 50,
     seed: int | None = None,
 ) -> SDEReverseDiffusionProcess:
     """Return a fresh SDEReverseDiffusionProcess backed by a fresh integrator."""
-    return SDEReverseDiffusionProcess(_make_em_integrator(n_steps, seed))
+    return SDEReverseDiffusionProcess(_make_integrator(n_steps, seed))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -427,6 +419,26 @@ class TestSDEReverseDiffusionProcess:
         )
         assert result.shape == x_batch.shape
 
+    def test_integrator_called_once_above_safe_t0(
+        self,
+        vp_process: VariancePreservingDiffusionProcess,
+        x_batch: torch.Tensor,
+    ) -> None:
+        """Above _T0_SAFE the SDE must integrate exactly once.
+
+        Mirror of the ODE guard: with t_0=_T_CLEAN > _T0_SAFE no Tweedie step
+        is taken, so the integrator must be invoked a single time.
+        """
+        integrator = _CountingEM(n_steps=5)
+        sde_reverse = SDEReverseDiffusionProcess(integrator)
+
+        sde_reverse.reverse(
+            vp_process, _ZeroScoreModel(), x_batch,
+            t_1=_T_NOISY, t_0=_T_CLEAN,
+        )
+
+        assert integrator.call_count == 1
+
     def test_backward_drift_subtracts_score_term_not_adds_it(
         self,
         vp_process: VariancePreservingDiffusionProcess,
@@ -452,7 +464,7 @@ class TestSDEReverseDiffusionProcess:
         wrong_process = CustomDiffusionProcess(
             drift=_wrong_drift, diffusion=vp_process.diffusion,
         )
-        wrong_em = _make_em_integrator(n_steps=50, seed=13)
+        wrong_em = _make_integrator(n_steps=50, seed=13)
         wrong_result = wrong_em(wrong_process, x_batch, _T_NOISY, _T_CLEAN)
 
         assert not torch.allclose(sde_result, wrong_result)
@@ -481,7 +493,7 @@ class TestSDEReverseDiffusionProcess:
         half_process = CustomDiffusionProcess(
             drift=_half_factor_drift, diffusion=vp_process.diffusion,
         )
-        half_em = _make_em_integrator(n_steps=50, seed=13)
+        half_em = _make_integrator(n_steps=50, seed=13)
         half_result = half_em(half_process, x_batch, _T_NOISY, _T_CLEAN)
 
         assert not torch.allclose(sde_result, half_result)
@@ -570,7 +582,7 @@ class TestSDEReverseDiffusionProcess:
         manual_process = CustomDiffusionProcess(
             drift=vp_process.drift, diffusion=vp_process.diffusion,
         )
-        manual_em = _make_em_integrator(n_steps=50, seed=13)
+        manual_em = _make_integrator(n_steps=50, seed=13)
         manual_result = manual_em(manual_process, x_batch, _T_NOISY, _T_CLEAN)
 
         assert torch.allclose(sde_result, manual_result)
@@ -633,6 +645,30 @@ def _make_ode_reverse(n_steps: int = 50) -> ProbabilityFlowODEReverseProcess:
     return ProbabilityFlowODEReverseProcess(RK4Integrator(n_steps=n_steps))
 
 
+class _CountingRK4(RK4Integrator):
+    """RK4 integrator that records how many times __call__ is invoked."""
+
+    def __init__(self, n_steps: int = 50) -> None:
+        super().__init__(n_steps=n_steps)
+        self.call_count = 0
+
+    def __call__(self, f, x_0, t_0, t_1):  # type: ignore[override]
+        self.call_count += 1
+        return super().__call__(f, x_0, t_0, t_1)
+
+
+class _CountingEM(EulerMaruyamaIntegrator):
+    """Euler-Maruyama integrator that records __call__ invocations."""
+
+    def __init__(self, n_steps: int = 50, seed: int | None = None) -> None:
+        super().__init__(n_steps=n_steps, seed=seed)
+        self.call_count = 0
+
+    def __call__(self, diff_process, x_0, t_0, t_1):  # type: ignore[override]
+        self.call_count += 1
+        return super().__call__(diff_process, x_0, t_0, t_1)
+
+
 class TestProbabilityFlowODEReverseProcess:
     """Tests for ProbabilityFlowODEReverseProcess."""
 
@@ -669,6 +705,27 @@ class TestProbabilityFlowODEReverseProcess:
             vp_process, constant_score, x_batch, t_1=_T_NOISY, t_0=_T_CLEAN,
         )
         assert torch.equal(result_a, result_b)
+
+    def test_integrator_called_once_above_safe_t0(
+        self,
+        vp_process: VariancePreservingDiffusionProcess,
+        x_batch: torch.Tensor,
+    ) -> None:
+        """Above _T0_SAFE the ODE must integrate exactly once.
+
+        Regression guard for the former double integration, where the result
+        was computed, discarded, and recomputed from scratch when no Tweedie
+        step was needed (t_0=_T_CLEAN > _T0_SAFE).
+        """
+        integrator = _CountingRK4(n_steps=5)
+        ode_reverse = ProbabilityFlowODEReverseProcess(integrator)
+
+        ode_reverse.reverse(
+            vp_process, _ZeroScoreModel(), x_batch,
+            t_1=_T_NOISY, t_0=_T_CLEAN,
+        )
+
+        assert integrator.call_count == 1
 
     def test_backward_drift_subtracts_score_term_not_adds_it(
         self,

@@ -118,6 +118,7 @@ module = [
   "skdatasets.*",
   "sklearn.*",
   "sphinx_gallery.*",
+  "torch.*",
 ]
 ignore_missing_imports = true
 

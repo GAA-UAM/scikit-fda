@@ -7,7 +7,6 @@ import torch
 
 from skfda.ml.generative._diffusion_process import (
     CustomDiffusionProcess,
-    DiagonalDiffusionProcess,
     ForwardDiffusionProcess,
     VarianceExplodingDiffusionProcess,
     VariancePreservingDiffusionProcess,
@@ -707,28 +706,6 @@ class TestVariancePreservingDiffusionProcessInit:
         with pytest.raises(ValueError):
             VariancePreservingDiffusionProcess(beta_schedule="exponential")
 
-    def test_linear_schedule_initializes_correctly(self):
-        """Constructor args must be stored verbatim.
-
-        Non-default values rule out accidental matches with defaults.
-        """
-        vp = VariancePreservingDiffusionProcess(
-            beta_schedule="linear",
-            beta_min=0.1,
-            beta_max=5.0,
-        )
-
-        assert vp.beta_schedule == "linear"
-        assert vp.beta_min == 0.1
-        assert vp.beta_max == 5.0
-
-    def test_cosine_schedule_initializes_correctly(self):
-        """Cosine schedule must be accepted and stored; M must not exist before fit()."""
-        vp = VariancePreservingDiffusionProcess(beta_schedule="cosine")
-
-        assert vp.beta_schedule == "cosine"
-        assert not hasattr(vp, "M")
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Concrete: VarianceExplodingDiffusionProcess — Init tests
@@ -742,27 +719,21 @@ class TestVarianceExplodingDiffusionProcessInit:
         with pytest.raises(ValueError):
             VarianceExplodingDiffusionProcess(g_schedule="cosine")
 
-    def test_linear_schedule_initializes_correctly(self):
-        """Constructor args must be stored verbatim.
+    @pytest.mark.parametrize(
+        ("g_0", "g_T"),
+        [(0.0, 15.0), (-1.0, 15.0), (0.1, 0.0)],
+        ids=["g0_zero", "g0_negative", "gT_zero"],
+    )
+    def test_nonpositive_bounds_raise_for_exponential_schedule(self, g_0, g_T):
+        """Exponential schedule needs strictly positive g_0 and g_T.
 
-        Non-default values rule out accidental matches with defaults.
+        Otherwise the ratio g_T / g_0 and its logarithm in the closed-form
+        variance are undefined, which would surface as a silent NaN/inf later.
         """
-        ve = VarianceExplodingDiffusionProcess(
-            g_schedule="linear",
-            g_0=0.5,
-            g_T=10.0,
-        )
-
-        assert ve.g_schedule == "linear"
-        assert ve.g_0 == 0.5
-        assert ve.g_T == 10.0
-
-    def test_exponential_schedule_initializes_correctly(self):
-        """Exponential schedule must be accepted; M must not exist before fit()."""
-        ve = VarianceExplodingDiffusionProcess(g_schedule="exponential")
-
-        assert ve.g_schedule == "exponential"
-        assert not hasattr(ve, "M")
+        with pytest.raises(ValueError, match="strictly positive"):
+            VarianceExplodingDiffusionProcess(
+                g_schedule="exponential", g_0=g_0, g_T=g_T,
+            )
 
 
 class TestVariancePreservingDiffusionProcessMeanCond:

@@ -153,7 +153,7 @@ class TestCirculantFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests
     """Tests for the fit / checkpoint contract of CirculantSymmetricMatrixDiffusionProcess.
 
     Extends the base contract:
-    (1) fit() builds an internal DiagonalDiffusionProcess in eigenspace (self.diagonal_process).
+    (1) fit() builds an internal DiagonalDiffusionProcess in eigenspace (diagonal_process_).
     (2) _get_fit_state() stores 'device' alongside the inherited 'M'.
     (3) to_checkpoint() warns and replaces non-picklable callables with None.
 
@@ -212,9 +212,9 @@ class TestCirculantFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests
         assert "device" in state
 
     def test_fit_creates_fitted_diagonal_process(self, fitted_instance):
-        """fit() must create a fitted DiagonalDiffusionProcess at self.diagonal_process.
+        """fit() must create a fitted DiagonalDiffusionProcess at diagonal_process_.
 
-        All operator arithmetic is delegated to diagonal_process in eigenspace.
+        All operator arithmetic is delegated to diagonal_process_ in eigenspace.
         M == DATA_DIM confirms it was fitted on correct-dimension data.
         """
         assert isinstance(fitted_instance.diagonal_process_, DiagonalDiffusionProcess)

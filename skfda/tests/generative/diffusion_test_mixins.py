@@ -198,6 +198,25 @@ class ForwardDiffusionCheckpointTests:
         with pytest.raises(TypeError):
             ForwardDiffusionProcess.from_checkpoint(checkpoint)
 
+    def test_from_checkpoint_continues_saved_rng_stream(self, unfitted_instance):
+        """A restored process must continue the saved RNG stream, not reset it.
+
+        The checkpoint is taken after the generator has already been advanced
+        by one draw, so the next sample must match between the original and the
+        restored process. A restore that re-seeds from scratch (instead of
+        restoring the generator state) would diverge here.
+        """
+        unfitted_instance.fit(torch.randn(BATCH_SIZE, CUSTOM_DIM))
+        unfitted_instance.sample_limit_distribution(n_samples=4)  # advance RNG
+
+        checkpoint = unfitted_instance.to_checkpoint()
+        expected = unfitted_instance.sample_limit_distribution(n_samples=4)
+
+        restored = ForwardDiffusionProcess.from_checkpoint(checkpoint)
+        actual = restored.sample_limit_distribution(n_samples=4)
+
+        assert torch.equal(expected, actual)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Mixin 3: operator algebraic contracts (any ForwardDiffusionProcess)

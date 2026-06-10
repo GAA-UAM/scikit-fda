@@ -154,7 +154,7 @@ class TestDiagonalFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests)
         assert instance_b.M_ == instance_a.M_
         assert instance_b.device_ == instance_a.device_
         assert instance_b.n_integration_points == instance_a.n_integration_points
-        assert instance_b.precomputed_d_grid__T_.shape[0] == instance_a.n_integration_points
+        assert instance_b.precomputed_d_grid_T_.shape[0] == instance_a.n_integration_points
         assert instance_b.precomputed_sigma_t_grid_.shape[0] == instance_a.n_integration_points
         assert torch.equal(instance_b._cov(t_batch), instance_a._cov(t_batch))
 
@@ -174,7 +174,7 @@ class TestDiagonalFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests)
         instance_b = ForwardDiffusionProcess.from_checkpoint(checkpoint)
 
         assert instance_b.n_integration_points == 500
-        assert instance_b.precomputed_d_grid__T_.shape[0] == 500
+        assert instance_b.precomputed_d_grid_T_.shape[0] == 500
         assert instance_b.precomputed_sigma_t_grid_.shape[0] == 500
 
     def test_fit_raises_when_D_t_returns_incompatible_shape(self, x_batch, dim_callables):
@@ -729,7 +729,7 @@ class TestDiagonalPrecomputedGrids:
     """Tests for the precomputed integral grid structure of DiagonalDiffusionProcess.
 
     The four precomputed tensors:
-        precomputed_d_grid__T_     — time grid for ∫ D du
+        precomputed_d_grid_T_     — time grid for ∫ D du
         precomputed_d_grid_       — cumulative ∫₀ᵗ D(u) du at each node
         precomputed_sigma_t_grid_ — time grid for ∫ g²·exp(-2∫D) ds
         precomputed_sigma_f_grid_ — cumulative ∫₀ᵗ g²·exp(-2∫D) ds at each node
@@ -743,12 +743,12 @@ class TestDiagonalPrecomputedGrids:
         p.fit(x_batch)
         return p
 
-    def test_precomputed_d_grid__T__shape_matches_n_integration_points(self, process):
-        """precomputed_d_grid__T_ must have exactly n_integration_points entries.
+    def test_precomputed_d_grid_T__shape_matches_n_integration_points(self, process):
+        """precomputed_d_grid_T_ must have exactly n_integration_points entries.
 
         n=500 (non-default): a hardcoded 1000-point grid would fail this assertion.
         """
-        assert process.precomputed_d_grid__T_.shape == (500,)
+        assert process.precomputed_d_grid_T_.shape == (500,)
 
     def test_precomputed_d_grid__shape_is_n_integration_points_by_M(self, process):
         """precomputed_d_grid_ must have shape (n_integration_points, M).
@@ -757,7 +757,7 @@ class TestDiagonalPrecomputedGrids:
         _batch_linear_interp_1d for correct index lookups.
         """
         assert process.precomputed_d_grid_.shape == (500, DATA_DIM)
-        assert process.precomputed_d_grid_.shape[0] == process.precomputed_d_grid__T_.shape[0]
+        assert process.precomputed_d_grid_.shape[0] == process.precomputed_d_grid_T_.shape[0]
 
     def test_precomputed_sigma_t_grid__shape_matches_n_integration_points(self, process):
         """precomputed_sigma_t_grid_ must have exactly n_integration_points entries."""
@@ -777,8 +777,8 @@ class TestDiagonalPrecomputedGrids:
         If the grid starts at eps > 0, _cov(t=0) queries outside the grid
         and the clamped-index fallback returns a non-zero value.
         """
-        assert process.precomputed_d_grid__T_[0].item()      == 0.0
-        assert process.precomputed_d_grid__T_[-1].item()     == 1.0
+        assert process.precomputed_d_grid_T_[0].item()      == 0.0
+        assert process.precomputed_d_grid_T_[-1].item()     == 1.0
         assert process.precomputed_sigma_t_grid_[0].item()  == 0.0
         assert process.precomputed_sigma_t_grid_[-1].item() == 1.0
 
@@ -830,7 +830,7 @@ class TestDiagonalPrecomputedGrids:
 
         .device.type (not .device) avoids index sensitivity in CPU-only environments.
         """
-        assert process.precomputed_d_grid__T_.device.type     == "cpu"
+        assert process.precomputed_d_grid_T_.device.type     == "cpu"
         assert process.precomputed_d_grid_.device.type       == "cpu"
         assert process.precomputed_sigma_t_grid_.device.type == "cpu"
         assert process.precomputed_sigma_f_grid_.device.type == "cpu"
@@ -847,7 +847,7 @@ class TestDiagonalPrecomputedGrids:
         p = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diffusion_term, n_integration_points=1000)
         p.fit(x_batch)
 
-        t_grid   = p.precomputed_d_grid__T_
+        t_grid   = p.precomputed_d_grid_T_
         expected = (-0.5 * t_grid).unsqueeze(1).expand(-1, DATA_DIM)
 
         assert torch.allclose(p.precomputed_d_grid_, expected, atol=1e-6)
@@ -897,7 +897,7 @@ class TestNIntegrationPoints:
         process = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diffusion_term, n_integration_points=n)
         process.fit(x_batch)
 
-        assert process.precomputed_d_grid__T_.shape[0]     == n
+        assert process.precomputed_d_grid_T_.shape[0]     == n
         assert process.precomputed_d_grid_.shape[0]       == n
         assert process.precomputed_sigma_t_grid_.shape[0] == n
         assert process.precomputed_sigma_f_grid_.shape[0] == n
@@ -1030,7 +1030,7 @@ class TestDiagonalDeviceConsistency:
         p.fit(x_cpu)
 
         assert p.device_ == torch.device("cpu")
-        assert p.precomputed_d_grid__T_.device.type == "cpu"
+        assert p.precomputed_d_grid_T_.device.type == "cpu"
         assert p.precomputed_d_grid_.device.type   == "cpu"
 
     def test_F_integral_grids_are_on_cpu_after_fit_on_cpu_data(self, x_batch, dim_callables):
@@ -1104,7 +1104,7 @@ class TestDiagonalDeviceConsistency:
         above but fails here.
         """
         assert cuda_process.device_.type == "cuda"
-        assert cuda_process.precomputed_d_grid__T_.device.type     == "cuda"
+        assert cuda_process.precomputed_d_grid_T_.device.type     == "cuda"
         assert cuda_process.precomputed_d_grid_.device.type       == "cuda"
         assert cuda_process.precomputed_sigma_t_grid_.device.type == "cuda"
         assert cuda_process.precomputed_sigma_f_grid_.device.type == "cuda"

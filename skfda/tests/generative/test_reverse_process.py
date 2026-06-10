@@ -613,7 +613,7 @@ class TestSDEReverseDiffusionProcess:
 
         manual_sde = _make_sde_reverse(n_steps=20, seed=13)
         result_diag = manual_sde.reverse(
-            circulant_process.diagonal_process, _score_diag, x_t_diag,
+            circulant_process.diagonal_process_, _score_diag, x_t_diag,
             t_1=_T_NOISY, t_0=_T_CLEAN,
         )
         manual_result = _eigenspace_to_fft(result_diag)
@@ -819,7 +819,7 @@ class TestProbabilityFlowODEReverseProcess:
 
         manual_ode = _make_ode_reverse(n_steps=20)
         result_diag = manual_ode.reverse(
-            circulant_process.diagonal_process, _score_diag, x_t_diag,
+            circulant_process.diagonal_process_, _score_diag, x_t_diag,
             t_1=_T_NOISY, t_0=_T_CLEAN,
         )
         manual_result = _eigenspace_to_fft(result_diag)

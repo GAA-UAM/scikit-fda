@@ -632,7 +632,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             Boundary conditions — identity at t = 0, zero at t = 1 (cosine):
 
             >>> import torch
-            >>> from skfda.ml.generative.diffusion_process import (
+            >>> from skfda.ml.generative import (
             ...     VariancePreservingDiffusionProcess,
             ... )
             >>> vp = VariancePreservingDiffusionProcess(beta_schedule="cosine")
@@ -690,7 +690,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             Cosine schedule boundary values — sigma_0 = 0, sigma_T = 1:
 
             >>> import torch
-            >>> from skfda.ml.generative.diffusion_process import (
+            >>> from skfda.ml.generative import (
             ...     VariancePreservingDiffusionProcess,
             ... )
             >>> vp = VariancePreservingDiffusionProcess(beta_schedule="cosine")
@@ -714,7 +714,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             Inverse is a left inverse of ``multiply_sigma``:
 
             >>> import torch
-            >>> from skfda.ml.generative.diffusion_process import (
+            >>> from skfda.ml.generative import (
             ...     VariancePreservingDiffusionProcess,
             ... )
             >>> vp = VariancePreservingDiffusionProcess(beta_schedule="cosine")
@@ -752,7 +752,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
         Examples:
             Raises ``NotFittedError`` before fitting:
 
-            >>> from skfda.ml.generative.diffusion_process import (
+            >>> from skfda.ml.generative import (
             ...     VariancePreservingDiffusionProcess,
             ... )
             >>> VariancePreservingDiffusionProcess().sample_limit_distribution(
@@ -871,7 +871,7 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
             Mean equals the initial condition for all t (zero drift):
 
             >>> import torch
-            >>> from skfda.ml.generative.diffusion_process import (
+            >>> from skfda.ml.generative import (
             ...     VarianceExplodingDiffusionProcess,
             ... )
             >>> ve = VarianceExplodingDiffusionProcess()
@@ -918,7 +918,7 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
             No noise injected at t = 0:
 
             >>> import torch
-            >>> from skfda.ml.generative.diffusion_process import (
+            >>> from skfda.ml.generative import (
             ...     VarianceExplodingDiffusionProcess,
             ... )
             >>> ve = VarianceExplodingDiffusionProcess()
@@ -1228,7 +1228,7 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         d_int = torch.cat(
             [d_int.new_zeros((1, d_at_t.shape[1])), d_int], dim=0,
         )
-        self.precomputed_d_grid__T_ = t
+        self.precomputed_d_grid_T_ = t
         self.precomputed_d_grid_ = d_int
 
     def _integrate_d(self, t: Tensor) -> Tensor:
@@ -1246,7 +1246,7 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         """
         return _batch_linear_interp_1d(
                     t.reshape(-1),
-                    self.precomputed_d_grid__T_,
+                    self.precomputed_d_grid_T_,
                     self.precomputed_d_grid_,
         )
 
@@ -2034,7 +2034,10 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
     def multiply_inv_sigma(self, h: Tensor, t: Tensor) -> Tensor:
         r"""See base class. Uses FFT for :math:`O(NM\log M)` complexity."""
         return _eigenspace_to_fft(
-            self.diagonal_process_.multiply_inv_sigma(_fft_to_eigenspace(h), t),
+            self.diagonal_process_.multiply_inv_sigma(
+                _fft_to_eigenspace(h),
+                t,
+            ),
         )
 
     def _get_fit_state(self) -> dict[str, FitStateType]:

@@ -1,6 +1,7 @@
 import pytest
 import sys
 import asyncio
+import importlib.util
 import numpy as np
 
 # https://github.com/scikit-learn/scikit-learn/issues/8959
@@ -23,5 +24,11 @@ if (
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 collect_ignore = ['setup.py', 'docs/conf.py', 'asv_benchmarks']
+
+# PyTorch is an optional dependency, required only by skfda.ml.generative. When
+# it is absent, --doctest-modules cannot import the generative source modules and
+# the diffusion tests cannot import torch, so skip collecting both directories.
+if importlib.util.find_spec("torch") is None:
+    collect_ignore += ['skfda/ml/generative', 'skfda/tests/generative']
 
 pytest.register_assert_rewrite("skfda")

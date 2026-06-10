@@ -386,8 +386,10 @@ class UNetScoreModel(ScoreModel):
           The output of the score-based model, shape (N, M).
         """
         if y is not None:
-            msg = "Conditional generation with "
-            "class labels is not supported by UNetScoreModel."
+            msg = (
+                "Conditional generation with class labels is not supported "
+                "by UNetScoreModel."
+            )
             raise NotImplementedError(
                 msg,
             )

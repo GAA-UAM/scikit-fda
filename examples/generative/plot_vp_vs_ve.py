@@ -157,7 +157,7 @@ plt.show()
 # - **VE**: Exponential schedule with $g_0 = 0.1$ and $g_T = 15$.
 
 # %%
-from skfda.ml.generative._diffusion_process import (
+from skfda.ml.generative import (
     VarianceExplodingDiffusionProcess,
     VariancePreservingDiffusionProcess,
 )
@@ -219,12 +219,11 @@ ve_process = VarianceExplodingDiffusionProcess(seed=seed)
 # %%
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import torch
 from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 from scipy.stats import norm
 
-from skfda.ml.generative._diffusion_process import ForwardDiffusionProcess
+from skfda.ml.generative import ForwardDiffusionProcess
 
 mpl.rcParams["animation.embed_limit"] = 100  # MB
 
@@ -463,10 +462,10 @@ anim
 # longer-range dependencies across the evaluation grid.
 
 # %%
-from skfda.ml.generative._diffusion_model import (
+from skfda.ml.generative import (
     FunctionalDiffusionGenerator,
+    UNetScoreModel,
 )
-from skfda.ml.generative._score_model import UNetScoreModel
 
 max_iter = 8000
 normalize = True
@@ -557,7 +556,7 @@ else:
 from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 
-from skfda.ml.generative._reverse_diffusion import (
+from skfda.ml.generative import (
      EulerMaruyamaIntegrator,
      ProbabilityFlowODEReverseProcess,
      RK4Integrator,

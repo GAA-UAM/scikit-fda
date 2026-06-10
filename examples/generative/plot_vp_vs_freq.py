@@ -141,7 +141,7 @@ device = "cpu"
 import matplotlib.pyplot as plt
 from torch import Tensor
 
-from skfda.ml.generative._diffusion_process import (
+from skfda.ml.generative import (
     CirculantSymmetricMatrixDiffusionProcess,
     VariancePreservingDiffusionProcess,
 )
@@ -291,7 +291,7 @@ plt.show()
 
 # %%
 
-from skfda.ml.generative._diffusion_model import FunctionalDiffusionGenerator
+from skfda.ml.generative import FunctionalDiffusionGenerator
 
 non_diag_gen = FunctionalDiffusionGenerator(
     diff_process=non_diag_proc,
@@ -360,7 +360,7 @@ import numpy as np
 from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 
-from skfda.ml.generative._reverse_diffusion import (
+from skfda.ml.generative import (
     EulerMaruyamaIntegrator,
     SDEReverseDiffusionProcess,
 )
@@ -540,6 +540,7 @@ plt.show()
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import wasserstein_distance
+
 def evaluate_constant_model(fd_gen_dict, theoretical_range=(-1, 1)):
     n_models = len(fd_gen_dict)
     model_names = list(fd_gen_dict.keys())

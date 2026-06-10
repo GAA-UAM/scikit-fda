@@ -11,6 +11,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "ForwardDiffusionProcess",
             "VariancePreservingDiffusionProcess",
             "VarianceExplodingDiffusionProcess",
+            "DiagonalDiffusionProcess",
             "CirculantSymmetricMatrixDiffusionProcess",
         ],
         "_reverse_diffusion": [
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     )
     from ._diffusion_process import (
         CirculantSymmetricMatrixDiffusionProcess as CirculantSymmetricMatrixDiffusionProcess,  # noqa: E501
+        DiagonalDiffusionProcess as DiagonalDiffusionProcess,
         ForwardDiffusionProcess as ForwardDiffusionProcess,
         VarianceExplodingDiffusionProcess as VarianceExplodingDiffusionProcess,
         VariancePreservingDiffusionProcess as VariancePreservingDiffusionProcess,  # noqa: E501

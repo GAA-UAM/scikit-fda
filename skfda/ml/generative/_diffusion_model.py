@@ -152,11 +152,11 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         samples:
 
         >>> from skfda.datasets import make_gaussian_process
-        >>> from skfda.ml.generative.diffusion_model import (
+        >>> from skfda.ml.generative import (
         ...     FunctionalDiffusionGenerator,
         ... )
         >>> X = make_gaussian_process(
-        ...     n_samples=30, n_features=64, seed=0,
+        ...     n_samples=30, n_features=64, random_state=0,
         ... )
         >>> gen = FunctionalDiffusionGenerator(max_iter=5, seed=0)
         >>> _ = gen.fit(X)  # doctest: +SKIP
@@ -282,7 +282,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
             Fit a generator on Gaussian process trajectories:
 
             >>> from skfda.datasets import make_gaussian_process
-            >>> from skfda.ml.generative.diffusion_model import (
+            >>> from skfda.ml.generative import (
             ...     FunctionalDiffusionGenerator,
             ... )
             >>> X = make_gaussian_process(
@@ -521,7 +521,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
             Generate unconditional samples after fitting:
 
             >>> from skfda.datasets import make_gaussian_process
-            >>> from skfda.ml.generative.diffusion_model import (
+            >>> from skfda.ml.generative import (
             ...     FunctionalDiffusionGenerator,
             ... )
             >>> X = make_gaussian_process(
@@ -821,11 +821,18 @@ class FunctionalDiffusionGenerator(BaseEstimator):
                 msg,
             )
 
-        target_device = device if device is not None else checkpoint["device"]
+        if device is not None:
+            target_device = torch.device(device)
+            # Current device overrides the stored device.
+            # Also on the diffusion process checkpoint
+            checkpoint["diff_process"]["device"] = target_device
+        else:
+            target_device = torch.device(checkpoint["device"])
 
         # Restore diffusion process.  If diff_process is provided, its
         # callables are used and only the fitted state is pulled from the
         # checkpoint (see ForwardDiffusionProcess.from_checkpoint).
+
         restored_diff_process = ForwardDiffusionProcess.from_checkpoint(
             checkpoint["diff_process"],
             instance=diff_process,

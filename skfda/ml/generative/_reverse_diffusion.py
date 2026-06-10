@@ -232,7 +232,7 @@ class SDEReverseDiffusionProcess(ReverseDiffusionProcess):
             return _fft_to_eigenspace(score)
 
         x_0_diag = self.reverse(
-            diff_process.diagonal_process,
+            diff_process.diagonal_process_,
             score_model_diag, x_t_diag, t_1, t_0, y,
         )
         return _eigenspace_to_fft(x_0_diag)
@@ -326,7 +326,7 @@ class ProbabilityFlowODEReverseProcess(ReverseDiffusionProcess):
             return _fft_to_eigenspace(score)
 
         x_0_diag = self.reverse(
-            diff_process.diagonal_process,
+            diff_process.diagonal_process_,
             score_model_diag, x_t_diag, t_1, t_0, y,
         )
         return _eigenspace_to_fft(x_0_diag)

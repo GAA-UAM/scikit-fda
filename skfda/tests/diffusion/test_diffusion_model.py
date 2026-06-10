@@ -1,26 +1,28 @@
 """Correctness tests for FunctionalDiffusionGenerator."""
 
 from __future__ import annotations
+
 import warnings
 
 import numpy as np
 import pytest
 import torch
+from sklearn.exceptions import NotFittedError
 from torch.utils.data import TensorDataset
 
-from sklearn.exceptions import NotFittedError
-
-from skfda.ml.generative.diffusion_model import (
+from skfda.ml.generative._diffusion_model import (
     FunctionalDiffusionGenerator,
     _fdatagrid_to_tensor_dataset,
 )
-from skfda.ml.generative.diffusion_process import (
+from skfda.ml.generative._diffusion_process import (
     DiagonalDiffusionProcess,
     VarianceExplodingDiffusionProcess,
     VariancePreservingDiffusionProcess,
 )
-from skfda.ml.generative.reverse_diffusion import ReverseDiffusionProcess
+from skfda.ml.generative._reverse_diffusion import ReverseDiffusionProcess
 from skfda.representation.grid import FDataGrid
+
+from ._constants import SEED
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Module-level constants
@@ -73,7 +75,7 @@ def fitted_generator(small_grid: FDataGrid) -> FunctionalDiffusionGenerator:
     Function-scoped so each test gets an independent instance; shared mutable
     state (e.g. RNG advancement) would cause test-order-dependent failures.
     """
-    gen = FunctionalDiffusionGenerator(max_iter=1, seed=42)
+    gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
     gen.fit(small_grid)
     return gen
 
@@ -201,7 +203,7 @@ class TestInitialization:
             batch_size=8,
             n_jobs=2,
             device="cpu",
-            seed=7,
+            seed=SEED,
         )
 
         assert gen.normalize is False
@@ -210,7 +212,7 @@ class TestInitialization:
         assert gen.batch_size == 8
         assert gen.n_jobs == 2
         assert gen.device == "cpu"
-        assert gen.seed == 7
+        assert gen.seed == SEED
 
     # ─────────────────────────────────────────────────────────────────────────
     # score_model=None
@@ -379,7 +381,7 @@ class TestFit:
 
     def test_fit_returns_self(self, small_grid):
         """fit() must return self (scikit-learn chaining convention)."""
-        gen = FunctionalDiffusionGenerator(max_iter=1, seed=42)
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
         result = gen.fit(small_grid)
 
@@ -394,7 +396,7 @@ class TestFit:
         t = np.linspace(0, 1, 4)
         data_matrix = np.zeros((2, 4, 4, 1))  # (N, M1, M2, codomain)
         grid_2d = FDataGrid(data_matrix=data_matrix, grid_points=[t, t])
-        gen = FunctionalDiffusionGenerator(max_iter=1, seed=42)
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
         with pytest.raises(ValueError):
             gen.fit(grid_2d)
@@ -404,7 +406,7 @@ class TestFit:
         t = np.linspace(0, 1, 8)
         data_matrix = np.zeros((2, 8, 2))  # (N, M, codomain=2)
         grid_vector = FDataGrid(data_matrix=data_matrix, grid_points=[t])
-        gen = FunctionalDiffusionGenerator(max_iter=1, seed=42)
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
         with pytest.raises(ValueError):
             gen.fit(grid_vector)
@@ -415,7 +417,7 @@ class TestFit:
 
     def test_fit_sets_grid_points_attribute(self, small_grid):
         """fit() must store the training grid as grid_points_."""
-        gen = FunctionalDiffusionGenerator(max_iter=1, seed=42)
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
         gen.fit(small_grid)
 
@@ -424,7 +426,7 @@ class TestFit:
 
     def test_fit_sets_score_model_attribute(self, small_grid):
         """fit() must store the trained network as a torch.nn.Module in score_model_."""
-        gen = FunctionalDiffusionGenerator(max_iter=1, seed=42)
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
         gen.fit(small_grid)
 
@@ -436,7 +438,7 @@ class TestFit:
 
         generate() does not call .eval() itself, so this must be set by fit().
         """
-        gen = FunctionalDiffusionGenerator(max_iter=1, seed=42)
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
         gen.fit(small_grid)
 
@@ -464,11 +466,12 @@ class TestFit:
     # Labeled data
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_fit_with_labels_does_not_raise(self, small_grid, labels_array):
-        """fit() must complete without error when y labels are supplied."""
-        gen = FunctionalDiffusionGenerator(max_iter=1, seed=0)
+    def test_fit_with_labels_does_raise_not_implemented(self, small_grid, labels_array):
+        """fit() must raise not implemented when y labels are supplied."""
+        gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
-        gen.fit(small_grid, y=labels_array)  # must not raise
+        with pytest.raises(NotImplementedError, match="Conditional generation"):
+            gen.fit(small_grid, y=labels_array)
 
     # ─────────────────────────────────────────────────────────────────────────
     # diff_process.fit receives all samples
@@ -481,7 +484,7 @@ class TestFit:
             diff_process=spy,
             max_iter=1,
             batch_size=4,
-            seed=42,
+            seed=SEED,
         )
 
         gen.fit(small_grid)
@@ -495,8 +498,8 @@ class TestFit:
 
     def test_fit_is_reproducible_with_same_seed(self, small_grid):
         """Same seed must produce identical weights after fit()."""
-        gen_a = FunctionalDiffusionGenerator(max_iter=1, seed=42)
-        gen_b = FunctionalDiffusionGenerator(max_iter=1, seed=42)
+        gen_a = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
+        gen_b = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
         gen_a.fit(small_grid)
         gen_b.fit(small_grid)
 
@@ -526,7 +529,7 @@ class TestLossFunction:
         x = torch.randn(_LOSS_BATCH, _N_GRID_POINTS)
         t = torch.full((_LOSS_BATCH,), 0.5)
         generator = torch.Generator()
-        generator.manual_seed(0)
+        generator.manual_seed(SEED)
 
         loss = gen._loss_function(gen.score_model_, x, t, None, generator)
 
@@ -542,7 +545,7 @@ class TestLossFunction:
         x = torch.randn(_LOSS_BATCH, _N_GRID_POINTS)
         t = torch.full((_LOSS_BATCH,), 0.5)
         generator = torch.Generator()
-        generator.manual_seed(0)
+        generator.manual_seed(SEED)
 
         loss = gen._loss_function(gen.score_model_, x, t, None, generator)
 
@@ -562,9 +565,9 @@ class TestLossFunction:
 
         # Same seed for both generators so z is identical; t is the only difference.
         gen_low  = torch.Generator()
-        gen_low.manual_seed(0)
+        gen_low.manual_seed(SEED)
         gen_high = torch.Generator()
-        gen_high.manual_seed(0)
+        gen_high.manual_seed(SEED)
 
         loss_low  = gen._loss_function(gen.score_model_, x, t_low,  None, gen_low)
         loss_high = gen._loss_function(gen.score_model_, x, t_high, None, gen_high)
@@ -624,18 +627,6 @@ class TestGenerate:
         assert np.array_equal(result.grid_points[0], small_grid.grid_points[0])
 
     # ─────────────────────────────────────────────────────────────────────────
-    # Conditional generation
-    # ─────────────────────────────────────────────────────────────────────────
-
-    def test_generate_with_y_overrides_n_samples(self, fitted_generator):
-        """When y is provided, n_samples must equal len(y)."""
-        y = np.array([0, 1, 0])
-
-        result = fitted_generator.generate(n_samples=99, y=y)
-
-        assert result.n_samples == len(y)  # 3, not 99
-
-    # ─────────────────────────────────────────────────────────────────────────
     # Gradient tracking
     # ─────────────────────────────────────────────────────────────────────────
 
@@ -681,7 +672,7 @@ class TestGenerate:
         shifted_grid = FDataGrid(data_matrix=data_matrix, grid_points=[t])
 
         gen = FunctionalDiffusionGenerator(
-            normalize=True, max_iter=1, seed=0,
+            normalize=True, max_iter=1, seed=SEED,
         )
         gen.fit(shifted_grid)
 
@@ -702,7 +693,7 @@ class TestGenerate:
     def test_no_transform_generate_does_not_rescale(self, small_grid):
         """No rescaling when normalize=False and standardize=False."""
         gen = FunctionalDiffusionGenerator(
-            normalize=False, standardize=False, max_iter=1, seed=0,
+            normalize=False, standardize=False, max_iter=1, seed=SEED,
         )
         gen.fit(small_grid)
 
@@ -787,7 +778,7 @@ class TestGenerateEvolution:
         shifted_grid = FDataGrid(data_matrix=data_matrix, grid_points=[t])
 
         gen = FunctionalDiffusionGenerator(
-            normalize=True, max_iter=1, seed=0,
+            normalize=True, max_iter=1, seed=SEED,
         )
         gen.fit(shifted_grid)
 
@@ -801,20 +792,6 @@ class TestGenerateEvolution:
                 f"result[{idx}].data_matrix is not ≈ _bias_={gen._bias_:.4f}; "
                 "the inverse transform may not have been applied to this snapshot."
             )
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # Conditional generation
-    # ─────────────────────────────────────────────────────────────────────────
-
-    def test_evolution_with_y_sets_n_samples(self, fitted_generator):
-        """When y is provided, every snapshot must have n_samples == len(y)."""
-        y = np.array([0, 1])
-
-        result = fitted_generator.generate_evolution(
-            99, timesteps=np.linspace(1.0, 0.0, 3), y=y,
-        )
-
-        assert all(r.n_samples == len(y) for r in result)  # 2, not 99
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -984,7 +961,7 @@ class TestSaveLoad:
         diff_term = lambda t: torch.ones(t.shape[0], _N_GRID_POINTS)
         proc = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diff_term)
         gen = FunctionalDiffusionGenerator(
-            diff_process=proc, max_iter=1, seed=0,
+            diff_process=proc, max_iter=1, seed=SEED,
         )
         gen.fit(small_grid)
         with warnings.catch_warnings():
@@ -997,7 +974,7 @@ class TestSaveLoad:
             tmp_checkpoint, diff_process=fresh_proc,
         )
 
-        x_test = torch.randn(2, gen2.diff_process.M)
+        x_test = torch.randn(2, gen2.diff_process.M_)
         t_test = torch.full((2,), 0.5)
         gen2.diff_process.mean_cond(x_test, t_test)  # must not raise
 

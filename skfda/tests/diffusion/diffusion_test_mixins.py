@@ -21,7 +21,7 @@ import pytest
 import torch
 from sklearn.exceptions import NotFittedError
 
-from skfda.ml.generative.diffusion_process import (
+from skfda.ml.generative._diffusion_process import (
     ForwardDiffusionProcess,
 )
 
@@ -54,20 +54,20 @@ class ForwardDiffusionFitTests:
     # ── fit() contract ────────────────────────────────────────────────────────
 
     def test_no_m_before_fit(self, unfitted_instance):
-        """Attribute 'M' must not exist before fit() is called."""
-        assert not hasattr(unfitted_instance, "M")
+        """Attribute 'M_' must not exist before fit() is called."""
+        assert not hasattr(unfitted_instance, "M_")
 
     def test_fit_learns_data_dimension(self, unfitted_instance):
         """After fit(x), self.M must equal x.shape[1]."""
         unfitted_instance.fit(torch.randn(BATCH_SIZE, CUSTOM_DIM))
 
-        assert unfitted_instance.M == CUSTOM_DIM
+        assert unfitted_instance.M_ == CUSTOM_DIM
 
     def test_fit_reads_axis_1_not_axis_0(self, unfitted_instance):
         """fit() must store M from axis 1, not axis 0."""
         unfitted_instance.fit(torch.randn(3, CUSTOM_DIM))
 
-        assert unfitted_instance.M == CUSTOM_DIM
+        assert unfitted_instance.M_ == CUSTOM_DIM
 
     def test_fit_returns_self(self, unfitted_instance):
         """fit() must return self to enable method chaining."""
@@ -117,7 +117,7 @@ class ForwardDiffusionFitTests:
         instance_b = make_process()
         instance_b._restore_fit_state(instance_a._get_fit_state())
 
-        assert instance_b.M == instance_a.M
+        assert instance_b.M_ == instance_a.M_
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -375,12 +375,12 @@ class ForwardDiffusionSampleLimitTests:
     def test_output_shape(self, fitted_process, n_samples):
         """Output shape must be (n_samples, M).
 
-        Uses fitted_process.M rather than DATA_DIM so the test remains
+        Uses fitted_process.M_ rather than DATA_DIM so the test remains
         correct if the process was fitted on a different spatial dimension.
         """
         result = fitted_process.sample_limit_distribution(n_samples)
 
-        assert result.shape == (n_samples, fitted_process.M)
+        assert result.shape == (n_samples, fitted_process.M_)
 
     # ── device placement ──────────────────────────────────────────────────────
 

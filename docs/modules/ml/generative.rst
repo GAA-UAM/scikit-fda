@@ -14,6 +14,8 @@ Diffusion Process
 
    skfda.ml.generative.ForwardDiffusionProcess
    skfda.ml.generative.VariancePreservingDiffusionProcess
+   skfda.ml.generative.VarianceExplodingDiffusionProcess
+   skfda.ml.generative.CirculantSymmetricMatrixDiffusionProcess
 
 Reverse Diffusion
 -----------------

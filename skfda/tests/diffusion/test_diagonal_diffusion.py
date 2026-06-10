@@ -5,11 +5,11 @@ import numpy as np
 import pytest
 import torch
 
-from skfda.ml.generative.diffusion_process import (
+from skfda.ml.generative._diffusion_process import (
     DiagonalDiffusionProcess,
     ForwardDiffusionProcess,
-    batch_linear_interp_1d,
-    validate_diagonal_callable,
+    _batch_linear_interp_1d,
+    _validate_diagonal_callable,
 )
 
 from ._constants import BATCH_SIZE, CUSTOM_DIM, DATA_DIM, SEED
@@ -53,7 +53,7 @@ class TestDiagonalFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests)
     Extends the base contract:
     (1) _get_fit_state() stores 'device' (learned at fit() time, not at construction).
     (2) n_integration_points is in init_kwargs via get_params(), not in fit_state.
-    (3) fit() calls validate_diagonal_callable before precomputation.
+    (3) fit() calls _validate_diagonal_callable before precomputation.
     (4) to_checkpoint() warns and replaces non-picklable callables with None.
     """
 
@@ -151,11 +151,11 @@ class TestDiagonalFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests)
         instance_b = ForwardDiffusionProcess.from_checkpoint(checkpoint)
 
         assert type(instance_b) is DiagonalDiffusionProcess
-        assert instance_b.M == instance_a.M
-        assert instance_b.device == instance_a.device
+        assert instance_b.M_ == instance_a.M_
+        assert instance_b.device_ == instance_a.device_
         assert instance_b.n_integration_points == instance_a.n_integration_points
-        assert instance_b.precomputed_d_grid_T.shape[0] == instance_a.n_integration_points
-        assert instance_b.precomputed_sigma_t_grid.shape[0] == instance_a.n_integration_points
+        assert instance_b.precomputed_d_grid__T_.shape[0] == instance_a.n_integration_points
+        assert instance_b.precomputed_sigma_t_grid_.shape[0] == instance_a.n_integration_points
         assert torch.equal(instance_b._cov(t_batch), instance_a._cov(t_batch))
 
     def test_checkpoint_round_trip_non_default_n_integration_points(self, t_batch):
@@ -174,8 +174,8 @@ class TestDiagonalFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests)
         instance_b = ForwardDiffusionProcess.from_checkpoint(checkpoint)
 
         assert instance_b.n_integration_points == 500
-        assert instance_b.precomputed_d_grid_T.shape[0] == 500
-        assert instance_b.precomputed_sigma_t_grid.shape[0] == 500
+        assert instance_b.precomputed_d_grid__T_.shape[0] == 500
+        assert instance_b.precomputed_sigma_t_grid_.shape[0] == 500
 
     def test_fit_raises_when_D_t_returns_incompatible_shape(self, x_batch, dim_callables):
         """fit() must raise ValueError when drift_term returns shape (N, M') with M'≠M and M'≠1."""
@@ -651,7 +651,7 @@ class TestDiagonalMeanCond:
         """mean_cond(x, 0) must equal x: ∫₀⁰ D du = 0, so exp(0)*x = x.
 
         allclose (not equal) tolerates floating-point rounding from left-boundary
-        interpolation in batch_linear_interp_1d.
+        interpolation in _batch_linear_interp_1d.
         """
         result = process.mean_cond(x_batch, t_zero)
 
@@ -729,10 +729,10 @@ class TestDiagonalPrecomputedGrids:
     """Tests for the precomputed integral grid structure of DiagonalDiffusionProcess.
 
     The four precomputed tensors:
-        precomputed_d_grid_T     — time grid for ∫ D du
-        precomputed_d_grid       — cumulative ∫₀ᵗ D(u) du at each node
-        precomputed_sigma_t_grid — time grid for ∫ g²·exp(-2∫D) ds
-        precomputed_sigma_f_grid — cumulative ∫₀ᵗ g²·exp(-2∫D) ds at each node
+        precomputed_d_grid__T_     — time grid for ∫ D du
+        precomputed_d_grid_       — cumulative ∫₀ᵗ D(u) du at each node
+        precomputed_sigma_t_grid_ — time grid for ∫ g²·exp(-2∫D) ds
+        precomputed_sigma_f_grid_ — cumulative ∫₀ᵗ g²·exp(-2∫D) ds at each node
     """
 
     @pytest.fixture
@@ -743,32 +743,32 @@ class TestDiagonalPrecomputedGrids:
         p.fit(x_batch)
         return p
 
-    def test_precomputed_d_grid_T_shape_matches_n_integration_points(self, process):
-        """precomputed_d_grid_T must have exactly n_integration_points entries.
+    def test_precomputed_d_grid__T__shape_matches_n_integration_points(self, process):
+        """precomputed_d_grid__T_ must have exactly n_integration_points entries.
 
         n=500 (non-default): a hardcoded 1000-point grid would fail this assertion.
         """
-        assert process.precomputed_d_grid_T.shape == (500,)
+        assert process.precomputed_d_grid__T_.shape == (500,)
 
-    def test_precomputed_d_grid_shape_is_n_integration_points_by_M(self, process):
-        """precomputed_d_grid must have shape (n_integration_points, M).
+    def test_precomputed_d_grid__shape_is_n_integration_points_by_M(self, process):
+        """precomputed_d_grid_ must have shape (n_integration_points, M).
 
         Matching first dimensions between Dgrid_T and Dgrid is required by
-        batch_linear_interp_1d for correct index lookups.
+        _batch_linear_interp_1d for correct index lookups.
         """
-        assert process.precomputed_d_grid.shape == (500, DATA_DIM)
-        assert process.precomputed_d_grid.shape[0] == process.precomputed_d_grid_T.shape[0]
+        assert process.precomputed_d_grid_.shape == (500, DATA_DIM)
+        assert process.precomputed_d_grid_.shape[0] == process.precomputed_d_grid__T_.shape[0]
 
-    def test_precomputed_sigma_t_grid_shape_matches_n_integration_points(self, process):
-        """precomputed_sigma_t_grid must have exactly n_integration_points entries."""
-        assert process.precomputed_sigma_t_grid.shape == (500,)
+    def test_precomputed_sigma_t_grid__shape_matches_n_integration_points(self, process):
+        """precomputed_sigma_t_grid_ must have exactly n_integration_points entries."""
+        assert process.precomputed_sigma_t_grid_.shape == (500,)
 
-    def test_precomputed_sigma_f_grid_shape_is_n_integration_points_by_M(self, process):
-        """precomputed_sigma_f_grid must have shape (n_integration_points, M)."""
-        assert process.precomputed_sigma_f_grid.shape == (500, DATA_DIM)
+    def test_precomputed_sigma_f_grid__shape_is_n_integration_points_by_M(self, process):
+        """precomputed_sigma_f_grid_ must have shape (n_integration_points, M)."""
+        assert process.precomputed_sigma_f_grid_.shape == (500, DATA_DIM)
         assert (
-            process.precomputed_sigma_f_grid.shape[0]
-            == process.precomputed_sigma_t_grid.shape[0]
+            process.precomputed_sigma_f_grid_.shape[0]
+            == process.precomputed_sigma_t_grid_.shape[0]
         )
 
     def test_time_grid_boundaries_are_exactly_zero_and_T(self, process):
@@ -777,50 +777,50 @@ class TestDiagonalPrecomputedGrids:
         If the grid starts at eps > 0, _cov(t=0) queries outside the grid
         and the clamped-index fallback returns a non-zero value.
         """
-        assert process.precomputed_d_grid_T[0].item()      == 0.0
-        assert process.precomputed_d_grid_T[-1].item()     == 1.0
-        assert process.precomputed_sigma_t_grid[0].item()  == 0.0
-        assert process.precomputed_sigma_t_grid[-1].item() == 1.0
+        assert process.precomputed_d_grid__T_[0].item()      == 0.0
+        assert process.precomputed_d_grid__T_[-1].item()     == 1.0
+        assert process.precomputed_sigma_t_grid_[0].item()  == 0.0
+        assert process.precomputed_sigma_t_grid_[-1].item() == 1.0
 
-    def test_precomputed_d_grid_first_row_is_zero(self, process):
-        """The first row of precomputed_d_grid must be exactly zero for all dimensions.
+    def test_precomputed_d_grid__first_row_is_zero(self, process):
+        """The first row of precomputed_d_grid_ must be exactly zero for all dimensions.
 
         Encodes ∫₀⁰ D du = 0, the foundation for mean_cond(x, 0) = x.
         torch.equal (not allclose): this zero comes from new_zeros, not from integration.
         """
         assert torch.equal(
-            process.precomputed_d_grid[0],
+            process.precomputed_d_grid_[0],
             torch.zeros(DATA_DIM),
         )
 
-    def test_precomputed_sigma_f_grid_first_row_is_zero(self, process):
-        """The first row of precomputed_sigma_f_grid must be exactly zero for all dimensions.
+    def test_precomputed_sigma_f_grid__first_row_is_zero(self, process):
+        """The first row of precomputed_sigma_f_grid_ must be exactly zero for all dimensions.
 
         Encodes ∫₀⁰ g²·exp(-2∫D) ds = 0, the foundation for _cov(0) = 0.
         torch.equal: the zero must be structural, not numerical.
         """
         assert torch.equal(
-            process.precomputed_sigma_f_grid[0],
+            process.precomputed_sigma_f_grid_[0],
             torch.zeros(DATA_DIM),
         )
 
-    def test_precomputed_d_grid_is_monotonically_nonincreasing(self, process):
-        """With drift_term = -0.5 < 0 everywhere, precomputed_d_grid must be non-increasing.
+    def test_precomputed_d_grid__is_monotonically_nonincreasing(self, process):
+        """With drift_term = -0.5 < 0 everywhere, precomputed_d_grid_ must be non-increasing.
 
         All values must additionally be ≤ 0 since ∫ of a negative function is non-positive.
         """
-        grid = process.precomputed_d_grid   # (500, DATA_DIM)
+        grid = process.precomputed_d_grid_   # (500, DATA_DIM)
 
         assert (grid[1:] <= grid[:-1]).all()
         assert (grid <= 0).all()
 
-    def test_precomputed_sigma_f_grid_is_monotonically_nondecreasing(self, process):
-        """precomputed_sigma_f_grid must be non-decreasing for all dimensions.
+    def test_precomputed_sigma_f_grid__is_monotonically_nondecreasing(self, process):
+        """precomputed_sigma_f_grid_ must be non-decreasing for all dimensions.
 
         The integrand g(s)² · exp(-2∫D) is always non-negative, so the cumulative
         integral must accumulate.
         """
-        grid = process.precomputed_sigma_f_grid   # (500, DATA_DIM)
+        grid = process.precomputed_sigma_f_grid_   # (500, DATA_DIM)
 
         assert (grid[1:] >= grid[:-1]).all()
         assert (grid >= 0).all()
@@ -830,15 +830,15 @@ class TestDiagonalPrecomputedGrids:
 
         .device.type (not .device) avoids index sensitivity in CPU-only environments.
         """
-        assert process.precomputed_d_grid_T.device.type     == "cpu"
-        assert process.precomputed_d_grid.device.type       == "cpu"
-        assert process.precomputed_sigma_t_grid.device.type == "cpu"
-        assert process.precomputed_sigma_f_grid.device.type == "cpu"
+        assert process.precomputed_d_grid__T_.device.type     == "cpu"
+        assert process.precomputed_d_grid_.device.type       == "cpu"
+        assert process.precomputed_sigma_t_grid_.device.type == "cpu"
+        assert process.precomputed_sigma_f_grid_.device.type == "cpu"
 
-    def test_precomputed_d_grid_matches_analytical_value_with_constant_D(
+    def test_precomputed_d_grid__matches_analytical_value_with_constant_D(
         self, x_batch, dim_callables,
     ):
-        """With constant D=-0.5, precomputed_d_grid must equal -0.5 * t at every node.
+        """With constant D=-0.5, precomputed_d_grid_ must equal -0.5 * t at every node.
 
         The trapezoid rule is exact for constant integrands; residuals > atol=1e-6
         indicate a bug in cumulation or prepend, not numerical error.
@@ -847,15 +847,15 @@ class TestDiagonalPrecomputedGrids:
         p = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diffusion_term, n_integration_points=1000)
         p.fit(x_batch)
 
-        t_grid   = p.precomputed_d_grid_T
+        t_grid   = p.precomputed_d_grid__T_
         expected = (-0.5 * t_grid).unsqueeze(1).expand(-1, DATA_DIM)
 
-        assert torch.allclose(p.precomputed_d_grid, expected, atol=1e-6)
+        assert torch.allclose(p.precomputed_d_grid_, expected, atol=1e-6)
 
-    def test_precomputed_sigma_f_grid_matches_analytical_value_with_constant_D_and_g(
+    def test_precomputed_sigma_f_grid__matches_analytical_value_with_constant_D_and_g(
         self, x_batch, dim_callables,
     ):
-        """With D=-0.5 and g=1, precomputed_sigma_f_grid must equal exp(t) - 1.
+        """With D=-0.5 and g=1, precomputed_sigma_f_grid_ must equal exp(t) - 1.
 
         Derivation:
             exp(-2 ∫₀ˢ D du) = exp(s)
@@ -867,10 +867,10 @@ class TestDiagonalPrecomputedGrids:
         p = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diffusion_term, n_integration_points=1000)
         p.fit(x_batch)
 
-        t_grid   = p.precomputed_sigma_t_grid
+        t_grid   = p.precomputed_sigma_t_grid_
         expected = (torch.exp(t_grid) - 1.0).unsqueeze(1).expand(-1, DATA_DIM)
 
-        assert torch.allclose(p.precomputed_sigma_f_grid, expected, atol=1e-4)
+        assert torch.allclose(p.precomputed_sigma_f_grid_, expected, atol=1e-4)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -897,10 +897,10 @@ class TestNIntegrationPoints:
         process = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diffusion_term, n_integration_points=n)
         process.fit(x_batch)
 
-        assert process.precomputed_d_grid_T.shape[0]     == n
-        assert process.precomputed_d_grid.shape[0]       == n
-        assert process.precomputed_sigma_t_grid.shape[0] == n
-        assert process.precomputed_sigma_f_grid.shape[0] == n
+        assert process.precomputed_d_grid__T_.shape[0]     == n
+        assert process.precomputed_d_grid_.shape[0]       == n
+        assert process.precomputed_sigma_t_grid_.shape[0] == n
+        assert process.precomputed_sigma_f_grid_.shape[0] == n
 
     def test_higher_n_integration_points_gives_lower_approximation_error(
         self, x_batch, dim_callables, t_sweep,
@@ -947,7 +947,7 @@ class TestNIntegrationPoints:
     ):
         """n_integration_points=2 must return a structurally valid _cov tensor.
 
-        With n=2, batch_linear_interp_1d receives a single-segment grid.
+        With n=2, _batch_linear_interp_1d receives a single-segment grid.
         Checks shape, no NaN/Inf, and non-negativity; accuracy is not checked
         with a single trapezoid step.
         """
@@ -970,7 +970,7 @@ class TestNIntegrationPoints:
 
         With n=1, cumulative_trapezoid on a (1, M) tensor produces an empty
         (0, M) tensor. After zero-prepend the grid is (1, M); inside
-        batch_linear_interp_1d, clamp(indices, 1, K-1=0) has min > max —
+        _batch_linear_interp_1d, clamp(indices, 1, K-1=0) has min > max —
         silently returning out-of-bounds reads rather than crashing, making
         the failure invisible to downstream tests.
 
@@ -1019,7 +1019,7 @@ class TestDiagonalDeviceConsistency:
         return p
 
     def test_D_integral_grids_are_on_cpu_after_fit_on_cpu_data(self, x_batch, dim_callables):
-        """precomputed_d_grid must be on CPU when fitted on CPU data.
+        """precomputed_d_grid_ must be on CPU when fitted on CPU data.
 
         Pins the full chain: fit() stores torch.device("cpu"), linspace receives
         it, and the resulting grids end up on CPU.
@@ -1029,12 +1029,12 @@ class TestDiagonalDeviceConsistency:
         p = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diffusion_term)
         p.fit(x_cpu)
 
-        assert p.device == torch.device("cpu")
-        assert p.precomputed_d_grid_T.device.type == "cpu"
-        assert p.precomputed_d_grid.device.type   == "cpu"
+        assert p.device_ == torch.device("cpu")
+        assert p.precomputed_d_grid__T_.device.type == "cpu"
+        assert p.precomputed_d_grid_.device.type   == "cpu"
 
     def test_F_integral_grids_are_on_cpu_after_fit_on_cpu_data(self, x_batch, dim_callables):
-        """precomputed_sigma_f_grid must be on CPU when fitted on CPU data.
+        """precomputed_sigma_f_grid_ must be on CPU when fitted on CPU data.
 
         Tested separately from 8.1 because _precompute_F_integral is an independent
         code path that could have its own device bug.
@@ -1044,8 +1044,8 @@ class TestDiagonalDeviceConsistency:
         p = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diffusion_term)
         p.fit(x_cpu)
 
-        assert p.precomputed_sigma_t_grid.device.type == "cpu"
-        assert p.precomputed_sigma_f_grid.device.type == "cpu"
+        assert p.precomputed_sigma_t_grid_.device.type == "cpu"
+        assert p.precomputed_sigma_f_grid_.device.type == "cpu"
 
     def test_cov_output_device_is_cpu(self, cpu_process):
         """_cov must return a CPU tensor when grids are on CPU."""
@@ -1103,11 +1103,11 @@ class TestDiagonalDeviceConsistency:
         A hardcoded device="cpu" in either precompute path passes all CPU tests
         above but fails here.
         """
-        assert cuda_process.device.type == "cuda"
-        assert cuda_process.precomputed_d_grid_T.device.type     == "cuda"
-        assert cuda_process.precomputed_d_grid.device.type       == "cuda"
-        assert cuda_process.precomputed_sigma_t_grid.device.type == "cuda"
-        assert cuda_process.precomputed_sigma_f_grid.device.type == "cuda"
+        assert cuda_process.device_.type == "cuda"
+        assert cuda_process.precomputed_d_grid__T_.device.type     == "cuda"
+        assert cuda_process.precomputed_d_grid_.device.type       == "cuda"
+        assert cuda_process.precomputed_sigma_t_grid_.device.type == "cuda"
+        assert cuda_process.precomputed_sigma_f_grid_.device.type == "cuda"
 
     @pytest.mark.skipif(
         not torch.cuda.is_available(), reason="requires CUDA",
@@ -1164,11 +1164,11 @@ class TestDiagonalDeviceConsistency:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# validate_diagonal_callable
+# _validate_diagonal_callable
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestValidateCallable:
-    """Tests for the validate_diagonal_callable standalone function.
+    """Tests for the _validate_diagonal_callable standalone function.
 
     Probes fn with a zero t-batch of length N; checks shape is (N, 1) or (N, M)
     where x.shape == (N, M). Also checks device match.
@@ -1179,7 +1179,7 @@ class TestValidateCallable:
         N = x_batch.shape[0]
         fn = lambda t: torch.ones(N, 1)
 
-        result = validate_diagonal_callable(x_batch, fn, "diffusion_term")
+        result = _validate_diagonal_callable(x_batch, fn, "diffusion_term")
 
         assert result is None
 
@@ -1188,7 +1188,7 @@ class TestValidateCallable:
         N, M = x_batch.shape
         fn = lambda t: torch.ones(N, M)
 
-        result = validate_diagonal_callable(x_batch, fn, "drift_term")
+        result = _validate_diagonal_callable(x_batch, fn, "drift_term")
 
         assert result is None
 
@@ -1198,7 +1198,7 @@ class TestValidateCallable:
         fn = lambda t: torch.ones(N, CUSTOM_DIM)  # CUSTOM_DIM=17 ≠ DATA_DIM=16
 
         with pytest.raises(ValueError):
-            validate_diagonal_callable(x_batch, fn, "drift_term")
+            _validate_diagonal_callable(x_batch, fn, "drift_term")
 
     def test_raises_for_3d_output(self, x_batch):
         """(N, M, 1) output (ndim==3) must raise ValueError.
@@ -1210,7 +1210,7 @@ class TestValidateCallable:
         fn = lambda t: torch.ones(N, M, 1)
 
         with pytest.raises(ValueError):
-            validate_diagonal_callable(x_batch, fn, "drift_term")
+            _validate_diagonal_callable(x_batch, fn, "drift_term")
 
     def test_raises_for_scalar_tensor(self, x_batch):
         """A scalar tensor (ndim==0) must raise ValueError.
@@ -1220,14 +1220,14 @@ class TestValidateCallable:
         fn = lambda t: torch.tensor(1.0)
 
         with pytest.raises(ValueError):
-            validate_diagonal_callable(x_batch, fn, "diffusion_term")
+            _validate_diagonal_callable(x_batch, fn, "diffusion_term")
 
     def test_raises_for_wrong_batch_size(self, x_batch):
         """(N',) where N' != N must raise ValueError."""
         fn = lambda t: torch.ones(42)  # 42 != BATCH_SIZE=8
 
         with pytest.raises(ValueError):
-            validate_diagonal_callable(x_batch, fn, "drift_term")
+            _validate_diagonal_callable(x_batch, fn, "drift_term")
 
     @pytest.mark.skipif(
         not torch.cuda.is_available(),
@@ -1239,7 +1239,7 @@ class TestValidateCallable:
         fn = lambda t: torch.ones(N, device="cuda")
 
         with pytest.raises(ValueError):
-            validate_diagonal_callable(x_batch, fn, "drift_term")
+            _validate_diagonal_callable(x_batch, fn, "drift_term")
 
     def test_error_message_contains_callable_name(self, x_batch):
         """The ValueError message must include the name argument verbatim."""
@@ -1247,7 +1247,7 @@ class TestValidateCallable:
         name = "my_custom_D_t"
 
         with pytest.raises(ValueError, match=name):
-            validate_diagonal_callable(x_batch, fn, name)
+            _validate_diagonal_callable(x_batch, fn, name)
 
     def test_error_message_contains_expected_shapes(self, x_batch):
         """The ValueError message must list the acceptable shapes."""
@@ -1255,7 +1255,7 @@ class TestValidateCallable:
         fn = lambda t: torch.ones(42)
 
         with pytest.raises(ValueError, match=rf"\({N}, 1\)"):
-            validate_diagonal_callable(x_batch, fn, "drift_term")
+            _validate_diagonal_callable(x_batch, fn, "drift_term")
 
     def test_raises_for_none_return(self, x_batch):
         """fn returning None must raise ValueError (not AttributeError).
@@ -1266,7 +1266,7 @@ class TestValidateCallable:
         fn = lambda t: None
 
         with pytest.raises(TypeError, match=name):
-            validate_diagonal_callable(x_batch, fn, name)
+            _validate_diagonal_callable(x_batch, fn, name)
 
     def test_raises_for_float_return(self, x_batch):
         """fn returning a Python float must raise ValueError.
@@ -1276,14 +1276,14 @@ class TestValidateCallable:
         fn = lambda t: 1.0
 
         with pytest.raises(TypeError):
-            validate_diagonal_callable(x_batch, fn, "diffusion_term")
+            _validate_diagonal_callable(x_batch, fn, "diffusion_term")
 
     def test_raises_for_int_return(self, x_batch):
         """fn returning a Python int must raise ValueError."""
         fn = lambda t: 1
 
         with pytest.raises(TypeError):
-            validate_diagonal_callable(x_batch, fn, "drift_term")
+            _validate_diagonal_callable(x_batch, fn, "drift_term")
 
     def test_raises_for_list_return(self, x_batch):
         """fn returning a Python list must raise ValueError with the callable name.
@@ -1295,7 +1295,7 @@ class TestValidateCallable:
         fn = lambda t: [[1.0] * M] * N
 
         with pytest.raises(TypeError, match=name):
-            validate_diagonal_callable(x_batch, fn, name)
+            _validate_diagonal_callable(x_batch, fn, name)
 
     def test_raises_for_numpy_array_return(self, x_batch):
         r"""fn returning a NumPy array must raise ValueError (not AttributeError).
@@ -1308,29 +1308,29 @@ class TestValidateCallable:
         fn = lambda t: np.ones((N, M))
 
         with pytest.raises(TypeError):
-            validate_diagonal_callable(x_batch, fn, "drift_term")
+            _validate_diagonal_callable(x_batch, fn, "drift_term")
 
     def test_raises_for_empty_tensor_with_shape_in_message(self, x_batch):
         r"""fn returning shape (0, M) must raise ValueError with the shape in the message."""
         fn = lambda t: torch.zeros(0, DATA_DIM)
 
         with pytest.raises(ValueError, match=r"\(0,"):
-            validate_diagonal_callable(x_batch, fn, "diffusion_term")
+            _validate_diagonal_callable(x_batch, fn, "diffusion_term")
 
     def test_raises_for_zero_dimensional_tensor_with_shape_in_message(self, x_batch):
         r"""fn returning torch.zeros(()) must raise ValueError with shape () in the message."""
         fn = lambda t: torch.zeros(())
 
         with pytest.raises(ValueError, match=r"\(\)"):
-            validate_diagonal_callable(x_batch, fn, "drift_term")
+            _validate_diagonal_callable(x_batch, fn, "drift_term")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# batch_linear_interp_1d
+# _batch_linear_interp_1d
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestBatchLinearInterp1d:
-    """Tests for the batch_linear_interp_1d standalone function.
+    """Tests for the _batch_linear_interp_1d standalone function.
 
     Given t_grid (K,), f_grid (K, M), and query times t (N,), returns shape (N, M).
     """
@@ -1342,7 +1342,7 @@ class TestBatchLinearInterp1d:
         f_grid = torch.randn(K, M).contiguous()
         t      = torch.linspace(0.1, 0.9, N).contiguous()
 
-        result = batch_linear_interp_1d(t, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t, t_grid, f_grid)
 
         assert result.shape == (N, M)
 
@@ -1366,7 +1366,7 @@ class TestBatchLinearInterp1d:
             + intercepts.unsqueeze(0)
         )
 
-        result = batch_linear_interp_1d(t_query, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t_query, t_grid, f_grid)
 
         assert torch.allclose(result, expected, atol=1e-6)
 
@@ -1382,7 +1382,7 @@ class TestBatchLinearInterp1d:
         f_grid = torch.randn(K, M, generator=gen).contiguous()
         t_left = t_grid[:1].contiguous()
 
-        result = batch_linear_interp_1d(t_left, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t_left, t_grid, f_grid)
 
         assert torch.allclose(result, f_grid[:1, :])
 
@@ -1397,7 +1397,7 @@ class TestBatchLinearInterp1d:
         f_grid  = torch.randn(K, M, generator=gen).contiguous()
         t_right = t_grid[-1:].contiguous()
 
-        result = batch_linear_interp_1d(t_right, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t_right, t_grid, f_grid)
 
         assert torch.allclose(result, f_grid[-1:, :])
 
@@ -1416,7 +1416,7 @@ class TestBatchLinearInterp1d:
         ).unsqueeze(0).contiguous()
         expected = (f_grid[mid_idx] + f_grid[mid_idx + 1]) / 2
 
-        result = batch_linear_interp_1d(t_mid, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t_mid, t_grid, f_grid)
 
         assert torch.allclose(result.squeeze(0), expected, atol=1e-6)
 
@@ -1434,7 +1434,7 @@ class TestBatchLinearInterp1d:
         t_query  = torch.tensor([0.3]).contiguous()
         expected = 0.3 * scales  # [0.3, 0.6, 0.9, 1.2]
 
-        result = batch_linear_interp_1d(t_query, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t_query, t_grid, f_grid)
 
         assert torch.allclose(result.squeeze(0), expected, atol=1e-6)
         assert abs(result[0, 0].item()  - scales[0].item()  * 0.3) < 1e-6
@@ -1456,7 +1456,7 @@ class TestBatchLinearInterp1d:
         ]).contiguous()
         t_query = torch.tensor([0.5 + 5e-12]).contiguous()
 
-        result = batch_linear_interp_1d(t_query, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t_query, t_grid, f_grid)
 
         assert not result.isnan().any()
         assert not result.isinf().any()
@@ -1477,7 +1477,7 @@ class TestBatchLinearInterp1d:
         assert not t_non_contiguous.is_contiguous()  # precondition
 
         with pytest.raises(ValueError, match="t must"):
-            batch_linear_interp_1d(t_non_contiguous, t_grid, f_grid)
+            _batch_linear_interp_1d(t_non_contiguous, t_grid, f_grid)
 
     def test_non_contiguous_t_grid_raises_error(self):
         """Passing a non-contiguous t_grid tensor must raise ValueError.
@@ -1492,7 +1492,7 @@ class TestBatchLinearInterp1d:
         assert not t_grid_non_contiguous.is_contiguous()  # precondition
 
         with pytest.raises(ValueError, match="t_grid"):
-            batch_linear_interp_1d(t, t_grid_non_contiguous, f_grid)
+            _batch_linear_interp_1d(t, t_grid_non_contiguous, f_grid)
 
     def test_single_query_point_does_not_crash(self):
         """N=1 query point must produce shape (1, M) without crashing."""
@@ -1502,7 +1502,7 @@ class TestBatchLinearInterp1d:
         f_grid   = torch.randn(K, M, generator=gen).contiguous()
         t_single = torch.tensor([0.42]).contiguous()
 
-        result = batch_linear_interp_1d(t_single, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t_single, t_grid, f_grid)
 
         assert result.shape == (1, M)
         assert not result.isnan().any()
@@ -1524,7 +1524,7 @@ class TestBatchLinearInterp1d:
             + t_query.unsqueeze(1) * (f_grid[1] - f_grid[0])
         )
 
-        result = batch_linear_interp_1d(t_query, t_grid, f_grid)
+        result = _batch_linear_interp_1d(t_query, t_grid, f_grid)
 
         assert result.shape == (5, M)
         assert torch.allclose(result, expected, atol=1e-6)

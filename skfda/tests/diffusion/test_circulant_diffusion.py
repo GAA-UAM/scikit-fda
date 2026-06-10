@@ -5,7 +5,7 @@ import warnings
 import pytest
 import torch
 
-from skfda.ml.generative.diffusion_process import (
+from skfda.ml.generative._diffusion_process import (
     CirculantSymmetricMatrixDiffusionProcess,
     DiagonalDiffusionProcess,
     ForwardDiffusionProcess,
@@ -217,25 +217,25 @@ class TestCirculantFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests
         All operator arithmetic is delegated to diagonal_process in eigenspace.
         M == DATA_DIM confirms it was fitted on correct-dimension data.
         """
-        assert isinstance(fitted_instance.diagonal_process, DiagonalDiffusionProcess)
-        assert fitted_instance.diagonal_process.M == DATA_DIM
+        assert isinstance(fitted_instance.diagonal_process_, DiagonalDiffusionProcess)
+        assert fitted_instance.diagonal_process_.M_ == DATA_DIM
 
     def test_fit_q_mat_has_correct_shape(self, fitted_instance):
-        """After fit(), q_mat must have shape (M, M).
+        """After fit(), q_mat_ must have shape (M, M).
 
         An incorrect shape — e.g., (M//2+1, M) from a missing duplication step —
         would corrupt every batched matrix product through silent broadcasting.
         """
-        assert fitted_instance.q_mat.shape == (DATA_DIM, DATA_DIM)
+        assert fitted_instance.q_mat_.shape == (DATA_DIM, DATA_DIM)
 
     def test_fit_q_mat_is_orthogonal(self, fitted_instance):
-        """After fit(), q_mat must satisfy Q @ Q.T ≈ I and Q.T @ Q ≈ I.
+        """After fit(), q_mat_ must satisfy Q @ Q.T ≈ I and Q.T @ Q ≈ I.
 
         Both products checked independently so a one-sided failure is caught.
         atol=1e-5 accommodates float32 rounding; a normalization bug produces
         deviations of order 1 - 1/M ≈ 0.94.
         """
-        Q = fitted_instance.q_mat
+        Q = fitted_instance.q_mat_
         eye = torch.eye(DATA_DIM, device=Q.device)
 
         assert torch.allclose(Q @ Q.T, eye, atol=1e-5), (
@@ -292,8 +292,8 @@ class TestCirculantFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests
 
         h = torch.randn(BATCH_SIZE, CUSTOM_DIM)
         assert type(instance_b) is CirculantSymmetricMatrixDiffusionProcess
-        assert instance_b.M == instance_a.M
-        assert instance_b.device == instance_a.device
+        assert instance_b.M_ == instance_a.M_
+        assert instance_b.device_ == instance_a.device_
         assert instance_b.n_integration_points == instance_a.n_integration_points
         assert torch.allclose(
             instance_b.multiply_cov(h, t_batch),
@@ -518,7 +518,7 @@ class TestCirculantCov:
         """_cov(0) must be the zero matrix for all N.
 
         allclose with atol=1e-5 (not torch.equal) tolerates interpolation
-        rounding from batch_linear_interp_1d at the left boundary.
+        rounding from _batch_linear_interp_1d at the left boundary.
         """
         result = process._cov(t_zero)
 
@@ -558,11 +558,11 @@ class TestCirculantCov:
 
         assert torch.allclose(
             cov_diag,
-            process.diagonal_process._cov(t_batch),
+            process.diagonal_process_._cov(t_batch),
             atol=1e-6,
         ), (
             f"Diagonal of _cov disagrees with diagonal_process._cov: "
-            f"max error = {(cov_diag - process.diagonal_process._cov(t_batch)).abs().max().item():.2e}"
+            f"max error = {(cov_diag - process.diagonal_process_._cov(t_batch)).abs().max().item():.2e}"
         )
 
         off_diag = cov - torch.diag_embed(cov_diag)                 # (N, M, M)
@@ -580,7 +580,7 @@ class TestCirculantCov:
         atol=1e-5 for both on-diag and off-diag, from Q^T Q ≈ I up to ~1e-5.
         """
         cov = process._cov(t_batch)                          # (N, M, M)
-        Q   = process.q_mat                                   # (M, M)
+        Q   = process.q_mat_                                 # (M, M)
 
         cov_y = Q.T.unsqueeze(0) @ cov @ Q.unsqueeze(0)      # (N, M, M)
 
@@ -595,11 +595,11 @@ class TestCirculantCov:
         )
         assert torch.allclose(
             cov_y_diag,
-            process.diagonal_process._cov(t_batch),
+            process.diagonal_process_._cov(t_batch),
             atol=1e-5,
         ), (
-            f"Eigenspace diagonal disagrees with diagonal_process._cov: "
-            f"max error = {(cov_y_diag - process.diagonal_process._cov(t_batch)).abs().max().item():.2e}"
+            f"Eigenspace diagonal disagrees with diagonal_process_._cov: "
+            f"max error = {(cov_y_diag - process.diagonal_process_._cov(t_batch)).abs().max().item():.2e}"
         )
 
 
@@ -657,8 +657,8 @@ class TestCirculantDrift:
         Pins the FFT shortcut against the O(N·M²) ground truth.
         atol=1e-5: combined float32 error from both paths ≤ 3.06e-6.
         """
-        Q        = process.q_mat                              # (M, M)
-        lambda_t = process.lambdas(t_batch)                  # (N, M)
+        Q        = process.q_mat_                              # (M, M)
+        lambda_t = process.lambdas_(t_batch)                  # (N, M)
         N        = BATCH_SIZE
 
         lambda_diag = torch.diag_embed(lambda_t)             # (N, M, M)
@@ -1246,11 +1246,11 @@ class TestCirculantDeviceConsistency:
 
     def test_device_attribute_is_cpu_after_cpu_fit(self, cpu_process):
         """self.device must equal torch.device('cpu') after fitting on CPU data."""
-        assert cpu_process.device == torch.device("cpu")
+        assert cpu_process.device_ == torch.device("cpu")
 
     def test_q_mat_is_on_cpu_after_cpu_fit(self, cpu_process):
         """q_mat must reside on CPU after fitting on CPU data."""
-        assert cpu_process.q_mat.device.type == "cpu"
+        assert cpu_process.q_mat_.device.type == "cpu"
 
     def test_diagonal_process_grids_are_on_cpu(self, cpu_process):
         """Both precomputed integral grids in diagonal_process must be on CPU.
@@ -1258,14 +1258,14 @@ class TestCirculantDeviceConsistency:
         Tested with separate assertions so a failure identifies which integral path
         (D or F) dropped the device.
         """
-        diag = cpu_process.diagonal_process
+        diag = cpu_process.diagonal_process_
 
-        assert diag.precomputed_d_grid.device.type == "cpu", (
-            "precomputed_d_grid must be on cpu — check that _fft_to_eigenspace(x) "
+        assert diag.precomputed_d_grid_.device.type == "cpu", (
+            "precomputed_d_grid_ must be on cpu — check that _fft_to_eigenspace(x) "
             "preserves x.device before passing to DiagonalDiffusionProcess.fit()"
         )
-        assert diag.precomputed_sigma_f_grid.device.type == "cpu", (
-            "precomputed_sigma_f_grid must be on cpu — check that _fft_to_eigenspace(x) "
+        assert diag.precomputed_sigma_f_grid_.device.type == "cpu", (
+            "precomputed_sigma_f_grid_ must be on cpu — check that _fft_to_eigenspace(x) "
             "preserves x.device before passing to DiagonalDiffusionProcess.fit()"
         )
 
@@ -1298,20 +1298,20 @@ class TestCirculantDeviceConsistency:
         Four attributes checked with individual failure messages to identify which
         link in the device-propagation chain failed.
         """
-        diag = cuda_process.diagonal_process
+        diag = cuda_process.diagonal_process_
 
-        assert cuda_process.device.type == "cuda", (
-            "self.device must be 'cuda' — check self.device = x.device in fit()"
+        assert cuda_process.device_.type == "cuda", (
+            "self.device_ must be 'cuda' — check self.device = x.device in fit()"
         )
-        assert cuda_process.q_mat.device.type == "cuda", (
+        assert cuda_process.q_mat_.device.type == "cuda", (
             "q_mat must be on cuda — check _get_cosine_basis device argument in fit()"
         )
-        assert diag.precomputed_d_grid.device.type == "cuda", (
-            "precomputed_d_grid must be on cuda — check that "
+        assert diag.precomputed_d_grid_.device.type == "cuda", (
+            "precomputed_d_grid_ must be on cuda — check that "
             "_fft_to_eigenspace(x_cuda) preserves x.device"
         )
-        assert diag.precomputed_sigma_f_grid.device.type == "cuda", (
-            "precomputed_sigma_f_grid must be on cuda — check "
+        assert diag.precomputed_sigma_f_grid_.device.type == "cuda", (
+            "precomputed_sigma_f_grid_ must be on cuda — check "
             "_precompute_F_integral device routing in DiagonalDiffusionProcess"
         )
 

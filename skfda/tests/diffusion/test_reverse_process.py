@@ -6,20 +6,20 @@ import math
 import pytest
 import torch
 
-from skfda.ml.generative.diffusion_process import (
+from skfda.ml.generative._diffusion_process import (
     CirculantSymmetricMatrixDiffusionProcess,
     CustomDiffusionProcess,
     VariancePreservingDiffusionProcess,
     _eigenspace_to_fft,
     _fft_to_eigenspace,
 )
-from skfda.ml.generative.reverse_diffusion import (
+from skfda.ml.generative._reverse_diffusion import (
     EulerMaruyamaIntegrator,
     ProbabilityFlowODEReverseProcess,
     RK4Integrator,
     SDEReverseDiffusionProcess,
 )
-from skfda.ml.generative.score_model import ScoreModel
+from skfda.ml.generative._score_model import ScoreModel
 
 from ._constants import DATA_DIM
 

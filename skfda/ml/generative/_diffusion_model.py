@@ -13,16 +13,16 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 from ..._utils._sklearn_adapter import BaseEstimator
 from ...representation.grid import FDataGrid
 from ...typing._numpy import NDArrayFloat
-from .diffusion_process import (
+from ._diffusion_process import (
     ForwardDiffusionProcess,
     VariancePreservingDiffusionProcess,
 )
-from .reverse_diffusion import (
+from ._reverse_diffusion import (
     EulerMaruyamaIntegrator,
     ReverseDiffusionProcess,
     SDEReverseDiffusionProcess,
 )
-from .score_model import ScoreModel, UNetScoreModel
+from ._score_model import ScoreModel, UNetScoreModel
 from .torch_random_numbers import make_torch_rng
 
 BatchType = tuple[Tensor, Tensor] | tuple[Tensor]
@@ -319,7 +319,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
 
         # Independent generators for DataLoader shuffle and training loop.
         loader_seed = self.seed
-        train_seed  = None if self.seed is None else self.seed + 1
+        train_seed = None if self.seed is None else self.seed + 1
         loader_generator = make_torch_rng(loader_seed, device="cpu")
         train_generator = make_torch_rng(train_seed, device=self.device)
 
@@ -740,10 +740,10 @@ class FunctionalDiffusionGenerator(BaseEstimator):
 
         path = Path(path)
         # Save to a temporary file first, then rename to ensure atomicity.
-        tmp_path = path.with_suffix(".tmp")
+        tmp_path = path.with_name(path.name + ".tmp")
         try:
             torch.save(checkpoint, tmp_path)
-            Path.replace(tmp_path, path)
+            tmp_path.replace(path)
         except Exception:
             tmp_path.unlink(missing_ok=True)
             raise
@@ -848,6 +848,7 @@ class FunctionalDiffusionGenerator(BaseEstimator):
         score_model.on_load(restored_diff_process)
         score_model = score_model.to(target_device)
         score_model.eval()
+
         gen._release_score_model()
         gen.score_model_ = score_model
 

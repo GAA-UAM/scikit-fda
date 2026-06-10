@@ -1,13 +1,14 @@
 """Reverse diffusion processes and integrators for score-based models."""
 
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import singledispatchmethod
+from typing import Protocol
 
 import torch
 from torch import Tensor
-from typing_extensions import Protocol
 
-from .diffusion_process import (
+from ._diffusion_process import (
     CirculantSymmetricMatrixDiffusionProcess,
     CustomDiffusionProcess,
     DiffusionProcess,
@@ -15,10 +16,10 @@ from .diffusion_process import (
     _eigenspace_to_fft,
     _fft_to_eigenspace,
 )
-from .score_model import ScoreModel
+from ._score_model import ScoreModel
 
 
-class ReverseDiffusionProcess(Protocol):
+class ReverseDiffusionProcess(ABC):
     """Protocol for the reverse process of a diffusion model.
 
     It defines the method `reverse` that takes a diffusion process,
@@ -69,6 +70,7 @@ class ReverseDiffusionProcess(Protocol):
         mu_t0_scale = diff_process.mean_cond(ones, t_tensor)
         return (x_t0 + cov_score) / mu_t0_scale.clamp(min=1e-5)
 
+    @abstractmethod
     def reverse(
         self,
         diffusion_process: ForwardDiffusionProcess,
@@ -127,7 +129,7 @@ class ODEIntegrator(Protocol):
         """Integrate the ODE defined by the drift function from t_1 to t_0.
 
         Args:
-            f: The function defining the ODE, takes (x,t) and returns dx/dt.
+            f: The function defining the ODE, takes (t,x) and returns dx/dt.
             x_0: The initial sample at time t_0, shape (N, M) or (N, 1, M).
             t_0: The initial time step float or tensor, shape (N,).
             t_1: The final time step to integrate to.
@@ -287,7 +289,7 @@ class ProbabilityFlowODEReverseProcess(ReverseDiffusionProcess):
             return self._tweedie_denoise(
                 diff_process, score_model, x_t0, x_t, t_0_safe, y,
             )
-        return self.integrator(backward_drift, x_t, t_1, t_0)
+        return x_t0
     @reverse.register
     def _reverse_circulant(
             self,
@@ -403,7 +405,12 @@ class EulerMaruyamaIntegrator(SDEIntegrator):
         """
         self.n_steps = n_steps
         self.seed = seed
-        self.device = torch.empty(0, device=device).device
+        self.device = torch.device(device)
+
+        # Resolve missing CUDA indices (e.g., 'cuda' -> 'cuda:0')
+        if self.device.type == "cuda" and self.device.index is None:
+            self.device = torch.device("cuda", torch.cuda.current_device())
+
 
     def _get_generator(self) -> torch.Generator:
         """Return a seeded torch.Generator, creating it on first call."""
@@ -424,12 +431,12 @@ class EulerMaruyamaIntegrator(SDEIntegrator):
 
         Args:
             diff_process: The diffusion process defining the SDE.
-            x_0: The initial sample at time t_0, shape (N, M) or (N, 1, M).
+            x_0: The initial sample at time t_0, shape (N, M).
             t_0: The initial time step as a float.
             t_1: The final time step to integrate to as a float.
 
         Returns:
-            The integrated sample at time t_1, shape (N, M) or (N, 1, M).
+            The integrated sample at time t_1, shape (N, M).
         """
         n, m = x_0.shape
         device = x_0.device

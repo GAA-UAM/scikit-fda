@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from skfda.ml.generative.diffusion_process import (
+from skfda.ml.generative._diffusion_process import (
     CustomDiffusionProcess,
     DiagonalDiffusionProcess,
     ForwardDiffusionProcess,
@@ -366,7 +366,7 @@ class TestVPFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests):
         instance_b = ForwardDiffusionProcess.from_checkpoint(checkpoint)
 
         assert type(instance_b) is VariancePreservingDiffusionProcess
-        assert instance_b.M == instance_a.M
+        assert instance_b.M_ == instance_a.M_
         assert instance_b.beta_schedule == instance_a.beta_schedule
         assert instance_b.beta_min == instance_a.beta_min
         assert instance_b.beta_max == instance_a.beta_max
@@ -403,7 +403,7 @@ class TestVEFit(ForwardDiffusionFitTests, ForwardDiffusionCheckpointTests):
         instance_b = ForwardDiffusionProcess.from_checkpoint(checkpoint)
 
         assert type(instance_b) is VarianceExplodingDiffusionProcess
-        assert instance_b.M == instance_a.M
+        assert instance_b.M_ == instance_a.M_
         assert instance_b.g_schedule == instance_a.g_schedule
         assert instance_b.g_0 == instance_a.g_0
         assert instance_b.g_T == instance_a.g_T

@@ -23,6 +23,7 @@ CheckpointDict = TypedDict(
         "fit_state": dict[str, FitStateType],
     },
 )
+
 class DiffusionProcess(Protocol):
     """Protocol for a diffusion process used in generative models.
 
@@ -196,7 +197,7 @@ class ForwardDiffusionProcess(BaseEstimator):
         Returns:
             self: The fitted diffusion process.
         """
-        self.M = x.shape[1]  # Learn the dimension of the data
+        self.M_ = x.shape[1]  # Learn the dimension of the data
         # The generator must be in CPU to ensure reproducibility across devices
         self.generator_ = make_torch_rng(self.seed, device="cpu")
         return self
@@ -204,7 +205,7 @@ class ForwardDiffusionProcess(BaseEstimator):
     def _get_fit_state(self) -> dict[str, FitStateType]:
         """Return the fitted attributes as a serializable dictionary.
 
-        The base implementation stores only ``self.M``.  Subclasses should
+        The base implementation stores only ``self.M_``.  Subclasses should
         override this to include their own fitted attributes and call
         ``super()._get_fit_state()`` to merge in the base state:
 
@@ -224,16 +225,16 @@ class ForwardDiffusionProcess(BaseEstimator):
             sklearn.exceptions.NotFittedError: If :meth:`fit` has not been
                 called yet.
         """
-        check_is_fitted(self, attributes=["M"])
+        check_is_fitted(self, attributes=["M_", "generator_"])
 
-        return {"M": self.M,
+        return {"M": self.M_,
                 "generator_state": self.generator_.get_state()}
 
 
     def _restore_fit_state(self, data: dict[str, FitStateType]) -> None:
         """Restore fitted attributes from a serialized state dictionary.
 
-        The base implementation restores ``self.M``.  Subclasses should
+        The base implementation restores ``self.M_``.  Subclasses should
         override this to restore their own fitted attributes and call
         ``super()._restore_fit_state(data)`` first:
 
@@ -247,7 +248,9 @@ class ForwardDiffusionProcess(BaseEstimator):
             data: A dictionary as produced by :meth:`_get_fit_state`.
 
         Raises:
-            ValueError: If ``"M"`` is absent from *data* or has the wrong type.
+            ValueError: If ``"M"`` is absent from *data*
+            TypeError: If the stored class is not a valid subclass,
+                       or *instance* has the wrong type.
         """
         if "M" not in data:
             msg = (
@@ -277,7 +280,7 @@ class ForwardDiffusionProcess(BaseEstimator):
             raise TypeError(
                 msg,
             )
-        self.M = data["M"]
+        self.M_ = data["M"]
         self.generator_ = torch.Generator(device="cpu")
         self.generator_.set_state(data["generator_state"])
 
@@ -343,7 +346,8 @@ class ForwardDiffusionProcess(BaseEstimator):
                     Must be of the exact type stored in the checkpoint.
 
         Raises:
-            ValueError: If required keys are missing, the stored class is not a
+            ValueError: If required keys are missing.
+            TypeError: If the stored class is not a
                 valid subclass, or *instance* has the wrong type.
         """
         required = {"class", "init_kwargs", "fit_state"}
@@ -373,7 +377,7 @@ class ForwardDiffusionProcess(BaseEstimator):
                     f"but the checkpoint contains a {process_cls.__name__!r}. "
                     "Types must match exactly."
                 )
-                raise ValueError(
+                raise TypeError(
                     msg,
                 )
             instance._restore_fit_state(data["fit_state"]) # noqa: SLF001 # Ignore accessing private method
@@ -545,10 +549,8 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
         Args:
             beta_schedule: The schedule for beta(t). Can be 'linear' or
                         'cosine'. Default is 'cosine'.
-            beta_min: The value of beta(0). Used only if `beta_schedule`
-                    is 'linear'. Default is 0.
-            beta_max: The value of beta(T). Used only if `beta_schedule`
-                    is 'linear'. Default is 10.0.
+            beta_min: The value of beta(0). Default is 0.
+            beta_max: The value of beta(T). Default is 10.0.
             seed: The random seed for sampling from the limit distribution.
         """
         super().__init__(seed=seed)
@@ -561,7 +563,6 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
         self.beta_max = beta_max
         # Small constant for numerical stability in cosine schedule
         self.s = torch.tensor(1e-3)
-        self.seed = seed
 
     def _beta_t(self, t: Tensor) -> Tensor:
         """Computes the value of beta(t) at time t.
@@ -640,10 +641,7 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             True
             >>> vp.mean_cond(x, torch.ones(3)).abs().max().item() < 1e-5
             True
-        """    # T is fixed to 1 by convention: the diffusion schedule is
-    # fully characterized by g_0 and g_T, and all time-dependent
-    # expressions depend only on the ratio t/T. Callers are expected
-    # to pass t in [0, 1].
+        """
         if self.beta_schedule == "linear":
 
             integral_beta = (
@@ -772,10 +770,10 @@ class VariancePreservingDiffusionProcess(ForwardDiffusionProcess):
             >>> vp.sample_limit_distribution(n_samples=5).shape
             torch.Size([5, 32])
         """
-        check_is_fitted(self, attributes=["M", "generator_"])
+        check_is_fitted(self, attributes=["M_", "generator_"])
         # Noise is generated in CPU to ensure reproducibility cross-device
         return torch.randn(
-            (n_samples, self.M), device="cpu", generator=self.generator_,
+            (n_samples, self.M_), device="cpu", generator=self.generator_,
         ).to(device, non_blocking=True)
 
 
@@ -786,7 +784,7 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
 
     .. math::
 
-        d\mathbf{X}(t) = \sqrt{g(t)}\,d\mathbf{W}(t)
+        d\mathbf{X}(t) = g(t)\,d\mathbf{W}(t)
 
     where :math:`g(t)` is a time-dependent function controlling
     the noise level.
@@ -809,17 +807,18 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
         g_T: float = 15.,  # noqa: N803 # Ignore uppercase variable
         seed: int | None = None,
     ) -> None:
-        super().__init__(seed=seed)
         """Initializes the variance-exploding diffusion process.
 
         Args:
             g_schedule: The schedule for g(t). Can be 'linear' or
-                        'exponential'. Default is 'linear'.
+                        'exponential'. Default is 'exponential'.
             g_0: The value of g(0).
             g_T: The value of g(T).
             seed: The random seed for sampling from the limit distribution.
 
         """
+        super().__init__(seed=seed)
+
         if g_schedule not in ("linear", "exponential"):
             msg = f"Unknown g schedule: {g_schedule}"
             raise ValueError(msg)
@@ -960,18 +959,18 @@ class VarianceExplodingDiffusionProcess(ForwardDiffusionProcess):
             X: Tensor with samples from the final distribution.
             Shape (n_samples, grid_size)
         """
-        check_is_fitted(self, attributes=["M", "generator_"])
+        check_is_fitted(self, attributes=["M_", "generator_"])
         # Noise is sampled in CPU to ensure reproducibility across devices,
         # then moved to the target device
         noise = torch.randn(
-            (n_samples, self.M), device="cpu", generator=self.generator_,
+            (n_samples, self.M_), device="cpu", generator=self.generator_,
         ).to(device, non_blocking=True)
         t_end = torch.full((n_samples,), self.T, device=device)
         return self.multiply_sigma(noise, t_end)
 
 # Helper function for interpolation of the integrals of D(t) and F(t) in
 # the DiagonalDiffusionProcess class.
-def batch_linear_interp_1d(
+def _batch_linear_interp_1d(
     t: Tensor, t_grid: Tensor, f_grid: Tensor,
 ) -> Tensor:
     """Vectorized 1D linear interpolation with stability handling.
@@ -1018,12 +1017,12 @@ def batch_linear_interp_1d(
     return y0 + weight.unsqueeze(-1) * (y1 - y0)
 
 
-def validate_diagonal_callable(
+def _validate_diagonal_callable(
     x: Tensor, fn: Callable[[Tensor], Tensor], name: str,
 ) -> None:
     """Validate that a diagonal SDE callable returns a shape-compatible tensor.
 
-    Called inside fit() after self.M is set, once per callable (drift_term,
+    Called inside fit() after self.M_ is set, once per callable (drift_term,
     diffusion_term). Probes the callable with a zero time tensor of the
     correct batch size and device, then checks shape and device of the output.
 
@@ -1121,10 +1120,10 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
 
     .. math::
 
-        d\\mathbf{X}(t) = \\mathbf{D}(t)\\mathbf{X}(t)\\,dt
-        + \\mathbf{G}(t)\\,d\\mathbf{W}(t)
+        d\mathbf{X}(t) = \mathbf{D}(t)\mathbf{X}(t)\,dt
+        + \mathbf{G}(t)\,d\mathbf{W}(t)
 
-    where :math:`\\mathbf{D}(t)` and :math:`\\mathbf{G}(t)` are diagonal
+    where :math:`\mathbf{D}(t)` and :math:`\mathbf{G}(t)` are diagonal
     matrices whose entries may vary across both time and frequency components.
 
     Unlike the variance-preserving and variance-exploding processes, the
@@ -1151,10 +1150,10 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         Args:
             drift_term: A function that takes the current time t and
                     returns the value of the drift term D(t) as a tensor,
-                    shape (N, M) or (N,)
+                    shape (N, M) or (N,1)
             diffusion_term: A function that takes the current time t and
                     returns the value of the diffusion term G(t), shape
-                    (N, M) or (N,).
+                    (N, M) or (N,1).
             n_integration_points: The number of points to use for numerical
                 integration when computing the mean and covariance of the
                 conditional distribution. Default is 1000.
@@ -1164,7 +1163,6 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
 
         self.drift_term = drift_term
         self.diffusion_term = diffusion_term
-        self.seed = seed
         self.n_integration_points = n_integration_points
 
     def fit(self, x: Tensor) -> "DiagonalDiffusionProcess":
@@ -1189,9 +1187,9 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
             raise ValueError(
                     msg,
                 )
-        validate_diagonal_callable(x, self.drift_term,  "drift_term")
-        validate_diagonal_callable(x, self.diffusion_term, "diffusion_term")
-        self.device = x.device  # Learn the device of the data
+        _validate_diagonal_callable(x, self.drift_term,  "drift_term")
+        _validate_diagonal_callable(x, self.diffusion_term, "diffusion_term")
+        self.device_ = x.device  # Learn the device of the data
         self._precompute_d_integral()
         self._precompute_f_integral()
         return self
@@ -1216,22 +1214,22 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         r"""Precompute :math:`\int_0^t D(u)\,du` on the integration grid.
 
         Stores the result in ``precomputed_d_grid`` (shape
-        ``(n_integration_points, M)``) indexed by ``precomputed_d_grid_T``.
+        ``(n_integration_points, M)``) indexed by ``precomputed_d_grid__T``.
         """
         t = torch.linspace(0, self.T, self.n_integration_points,
-                           device=self.device)
+                           device=self.device_)
         d_at_t = self.drift_term(t)
         if d_at_t.dim() == 1:
             d_at_t = d_at_t.unsqueeze(-1)
         if d_at_t.shape[-1] == 1:
-            d_at_t = d_at_t.expand(-1, self.M)
+            d_at_t = d_at_t.expand(-1, self.M_)
 
         d_int = torch.cumulative_trapezoid(d_at_t, t, dim=0)
         d_int = torch.cat(
             [d_int.new_zeros((1, d_at_t.shape[1])), d_int], dim=0,
         )
-        self.precomputed_d_grid_T = t
-        self.precomputed_d_grid = d_int
+        self.precomputed_d_grid__T_ = t
+        self.precomputed_d_grid_ = d_int
 
     def _integrate_d(self, t: Tensor) -> Tensor:
         r"""Return :math:`\int_0^t D(u)\,du` for each dimension, shape (N, M).
@@ -1246,10 +1244,10 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
             :math:`\int_0^t D_i(u)\,du` for each sample and dimension,
             shape (N, M).
         """
-        return batch_linear_interp_1d(
+        return _batch_linear_interp_1d(
                     t.reshape(-1),
-                    self.precomputed_d_grid_T,
-                    self.precomputed_d_grid,
+                    self.precomputed_d_grid__T_,
+                    self.precomputed_d_grid_,
         )
 
     def _precompute_f_integral(self) -> None:
@@ -1267,7 +1265,7 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         ``precomputed_sigma_t_grid``.
         """
         t = torch.linspace(0, self.T, self.n_integration_points,
-                           device=self.device)
+                           device=self.device_)
 
         gt = self.diffusion_term(t)
         if isinstance(gt, (int, float)):
@@ -1275,12 +1273,12 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         if gt.dim() == 1:
             gt = gt.unsqueeze(-1)
         if gt.shape[-1] == 1:
-            gt = gt.expand(-1, self.M)
+            gt = gt.expand(-1, self.M_)
         h = (gt**2) * torch.exp(-2 * self._integrate_d(t))
         f_cum = torch.cumulative_trapezoid(h, t, dim=0)
         f_cum = torch.cat([f_cum.new_zeros((1, f_cum.shape[1])), f_cum], dim=0)
-        self.precomputed_sigma_t_grid = t
-        self.precomputed_sigma_f_grid = f_cum
+        self.precomputed_sigma_t_grid_ = t
+        self.precomputed_sigma_f_grid_ = f_cum
 
     def mean_cond(self, x: Tensor, t: Tensor) -> Tensor:
         r"""Computes the mean of the conditional distribution at time t.
@@ -1327,10 +1325,10 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         Returns:
             Diagonal of :math:`\text{Cov}[X(t)]`, shape (N, M).
         """
-        f_t = batch_linear_interp_1d(
+        f_t = _batch_linear_interp_1d(
             t.reshape(-1),
-            self.precomputed_sigma_t_grid,
-            self.precomputed_sigma_f_grid,
+            self.precomputed_sigma_t_grid_,
+            self.precomputed_sigma_f_grid_,
         )  # shape (N, M)
         exp_2dt = torch.exp(2 * self._integrate_d(t))  # shape (N, M)
         return (exp_2dt * f_t).clamp(min=0)  # shape (N, M)
@@ -1369,14 +1367,14 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
         state minimal.
 
         Returns:
-            dict: Base state plus ``{"device": self.device}``.
+            dict: Base state plus ``{"device": self.device_}``.
 
         Raises:
             sklearn.exceptions.NotFittedError: If :meth:`fit` has not been
                 called yet.
         """
         state = super()._get_fit_state()
-        state["device"] = self.device
+        state["device"] = self.device_
         return state
 
 
@@ -1429,18 +1427,8 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
             raise ValueError(
                 msg,
             )
-        if "generator_state" not in data or not isinstance(
-            data["generator_state"], Tensor,
-        ):
-            msg = (
-                "Expected 'generator_state' to be a tensor,"
-                f" got {data['generator_state']!r}."
-            )
-            raise ValueError(
-                msg,
-            )
 
-        self.device = data["device"]
+        self.device_ = data["device"]
         self._precompute_d_integral()
         self._precompute_f_integral()
 
@@ -1493,10 +1481,10 @@ class DiagonalDiffusionProcess(ForwardDiffusionProcess):
             sklearn.exceptions.NotFittedError: If :meth:`fit` has not been
                 called yet.
         """
-        check_is_fitted(self, attributes=["M", "generator_"])
+        check_is_fitted(self, attributes=["M_", "generator_"])
         # Noise is sampled always on CPU to allow reproducibility cross-device.
         noise = torch.randn(
-            (n_samples, self.M), device="cpu", generator=self.generator_,
+            (n_samples, self.M_), device="cpu", generator=self.generator_,
         ).to(device, non_blocking=True)
         t_end = torch.full((n_samples,), self.T, device=device)
         return self.multiply_sigma(noise, t_end)
@@ -1852,6 +1840,50 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         self.n_integration_points = n_integration_points
         self.seed = seed
 
+    def _build_diagonal_process(self) -> DiagonalDiffusionProcess:
+        """Builds the underlying DiagonalDiffusionProcess in the Fourier basis.
+
+        This is called during fitting after the eigenvalues have been computed
+        from the provided drift and diffusion terms. The diagonal process will
+        be fitted on the data projected to the Fourier basis, ensuring that all
+        computations of mean, covariance, and sampling are consistent with the
+        circulant structure.
+
+        Returns:
+            An instance of DiagonalDiffusionProcess in the Fourier basis.
+        """
+        if self.fourier_drift:
+            self.lambdas_ = _duplicate_symmetric_eigenvalues(
+                lambda_half=self.drift_term,
+                m=self.M_,
+                device=self.device_,
+            )
+        else:
+             self.lambdas_ = _duplicate_symmetric_row_and_get_eigenvalues(
+                c_half=self.drift_term,
+                m=self.M_,
+                device=self.device_,
+            )
+
+        if self.fourier_diffusion:
+            self.diag_gt_ = _duplicate_symmetric_eigenvalues(
+                lambda_half=self.diffusion_term,
+                m=self.M_,
+                device=self.device_,
+            )
+        else:
+            self.diag_gt_ = _duplicate_symmetric_row_and_get_eigenvalues(
+                c_half=self.diffusion_term,
+                m=self.M_,
+                device=self.device_,
+            )
+
+        return DiagonalDiffusionProcess(
+            drift_term=self.lambdas_,
+            diffusion_term=self.diag_gt_,
+            n_integration_points=self.n_integration_points,
+        )
+
 
     def fit(self, x: Tensor) -> "CirculantSymmetricMatrixDiffusionProcess":
         """Fits the parameters of the diffusion process to the data.
@@ -1867,41 +1899,14 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             self: The fitted diffusion process.
         """
         super().fit(x)  # Learn the dimension of the data
-        self.device = x.device  # Learn the device of the data
-        if self.fourier_drift:
-            self.lambdas = _duplicate_symmetric_eigenvalues(
-                lambda_half=self.drift_term,
-                m=self.M,
-                device=self.device,
-            )
-        else:
-             self.lambdas = _duplicate_symmetric_row_and_get_eigenvalues(
-                c_half=self.drift_term,
-                m=self.M,
-                device=self.device,
-            )
+        self.device_ = x.device  # Learn the device of the data
+        self.diagonal_process_ = self._build_diagonal_process()
 
-        if self.fourier_diffusion:
-            self.diag_gt = _duplicate_symmetric_eigenvalues(
-                lambda_half=self.diffusion_term,
-                m=self.M,
-                device=self.device,
-            )
-        else:
-            self.diag_gt = _duplicate_symmetric_row_and_get_eigenvalues(
-                c_half=self.diffusion_term,
-                m=self.M,
-                device=self.device,
-            )
-
-        self.diagonal_process = DiagonalDiffusionProcess(
-            drift_term=self.lambdas,
-            diffusion_term=self.diag_gt,
-            n_integration_points=self.n_integration_points,
-        ).fit(_fft_to_eigenspace(x))  # Fit in the eigenbasis
+        # Fit in the eigenbasis
+        self.diagonal_process_.fit(_fft_to_eigenspace(x))
 
         # Precompute the cosine basis matrix
-        self.q_mat = _get_cosine_basis(self.M, self.device)
+        self.q_mat_ = _get_cosine_basis(self.M_, self.device_)
 
         return self
 
@@ -1911,7 +1916,8 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         Computes :math:`B(t)\,x = Q\,\operatorname{diag}(\lambda(t))\,Q^\top x`
         via FFT in :math:`O(NM\log M)`.
         """
-        lambda_t = self.lambdas(t)  # shape (N, M)
+        check_is_fitted(self, attributes=["lambdas_"])
+        lambda_t = self.lambdas_(t)  # shape (N, M)
         return _eigenspace_to_fft(lambda_t * _fft_to_eigenspace(x))
 
     def diffusion(self, t: Tensor) -> Tensor:
@@ -1929,18 +1935,11 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         Returns:
             Circulant diffusion matrix, shape (N, M, M)
         """
-        if not hasattr(self, "M"):
-            msg = (
-                "The diffusion process must be fitted before calling"
-                " diffusion(). Call fit() first."
-            )
-            raise ValueError(
-                msg,
-            )
+        check_is_fitted(self, attributes=["diag_gt_"])
 
-        diffusion_term = self.diagonal_process.diffusion(t)   # (N, M)
+        diffusion_term = self.diagonal_process_.diffusion(t)   # (N, M)
         g_diag = torch.diag_embed(diffusion_term)              # (N, M, M)
-        return self.q_mat @ g_diag @ self.q_mat.T   # (N, M, M)
+        return self.q_mat_ @ g_diag @ self.q_mat_.T   # (N, M, M)
 
     def diffusion_times_v(self, v: Tensor, t: Tensor) -> Tensor:
         r"""Compute :math:`G(t)\,v` via FFT in :math:`O(NM\log M)`.
@@ -1956,7 +1955,7 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         Returns:
             The result of G(t) v, shape (N, M)
         """
-        diffusion_term = self.diagonal_process.diffusion(t)  # shape (N, M)
+        diffusion_term = self.diagonal_process_.diffusion(t)  # shape (N, M)
         return _eigenspace_to_fft(diffusion_term * _fft_to_eigenspace(v))
 
     def diffusion_gram_times_v(self, v: Tensor, t: Tensor) -> Tensor:
@@ -1973,7 +1972,7 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         Returns:
             :math:`G(t)\,G(t)^\top v`, shape (N, M)
         """
-        diffusion_term = self.diagonal_process.diffusion(t)  # shape (N, M)
+        diffusion_term = self.diagonal_process_.diffusion(t)  # shape (N, M)
         return _eigenspace_to_fft(diffusion_term ** 2 * _fft_to_eigenspace(v))
 
     def mean_cond(self, x: Tensor, t: Tensor) -> Tensor:
@@ -1996,7 +1995,7 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             mean_t: The mean of the conditional distribution, shape (N, M).
         """
         y = _fft_to_eigenspace(x)
-        mean_eigen = self.diagonal_process.mean_cond(y, t)  # shape (N, M)
+        mean_eigen = self.diagonal_process_.mean_cond(y, t)  # shape (N, M)
         return _eigenspace_to_fft(mean_eigen)
 
     def _cov(self, t: Tensor) -> Tensor:
@@ -2014,28 +2013,28 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         Returns:
             Covariance matrix, shape (N, M, M).
         """
-        cov_y_t = self.diagonal_process._cov(t)  # noqa: SLF001 # Ignore private method access
+        cov_y_t = self.diagonal_process_._cov(t)  # noqa: SLF001 # Ignore private method access
         cov_y_diag = torch.diag_embed(cov_y_t)
-        return self.q_mat @ cov_y_diag @ self.q_mat.T
+        return self.q_mat_ @ cov_y_diag @ self.q_mat_.T
 
     # --- Fast operator overrides via FFT ---
 
     def multiply_sigma(self, z: Tensor, t: Tensor) -> Tensor:
         r"""See base class. Uses FFT for :math:`O(NM\log M)` complexity."""
         return _eigenspace_to_fft(
-            self.diagonal_process.multiply_sigma(_fft_to_eigenspace(z), t),
+            self.diagonal_process_.multiply_sigma(_fft_to_eigenspace(z), t),
         )
 
     def multiply_cov(self, h: Tensor, t: Tensor) -> Tensor:
         r"""See base class. Uses FFT for :math:`O(NM\log M)` complexity."""
         return _eigenspace_to_fft(
-            self.diagonal_process.multiply_cov(_fft_to_eigenspace(h), t),
+            self.diagonal_process_.multiply_cov(_fft_to_eigenspace(h), t),
         )
 
     def multiply_inv_sigma(self, h: Tensor, t: Tensor) -> Tensor:
         r"""See base class. Uses FFT for :math:`O(NM\log M)` complexity."""
         return _eigenspace_to_fft(
-            self.diagonal_process.multiply_inv_sigma(_fft_to_eigenspace(h), t),
+            self.diagonal_process_.multiply_inv_sigma(_fft_to_eigenspace(h), t),
         )
 
     def _get_fit_state(self) -> dict[str, FitStateType]:
@@ -2047,14 +2046,14 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
         and ``device`` in :meth:`_restore_fit_state`, so they are not stored.
 
         Returns:
-            dict: Base state plus ``{"device": self.device}``.
+            dict: Base state plus ``{"device": self.device_}``.
 
         Raises:
             sklearn.exceptions.NotFittedError: If :meth:`fit` has not been
                 called yet.
         """
         state = super()._get_fit_state()
-        state["device"] = self.device
+        state["device"] = self.device_
         return state
 
 
@@ -2105,12 +2104,16 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             raise ValueError(
                 msg,
             )
-        self.device = data["device"]
+        self.device_ = data["device"]
         # All derived attributes depend only on the callables (already
         # restored via init_kwargs), M, and device. A dummy zero tensor
         # is sufficient — fit() does not use the actual data values here.
-        x_toy = torch.zeros((1, self.M), device=self.device)
-        self.fit(x_toy)
+        x_toy = torch.zeros((1, self.M_), device=self.device_)
+        self.diagonal_process_ = self._build_diagonal_process()
+        self.diagonal_process_.fit(_fft_to_eigenspace(x_toy))
+
+        self.q_mat_ = _get_cosine_basis(self.M_, self.device_)
+
 
 
     def to_checkpoint(self) -> CheckpointDict:
@@ -2161,12 +2164,12 @@ class CirculantSymmetricMatrixDiffusionProcess(ForwardDiffusionProcess):
             sklearn.exceptions.NotFittedError: If :meth:`fit` has not been
                 called yet.
         """
-        check_is_fitted(self, attributes=["M", "generator_"])
+        check_is_fitted(self, attributes=["M_", "generator_"])
 
         # Noise is generated always on CPU to ensure consistent sampling
         # regardless of the device of the process.
         noise = torch.randn(
-            (n_samples, self.M), device="cpu", generator=self.generator_,
+            (n_samples, self.M_), device="cpu", generator=self.generator_,
         ).to(device, non_blocking=True)
         t_end = torch.full((n_samples,), self.T, device=device)
         return self.multiply_sigma(noise, t_end)

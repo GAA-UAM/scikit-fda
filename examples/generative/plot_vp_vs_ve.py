@@ -1,5 +1,5 @@
 """
-Generating Functiona Data with Diffusion Modeles.
+Generating Functional Data with Diffusion Modeles.
 =======================================================================
 
 This example shows how to use variance preserving and variance exploding
@@ -20,7 +20,8 @@ diffusion models to generate synthetic functional data.
 # pure noise.
 #
 #
-# ### Diffusion Models (SDE formulation)
+# Diffusion Models (SDE formulation)
+# ----------------------------------
 # In traditional diffusion models, the neural network is trained to
 # predict the noise added to the data at discrete time steps. However,
 # more recent approaches use a continuous-time formulation instead.
@@ -70,6 +71,7 @@ diffusion models to generate synthetic functional data.
 #
 # - **Variance Preserving (VP)**: In this case, the functions are
 # defined as follows:
+#
 # $$\mathbf{f}(\tau) = -\frac{1}{2}\beta(\tau)\mathbf{I}$$
 # $$\mathbf{g}(\tau) = \sqrt{\beta(\tau)}\mathbf{I}$$
 #
@@ -112,7 +114,8 @@ diffusion models to generate synthetic functional data.
 # application and the underlying properties of the original data
 # distribution.
 #
-# ### Example
+# Example
+# -------
 #
 # In this example, we will implement a simple diffusion model
 # utilizing both the VP and VE formulations.
@@ -154,7 +157,7 @@ plt.show()
 # - **VE**: Exponential schedule with $g_0 = 0.1$ and $g_T = 15$.
 
 # %%
-from skfda.ml.generative.diffusion_process import (
+from skfda.ml.generative._diffusion_process import (
     VarianceExplodingDiffusionProcess,
     VariancePreservingDiffusionProcess,
 )
@@ -164,7 +167,8 @@ ve_process = VarianceExplodingDiffusionProcess(seed=seed)
 
 
 # %%
-# ### Visualizing the Forward Process
+# Visualizing the Forward Process
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now that we have defined our Variance Preserving (VP) and Variance
 # Exploding (VE) processes, let's visualize how they affect our data.
@@ -220,7 +224,7 @@ from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 from scipy.stats import norm
 
-from skfda.ml.generative.diffusion_process import ForwardDiffusionProcess
+from skfda.ml.generative._diffusion_process import ForwardDiffusionProcess
 
 mpl.rcParams["animation.embed_limit"] = 100  # MB
 
@@ -459,10 +463,10 @@ anim
 # longer-range dependencies across the evaluation grid.
 
 # %%
-from skfda.ml.generative.diffusion_model import (
+from skfda.ml.generative._diffusion_model import (
     FunctionalDiffusionGenerator,
 )
-from skfda.ml.generative.score_model import UNetScoreModel
+from skfda.ml.generative._score_model import UNetScoreModel
 
 max_iter = 8000
 normalize = True
@@ -534,13 +538,16 @@ else:
 # VP and VE models. For the reverse process, we compare two methods
 # to reverse the forward SDE. The first one is using the reverse time
 # SDE:
+#
 # $$d\mathbf{X} = [\mathbf{f}(\tau) \mathbf{X} -
 # \mathbf{g}(\tau)^2 \nabla \log p_\tau(\mathbf{X})] d\tau +
 # \mathbf{g}(\tau) d\mathbf{W}(\tau)$$
 # The second one is using the probability flow ODE:
+#
 # $$d\mathbf{X} = [\mathbf{f}(\tau) \mathbf{X} -
 # \frac{1}{2}\mathbf{g}(\tau)^2 \nabla \log p_\tau(\mathbf{X})]
 # d\tau$$
+#
 # For each method, we use a numerical solver to integrate the
 # corresponding SDE or ODE. In this example, we use the
 # Euler-Maruyama method for the SDE and the 4th order Runge-Kutta
@@ -550,7 +557,7 @@ else:
 from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 
-from skfda.ml.generative.reverse_diffusion import (
+from skfda.ml.generative._reverse_diffusion import (
      EulerMaruyamaIntegrator,
      ProbabilityFlowODEReverseProcess,
      RK4Integrator,

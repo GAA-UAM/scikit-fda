@@ -8,7 +8,7 @@ import torch
 from torch import Tensor, nn
 
 if TYPE_CHECKING:
-    from .diffusion_process import ForwardDiffusionProcess
+    from ._diffusion_process import ForwardDiffusionProcess
 
 ScoreStateType = int | float | Tensor | torch.device
 ScoreCheckpointDict = TypedDict(
@@ -373,7 +373,7 @@ class UNetScoreModel(ScoreModel):
         """
         self.multiply_inv_sigma = diff_process.multiply_inv_sigma
 
-    def forward(self, x:Tensor, t:Tensor, y:Tensor | None = None) -> Tensor:  # noqa: ARG002 # Ignore unused y
+    def forward(self, x:Tensor, t:Tensor, y:Tensor | None = None) -> Tensor:
         """Forward pass of the score-based model.
 
         Args:
@@ -385,10 +385,18 @@ class UNetScoreModel(ScoreModel):
         Returns:
           The output of the score-based model, shape (N, M).
         """
+        if y is not None:
+            msg = "Conditional generation with "
+            "class labels is not supported by UNetScoreModel."
+            raise NotImplementedError(
+                msg,
+            )
+
         if not torch.is_tensor(t):
             t = torch.tensor(t, device=x.device, dtype=x.dtype)
         if t.dim() == 0:
             t = t.expand(x.shape[0])
+
         embed = self.act(self.embed(t))
         # Add channel dimension if input does not have it
         x_in = x.unsqueeze(1) if x.dim() == 2 else x  # noqa: PLR2004 # Ignore magic number

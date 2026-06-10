@@ -6,38 +6,42 @@ import lazy_loader as lazy
 __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
     submod_attrs={
-        "diffusion_model": ["FunctionalDiffusionGenerator"],
-        "diffusion_process": [
+        "_diffusion_model": ["FunctionalDiffusionGenerator"],
+        "_diffusion_process": [
             "ForwardDiffusionProcess",
             "VariancePreservingDiffusionProcess",
+            "VarianceExplodingDiffusionProcess",
+            "CirculantSymmetricMatrixDiffusionProcess",
         ],
-        "reverse_diffusion": [
+        "_reverse_diffusion": [
             "EulerMaruyamaIntegrator",
             "ProbabilityFlowODEReverseProcess",
             "ReverseDiffusionProcess",
             "RK4Integrator",
             "SDEReverseDiffusionProcess",
         ],
-        "score_model": ["ScoreModel", "UNetScoreModel"],
+        "_score_model": ["ScoreModel", "UNetScoreModel"],
     },
 )
 
 if TYPE_CHECKING:
-    from .diffusion_model import (
+    from ._diffusion_model import (
         FunctionalDiffusionGenerator as FunctionalDiffusionGenerator,
     )
-    from .diffusion_process import (
+    from ._diffusion_process import (
+        CirculantSymmetricMatrixDiffusionProcess as CirculantSymmetricMatrixDiffusionProcess,  # noqa: E501
         ForwardDiffusionProcess as ForwardDiffusionProcess,
+        VarianceExplodingDiffusionProcess as VarianceExplodingDiffusionProcess,
         VariancePreservingDiffusionProcess as VariancePreservingDiffusionProcess,  # noqa: E501
     )
-    from .reverse_diffusion import (
+    from ._reverse_diffusion import (
         EulerMaruyamaIntegrator as EulerMaruyamaIntegrator,
         ProbabilityFlowODEReverseProcess as ProbabilityFlowODEReverseProcess,
         ReverseDiffusionProcess as ReverseDiffusionProcess,
         RK4Integrator as RK4Integrator,
         SDEReverseDiffusionProcess as SDEReverseDiffusionProcess,
     )
-    from .score_model import (
+    from ._score_model import (
         ScoreModel as ScoreModel,
         UNetScoreModel as UNetScoreModel,
     )

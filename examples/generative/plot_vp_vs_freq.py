@@ -26,6 +26,7 @@ introduce structure on the noise injection.
 #
 # $$d\mathbf{X}(\tau) =
 # f(\mathbf{X}(\tau), \tau) d\tau + g(\tau) d\mathbf{W}(\tau)$$
+#
 # ***Note on Notation**: To avoid confusion with $t$ (the spatial/time
 # variable over which the functional data is defined), we use $\tau$ to
 # represent the diffusion time variable. Because the data is represented as an
@@ -34,7 +35,8 @@ introduce structure on the noise injection.
 # where $\mathbf{X}(\tau)$ represents the function at diffusion time $\tau$.*
 #
 # ----
-# #### Comparing Diagonal and Non-Diagonal Drift Terms
+# Comparing scalar and matrix drift terms
+# -----------------------------------------------
 # To induce spatial correlation, we introduce a non-diagonal drift term,
 # $f(\mathbf{X}(\tau), \tau)$, and compare it to the standard Variance
 # Preserving (VP) method. The SDE governing the non-diagonal process is
@@ -62,7 +64,8 @@ introduce structure on the noise injection.
 # -\frac{1}{2}\beta(\tau)\mathbf{X}(\tau)\,d\tau + \sqrt{\beta(\tau)}\,
 # d\mathbf{W}(\tau)$$
 # ----
-# #### The Spatial Coupling Matrix
+# The Spatial Coupling Matrix
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # The structure of the circulant symmetric matrix $\mathbf{L}(\tau)$ is highly
 # advantageous because it allows for efficient computation through
@@ -84,8 +87,6 @@ introduce structure on the noise injection.
 # Here, $D$ is a hyperparameter that controls the overall strength of spatial
 # coupling. As diffusion time $\tau$ approaches 1, the spatial coupling
 # naturally vanishes, and the process reverts to standard VP behavior.
-#
-#
 
 # %%
 
@@ -97,10 +98,12 @@ from skfda import FDataGrid
 seed = 15
 random_state = np.random.RandomState(seed)
 
-device = "cuda"
+device = "cpu"
 
 # %%
-# #### Customizing the Spatial Coupling Decay
+# Customizing the Spatial Coupling Decay
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
 # This notebook allows you to experiment with different decay functions for
 # $l_{j}(\tau)$ by adjusting the `method` parameter in the
 # `get_decay_half_row_weights` function. The available decay methods are:
@@ -118,7 +121,9 @@ device = "cuda"
 # cosine function to represent the initial data.
 #
 # ---
-# #### Defining the Non-Diagonal Drift Term
+# Defining the Non-Diagonal Drift Term
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
 # To implement the custom non-diagonal drift term, we must define the expected
 # circulant symmetric matrix. This is achieved by creating a function that
 # returns half of the matrix's first row—specifically, the values $l_{j}(\tau)$
@@ -136,7 +141,7 @@ device = "cuda"
 import matplotlib.pyplot as plt
 from torch import Tensor
 
-from skfda.ml.generative.diffusion_process import (
+from skfda.ml.generative._diffusion_process import (
     CirculantSymmetricMatrixDiffusionProcess,
     VariancePreservingDiffusionProcess,
 )
@@ -249,11 +254,16 @@ diag_proc = VariancePreservingDiffusionProcess(
 
 
 # %%
-# 
-# ### Example: Constant Functions Generation
-# 
-# 
-# Now we will test how this new process behaves when we use it to generate data. We will use the `FunctionalDiffusionGenerator` class to generate data using both diffusion processes and compare the results. For this first experiment we will use constant functions between $-1$ and $1$ as the original data. 
+#
+# Example: Constant Functions Generation
+# --------------------------------------
+#
+#
+# Now we will test how this new process behaves when we use it to generate
+# data. We will use the `FunctionalDiffusionGenerator` class to generate
+# data using both diffusion processes and compare the results. For this
+# first experiment we will use constant functions between $-1$ and $1$
+# as the original data.
 
 # %%
 n_samples = 2000
@@ -276,11 +286,12 @@ plt.show()
 
 
 # %%
-# ##### Fitting and Training the Diffusion Models
+# Fitting and Training the Diffusion Models
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
 
-from skfda.ml.generative.diffusion_model import FunctionalDiffusionGenerator
+from skfda.ml.generative._diffusion_model import FunctionalDiffusionGenerator
 
 non_diag_gen = FunctionalDiffusionGenerator(
     diff_process=non_diag_proc,
@@ -319,7 +330,8 @@ else:
 
 
 # %%
-# ### Generating the Reverse Evolution
+# Generating the Reverse Evolution
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Once the generators are fitted, we can use the `generate_evolution` method to
 # visualize how `n_samples` evolve from pure noise into fully generated
@@ -348,7 +360,7 @@ import numpy as np
 from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 
-from skfda.ml.generative.reverse_diffusion import (
+from skfda.ml.generative._reverse_diffusion import (
     EulerMaruyamaIntegrator,
     SDEReverseDiffusionProcess,
 )
@@ -438,7 +450,8 @@ plt.close()
 anim
 
 # %%
-# ### Generating Samples
+# Generating Samples
+# ^^^^^^^^^^^^^^^^^^
 #
 # After visualizing the reverse evolution, we can generate a larger number of
 # samples (e.g., `n_samples=100`) to perform a more comprehensive evaluation of
@@ -478,7 +491,8 @@ plt.show()
 # rigorous way to compare the samples generated by both methods.
 
 # %%
-# ### Evaluation Metrics for Constant Functions
+# Evaluation Metrics for Constant Functions
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Let $\{X_i\}_{i=1}^{N}$ be the generated samples evaluated on a grid of
 # $M$ points,
@@ -487,29 +501,37 @@ plt.show()
 # Each generated function should approximate a constant, so we summarise it by
 # its empirical mean $\hat{c}_i = \frac{1}{M}\sum_{j=1}^{M} X_i(t_j)$.
 #
-# #### Metric 1: Value Diversity (Wasserstein Distance).
+# Metric 1: Value Diversity (Wasserstein Distance)
+# """"""""""""""""""""""""""""""""""""""""""""""""
+#
 # A well-trained model should produce constants $\hat{c}_i$ that cover the
 # theoretical range $[-1, 1]$ uniformly. We quantify this by the Wasserstein-1
 # distance between the empirical distribution of $\{\hat{c}_i\}_{i=1}^N$ and
 # the ideal uniform distribution $\mathcal{U}(-1,1)$:
+#
 # $$
 #     W_1\!\left(\hat{\mu},\, \mathcal{U}(-1,1)\right)
 #     = \int_{\mathbb{R}} \left|F_{\hat{\mu}}(x) - F_{\mathcal{U}}(x)\right| dx
 # $$
+#
 # where $F_{\hat{\mu}}$ and $F_{\mathcal{U}}$ are the cumulative distribution
 # functions of the empirical and uniform distributions, respectively.
 # A value close to $0$ indicates that the model generates constants with the
 # correct diversity. We use the `scipy.stats.wasserstein_distance` function to
 # compute this metric.
 #
-# #### Metric 2: Internal Noise (MSE Distribution).
+# Metric 2: Internal Noise (MSE Distribution)
+# """""""""""""""""""""""""""""""""""""""""""
+#
 # Since each generated function should be *exactly* constant, any variation
 # along the grid is spurious noise introduced by the model. For each sample we
 # compute the Mean Square Error with respect to its own mean:
+#
 # $$
 #     \mathrm{MSE}_i
 #     = \frac{1}{M} \sum_{j=1}^{M} \bigl(X_i(t_j) - \hat{c}_i\bigr)^2.
 # $$
+#
 # We report the distribution of $\{\mathrm{MSE}_i\}_{i=1}^N$, summarised by
 # its median. Values close to $0$ indicate that the generated functions are
 # smooth and free of noise.

@@ -3,9 +3,9 @@ Machine Learning
 
 This module contains classes compatible with the
 `scikit-learn <https://scikit-learn.org/>`_ estimators  and utilities for
-solving machine learning problems. It consists of three sub-modules:
-:ref:`classification-module`, :ref:`clustering-module` and
-:ref:`regression-module`.
+solving machine learning problems. It consists of four sub-modules:
+:ref:`classification-module`, :ref:`clustering-module`,
+:ref:`regression-module` and :ref:`generative-module`.
 
 .. toctree::
    :maxdepth: 3
@@ -14,3 +14,4 @@ solving machine learning problems. It consists of three sub-modules:
    ml/classification
    ml/clustering
    ml/regression
+   ml/generative

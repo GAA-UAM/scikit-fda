@@ -8,7 +8,7 @@ frequencies of a signal (1D function).
 
 # Author: Diego Rodríguez Ortiz
 # License: MIT
-# sphinx_gallery_thumbnail_number = 5
+# sphinx_gallery_thumbnail_number = 4
 
 # %%
 # Frequency-Domain Diffusion with Circulant Matrices
@@ -627,7 +627,9 @@ generator_2_generated = generator_high_fq.generate(n_gen_samples)
 vp_generator_generated = vp_generator.generate(n_gen_samples)
 
 # %%
-fig, axes = plt.subplots(1, 4, figsize=(24, 7), sharey=True)
+fig, axes = plt.subplots(
+    1, 4, figsize=(24, 7), sharey=True, layout="constrained",
+)
 n_gen_to_plot = 3
 fd[:n_gen_to_plot].plot(axes=axes[0], lw=3.5, label="Original data")
 

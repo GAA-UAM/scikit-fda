@@ -8,7 +8,7 @@ introduce structure on the noise injection.
 
 # Author: Diego Rodríguez Ortiz
 # License: MIT
-# sphinx_gallery_thumbnail_number = 3
+# sphinx_gallery_thumbnail_number = 2
 
 # %%
 # This example introduces a novel non-diagonal diffusion process specifically
@@ -496,7 +496,9 @@ diag_gen_generated = diag_gen.generate(n_gen_samples)
 
 # %%
 
-fig_final, axes_final = plt.subplots(1, 3, figsize=(18, 5), sharey=True)
+fig_final, axes_final = plt.subplots(
+    1, 3, figsize=(18, 5), sharey=True, layout="constrained",
+)
 n_gen_to_plot = 6
 
 diag_gen_generated[:n_gen_to_plot].plot(axes=axes_final[0], lw=3.5)

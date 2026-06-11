@@ -8,7 +8,7 @@ diffusion models to generate synthetic functional data.
 
 # Author: Diego Rodríguez Ortiz
 # License: MIT
-# sphinx_gallery_thumbnail_number = 4
+# sphinx_gallery_thumbnail_number = 3
 
 # %%
 # In this example, we will demonstrate how to generate synthetic data
@@ -728,7 +728,9 @@ ve_generated = ve_generator.generate(
 n_samples_to_plot = 73
 
 # We plot the generated samples for both models.
-fig, axes = plt.subplots(1, 3, figsize=(18, 5), sharey=True)
+fig, axes = plt.subplots(
+    1, 3, figsize=(18, 5), sharey=True, layout="constrained",
+)
 fd.dataset_name = ""
 fd[:n_samples_to_plot].plot(axes=axes[0])
 vp_generated[:n_samples_to_plot].plot(axes=axes[1])

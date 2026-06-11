@@ -23,70 +23,91 @@ introduce structure on the noise injection.
 # Equation (SDE) defining the diffusion process are diagonal.
 # The standard diagonal SDE is written as follows:
 #
+# .. math::
 #
-# $$d\mathbf{X}(\tau) =
-# f(\mathbf{X}(\tau), \tau) d\tau + g(\tau) d\mathbf{W}(\tau)$$
+#    d\mathbf{X}(\tau) =
+#    f(\mathbf{X}(\tau), \tau)\, d\tau + g(\tau)\, d\mathbf{W}(\tau)
 #
-# ***Note on Notation**: To avoid confusion with $t$ (the spatial/time
-# variable over which the functional data is defined), we use $\tau$ to
-# represent the diffusion time variable. Because the data is represented as an
-# `FDataGrid`, it can be treated as a vector. Therefore, we omit the
-# spatial/time variable t and denote the function simply as $\mathbf{X}$,
-# where $\mathbf{X}(\tau)$ represents the function at diffusion time $\tau$.*
+# .. note::
+#
+#    **Note on Notation**: To avoid confusion with :math:`t` (the spatial/time
+#    variable over which the functional data is defined), we use :math:`\tau`
+#    to represent the diffusion time variable. Because the data is represented
+#    as an ``FDataGrid``, it can be treated as a vector. Therefore, we omit
+#    the spatial/time variable t and denote the function simply as
+#    :math:`\mathbf{X}`, where :math:`\mathbf{X}(\tau)` represents the
+#    function at diffusion time :math:`\tau`.
 #
 # ----
+#
 # Comparing scalar and matrix drift terms
-# -----------------------------------------------
+# ---------------------------------------
+#
 # To induce spatial correlation, we introduce a non-diagonal drift term,
-# $f(\mathbf{X}(\tau), \tau)$, and compare it to the standard Variance
+# :math:`f(\mathbf{X}(\tau), \tau)`, and compare it to the standard Variance
 # Preserving (VP) method. The SDE governing the non-diagonal process is
 # defined as follows:
 #
-# $$d\mathbf{X}(\tau) =
-# \mathbf{B}(\tau) \mathbf{X}(\tau) d\tau + \sqrt{\beta(\tau)}\, d\mathbf{W}(\tau)$$
+# .. math::
 #
-# The drift matrix $\mathbf{B}(\tau)$ is given by this equation:
+#    d\mathbf{X}(\tau) =
+#    \mathbf{B}(\tau) \mathbf{X}(\tau)\, d\tau
+#    + \sqrt{\beta(\tau)}\, d\mathbf{W}(\tau)
 #
+# The drift matrix :math:`\mathbf{B}(\tau)` is given by this equation:
 #
-# $$B(\tau) = -\frac{1}{2}\beta(\tau)\,I - \mathbf{L}(\tau)$$
+# .. math::
 #
-# In this formula, $\beta(\tau)$ follows a linear schedule defined as
-# $\beta(\tau) = \beta_{\min} + (\beta_{\max} - \beta_{\min})\tau$.
-# The diffusion term, $\sqrt{\beta(\tau)}$, remains identical for both
-# processes. The key difference lies in $\mathbf{L}(\tau)$, a circulant
+#    B(\tau) = -\frac{1}{2}\beta(\tau)\,I - \mathbf{L}(\tau)
+#
+# In this formula, :math:`\beta(\tau)` follows a linear schedule defined as
+# :math:`\beta(\tau) = \beta_{\min} + (\beta_{\max} - \beta_{\min})\tau`.
+# The diffusion term, :math:`\sqrt{\beta(\tau)}`, remains identical for both
+# processes. The key difference lies in :math:`\mathbf{L}(\tau)`, a circulant
 # symmetric matrix that creates spatial correlation between neighboring grid
 # points.
 #
 # By contrast, the standard diagonal VP process simply sets
-# $\mathbf{L}(\tau) = 0$, resulting in this equation:
+# :math:`\mathbf{L}(\tau) = 0`, resulting in this equation:
 #
-# $$d\mathbf{X}(\tau) =
-# -\frac{1}{2}\beta(\tau)\mathbf{X}(\tau)\,d\tau + \sqrt{\beta(\tau)}\,
-# d\mathbf{W}(\tau)$$
+# .. math::
+#
+#    d\mathbf{X}(\tau) =
+#    -\frac{1}{2}\beta(\tau)\mathbf{X}(\tau)\,d\tau
+#    + \sqrt{\beta(\tau)}\, d\mathbf{W}(\tau)
+#
 # ----
+#
 # The Spatial Coupling Matrix
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# The structure of the circulant symmetric matrix $\mathbf{L}(\tau)$ is highly
-# advantageous because it allows for efficient computation through
+# The structure of the circulant symmetric matrix :math:`\mathbf{L}(\tau)` is
+# highly advantageous because it allows for efficient computation through
 # diagonalization using the Fast Fourier Transform (FFT). The matrix
-# $\mathbf{L}(\tau)$ is explicitly structured as follows:
+# :math:`\mathbf{L}(\tau)` is explicitly structured as follows:
 #
-# $$\mathbf{L}(\tau) = \begin{bmatrix}
-# \sum_{j=1}^{n} l_{j}(\tau) & -l_{1}(\tau) & -l_{2}(\tau) & \cdots & -l_{1}(\tau) \\
-# -l_{1}(\tau) & \sum_{j=1}^{n} l_{j}(\tau) & -l_{1}(\tau) & \cdots & -l_{2}(\tau) \\
-# -l_{2}(\tau) & -l_{1}(\tau) & \sum_{j=1}^{n} l_{j}(\tau) & \cdots & -l_{3}(\tau) \\
-# \vdots & \vdots & \vdots & \ddots & \vdots \\
-# -l_{1}(\tau) & -l_{2}(\tau) & -l_{3}(\tau) & \cdots & \sum_{j=1}^{n} l_{j}(\tau)
-# \end{bmatrix}$$
-# The term $l_{j}(\tau)$ defines the correlation strength between grid points
-# separated by a distance $j$. For instance, using the inverse square method:
+# .. math::
 #
+#    \mathbf{L}(\tau) = \begin{bmatrix}
+#    \sum_{j=1}^{n} l_{j}(\tau) & -l_{1}(\tau) & -l_{2}(\tau) & \cdots & -l_{1}(\tau) \\
+#    -l_{1}(\tau) & \sum_{j=1}^{n} l_{j}(\tau) & -l_{1}(\tau) & \cdots & -l_{2}(\tau) \\
+#    -l_{2}(\tau) & -l_{1}(\tau) & \sum_{j=1}^{n} l_{j}(\tau) & \cdots & -l_{3}(\tau) \\
+#    \vdots & \vdots & \vdots & \ddots & \vdots \\
+#    -l_{1}(\tau) & -l_{2}(\tau) & -l_{3}(\tau) & \cdots & \sum_{j=1}^{n} l_{j}(\tau)
+#    \end{bmatrix}
 #
-# $$l_{j}(\tau) = \frac{D\,(1-\tau)}{2j^2}$$
-# Here, $D$ is a hyperparameter that controls the overall strength of spatial
-# coupling. As diffusion time $\tau$ approaches 1, the spatial coupling
-# naturally vanishes, and the process reverts to standard VP behavior.
+# The term :math:`l_{j}(\tau)` defines the correlation strength between grid
+# points separated by a distance :math:`j`. For instance, using the inverse
+# square method:
+#
+# .. math::
+#
+#    l_{j}(\tau) = \frac{D\,(1-\tau)}{2j^2}
+#
+# Here, :math:`D` is a hyperparameter that controls the overall strength of
+# spatial coupling. As diffusion time :math:`\tau` approaches 1, the spatial
+# coupling naturally vanishes, and the process reverts to standard VP
+# behavior.
 
 # %%
 
@@ -105,15 +126,15 @@ device = "cpu"
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # This notebook allows you to experiment with different decay functions for
-# $l_{j}(\tau)$ by adjusting the `method` parameter in the
-# `get_decay_half_row_weights` function. The available decay methods are:
+# :math:`l_{j}(\tau)` by adjusting the ``method`` parameter in the
+# ``get_decay_half_row_weights`` function. The available decay methods are:
 #
-# - **Inverse Distance**: $l_{j}(\tau) = \frac{D}{2j}$
-# - **Inverse Square**: $l_{j}(\tau) = \frac{D}{2j^2}$
-# - **Exponential**: $l_{j}(\tau) = D\,\alpha^j$
+# - **Inverse Distance**: :math:`l_{j}(\tau) = \frac{D}{2j}`
+# - **Inverse Square**: :math:`l_{j}(\tau) = \frac{D}{2j^2}`
+# - **Exponential**: :math:`l_{j}(\tau) = D\,\alpha^j`
 #
-# For the exponential method, $\alpha$ serves as an additional hyperparameter
-# dictating the spatial decay rate.
+# For the exponential method, :math:`\alpha` serves as an additional
+# hyperparameter dictating the spatial decay rate.
 #
 # The subsequent code cells establish the helper functions required to visually
 # compare the evolution of both processes. To clearly illustrate the smoothing
@@ -121,20 +142,23 @@ device = "cpu"
 # cosine function to represent the initial data.
 #
 # ---
+#
 # Defining the Non-Diagonal Drift Term
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # To implement the custom non-diagonal drift term, we must define the expected
 # circulant symmetric matrix. This is achieved by creating a function that
-# returns half of the matrix's first row—specifically, the values $l_{j}(\tau)$
-# for $j=1,...,n/2$, alongside the diagonal term $-\sum_{j=1}^{n} l_{j}(\tau)$.
+# returns half of the matrix's first row—specifically, the values
+# :math:`l_{j}(\tau)` for :math:`j=1,...,n/2`, alongside the diagonal term
+# :math:`-\sum_{j=1}^{n} l_{j}(\tau)`.
 #
-# The `get_decay_half_row_weights` function handles this by accepting the time
-# step `t` ($\tau$), the number of grid points `n_grid_points`, the
-# hyperparameter `D`, and the calculation `method` for $l_{j}(\tau)$ to return
-# a tensor containing the half-row values. For optimal performance, this
-# function calculates values in-place without generating intermediate tensors,
-# which saves both memory and computational resources.
+# The ``get_decay_half_row_weights`` function handles this by accepting the
+# time step ``t`` (:math:`\tau`), the number of grid points
+# ``n_grid_points``, the hyperparameter ``D``, and the calculation ``method``
+# for :math:`l_{j}(\tau)` to return a tensor containing the half-row values.
+# For optimal performance, this function calculates values in-place without
+# generating intermediate tensors, which saves both memory and computational
+# resources.
 
 # %%
 
@@ -148,9 +172,9 @@ from skfda.ml.generative import (
 
 
 def get_decay_half_row_weights(
-    D: float,
+    d: float,
     t: Tensor | float,
-    M: int,
+    m: int,
     method: str = "inverse_square",
     alpha: float = 0.5,
     device: torch.device | str = "cpu",
@@ -159,14 +183,14 @@ def get_decay_half_row_weights(
     Returns the half-row representation of the spatial coupling matrix ΔL(τ).
     The first element is the diagonal, the rest are the off-diagonal elements.
     """
-    limit = M // 2
-    N = t.shape[0] if isinstance(t, Tensor) else 1
-    template = torch.empty((N, limit + 1), device=device, dtype=torch.float32)
+    limit = m // 2
+    n = t.shape[0] if isinstance(t, Tensor) else 1
+    template = torch.empty((n, limit + 1), device=device, dtype=torch.float32)
 
     if isinstance(t, Tensor):
-        template[:, 0] =  D
+        template[:, 0] =  d
     else:
-        template[0] =  D
+        template[0] =  d
 
     if limit > 0:
         j = torch.arange(1, limit + 1, device=device, dtype=torch.float32)
@@ -181,12 +205,12 @@ def get_decay_half_row_weights(
             msg = f"Unknown method: {method}"
             raise ValueError(msg)
 
-        if M % 2 == 0:
+        if m % 2 == 0:
             w_sum = 2.0 * torch.sum(w[:-1]) + w[-1]
         else:
             w_sum = 2.0 * torch.sum(w)
 
-        multiplier =  D / w_sum
+        multiplier =  d / w_sum
 
         if isinstance(t, Tensor):
             template[:, 1:] = w * multiplier.unsqueeze(-1)
@@ -202,7 +226,7 @@ beta_min = 0.01
 beta_max = 15.0
 D = 0.02
 
-def _beta_t(t: Tensor | float) -> Tensor | float:
+def _beta_t(t: Tensor) -> Tensor:
     """Linear VP beta schedule."""
     return beta_min + (beta_max - beta_min) * t
 
@@ -211,7 +235,7 @@ def _beta_t(t: Tensor | float) -> Tensor | float:
 def drift_half_row(t: Tensor) -> Tensor:
     """Half-row of B(τ) = -0.5*β(τ)*I + ΔL(τ)."""
     half_row = get_decay_half_row_weights(
-        M=n_points, D=D, t=t, method="inverse_square", device=device,
+        m=n_points, d=D, t=t, method="inverse_square", device=device,
     )
     beta_t = _beta_t(t)
     if isinstance(t, Tensor):
@@ -258,12 +282,11 @@ diag_proc = VariancePreservingDiffusionProcess(
 # Example: Constant Functions Generation
 # --------------------------------------
 #
-#
 # Now we will test how this new process behaves when we use it to generate
-# data. We will use the `FunctionalDiffusionGenerator` class to generate
+# data. We will use the ``FunctionalDiffusionGenerator`` class to generate
 # data using both diffusion processes and compare the results. For this
-# first experiment we will use constant functions between $-1$ and $1$
-# as the original data.
+# first experiment we will use constant functions between :math:`-1` and
+# :math:`1` as the original data.
 
 # %%
 n_samples = 2000
@@ -333,16 +356,17 @@ else:
 # Generating the Reverse Evolution
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# Once the generators are fitted, we can use the `generate_evolution` method to
-# visualize how `n_samples` evolve from pure noise into fully generated
+# Once the generators are fitted, we can use the ``generate_evolution`` method
+# to visualize how ``n_samples`` evolve from pure noise into fully generated
 # samples. This process works by integrating the reverse SDE using the
 # Euler-Maruyama method to systematically undo the noise injection.
 #
-# It is important to understand how `generate_evolution` handles time stepping.
-# The method applies your defined `n_steps` between each specified frame in
-# your time array. For example, if you want to observe the process at
-# $t=[0,0.5,1]$ and set `n_steps=1000`, the integrator will take 1,000 steps
-# from $t=0$ to $t=0.5$, and another 1,000 steps from $t=0.5$ to $t=1$.
+# It is important to understand how ``generate_evolution`` handles time
+# stepping. The method applies your defined ``n_steps`` between each specified
+# frame in your time array. For example, if you want to observe the process at
+# :math:`t=[0,0.5,1]` and set ``n_steps=1000``, the integrator will take
+# 1,000 steps from :math:`t=0` to :math:`t=0.5`, and another 1,000 steps
+# from :math:`t=0.5` to :math:`t=1`.
 #
 # To keep computation times reasonable in this notebook, we use a more
 # efficient step schedule:
@@ -350,9 +374,10 @@ else:
 # - We discretize the total time into **25 frames**.
 # - We set the integrator to take only **20 steps** between each frame.
 #
-# This approach results in a total of **500 integration** steps from $t=1$
-# down to $t=0$. It provides a fast generation process while still maintaining
-# enough resolution to visualize the reverse diffusion smoothly.
+# This approach results in a total of **500 integration** steps from
+# :math:`t=1` down to :math:`t=0`. It provides a fast generation process
+# while still maintaining enough resolution to visualize the reverse
+# diffusion smoothly.
 
 # %%
 import matplotlib.pyplot as plt
@@ -426,9 +451,10 @@ for i, ax in enumerate(axes_gen):
     ax.set_yticks([])
     ax.set_title(f"{model_names[i]} t=1.000", fontsize=16)
 
-def update(frame: int) -> None:
+def update(frame: int) -> list:
     """Creation of each frame of the animation."""
     t = timesteps[frame]
+    updated_lines = []
 
     # Iterate over both models/axes
     for i, ax in enumerate(axes_gen):
@@ -439,9 +465,12 @@ def update(frame: int) -> None:
         # Update the lines for this specific subplot
         for j, line in enumerate(lines_per_ax[i]):
             line.set_data(x_data, y_data[j])
+            updated_lines.append(line)
 
         # Actualizar el título manteniendo el tamaño grande
         ax.set_title(f"{model_names[i]} t={t:.3f}", fontsize=18)
+
+    return updated_lines
 
 # Create the animation
 anim = FuncAnimation(fig_gen, update, frames=n_frames, interval=100)
@@ -494,31 +523,32 @@ plt.show()
 # Evaluation Metrics for Constant Functions
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# Let $\{X_i\}_{i=1}^{N}$ be the generated samples evaluated on a grid of
-# $M$ points,
-#
-# so $X_i = (X_i(t_1), \ldots, X_i(t_M)) \in \mathbb{R}^M$.
-# Each generated function should approximate a constant, so we summarise it by
-# its empirical mean $\hat{c}_i = \frac{1}{M}\sum_{j=1}^{M} X_i(t_j)$.
+# Let :math:`\{X_i\}_{i=1}^{N}` be the generated samples evaluated on a
+# grid of :math:`M` points,
+# so :math:`X_i = (X_i(t_1), \ldots, X_i(t_M)) \in \mathbb{R}^M`.
+# Each generated function should approximate a constant, so we summarise it
+# by its empirical mean
+# :math:`\hat{c}_i = \frac{1}{M}\sum_{j=1}^{M} X_i(t_j)`.
 #
 # Metric 1: Value Diversity (Wasserstein Distance)
-# """"""""""""""""""""""""""""""""""""""""""""""""
+# """""""""""""""""""""""""""""""""""""""""""""""""
 #
-# A well-trained model should produce constants $\hat{c}_i$ that cover the
-# theoretical range $[-1, 1]$ uniformly. We quantify this by the Wasserstein-1
-# distance between the empirical distribution of $\{\hat{c}_i\}_{i=1}^N$ and
-# the ideal uniform distribution $\mathcal{U}(-1,1)$:
+# A well-trained model should produce constants :math:`\hat{c}_i` that cover
+# the theoretical range :math:`[-1, 1]` uniformly. We quantify this by the
+# Wasserstein-1 distance between the empirical distribution of
+# :math:`\{\hat{c}_i\}_{i=1}^N` and the ideal uniform distribution
+# :math:`\mathcal{U}(-1,1)`:
 #
-# $$
-#     W_1\!\left(\hat{\mu},\, \mathcal{U}(-1,1)\right)
-#     = \int_{\mathbb{R}} \left|F_{\hat{\mu}}(x) - F_{\mathcal{U}}(x)\right| dx
-# $$
+# .. math::
 #
-# where $F_{\hat{\mu}}$ and $F_{\mathcal{U}}$ are the cumulative distribution
-# functions of the empirical and uniform distributions, respectively.
-# A value close to $0$ indicates that the model generates constants with the
-# correct diversity. We use the `scipy.stats.wasserstein_distance` function to
-# compute this metric.
+#    W_1\!\left(\hat{\mu},\, \mathcal{U}(-1,1)\right)
+#    = \int_{\mathbb{R}} \left|F_{\hat{\mu}}(x) - F_{\mathcal{U}}(x)\right| dx
+#
+# where :math:`F_{\hat{\mu}}` and :math:`F_{\mathcal{U}}` are the cumulative
+# distribution functions of the empirical and uniform distributions,
+# respectively. A value close to :math:`0` indicates that the model generates
+# constants with the correct diversity. We use the
+# ``scipy.stats.wasserstein_distance`` function to compute this metric.
 #
 # Metric 2: Internal Noise (MSE Distribution)
 # """""""""""""""""""""""""""""""""""""""""""
@@ -527,19 +557,20 @@ plt.show()
 # along the grid is spurious noise introduced by the model. For each sample we
 # compute the Mean Square Error with respect to its own mean:
 #
-# $$
-#     \mathrm{MSE}_i
-#     = \frac{1}{M} \sum_{j=1}^{M} \bigl(X_i(t_j) - \hat{c}_i\bigr)^2.
-# $$
+# .. math::
 #
-# We report the distribution of $\{\mathrm{MSE}_i\}_{i=1}^N$, summarised by
-# its median. Values close to $0$ indicate that the generated functions are
-# smooth and free of noise.
+#    \mathrm{MSE}_i
+#    = \frac{1}{M} \sum_{j=1}^{M} \bigl(X_i(t_j) - \hat{c}_i\bigr)^2.
+#
+# We report the distribution of :math:`\{\mathrm{MSE}_i\}_{i=1}^N`,
+# summarised by its median. Values close to :math:`0` indicate that the
+# generated functions are smooth and free of noise.
 
 # %%
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.stats import wasserstein_distance
+
 
 def evaluate_constant_model(fd_gen_dict, theoretical_range=(-1, 1)):
     n_models = len(fd_gen_dict)
@@ -691,7 +722,7 @@ for k,v in dict_results.items():
 #
 # For the internal noise metric, the non-diagonal VP process tends to produce
 # slightly smoother functions (lower intra-sample MSE) than the standard VP,
-# consistent with the spatial prior introduced by $ L(\tau)$. However, the
-# difference is modest.
+# consistent with the spatial prior introduced by :math:`L(\tau)`. However,
+# the difference is modest.
 
 

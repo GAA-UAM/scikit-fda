@@ -329,6 +329,7 @@ class ForwardDiffusionProcess(BaseEstimator):
     def from_checkpoint(
         cls,
         data: CheckpointDict,
+        device: torch.device | str | None = None,
         instance: "ForwardDiffusionProcess | None" = None,
     ) -> "ForwardDiffusionProcess":
         """Reconstruct a fitted diffusion process from a checkpoint dictionary.
@@ -342,6 +343,7 @@ class ForwardDiffusionProcess(BaseEstimator):
 
         Args:
             data:     Checkpoint dict as produced by :meth:`to_checkpoint`.
+            device:   The device to restore the process to.
             instance: Optional pre-built instance to restore state into.
                     Must be of the exact type stored in the checkpoint.
 
@@ -368,6 +370,10 @@ class ForwardDiffusionProcess(BaseEstimator):
                 f" ForwardDiffusionProcess, got {process_cls!r}."
             )
             raise TypeError(msg)
+
+        # If device is provided override the stored device.
+        if device is not None:
+            data["fit_state"]["device"] = device
 
         if instance is not None:
             if type(instance) is not process_cls:

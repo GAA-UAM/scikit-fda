@@ -1,6 +1,6 @@
 """
-Generating Functional Data with Diffusion Modeles.
-=======================================================================
+Generating Functional Data with Diffusion Models.
+==================================================
 
 This example shows how to use variance preserving and variance exploding
 diffusion models to generate synthetic functional data.
@@ -30,81 +30,105 @@ diffusion models to generate synthetic functional data.
 #
 # Before stating the equation, let's establish some notation.
 # Throughout the library, we denote a functional dataset as
-# $\{\mathbf{X}_i(t)\}_{i=1}^N$, where $\mathbf{X}_i(t)$ is the
-# $i$-th function evaluated at $t$. Because we are modeling the
-# evolution of the data over time, we will use $\tau$ to denote the
-# time parameter in the SDEs to avoid confusion with the evaluation
-# points, which are denoted by $t$. Additionally, since we are working
-# with an `FDataGrid` we will use $\mathbf{X}$ to denote the vector
-# obtained by evaluating the function at its grid points:
-# $\mathbf{X} = \mathbf{X}(t_1), \mathbf{X}(t_2), \ldots,
-# \mathbf{X}(t_m)$, where $t_1, t_2, \ldots, t_m$ are the grid
-# points of the `FDataGrid`.
+# :math:`\{\mathbf{X}_i(t)\}_{i=1}^N`, where :math:`\mathbf{X}_i(t)`
+# is the :math:`i`-th function evaluated at :math:`t`. Because we are
+# modeling the evolution of the data over time, we will use
+# :math:`\tau` to denote the time parameter in the SDEs to avoid
+# confusion with the evaluation points, which are denoted by :math:`t`.
+# Additionally, since we are working with an ``FDataGrid`` we will use
+# :math:`\mathbf{X}` to denote the vector obtained by evaluating the
+# function at its grid points:
+# :math:`\mathbf{X} = \mathbf{X}(t_1), \mathbf{X}(t_2), \ldots, \mathbf{X}(t_m)`,
+# where :math:`t_1, t_2, \ldots, t_m` are the grid points of the
+# ``FDataGrid``.
 #
-# With this notation, the evolution of a sample function $\mathbf{X}$
-# can be described by the following SDE:
+# With this notation, the evolution of a sample function
+# :math:`\mathbf{X}` can be described by the following SDE:
 #
-# $$d\mathbf{X}(\tau) = \mathbf{f}(\tau) \mathbf{X}(\tau) d\tau +
-# \mathbf{g}(\tau) d\mathbf{W}(\tau)$$
+# .. math::
 #
-# Here, $\mathbf{W}(\tau)$ is an $m$ dimensional independent standard
-# Brownian motion, while $f(\tau)$ and $g(\tau)$ are functions that
-# control the drift and diffusion of the process, respectively.
+#    d\mathbf{X}(\tau) = \mathbf{f}(\tau) \mathbf{X}(\tau)\, d\tau +
+#    \mathbf{g}(\tau)\, d\mathbf{W}(\tau)
+#
+# Here, :math:`\mathbf{W}(\tau)` is an :math:`m` dimensional
+# independent standard Brownian motion, while :math:`f(\tau)` and
+# :math:`g(\tau)` are functions that control the drift and diffusion
+# of the process, respectively.
 #
 # This process can be reversed using the reverse-time SDE, which
 # allows us to generate new data by starting from pure noise and
 # iteratively denoising it.
 #
-# $$d\mathbf{X}(\tau) = [\mathbf{f}(\tau) \mathbf{X} -
-# \mathbf{g}(\tau)^2 \nabla \log p_{\tau}(\mathbf{X})] d\tau +
-# \mathbf{g}(\tau) d\mathbf{W}(\tau)$$
+# .. math::
+#
+#    d\mathbf{X}(\tau) = [\mathbf{f}(\tau) \mathbf{X} -
+#    \mathbf{g}(\tau)^2 \nabla \log p_{\tau}(\mathbf{X})]\, d\tau +
+#    \mathbf{g}(\tau)\, d\mathbf{W}(\tau)
 #
 # In this formulation, the neural network is trained to estimate the
-# score function $\nabla \log p_\tau(\mathbf{X})$. For a deeper
+# score function :math:`\nabla \log p_\tau(\mathbf{X})`. For a deeper
 # understanding of these methods, we recommend reading Yang Song's
 # blog post, "Generative Modeling by Estimating Gradients of the Data
 # Distribution" (https://yang-song.net/blog/2021/score/).
 #
 #
-# The most common choices for the functions $\mathbf{f(\tau)}$ and
-# $\mathbf{g}(\tau)$ are:
+# The most common choices for the functions :math:`\mathbf{f}(\tau)`
+# and :math:`\mathbf{g}(\tau)` are:
 #
 # - **Variance Preserving (VP)**: In this case, the functions are
-# defined as follows:
+#   defined as follows:
 #
-# $$\mathbf{f}(\tau) = -\frac{1}{2}\beta(\tau)\mathbf{I}$$
-# $$\mathbf{g}(\tau) = \sqrt{\beta(\tau)}\mathbf{I}$$
+#   .. math::
 #
-# Here, $\beta(\tau)$ is a time-increasing function that controls the
-# amount of noise added at each time step.
-# The most common schedules for $\beta(\tau)$ are **linear** and
-# **cosine** schedules.
-# $$\text{Linear: } \quad \quad \beta(\tau) = \beta_{min} +
-# \frac{\tau}{T}(\beta_{max} - \beta_{min}).$$
+#      \mathbf{f}(\tau) = -\frac{1}{2}\beta(\tau)\mathbf{I}
 #
-# $$ \text{Cosine: } \quad \quad \beta(\tau) =
-# \frac{\pi}{\tau(s+1)}\tan\left(
-# \frac{\pi(s+\frac{\tau}{T})}{2(s+1)}\right).
-# $$
+#   .. math::
 #
-# In the cosine schedule, $s$ is a hyperparameter that controls the
-# minimum amount of noise.
+#      \mathbf{g}(\tau) = \sqrt{\beta(\tau)}\mathbf{I}
 #
-# This choice of $f(\tau)$ and $g(\tau)$ is not arbitrary: it ensures
-# that the limiting distribution of the forward process is a standard
-# Gaussian distribution, which can be beneficial for certain
-# applications.
+#   Here, :math:`\beta(\tau)` is a time-increasing function that
+#   controls the amount of noise added at each time step.
+#   The most common schedules for :math:`\beta(\tau)` are **linear**
+#   and **cosine** schedules.
+#
+#   .. math::
+#
+#      \text{Linear: } \quad \quad \beta(\tau) = \beta_{min} +
+#      \frac{\tau}{T}(\beta_{max} - \beta_{min}).
+#
+#   .. math::
+#
+#      \text{Cosine: } \quad \quad \beta(\tau) =
+#      \frac{\pi}{\tau(s+1)}\tan\left(
+#      \frac{\pi(s+\frac{\tau}{T})}{2(s+1)}\right).
+#
+#   In the cosine schedule, :math:`s` is a hyperparameter that
+#   controls the minimum amount of noise.
+#
+#   This choice of :math:`f(\tau)` and :math:`g(\tau)` is not
+#   arbitrary: it ensures that the limiting distribution of the
+#   forward process is a standard Gaussian distribution, which can be
+#   beneficial for certain applications.
 #
 # - **Variance Exploding (VE)**: Under this formulation, the drift
-# term is set to zero
-# $$f(\tau) = 0$$
+#   term is set to zero:
 #
-# while the diffusion term $g(\tau)$ generally follows one of two
-# common schedules:
-# $$\text{Linear: } \quad \quad g(\tau) = g_0 +
-# \frac{\tau}{T}(g_T - g_0).$$
-# $$\text{Exponential: } \quad \quad g(\tau) =
-# g_0 \left(\frac{g_T}{g_0}\right)^{\frac{\tau}{T}}.$$
+#   .. math::
+#
+#      f(\tau) = 0
+#
+#   while the diffusion term :math:`g(\tau)` generally follows one of
+#   two common schedules:
+#
+#   .. math::
+#
+#      \text{Linear: } \quad \quad g(\tau) = g_0 +
+#      \frac{\tau}{T}(g_T - g_0).
+#
+#   .. math::
+#
+#      \text{Exponential: } \quad \quad g(\tau) =
+#      g_0 \left(\frac{g_T}{g_0}\right)^{\frac{\tau}{T}}.
 #
 # In this scenario, the forward process exhibits a rapidly increasing
 # variance, leading to a limiting distribution that theoretically has
@@ -141,9 +165,8 @@ device = "cpu"
 
 print(f"Using device: {device}")
 
-X, y = fetch_aemet(return_X_y=True, as_frame=True)
-fd_all = X.iloc[:, 0].array
-fd = fd_all.coordinates[0]
+X, y = fetch_aemet(return_X_y=True)
+fd = X.coordinates[0]
 n_points = len(fd.grid_points[0])
 fd.plot()
 plt.show()
@@ -152,9 +175,10 @@ plt.show()
 # Next, we define the Variance Preserving and Variance Exploding
 # diffusion processes. Both will be initialized with their default
 # parameters:
-# - **VP**: Cosine schedule with $\beta_{min} = 0.1$,
-# $\beta_{max} = 10$.
-# - **VE**: Exponential schedule with $g_0 = 0.1$ and $g_T = 15$.
+# - **VP**: Cosine schedule with :math:`\beta_{min} = 0.1`,
+#   :math:`\beta_{max} = 10`.
+# - **VE**: Exponential schedule with :math:`g_0 = 0.1` and
+#   :math:`g_T = 15`.
 
 # %%
 from skfda.ml.generative import (
@@ -182,39 +206,41 @@ ve_process = VarianceExplodingDiffusionProcess(seed=seed)
 # - **Center Panel (Data Heatmap)**: Shows a heatmap representing the
 # evolution of all functional data points across the entire dataset.
 # - **Right Panel (Distribution Evolution)**: Illustrates how the
-# overall distribution of values, $\{\mathbf{X}_i(\tau)\}$, shifts
+# overall distribution of values, :math:`\{\mathbf{X}_i(\tau)\}`, shifts
 # as noise is introduced.
 #
 # As you play or step through the animation, you will observe the
 # following:
 #
-# - **Initial State ($\tau=0$)**: The process starts with the
-# original, clean functional data (the AEMET meteorological curves).
+# - **Initial State** (:math:`\tau=0`): The process starts with the
+#   original, clean functional data (the AEMET meteorological curves).
 # - **Adding Noise**: As time progresses, the SDE incrementally
-# injects Gaussian noise into the curves, and the structure of the
-# original data becomes increasingly obscured.
+#   injects Gaussian noise into the curves, and the structure of the
+#   original data becomes increasingly obscured.
 # - **VP vs. VE**: Pay attention to the scale and behavior of the
-# noise. The VP process keeps the variance constrained (scaling the
-# original data down as noise is added), eventually converging to a
-# standard Gaussian distribution. The VE process, on the other hand,
-# simply adds noise with an exponentially increasing variance, causing
-# the scale of the data to explode.
-# - **Final State ($\tau=T$)**: By the end of the process, the
-# original signal is completely destroyed, leaving only pure noise.
+#   noise. The VP process keeps the variance constrained (scaling the
+#   original data down as noise is added), eventually converging to a
+#   standard Gaussian distribution. The VE process, on the other hand,
+#   simply adds noise with an exponentially increasing variance,
+#   causing the scale of the data to explode.
+# - **Final State** (:math:`\tau=T`): By the end of the process, the
+#   original signal is completely destroyed, leaving only pure noise.
 #
 # This forward process is exactly what our neural network will learn
 # to reverse during training!
 #
-# > **Note:** The diffusion process theoretically ensures that at each
-# > individual grid point $t_i$, the limiting distribution converges
-# > to a Gaussian (a standard Gaussian for VP, or an
-# > infinite-variance Gaussian for VE). The rightmost plot displays
-# > the aggregated distribution of all points combined. This aggregate
-# > also tends toward a Gaussian shape because a mixture of identical
-# > Gaussians remains Gaussian. To observe the pointwise convergence
-# > explicitly, refer to the center heatmap; examining any vertical
-# > slice reveals the Gaussian distribution forming at that specific
-# > $t_i$.
+# .. note::
+#
+#    The diffusion process theoretically ensures that at each
+#    individual grid point :math:`t_i`, the limiting distribution
+#    converges to a Gaussian (a standard Gaussian for VP, or an
+#    infinite-variance Gaussian for VE). The rightmost plot displays
+#    the aggregated distribution of all points combined. This
+#    aggregate also tends toward a Gaussian shape because a mixture of
+#    identical Gaussians remains Gaussian. To observe the pointwise
+#    convergence explicitly, refer to the center heatmap; examining
+#    any vertical slice reveals the Gaussian distribution forming at
+#    that specific :math:`t_i`.
 
 # %%
 import matplotlib as mpl
@@ -380,9 +406,9 @@ def compute_distribution_heatmap(
 # work out of the animation loop
 print("Precomputing frame data...", end=" ", flush=True)
 
-col0_ydata   = [[None] * n_frames for _ in range(2)]
-col1_z       = [[None] * n_frames for _ in range(2)]
-col2_pooled  = [[None] * n_frames for _ in range(2)]
+col0_ydata = [[np.empty(0)] * n_frames for _ in range(2)]
+col1_z = [[np.empty(0)] * n_frames for _ in range(2)]
+col2_pooled = [[np.empty(0)] * n_frames for _ in range(2)]
 
 torch_single = torch_functions_scaled[0:1]
 for frame in range(n_frames):
@@ -413,15 +439,17 @@ for frame in range(n_frames):
 print("done.")
 
 
-def update(frame: int) -> None:
+def update(frame: int) -> list[mpl.artist.Artist]:
     """Update artists with precomputed data, rendering only, no computation."""
     t = torch_time_steps[frame]
+    artists: list[mpl.artist.Artist] = []
     for i in range(2):
         # Col 0
         lines[i].set_data(x_data, col0_ydata[i][frame])
         axes_2d[i].set_title(
             f"X_0(t) at τ={t.item():.2f} ({process_names[i]})", fontsize=18,
         )
+        artists.append(lines[i])
 
         # Col 1
         heatmaps[i].set_array(col1_z[i][frame].ravel())
@@ -430,14 +458,17 @@ def update(frame: int) -> None:
             f"τ={t.item():.2f} ({process_names[i]})",
             fontsize=18,
         )
+        artists.append(heatmaps[i])
 
         # Col 2: pooled bars
         for bar, h in zip(pooled_bars[i], col2_pooled[i][frame], strict=True):
             bar.set_width(h)
+            artists.append(bar)
         axes_1d[i].set_title(
             f"Distributions at τ={t.item():.2f} ({process_names[i]})",
             fontsize=18,
         )
+    return artists
 
 
 fig.tight_layout(h_pad=3.0)
@@ -453,13 +484,14 @@ anim
 # the model for 8000 iterations. The training time is around 10
 # minutes per model on a GPU. For that reason, we will load a
 # pre-trained model. If you want to train your own model, set
-# `train = True` — the training code is included below.
+# ``train = True`` — the training code is included below.
 #
-# The score model is a `UNetScoreModel`: a 1-D convolutional U-Net
-# that estimates the score function $\nabla \log p_\tau(\mathbf{X})$.
-# The `kernel_sizes` parameter controls the receptive field at each
-# encoder/decoder stage — larger kernels allow the network to capture
-# longer-range dependencies across the evaluation grid.
+# The score model is a ``UNetScoreModel``: a 1-D convolutional U-Net
+# that estimates the score function
+# :math:`\nabla \log p_\tau(\mathbf{X})`. The ``kernel_sizes``
+# parameter controls the receptive field at each encoder/decoder
+# stage — larger kernels allow the network to capture longer-range
+# dependencies across the evaluation grid.
 
 # %%
 from skfda.ml.generative import (
@@ -526,8 +558,8 @@ elif load_trained_model:
     )
 else:
     msg = (
-        "You must choose either to train the generators ",
-        "or to load pre-trained models.",
+        "You must choose either to train the generators "
+        "or to load pre-trained models."
         )
     raise ValueError(msg)
 
@@ -538,14 +570,20 @@ else:
 # to reverse the forward SDE. The first one is using the reverse time
 # SDE:
 #
-# $$d\mathbf{X} = [\mathbf{f}(\tau) \mathbf{X} -
-# \mathbf{g}(\tau)^2 \nabla \log p_\tau(\mathbf{X})] d\tau +
-# \mathbf{g}(\tau) d\mathbf{W}(\tau)$$
+# .. math::
+#
+#    d\mathbf{X} = [\mathbf{f}(\tau) \mathbf{X} -
+#    \mathbf{g}(\tau)^2 \nabla \log p_\tau(\mathbf{X})]\, d\tau +
+#    \mathbf{g}(\tau)\, d\mathbf{W}(\tau)
+#
 # The second one is using the probability flow ODE:
 #
-# $$d\mathbf{X} = [\mathbf{f}(\tau) \mathbf{X} -
-# \frac{1}{2}\mathbf{g}(\tau)^2 \nabla \log p_\tau(\mathbf{X})]
-# d\tau$$
+# .. math::
+#
+#    d\mathbf{X} = [\mathbf{f}(\tau) \mathbf{X} -
+#    \frac{1}{2}\mathbf{g}(\tau)^2 \nabla \log p_\tau(\mathbf{X})]
+#    \, d\tau
+#
 #
 # For each method, we use a numerical solver to integrate the
 # corresponding SDE or ODE. In this example, we use the
@@ -638,7 +676,7 @@ for row in range(2):
             ax.set_ylabel("Generated Value")
         ax.set_title(f"{model_names[row][col]} at τ=1.000")
 
-def update(frame: int) -> None:
+def update(frame: int) -> list[mpl.artist.Artist]:
     """Creation of each frame of the animation."""
     t = timesteps[frame]
     artists = []

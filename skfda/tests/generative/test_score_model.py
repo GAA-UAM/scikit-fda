@@ -34,7 +34,7 @@ class _NoKwargsModel(ScoreModel):
         self.linear = nn.Linear(DATA_DIM, DATA_DIM)
 
     def forward(
-        self, x: Tensor, t: Tensor, y: Tensor | None = None,
+        self, x: Tensor, _t: Tensor, _y: Tensor | None = None,
     ) -> Tensor:
         """Trivial pass-through forward."""
         return self.linear(x)
@@ -65,13 +65,23 @@ def unet() -> UNetScoreModel:
 class TestUNetScoreModelForward:
     """Forward-pass shape and time-argument handling."""
 
-    def test_forward_preserves_2d_shape(self, unet, x_batch, t_batch):
+    def test_forward_preserves_2d_shape(
+        self,
+        unet: UNetScoreModel,
+        x_batch: Tensor,
+        t_batch: Tensor,
+    ) -> None:
         """A 2-D input (N, M) must yield a 2-D output of the same shape."""
         out = unet(x_batch, t_batch)
 
         assert out.shape == x_batch.shape
 
-    def test_forward_preserves_3d_shape(self, unet, x_batch, t_batch):
+    def test_forward_preserves_3d_shape(
+        self,
+        unet: UNetScoreModel,
+        x_batch: Tensor,
+        t_batch: Tensor,
+    ) -> None:
         """A 3-D input (N, 1, M) must yield a 3-D output of the same shape.
 
         Exercises the channel unsqueeze/squeeze round-trip in forward().
@@ -82,19 +92,27 @@ class TestUNetScoreModelForward:
 
         assert out.shape == x_3d.shape
 
-    def test_forward_accepts_scalar_time_tensor(self, unet, x_batch):
+    def test_forward_accepts_scalar_time_tensor(
+        self,
+        unet: UNetScoreModel,
+        x_batch: Tensor,
+    ) -> None:
         """A 0-d time tensor must be broadcast to the batch size."""
         out = unet(x_batch, torch.tensor(0.5))
 
         assert out.shape == x_batch.shape
 
-    def test_forward_accepts_python_float_time(self, unet, x_batch):
+    def test_forward_accepts_python_float_time(
+        self,
+        unet: UNetScoreModel,
+        x_batch: Tensor,
+    ) -> None:
         """A plain Python float time must be promoted to a tensor."""
         out = unet(x_batch, 0.5)
 
         assert out.shape == x_batch.shape
 
-    def test_forward_with_odd_n_points(self):
+    def test_forward_with_odd_n_points(self) -> None:
         """An odd n_points must still produce an output matching the input.
 
         Time embedding pads to an even feature count internally; this checks
@@ -109,7 +127,12 @@ class TestUNetScoreModelForward:
 
         assert out.shape == x.shape
 
-    def test_forward_with_labels_raises(self, unet, x_batch, t_batch):
+    def test_forward_with_labels_raises(
+        self,
+        unet: UNetScoreModel,
+        x_batch: Tensor,
+        t_batch: Tensor,
+    ) -> None:
         """Passing labels must raise NotImplementedError with the full text."""
         y = torch.zeros(x_batch.shape[0])
 
@@ -118,26 +141,34 @@ class TestUNetScoreModelForward:
         ):
             unet(x_batch, t_batch, y)
 
-    def test_multiply_inv_sigma_is_applied(self, x_batch, t_batch):
+    def test_multiply_inv_sigma_is_applied(
+        self,
+        x_batch: Tensor,
+        t_batch: Tensor,
+    ) -> None:
         """A multiply_inv_sigma hook must be applied to the network output."""
         with torch.random.fork_rng():
             torch.manual_seed(SEED)
             model = UNetScoreModel(
                 n_points=DATA_DIM,
-                multiply_inv_sigma=lambda h, t: torch.zeros_like(h),
+                multiply_inv_sigma=lambda h, _t: torch.zeros_like(h),
             )
 
         out = model(x_batch, t_batch)
 
         assert torch.equal(out, torch.zeros_like(out))
 
-    def test_nan_in_output_raises(self, x_batch, t_batch):
+    def test_nan_in_output_raises(
+        self,
+        x_batch: Tensor,
+        t_batch: Tensor,
+    ) -> None:
         """A non-finite network output must be reported, not propagated."""
         with torch.random.fork_rng():
             torch.manual_seed(SEED)
             model = UNetScoreModel(
                 n_points=DATA_DIM,
-                multiply_inv_sigma=lambda h, t: torch.full_like(
+                multiply_inv_sigma=lambda h, _t: torch.full_like(
                     h, float("nan"),
                 ),
             )
@@ -154,7 +185,7 @@ class TestUNetScoreModelForward:
 class TestScoreModelCheckpoint:
     """to_checkpoint() / from_checkpoint() contract."""
 
-    def test_to_checkpoint_keys_and_class(self, unet):
+    def test_to_checkpoint_keys_and_class(self, unet: UNetScoreModel) -> None:
         """Checkpoint must expose the three keys and the concrete class.
 
         multiply_inv_sigma is excluded (non-picklable) and the stored device
@@ -167,21 +198,21 @@ class TestScoreModelCheckpoint:
         assert checkpoint["init_kwargs"]["multiply_inv_sigma"] is None
         assert checkpoint["init_kwargs"]["device"] == "cpu"
 
-    def test_to_checkpoint_weights_on_cpu(self, unet):
+    def test_to_checkpoint_weights_on_cpu(self, unet: UNetScoreModel) -> None:
         """All weight tensors in the checkpoint must be on CPU."""
         checkpoint = unet.to_checkpoint()
 
         for tensor in checkpoint["fit_state"].values():
             assert tensor.device.type == "cpu"
 
-    def test_to_checkpoint_without_init_kwargs_raises(self):
+    def test_to_checkpoint_without_init_kwargs_raises(self) -> None:
         """A subclass that omits self._init_kwargs must fail loudly."""
         model = _NoKwargsModel()
 
         with pytest.raises(AttributeError, match="_init_kwargs"):
             model.to_checkpoint()
 
-    def test_from_checkpoint_round_trip(self, unet):
+    def test_from_checkpoint_round_trip(self, unet: UNetScoreModel) -> None:
         """from_checkpoint() must restore weights, class and eval mode."""
         restored = ScoreModel.from_checkpoint(unet.to_checkpoint())
 
@@ -191,12 +222,15 @@ class TestScoreModelCheckpoint:
         for key, tensor in restored.state_dict().items():
             assert torch.equal(tensor, original_state[key])
 
-    def test_from_checkpoint_missing_keys_raises(self):
+    def test_from_checkpoint_missing_keys_raises(self) -> None:
         """A checkpoint missing required keys must raise ValueError."""
         with pytest.raises(ValueError, match="missing required keys"):
             ScoreModel.from_checkpoint({"class": UNetScoreModel})
 
-    def test_from_checkpoint_wrong_class_raises(self, unet):
+    def test_from_checkpoint_wrong_class_raises(
+        self,
+        unet: UNetScoreModel,
+    ) -> None:
         """A 'class' that is not a ScoreModel subclass must raise TypeError."""
         checkpoint = unet.to_checkpoint()
         checkpoint["class"] = int
@@ -204,7 +238,10 @@ class TestScoreModelCheckpoint:
         with pytest.raises(TypeError, match="subclass of ScoreModel"):
             ScoreModel.from_checkpoint(checkpoint)
 
-    def test_restore_fit_state_incompatible_architecture_raises(self, unet):
+    def test_restore_fit_state_incompatible_architecture_raises(
+        self,
+        unet: UNetScoreModel,
+    ) -> None:
         """Restoring weights into a different architecture must raise."""
         checkpoint = unet.to_checkpoint()
         with torch.random.fork_rng():
@@ -212,10 +249,14 @@ class TestScoreModelCheckpoint:
             mismatched = UNetScoreModel(n_points=2 * DATA_DIM)
 
         with pytest.raises(ValueError, match="incompatible"):
-            mismatched._restore_fit_state(checkpoint["fit_state"])
+            mismatched._restore_fit_state(checkpoint["fit_state"])  # noqa: SLF001
 
-    def test_on_load_reattaches_multiply_inv_sigma(self, unet, x_batch):
-        """on_load() must graft the diffusion process inverse-sigma operator."""
+    def test_on_load_reattaches_multiply_inv_sigma(
+        self,
+        unet: UNetScoreModel,
+        x_batch: Tensor,
+    ) -> None:
+        """on_load() must graft the process inverse-sigma operator."""
         vp = VariancePreservingDiffusionProcess()
         vp.fit(x_batch)
 

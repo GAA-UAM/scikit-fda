@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import warnings
+from typing import TYPE_CHECKING, ClassVar
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import numpy as np
 import pytest
@@ -82,7 +86,7 @@ def fitted_generator(small_grid: FDataGrid) -> FunctionalDiffusionGenerator:
 
 
 @pytest.fixture
-def tmp_checkpoint(tmp_path):
+def tmp_checkpoint(tmp_path: Path) -> Path:
     """Path to a temporary checkpoint file, fresh per test."""
     return tmp_path / "model.pt"
 
@@ -99,7 +103,12 @@ class _EmptyModule(torch.nn.Module):
     forward() is never called; fit() raises before the training loop.
     """
 
-    def forward(self, x, t, y=None):  # noqa: ARG002
+    def forward(
+        self,
+        x: torch.Tensor,
+        t: torch.Tensor,  # noqa: ARG002
+        y: torch.Tensor | None = None,  # noqa: ARG002
+    ) -> torch.Tensor:
         return x
 
 
@@ -112,12 +121,21 @@ class _StubReverseProcess(ReverseDiffusionProcess):
     """
 
     def __init__(self) -> None:
-        # Skip super().__init__(): ReverseDiffusionProcess requires an integrator
-        # argument that is irrelevant for a stub.
+        # Skip super().__init__(): ReverseDiffusionProcess requires an
+        # integrator argument that is irrelevant for a stub.
         self.call_count: int = 0
         self.grad_enabled_during_call: list[bool] = []
 
-    def reverse(self, diff_process, *, score_model, x_t, t_1, y=None, **kwargs):
+    def reverse(
+        self,
+        diff_process: object,  # noqa: ARG002
+        *,
+        score_model: object,  # noqa: ARG002
+        x_t: torch.Tensor,
+        t_1: torch.Tensor,  # noqa: ARG002
+        y: torch.Tensor | None = None,  # noqa: ARG002
+        **kwargs: object,  # noqa: ARG002
+    ) -> torch.Tensor:
         self.call_count += 1
         self.grad_enabled_during_call.append(torch.is_grad_enabled())
         return torch.zeros_like(x_t)
@@ -136,9 +154,9 @@ class _SpyingVP(VariancePreservingDiffusionProcess):
         fit_call_sample_counts: list[int] — per-call sample counts in order.
     """
 
-    fit_call_sample_counts: list[int] = []
+    fit_call_sample_counts: ClassVar[list[int]] = []
 
-    def fit(self, x):  # type: ignore[override]
+    def fit(self, x: torch.Tensor) -> _SpyingVP:  # type: ignore[override]
         _SpyingVP.fit_call_sample_counts.append(x.shape[0])
         return super().fit(x)
 
@@ -155,7 +173,7 @@ class TestInitialization:
     # Default and custom diff_process
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_default_diff_process_is_none_until_fit(self):
+    def test_default_diff_process_is_none_until_fit(self) -> None:
         """diff_process=None is stored verbatim and resolved to VP at fit().
 
         Per the scikit-learn convention the constructor must not transform
@@ -167,7 +185,9 @@ class TestInitialization:
         assert gen.diff_process is None
         assert not hasattr(gen, "diff_process_")
 
-    def test_fit_resolves_default_diff_process_to_vp(self, small_grid):
+    def test_fit_resolves_default_diff_process_to_vp(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """After fit(), diff_process_ must be a VariancePreservingDiffusion."""
         gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
@@ -177,7 +197,7 @@ class TestInitialization:
             gen.diff_process_, VariancePreservingDiffusionProcess,
         )
 
-    def test_custom_diff_process_is_stored_by_identity(self):
+    def test_custom_diff_process_is_stored_by_identity(self) -> None:
         """A provided diff_process must be stored as the exact same object."""
         ve = VarianceExplodingDiffusionProcess(
             g_schedule="exponential",
@@ -192,7 +212,9 @@ class TestInitialization:
     # normalize / standardize mutual exclusion
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_normalize_and_standardize_both_true_raises(self, small_grid):
+    def test_normalize_and_standardize_both_true_raises(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """normalize=True and standardize=True must raise ValueError at fit.
 
         Validation happens in fit (not __init__) to keep the constructor free
@@ -200,10 +222,10 @@ class TestInitialization:
         """
         gen = FunctionalDiffusionGenerator(normalize=True, standardize=True)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             gen.fit(small_grid)
 
-    def test_normalize_false_standardize_false_accepted(self):
+    def test_normalize_false_standardize_false_accepted(self) -> None:
         """Both flags False (raw-data mode) must be accepted without error."""
         gen = FunctionalDiffusionGenerator(normalize=False, standardize=False)
 
@@ -214,12 +236,13 @@ class TestInitialization:
     # Verbatim storage of all constructor args
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_constructor_args_stored_verbatim(self):
-        """Every constructor argument must be stored as the exact value passed in.
+    def test_constructor_args_stored_verbatim(self) -> None:
+        """Every constructor argument must be stored as the exact value passed.
 
-        Non-default values are used for every parameter to rule out coincidental
-        matches with defaults. diff_process and score_model are excluded; they
-        are covered by the dedicated identity and None-storage tests.
+        Non-default values are used for every parameter to rule out
+        coincidental matches with defaults. diff_process and score_model are
+        excluded; they are covered by the dedicated identity and None-storage
+        tests.
         """
         gen = FunctionalDiffusionGenerator(
             normalize=False,
@@ -233,17 +256,17 @@ class TestInitialization:
 
         assert gen.normalize is False
         assert gen.standardize is True
-        assert gen.max_iter == 5
-        assert gen.batch_size == 8
-        assert gen.n_jobs == 2
+        assert gen.max_iter == 5  # noqa: PLR2004
+        assert gen.batch_size == 8  # noqa: PLR2004
+        assert gen.n_jobs == 2  # noqa: PLR2004
         assert gen.device == "cpu"
         assert gen.seed == SEED
 
     # ─────────────────────────────────────────────────────────────────────────
-    # score_model=None
+    # score_model parameter
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_score_model_none_stored_as_none(self):
+    def test_score_model_none_stored_as_none(self) -> None:
         """score_model=None must be stored as None; built lazily in fit()."""
         gen = FunctionalDiffusionGenerator(score_model=None)
 
@@ -262,25 +285,29 @@ class TestPreprocess:
     # normalize path — _bias_ and _scale_
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_normalize_bias_is_midpoint(self, small_grid):
+    def test_normalize_bias_is_midpoint(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """_bias_ must equal (max + min) / 2."""
         gen = FunctionalDiffusionGenerator(normalize=True)
         expected_bias = (
             small_grid.data_matrix.max() + small_grid.data_matrix.min()
         ) / 2
 
-        gen._preprocess(small_grid)
+        gen._preprocess(small_grid)  # noqa: SLF001
 
         assert gen._bias_ == pytest.approx(expected_bias)
 
-    def test_normalize_scale_is_half_range(self, small_grid):
-        """_scale_ must equal (max − min) / 2."""
+    def test_normalize_scale_is_half_range(
+        self, small_grid: FDataGrid,
+    ) -> None:
+        """_scale_ must equal (max - min) / 2."""
         gen = FunctionalDiffusionGenerator(normalize=True)
         expected_scale = (
             small_grid.data_matrix.max() - small_grid.data_matrix.min()
         ) / 2
 
-        gen._preprocess(small_grid)
+        gen._preprocess(small_grid)  # noqa: SLF001
 
         assert gen._scale_ == pytest.approx(expected_scale)
 
@@ -288,21 +315,25 @@ class TestPreprocess:
     # standardize path — _bias_ and _scale_
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_standardize_bias_is_mean(self, small_grid):
+    def test_standardize_bias_is_mean(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """_bias_ must equal the global scalar mean."""
         gen = FunctionalDiffusionGenerator(normalize=False, standardize=True)
         expected_bias = float(small_grid.data_matrix.mean())
 
-        gen._preprocess(small_grid)
+        gen._preprocess(small_grid)  # noqa: SLF001
 
         assert gen._bias_ == pytest.approx(expected_bias)
 
-    def test_standardize_scale_is_std(self, small_grid):
+    def test_standardize_scale_is_std(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """_scale_ must equal the global std (ddof=0)."""
         gen = FunctionalDiffusionGenerator(normalize=False, standardize=True)
         expected_scale = float(small_grid.data_matrix.std())
 
-        gen._preprocess(small_grid)
+        gen._preprocess(small_grid)  # noqa: SLF001
 
         assert gen._scale_ == pytest.approx(expected_scale)
 
@@ -310,11 +341,13 @@ class TestPreprocess:
     # no-transform path — _bias_ and _scale_
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_no_transform_bias_zero_scale_one(self, small_grid):
-        """With both flags False, _bias_=0.0 and _scale_=1.0 (identity transform)."""
+    def test_no_transform_bias_zero_scale_one(
+        self, small_grid: FDataGrid,
+    ) -> None:
+        """With both flags False, _bias_=0.0 and _scale_=1.0 (identity)."""
         gen = FunctionalDiffusionGenerator(normalize=False, standardize=False)
 
-        gen._preprocess(small_grid)
+        gen._preprocess(small_grid)  # noqa: SLF001
 
         assert gen._bias_ == 0.0
         assert gen._scale_ == 1.0
@@ -323,11 +356,13 @@ class TestPreprocess:
     # Scale clamping guard
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_constant_data_scale_clamped_to_one(self, constant_grid):
-        """When (max − min) / 2 < eps, _scale_ must be clamped to 1.0."""
+    def test_constant_data_scale_clamped_to_one(
+        self, constant_grid: FDataGrid,
+    ) -> None:
+        """When (max - min) / 2 < eps, _scale_ must be clamped to 1.0."""
         gen = FunctionalDiffusionGenerator(normalize=True)
 
-        gen._preprocess(constant_grid)
+        gen._preprocess(constant_grid)  # noqa: SLF001
 
         assert gen._scale_ == 1.0
 
@@ -335,11 +370,13 @@ class TestPreprocess:
     # Return value — type and length
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_returns_tensor_dataset(self, small_grid):
+    def test_returns_tensor_dataset(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """_preprocess must return a TensorDataset of length n_samples."""
         gen = FunctionalDiffusionGenerator(normalize=False, standardize=False)
 
-        dataset = gen._preprocess(small_grid)
+        dataset = gen._preprocess(small_grid)  # noqa: SLF001
 
         assert isinstance(dataset, TensorDataset)
         assert len(dataset) == small_grid.n_samples
@@ -348,20 +385,24 @@ class TestPreprocess:
     # Data tensor — dtype and shape
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_data_tensor_is_float32(self, small_grid):
+    def test_data_tensor_is_float32(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """The data tensor must be float32."""
         gen = FunctionalDiffusionGenerator(normalize=False, standardize=False)
 
-        dataset = gen._preprocess(small_grid)
+        dataset = gen._preprocess(small_grid)  # noqa: SLF001
 
         assert dataset.tensors[0].dtype == torch.float32
 
-    def test_data_tensor_shape_is_n_samples_by_n_points(self, small_grid):
+    def test_data_tensor_shape_is_n_samples_by_n_points(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """Data tensor must have shape (N, M), not (N, M, 1)."""
         gen = FunctionalDiffusionGenerator(normalize=False, standardize=False)
         expected_shape = (small_grid.n_samples, len(small_grid.grid_points[0]))
 
-        dataset = gen._preprocess(small_grid)
+        dataset = gen._preprocess(small_grid)  # noqa: SLF001
 
         assert dataset.tensors[0].shape == expected_shape
 
@@ -369,25 +410,29 @@ class TestPreprocess:
     # Labeled data — two-tensor dataset
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_with_labels_dataset_has_two_tensors(self, small_grid, labels_array):
+    def test_with_labels_dataset_has_two_tensors(
+        self, small_grid: FDataGrid, labels_array: np.ndarray,
+    ) -> None:
         """Passing y must produce a TensorDataset with exactly two tensors."""
         gen = FunctionalDiffusionGenerator(normalize=False, standardize=False)
 
-        dataset = gen._preprocess(small_grid, y=labels_array)
+        dataset = gen._preprocess(small_grid, y=labels_array)  # noqa: SLF001
 
-        assert len(dataset.tensors) == 2
+        assert len(dataset.tensors) == 2  # noqa: PLR2004
         assert dataset.tensors[1].shape == (small_grid.n_samples,)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Mutation guard
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_preprocess_does_not_mutate_original_fdatagrid(self, small_grid):
+    def test_preprocess_does_not_mutate_original_fdatagrid(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """_preprocess must not modify the input FDataGrid in place."""
         data_matrix_before = small_grid.data_matrix.copy()
         gen = FunctionalDiffusionGenerator(normalize=True)
 
-        gen._preprocess(small_grid)
+        gen._preprocess(small_grid)  # noqa: SLF001
 
         assert np.array_equal(small_grid.data_matrix, data_matrix_before)
 
@@ -404,7 +449,9 @@ class TestFit:
     # scikit-learn convention
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_fit_returns_self(self, small_grid):
+    def test_fit_returns_self(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """fit() must return self (scikit-learn chaining convention)."""
         gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
@@ -416,31 +463,33 @@ class TestFit:
     # Input validation
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_fit_raises_for_multidimensional_domain(self):
+    def test_fit_raises_for_multidimensional_domain(self) -> None:
         """fit() must raise ValueError for dim_domain > 1."""
         t = np.linspace(0, 1, 4)
         data_matrix = np.zeros((2, 4, 4, 1))  # (N, M1, M2, codomain)
         grid_2d = FDataGrid(data_matrix=data_matrix, grid_points=[t, t])
         gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             gen.fit(grid_2d)
 
-    def test_fit_raises_for_multidimensional_codomain(self):
+    def test_fit_raises_for_multidimensional_codomain(self) -> None:
         """fit() must raise ValueError for dim_codomain > 1."""
         t = np.linspace(0, 1, 8)
         data_matrix = np.zeros((2, 8, 2))  # (N, M, codomain=2)
         grid_vector = FDataGrid(data_matrix=data_matrix, grid_points=[t])
         gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             gen.fit(grid_vector)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Post-fit attributes
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_fit_sets_grid_points_attribute(self, small_grid):
+    def test_fit_sets_grid_points_attribute(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """fit() must store the training grid as grid_points_."""
         gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
@@ -449,8 +498,10 @@ class TestFit:
         assert hasattr(gen, "grid_points_")
         assert np.array_equal(gen.grid_points_, small_grid.grid_points[0])
 
-    def test_fit_sets_score_model_attribute(self, small_grid):
-        """fit() must store the trained network as a torch.nn.Module in score_model_."""
+    def test_fit_sets_score_model_attribute(
+        self, small_grid: FDataGrid,
+    ) -> None:
+        """After fit(), score_model_ must hold a torch.nn.Module."""
         gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
         gen.fit(small_grid)
@@ -458,7 +509,9 @@ class TestFit:
         assert hasattr(gen, "score_model_")
         assert isinstance(gen.score_model_, torch.nn.Module)
 
-    def test_score_model_in_eval_mode_after_fit(self, small_grid):
+    def test_score_model_in_eval_mode_after_fit(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """score_model_ must be in eval mode when fit() returns.
 
         generate() does not call .eval() itself, so this must be set by fit().
@@ -473,15 +526,19 @@ class TestFit:
     # score_model validation
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_fit_raises_if_custom_score_model_not_nn_module(self, small_grid):
-        """fit() must raise TypeError when score_model is not a torch.nn.Module."""
+    def test_fit_raises_if_custom_score_model_not_nn_module(
+        self, small_grid: FDataGrid,
+    ) -> None:
+        """fit() must raise TypeError when score_model is not nn.Module."""
         gen = FunctionalDiffusionGenerator(score_model="not_a_module")
 
         with pytest.raises(TypeError):
             gen.fit(small_grid)
 
-    def test_fit_raises_if_score_model_has_no_parameters(self, small_grid):
-        """fit() must raise ValueError when the score model has no trainable parameters."""
+    def test_fit_raises_if_score_model_has_no_parameters(
+        self, small_grid: FDataGrid,
+    ) -> None:
+        """fit() must raise ValueError when score model has no parameters."""
         gen = FunctionalDiffusionGenerator(score_model=_EmptyModule())
 
         with pytest.raises(ValueError, match="trainable parameter"):
@@ -491,18 +548,24 @@ class TestFit:
     # Labeled data
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_fit_with_labels_does_raise_not_implemented(self, small_grid, labels_array):
+    def test_fit_with_labels_does_raise_not_implemented(
+        self, small_grid: FDataGrid, labels_array: np.ndarray,
+    ) -> None:
         """fit() must raise not implemented when y labels are supplied."""
         gen = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
 
-        with pytest.raises(NotImplementedError, match="Conditional generation"):
+        with pytest.raises(
+            NotImplementedError, match="Conditional generation",
+        ):
             gen.fit(small_grid, y=labels_array)
 
     # ─────────────────────────────────────────────────────────────────────────
     # diff_process.fit receives all samples
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_fit_diff_process_receives_full_dataset(self, small_grid):
+    def test_fit_diff_process_receives_full_dataset(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """The fitted diff_process clone must receive all N training samples.
 
         fit() clones the user's process, so the spy records into a shared
@@ -526,7 +589,9 @@ class TestFit:
     # Reproducibility
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_fit_is_reproducible_with_same_seed(self, small_grid):
+    def test_fit_is_reproducible_with_same_seed(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """Same seed must produce identical weights after fit()."""
         gen_a = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
         gen_b = FunctionalDiffusionGenerator(max_iter=1, seed=SEED)
@@ -536,10 +601,13 @@ class TestFit:
         for param_a, param_b in zip(
             gen_a.score_model_.parameters(),
             gen_b.score_model_.parameters(),
+            strict=True,
         ):
             assert torch.equal(param_a, param_b)
 
-    def test_fit_does_not_mutate_user_diff_process(self, small_grid):
+    def test_fit_does_not_mutate_user_diff_process(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """fit() must clone diff_process and leave the user's instance unfit.
 
         The fitted state lives on the clone exposed as diff_process_; the
@@ -556,7 +624,7 @@ class TestFit:
         assert gen.diff_process_ is not vp
         assert hasattr(gen.diff_process_, "M_")
 
-    def test_refit_on_different_grid_size_updates_grid(self):
+    def test_refit_on_different_grid_size_updates_grid(self) -> None:
         """Refitting on a different grid size must update grid_points_.
 
         A second fit must fully replace the fitted state rather than retain
@@ -596,7 +664,9 @@ class TestLossFunction:
     # Output value
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_loss_is_non_negative(self, fitted_generator):
+    def test_loss_is_non_negative(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """Loss must be non-negative (mean of squared norms)."""
         gen = fitted_generator
         x = torch.randn(_LOSS_BATCH, _N_GRID_POINTS)
@@ -604,7 +674,9 @@ class TestLossFunction:
         generator = torch.Generator()
         generator.manual_seed(SEED)
 
-        loss = gen._loss_function(gen.score_model_, x, t, None, generator)
+        loss = gen._loss_function(  # noqa: SLF001
+            gen.score_model_, x, t, None, generator,
+        )
 
         assert loss.item() >= 0.0
 
@@ -612,7 +684,9 @@ class TestLossFunction:
     # Output shape
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_loss_returns_scalar_tensor(self, fitted_generator):
+    def test_loss_returns_scalar_tensor(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """Loss must be a 0-dimensional tensor."""
         gen = fitted_generator
         x = torch.randn(_LOSS_BATCH, _N_GRID_POINTS)
@@ -620,7 +694,9 @@ class TestLossFunction:
         generator = torch.Generator()
         generator.manual_seed(SEED)
 
-        loss = gen._loss_function(gen.score_model_, x, t, None, generator)
+        loss = gen._loss_function(  # noqa: SLF001
+            gen.score_model_, x, t, None, generator,
+        )
 
         assert loss.shape == torch.Size([])
 
@@ -628,22 +704,28 @@ class TestLossFunction:
     # Time-dependence
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_loss_changes_with_different_t(self, fitted_generator):
-        """Loss must differ for different t values with all other inputs fixed."""
+    def test_loss_changes_with_different_t(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
+        """Loss must differ for different t with all other inputs fixed."""
         gen = fitted_generator
         x = torch.randn(_LOSS_BATCH, _N_GRID_POINTS)
 
         t_low  = torch.full((_LOSS_BATCH,), 0.1)
         t_high = torch.full((_LOSS_BATCH,), 0.9)
 
-        # Same seed for both generators so z is identical; t is the only difference.
+        # Same seed for both generators so z is identical; t is the only diff.
         gen_low  = torch.Generator()
         gen_low.manual_seed(SEED)
         gen_high = torch.Generator()
         gen_high.manual_seed(SEED)
 
-        loss_low  = gen._loss_function(gen.score_model_, x, t_low,  None, gen_low)
-        loss_high = gen._loss_function(gen.score_model_, x, t_high, None, gen_high)
+        loss_low = gen._loss_function(  # noqa: SLF001
+            gen.score_model_, x, t_low, None, gen_low,
+        )
+        loss_high = gen._loss_function(  # noqa: SLF001
+            gen.score_model_, x, t_high, None, gen_high,
+        )
 
         assert loss_low.item() != loss_high.item(), (
             f"Loss was identical at t=0.1 and t=0.9 ({loss_low.item():.6f}), "
@@ -663,7 +745,7 @@ class TestGenerate:
     # Pre-fit guard
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_generate_raises_if_not_fitted(self):
+    def test_generate_raises_if_not_fitted(self) -> None:
         """generate() must raise NotFittedError when called before fit()."""
         gen = FunctionalDiffusionGenerator()
 
@@ -674,27 +756,37 @@ class TestGenerate:
     # Return type and structure
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_generate_returns_fdatagrid(self, fitted_generator):
+    def test_generate_returns_fdatagrid(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """generate() must return an FDataGrid."""
         result = fitted_generator.generate(n_samples=5)
 
         assert isinstance(result, FDataGrid)
 
-    def test_generate_n_samples_respected(self, fitted_generator):
-        """generate() must produce exactly n_samples functional observations."""
+    def test_generate_n_samples_respected(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
+        """generate() must produce exactly n_samples observations."""
         result = fitted_generator.generate(n_samples=7)
 
-        assert result.n_samples == 7
+        assert result.n_samples == 7  # noqa: PLR2004
 
-    def test_generate_dim_domain_and_codomain(self, fitted_generator):
+    def test_generate_dim_domain_and_codomain(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """Generated data must have dim_domain=1, dim_codomain=1."""
         result = fitted_generator.generate(n_samples=3)
 
         assert result.dim_domain == 1
         assert result.dim_codomain == 1
 
-    def test_generate_grid_points_match_training(self, fitted_generator, small_grid):
-        """Generated data must be discretized on the same grid as training data."""
+    def test_generate_grid_points_match_training(
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        small_grid: FDataGrid,
+    ) -> None:
+        """Generated data must be discretized on the same grid as training."""
         result = fitted_generator.generate(n_samples=3)
 
         assert np.array_equal(result.grid_points[0], small_grid.grid_points[0])
@@ -703,7 +795,9 @@ class TestGenerate:
     # Gradient tracking
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_generate_no_gradient_tracking(self, fitted_generator):
+    def test_generate_no_gradient_tracking(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """The reverse pass must run inside torch.no_grad()."""
         stub = _StubReverseProcess()
 
@@ -711,15 +805,17 @@ class TestGenerate:
 
         assert stub.call_count >= 1, "reverse() was never called"
         assert not any(stub.grad_enabled_during_call), (
-            "Gradient tracking was enabled during at least one reverse() call; "
-            "torch.no_grad() context may have been removed from generate()."
+            "Gradient tracking was enabled during at least one reverse() call;"
+            " torch.no_grad() context may have been removed from generate()."
         )
 
     # ─────────────────────────────────────────────────────────────────────────
     # Custom reverse process
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_custom_reverse_process_is_used(self, fitted_generator):
+    def test_custom_reverse_process_is_used(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """generate() must delegate to the caller-supplied reverse_process."""
         stub = _StubReverseProcess()
 
@@ -728,8 +824,8 @@ class TestGenerate:
         assert stub.call_count == 1
 
     def test_generate_with_labels_raises_for_default_model(
-        self, fitted_generator,
-    ):
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """generate(y=...) must raise for the unconditional default model.
 
         The default UNetScoreModel does not support label conditioning, so
@@ -744,7 +840,7 @@ class TestGenerate:
     # Inverse transform — normalize path
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_normalize_inverse_transform_applied(self):
+    def test_normalize_inverse_transform_applied(self) -> None:
         """generate() must apply the inverse normalization transform.
 
         Fit on sin(2πt)+5 so _bias_=5.0, _scale_=1.0. Stub returns zeros
@@ -776,7 +872,9 @@ class TestGenerate:
     # Inverse transform — no-transform path
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_no_transform_generate_does_not_rescale(self, small_grid):
+    def test_no_transform_generate_does_not_rescale(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """No rescaling when normalize=False and standardize=False."""
         gen = FunctionalDiffusionGenerator(
             normalize=False, standardize=False, max_iter=1, seed=SEED,
@@ -809,8 +907,8 @@ class TestGenerateEvolution:
     # Pre-fit guard
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_evolution_raises_if_not_fitted(self):
-        """generate_evolution() must raise NotFittedError before fit() is called."""
+    def test_evolution_raises_if_not_fitted(self) -> None:
+        """generate_evolution() must raise NotFittedError before fit()."""
         gen = FunctionalDiffusionGenerator()
 
         with pytest.raises(NotFittedError):
@@ -820,7 +918,9 @@ class TestGenerateEvolution:
     # Return type and structure
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_evolution_returns_list_of_fdatagrid(self, fitted_generator):
+    def test_evolution_returns_list_of_fdatagrid(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """generate_evolution() must return a list of FDataGrid objects."""
         result = fitted_generator.generate_evolution(
             3, timesteps=np.linspace(1.0, 0.0, 5),
@@ -829,7 +929,9 @@ class TestGenerateEvolution:
         assert isinstance(result, list)
         assert all(isinstance(r, FDataGrid) for r in result)
 
-    def test_evolution_length_matches_timesteps(self, fitted_generator):
+    def test_evolution_length_matches_timesteps(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
         """The result list must have exactly len(timesteps) elements."""
         timesteps = np.linspace(1.0, 0.0, 6)
 
@@ -837,8 +939,10 @@ class TestGenerateEvolution:
 
         assert len(result) == len(timesteps)
 
-    def test_evolution_each_fdatagrid_has_correct_n_samples(self, fitted_generator):
-        """Every snapshot must contain exactly the requested number of samples."""
+    def test_evolution_each_fdatagrid_has_correct_n_samples(
+        self, fitted_generator: FunctionalDiffusionGenerator,
+    ) -> None:
+        """Every snapshot must contain exactly the requested n_samples."""
         n_samples = 5
         result = fitted_generator.generate_evolution(
             n_samples, timesteps=np.linspace(1.0, 0.0, 4),
@@ -850,8 +954,10 @@ class TestGenerateEvolution:
     # Inverse transform on post-reverse snapshots
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_evolution_inverse_transform_applied_to_all_elements(self):
-        """Inverse transform must be applied to every snapshot, not just the last.
+    def test_evolution_inverse_transform_applied_to_all_elements(
+        self,
+    ) -> None:
+        """Inverse transform must be applied to every snapshot, not just last.
 
         result[0] is the initial noise (before any reverse call) and is
         excluded from the assertion; result[1:] are the post-reverse snapshots.
@@ -874,9 +980,12 @@ class TestGenerateEvolution:
         )
 
         for idx, snapshot in enumerate(result[1:], start=1):
-            assert np.allclose(snapshot.data_matrix, gen._bias_, atol=1e-5), (
-                f"result[{idx}].data_matrix is not ≈ _bias_={gen._bias_:.4f}; "
-                "the inverse transform may not have been applied to this snapshot."
+            assert np.allclose(
+                snapshot.data_matrix, gen._bias_, atol=1e-5,
+            ), (
+                f"result[{idx}].data_matrix is not ≈ "
+                f"_bias_={gen._bias_:.4f}; "
+                "the inverse transform may not have been applied to snapshot."
             )
 
     @pytest.mark.parametrize(
@@ -885,15 +994,17 @@ class TestGenerateEvolution:
         ids=["empty", "single"],
     )
     def test_rejects_fewer_than_two_timesteps(
-        self, fitted_generator, timesteps,
-    ):
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        timesteps: np.ndarray,
+    ) -> None:
         """generate_evolution() needs at least a start and an end timestep.
 
         Fewer than two entries cannot define a trajectory; the docstring
         promises a snapshot per entry, so silently returning one snapshot
         would be misleading.
         """
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             fitted_generator.generate_evolution(2, timesteps=timesteps)
 
 
@@ -909,7 +1020,9 @@ class TestSaveLoad:
     # Pre-fit guard
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_save_raises_if_not_fitted(self, tmp_checkpoint):
+    def test_save_raises_if_not_fitted(
+        self, tmp_checkpoint: Path,
+    ) -> None:
         """save() must raise NotFittedError when called before fit()."""
         gen = FunctionalDiffusionGenerator()
 
@@ -920,7 +1033,11 @@ class TestSaveLoad:
     # File creation
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_save_creates_file(self, fitted_generator, tmp_checkpoint):
+    def test_save_creates_file(
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_checkpoint: Path,
+    ) -> None:
         """save() must create a file at the given path."""
         fitted_generator.save(tmp_checkpoint)
 
@@ -930,7 +1047,12 @@ class TestSaveLoad:
     # Atomic write
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_save_is_atomic_on_failure(self, fitted_generator, tmp_path, monkeypatch):
+    def test_save_is_atomic_on_failure(
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         """A failed save must leave neither the target file nor a .tmp file.
 
         Patches torch.save to write the .tmp file and then raise OSError,
@@ -939,16 +1061,21 @@ class TestSaveLoad:
         target = tmp_path / "model.pt"
         _real_torch_save = torch.save
 
-        def _write_then_fail(obj, path, **kwargs):
+        def _write_then_fail(
+            obj: object, path: object, **kwargs: object,
+        ) -> None:
             _real_torch_save(obj, path, **kwargs)
-            raise OSError("simulated disk full after write")
+            msg = "simulated disk full after write"
+            raise OSError(msg)
 
         monkeypatch.setattr(torch, "save", _write_then_fail)
 
-        with pytest.raises(OSError):
+        with pytest.raises(OSError):  # noqa: PT011
             fitted_generator.save(target)
 
-        assert not target.exists(), "target file must not exist after a failed save"
+        assert not target.exists(), (
+            "target file must not exist after a failed save"
+        )
         assert not target.with_suffix(".tmp").exists(), (
             ".tmp file must be cleaned up after a failed save"
         )
@@ -957,14 +1084,18 @@ class TestSaveLoad:
     # load() — format validation
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_load_raises_for_invalid_checkpoint_format(self, tmp_checkpoint):
-        """load() must raise TypeError when the file contains a non-dict object."""
+    def test_load_raises_for_invalid_checkpoint_format(
+        self, tmp_checkpoint: Path,
+    ) -> None:
+        """load() must raise TypeError when file contains a non-dict object."""
         torch.save("not_a_dict", tmp_checkpoint)
 
         with pytest.raises(TypeError, match="Invalid checkpoint format"):
             FunctionalDiffusionGenerator.load(tmp_checkpoint)
 
-    def test_load_raises_for_missing_keys(self, tmp_checkpoint):
+    def test_load_raises_for_missing_keys(
+        self, tmp_checkpoint: Path,
+    ) -> None:
         """load() must raise ValueError when required keys are absent."""
         torch.save({"version": 1}, tmp_checkpoint)
 
@@ -975,23 +1106,35 @@ class TestSaveLoad:
     # Round-trip — attribute preservation
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_roundtrip_grid_points_preserved(self, fitted_generator, tmp_checkpoint):
+    def test_roundtrip_grid_points_preserved(
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_checkpoint: Path,
+    ) -> None:
         """grid_points_ must survive a save → load round-trip unchanged."""
         fitted_generator.save(tmp_checkpoint)
         gen2 = FunctionalDiffusionGenerator.load(tmp_checkpoint)
 
         assert np.array_equal(gen2.grid_points_, fitted_generator.grid_points_)
 
-    def test_roundtrip_bias_and_scale_preserved(self, fitted_generator, tmp_checkpoint):
-        """_bias_ and _scale_ must survive a save → load round-trip unchanged."""
+    def test_roundtrip_bias_and_scale_preserved(
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_checkpoint: Path,
+    ) -> None:
+        """_bias_ and _scale_ must survive a save → load round-trip."""
         fitted_generator.save(tmp_checkpoint)
         gen2 = FunctionalDiffusionGenerator.load(tmp_checkpoint)
 
         assert gen2._bias_ == fitted_generator._bias_
         assert gen2._scale_ == fitted_generator._scale_
 
-    def test_roundtrip_normalize_flag_preserved(self, fitted_generator, tmp_checkpoint):
-        """The normalize flag must survive a save → load round-trip unchanged."""
+    def test_roundtrip_normalize_flag_preserved(
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_checkpoint: Path,
+    ) -> None:
+        """The normalize flag must survive a save → load round-trip."""
         fitted_generator.save(tmp_checkpoint)
         gen2 = FunctionalDiffusionGenerator.load(tmp_checkpoint)
 
@@ -1001,7 +1144,11 @@ class TestSaveLoad:
     # Round-trip — generate() works after load
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_roundtrip_can_generate_after_load(self, fitted_generator, tmp_checkpoint):
+    def test_roundtrip_can_generate_after_load(
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_checkpoint: Path,
+    ) -> None:
         """A loaded generator must be able to call generate() without error."""
         fitted_generator.save(tmp_checkpoint)
         gen2 = FunctionalDiffusionGenerator.load(tmp_checkpoint)
@@ -1009,13 +1156,17 @@ class TestSaveLoad:
         result = gen2.generate(n_samples=3)
 
         assert isinstance(result, FDataGrid)
-        assert result.n_samples == 3
+        assert result.n_samples == 3  # noqa: PLR2004
 
     # ─────────────────────────────────────────────────────────────────────────
     # Device override
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_load_device_override(self, fitted_generator, tmp_checkpoint):
+    def test_load_device_override(
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_checkpoint: Path,
+    ) -> None:
         """load(device='cpu') must place all score model parameters on CPU."""
         fitted_generator.save(tmp_checkpoint)
         gen2 = FunctionalDiffusionGenerator.load(tmp_checkpoint, device="cpu")
@@ -1031,8 +1182,10 @@ class TestSaveLoad:
     # ─────────────────────────────────────────────────────────────────────────
 
     def test_load_restores_rng_state_for_reproducibility(
-        self, fitted_generator, tmp_checkpoint,
-    ):
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_checkpoint: Path,
+    ) -> None:
         """Two loads from the same checkpoint must yield identical outputs."""
         fitted_generator.save(tmp_checkpoint)
 
@@ -1049,8 +1202,10 @@ class TestSaveLoad:
         )
 
     def test_generate_after_load_continues_saved_stream(
-        self, fitted_generator, tmp_checkpoint,
-    ):
+        self,
+        fitted_generator: FunctionalDiffusionGenerator,
+        tmp_checkpoint: Path,
+    ) -> None:
         """A loaded generator must continue the saved RNG stream.
 
         The checkpoint is taken after one generate() call, so the next draw
@@ -1073,16 +1228,22 @@ class TestSaveLoad:
     # ─────────────────────────────────────────────────────────────────────────
 
     def test_load_with_diff_process_instance_restores_state(
-        self, small_grid, tmp_checkpoint,
-    ):
-        """load(diff_process=...) must restore fitted state into the supplied instance.
+        self, small_grid: FDataGrid, tmp_checkpoint: Path,
+    ) -> None:
+        """load(diff_process=...) must restore fitted state into the instance.
 
-        DiagonalDiffusionProcess stores a non-picklable callable, so load() must
-        graft the checkpoint's numerical state onto the fresh instance.
+        DiagonalDiffusionProcess stores a non-picklable callable, so load()
+        must graft the checkpoint's numerical state onto the fresh instance.
         """
-        drift_term = lambda t: torch.ones(t.shape[0], _N_GRID_POINTS)
-        diff_term = lambda t: torch.ones(t.shape[0], _N_GRID_POINTS)
-        proc = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diff_term)
+        def drift_term(t: torch.Tensor) -> torch.Tensor:
+            return torch.ones(t.shape[0], _N_GRID_POINTS)
+
+        def diff_term(t: torch.Tensor) -> torch.Tensor:
+            return torch.ones(t.shape[0], _N_GRID_POINTS)
+
+        proc = DiagonalDiffusionProcess(
+            drift_term=drift_term, diffusion_term=diff_term,
+        )
         gen = FunctionalDiffusionGenerator(
             diff_process=proc, max_iter=1, seed=SEED,
         )
@@ -1092,7 +1253,9 @@ class TestSaveLoad:
             gen.save(tmp_checkpoint)
 
         # Reconstruct with a fresh process carrying the same callable.
-        fresh_proc = DiagonalDiffusionProcess(drift_term=drift_term, diffusion_term=diff_term)
+        fresh_proc = DiagonalDiffusionProcess(
+            drift_term=drift_term, diffusion_term=diff_term,
+        )
         gen2 = FunctionalDiffusionGenerator.load(
             tmp_checkpoint, diff_process=fresh_proc,
         )
@@ -1110,7 +1273,7 @@ class TestSaveLoad:
 class TestSklearnCompat:
     """scikit-learn estimator-protocol conformance for the generator."""
 
-    def test_clone_returns_equivalent_unfitted_estimator(self):
+    def test_clone_returns_equivalent_unfitted_estimator(self) -> None:
         """clone() must return a new, unfitted estimator with equal params.
 
         Relies on the constructor storing its arguments verbatim (no defaults
@@ -1130,7 +1293,7 @@ class TestSklearnCompat:
         assert type(cloned.diff_process) is type(gen.diff_process)
         assert not hasattr(cloned, "diff_process_")
 
-    def test_set_params_round_trip(self):
+    def test_set_params_round_trip(self) -> None:
         """get_params/set_params must round-trip and accept overrides."""
         gen = FunctionalDiffusionGenerator(max_iter=3, seed=7)
 
@@ -1152,30 +1315,38 @@ class TestFromFDataGridToTensorDataset:
     # Number of tensors in the dataset
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_without_labels_returns_single_tensor_dataset(self, small_grid):
+    def test_without_labels_returns_single_tensor_dataset(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """Without y, the dataset must contain exactly one tensor."""
         ds = _fdatagrid_to_tensor_dataset(small_grid)
 
         assert len(ds.tensors) == 1
 
-    def test_with_labels_returns_two_tensor_dataset(self, small_grid, labels_array):
-        """With y, the dataset must contain exactly two tensors: data and labels."""
+    def test_with_labels_returns_two_tensor_dataset(
+        self, small_grid: FDataGrid, labels_array: np.ndarray,
+    ) -> None:
+        """With y passed, the TensorDataset must have exactly two tensors."""
         ds = _fdatagrid_to_tensor_dataset(small_grid, y=labels_array)
 
-        assert len(ds.tensors) == 2
+        assert len(ds.tensors) == 2  # noqa: PLR2004
 
     # ─────────────────────────────────────────────────────────────────────────
     # Data tensor — shape and dtype
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_data_tensor_shape(self, small_grid):
+    def test_data_tensor_shape(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """Data tensor must have shape (N, M), not (N, M, 1)."""
         ds = _fdatagrid_to_tensor_dataset(small_grid)
 
         expected_shape = (small_grid.n_samples, len(small_grid.grid_points[0]))
         assert ds.tensors[0].shape == expected_shape
 
-    def test_data_tensor_dtype_float32(self, small_grid):
+    def test_data_tensor_dtype_float32(
+        self, small_grid: FDataGrid,
+    ) -> None:
         """The data tensor must be float32."""
         ds = _fdatagrid_to_tensor_dataset(small_grid)
 
@@ -1185,14 +1356,18 @@ class TestFromFDataGridToTensorDataset:
     # Label tensor — values and shape
     # ─────────────────────────────────────────────────────────────────────────
 
-    def test_labels_tensor_matches_input(self, small_grid, labels_array):
+    def test_labels_tensor_matches_input(
+        self, small_grid: FDataGrid, labels_array: np.ndarray,
+    ) -> None:
         """The label tensor must contain exactly the values passed in y."""
         ds = _fdatagrid_to_tensor_dataset(small_grid, y=labels_array)
 
         expected = torch.from_numpy(labels_array).float()
         assert torch.allclose(ds.tensors[1], expected)
 
-    def test_labels_tensor_shape(self, small_grid, labels_array):
+    def test_labels_tensor_shape(
+        self, small_grid: FDataGrid, labels_array: np.ndarray,
+    ) -> None:
         """The label tensor must have shape (N,), not (N, 1) or (1, N)."""
         ds = _fdatagrid_to_tensor_dataset(small_grid, y=labels_array)
 

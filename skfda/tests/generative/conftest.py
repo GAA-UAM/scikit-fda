@@ -23,13 +23,13 @@ def generator() -> torch.Generator:
 
 
 @pytest.fixture(scope="module")
-def x_batch(generator) -> torch.Tensor:
+def x_batch(generator: torch.Generator) -> torch.Tensor:
     """Batch of reference functional data, shape (N, M), values in N(0, 1)."""
     return torch.randn(_BATCH_SIZE, _DATA_DIM, generator=generator)
 
 
 @pytest.fixture(scope="module")
-def x_batch_scaled(x_batch) -> torch.Tensor:
+def x_batch_scaled(x_batch: torch.Tensor) -> torch.Tensor:
     """x_batch * 2.0.
 
     Used in linearity tests: mean_cond(2*x, t) == 2*mean_cond(x, t).
@@ -48,13 +48,19 @@ def t_batch() -> torch.Tensor:
 
 @pytest.fixture(scope="module")
 def t_zero() -> torch.Tensor:
-    """Times at t=0, shape (N,). Initial conditions: mean_cond(x, 0) ≈ x, _cov(0) ≈ 0."""
+    """Times at t=0, shape (N,).
+
+    Initial conditions: mean_cond(x, 0) ≈ x, _cov(0) ≈ 0.
+    """
     return torch.zeros(_BATCH_SIZE)
 
 
 @pytest.fixture(scope="module")
 def t_one() -> torch.Tensor:
-    """Times at t=1, shape (N,). Final conditions: mean_cond(x, 1) ≈ 0, _cov(1) ≈ 1 for VP."""
+    """Times at t=1, shape (N,).
+
+    Final conditions: mean_cond(x, 1) ≈ 0, _cov(1) ≈ 1 for VP.
+    """
     return torch.ones(_BATCH_SIZE)
 
 

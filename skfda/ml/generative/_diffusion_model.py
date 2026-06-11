@@ -848,18 +848,17 @@ class FunctionalDiffusionGenerator(BaseEstimator):
 
         if device is not None:
             target_device = torch.device(device)
-            # Current device overrides the stored device.
-            # Also on the diffusion process checkpoint
-            checkpoint["diff_process"]["device"] = target_device
         else:
             target_device = torch.device(checkpoint["device"])
 
         # Restore diffusion process.  If diff_process is provided, its
         # callables are used and only the fitted state is pulled from the
         # checkpoint (see ForwardDiffusionProcess.from_checkpoint).
-
+        # The device override is forwarded so the stored device in the
+        # process fit state is replaced before tensors are allocated.
         restored_diff_process = ForwardDiffusionProcess.from_checkpoint(
             checkpoint["diff_process"],
+            device=target_device if device is not None else None,
             instance=diff_process,
         )
 

@@ -373,7 +373,7 @@ class ForwardDiffusionProcess(BaseEstimator):
 
         # If device is provided override the stored device.
         if device is not None:
-            data["fit_state"]["device"] = device
+            data["fit_state"]["device"] = torch.device(device)
 
         if instance is not None:
             if type(instance) is not process_cls:

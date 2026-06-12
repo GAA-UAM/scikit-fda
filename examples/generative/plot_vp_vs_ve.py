@@ -38,7 +38,8 @@ diffusion models to generate synthetic functional data.
 # Additionally, since we are working with an ``FDataGrid`` we will use
 # :math:`\mathbf{X}` to denote the vector obtained by evaluating the
 # function at its grid points:
-# :math:`\mathbf{X} = \mathbf{X}(t_1), \mathbf{X}(t_2), \ldots, \mathbf{X}(t_m)`,
+# :math:`\mathbf{X} = \mathbf{X}(t_1), \mathbf{X}(t_2), \ldots,
+# \mathbf{X}(t_m)`,
 # where :math:`t_1, t_2, \ldots, t_m` are the grid points of the
 # ``FDataGrid``.
 #

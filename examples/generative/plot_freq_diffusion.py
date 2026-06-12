@@ -41,7 +41,8 @@ frequencies of a signal (1D function).
 #    \mathbf{Q}_{m,k} =
 #    \begin{cases}
 #    \frac{1}{\sqrt{M}} & \text{if } k = 0 \\
-#    \sqrt{\frac{2}{M}} \cos\left(\frac{\pi \cdot m \cdot k}{M}\right) & \text{if } k \in \{1, 2, \dots, M-1\}
+#    \sqrt{\frac{2}{M}} \cos\left(\frac{\pi \cdot m \cdot k}{M}\right)
+#    & \text{if } k \in \{1, 2, \dots, M-1\}
 #    \end{cases}
 #
 #    \quad \text{for } m \in \{0, 1, \dots, M-1\}
@@ -172,12 +173,18 @@ plt.show()
 # .. math::
 #
 #    \begin{aligned}
-#    &\int_{0}^{1} \beta(t) dt = \int_0^{1} \beta_{min} + (\beta_{max}-\beta_{min}) t\, dt = \frac{\beta_{min} + \beta_{max}}{2} \\[2ex]
+#    &\int_{0}^{1} \beta(t) dt
+#    = \int_0^{1} \beta_{min} + (\beta_{max}-\beta_{min}) t\, dt
+#    = \frac{\beta_{min} + \beta_{max}}{2} \\[2ex]
 #    \\
 #    &\int_{0}^{1} \beta^*(t) dt = \begin{cases}
-#    \int_0^{0.5}2 (\beta_{min} + (\beta_{max} - \beta_{min}) 2 t ) dt  = \frac{\beta_{min} + \beta_{max}}{2}  \quad \quad  \quad\text{if mask = 0} \\[2ex]
+#    \int_0^{0.5}2 (\beta_{min} + (\beta_{max} - \beta_{min}) 2 t ) dt
+#    = \frac{\beta_{min} + \beta_{max}}{2}
+#    \quad \quad \quad \text{if mask = 0} \\[2ex]
 #    \\
-#    \int_{0.5}^{1} 2 (\beta_{min} + (\beta_{max} - \beta_{min}) (2 t -1)) dt = \frac{\beta_{min} + \beta_{max}}{2} \quad \text{if mask = 1}
+#    \int_{0.5}^{1} 2 (\beta_{min} + (\beta_{max} - \beta_{min}) (2 t -1)) dt
+#    = \frac{\beta_{min} + \beta_{max}}{2}
+#    \quad \text{if mask = 1}
 #    \end{cases}
 #    \end{aligned}
 

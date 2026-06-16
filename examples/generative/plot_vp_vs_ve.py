@@ -749,7 +749,7 @@ for row in range(2):
         ax.set_xlim(x_data.min(), x_data.max())
         ax.set_ylim(fd_min, fd_max * 1.2)
         ax.set_xlabel("t")
-        if row == 0:
+        if col == 0:
             ax.set_ylabel("Generated Value")
         ax.set_title(f"{model_names[row][col]} at τ=1.000")
 

@@ -620,6 +620,31 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
         super().__init__()
         self.significance = significance
 
+    def distance_means(
+        self,
+        x: NDArrayFloat,
+    ) -> float:
+        r"""
+        Compute the mean of the pairwise distances of ``x``.
+
+        If `x` is one-dimensional, this can be achieved using a
+        :math:`N \log N` algorithm, instead of the naive :math:`N^2` one.
+
+        """
+        # Unidimensional (fast) case
+        if x.ndim == 1 or x.shape[1] == 1:
+            x_sorted = np.sort(x)
+            n = x.shape[0]
+            index_val = np.arange(1, n + 1)
+
+            return np.sum(
+                (2 * index_val - n - 1) * x_sorted,
+            ) / (n * (n - 1) / 2)
+
+        # General case
+        x_dist = dcor.distances.pairwise_distances(x)
+        return float(np.mean(x_dist))
+
     def chi_bound(
         self,
         x: NDArrayFloat,
@@ -627,14 +652,11 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
         significance: float,
     ) -> float:
 
-        x_dist = dcor.distances.pairwise_distances(x)
-        y_dist = dcor.distances.pairwise_distances(y)
-
-        t2 = np.mean(x_dist) * np.mean(y_dist)
+        t2 = self.distance_means(x) * self.distance_means(y)
 
         chi_quant = scipy.stats.chi2.ppf(1 - significance, df=1)
 
-        return float(chi_quant * t2 / x_dist.shape[0])
+        return float(chi_quant * t2 / x.shape[0])
 
     def __call__(
         self,

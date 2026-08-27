@@ -533,7 +533,14 @@ class FDataGrid(FData):  # noqa: WPS214
     def _check_same_dimensions(self: T, other: T) -> None:
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:
             raise ValueError("Error in columns dimensions")
-        if not np.array_equal(self.grid_points, other.grid_points):
+        if not all(
+            np.array_equal(grid1, grid2)
+            for grid1, grid2 in zip(
+                self.grid_points,
+                other.grid_points,
+                strict=True,
+            )
+        ):
             raise ValueError("Grid points for both objects must be equal")
 
     def _get_points_and_values(self: T) -> Tuple[NDArrayFloat, NDArrayFloat]:
@@ -882,20 +889,13 @@ class FDataGrid(FData):  # noqa: WPS214
 
         """
         # Checks
-        if not as_coordinates:
-            for other in others:
-                self._check_same_dimensions(other)
+        for other in others:
+            self._check_same_dimensions(other)
 
-        elif not all(
-            np.array_equal(self.grid_points, other.grid_points)
+        if as_coordinates and any(
+            self.n_samples != other.n_samples
             for other in others
         ):
-            raise ValueError(
-                "All the FDataGrids must be sampled in the  same "
-                "grid points.",
-            )
-
-        elif any(self.n_samples != other.n_samples for other in others):
 
             raise ValueError(
                 f"All the FDataGrids must contain the same "

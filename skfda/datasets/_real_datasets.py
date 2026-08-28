@@ -11,9 +11,9 @@ from skdatasets.repositories import cran, ucr
 from sklearn.utils import Bunch
 from typing_extensions import Literal
 
-from ..representation import FDataGrid
-from ..representation.irregular import FDataIrregular
-from ..typing._numpy import NDArrayFloat, NDArrayInt
+from skfda.representation import FDataGrid
+from skfda.representation.irregular import FDataIrregular
+from skfda.typing._numpy import NDArrayFloat, NDArrayInt
 
 
 def fdata_constructor(
@@ -1642,5 +1642,169 @@ def fetch_bone_density(
         categories={},
         feature_names=[argument_name],
         target_names=target_names,
+        DESCR=descr,
+    )
+
+
+_cd4_descr_template = """
+    CD4 cell counts for 366 subjects between months -18 and 42 since
+    seroconversion. Each subject's observations are contained in a single row.
+
+    Format: A data frame made up of a 366 x 61 matrix of CD4 cell counts.
+
+    The data is obtained from the R package *refund* {cite} from CRAN.
+
+    References:
+        {bibliography}
+"""
+
+_cd4_descr = _cd4_descr_template.format(
+    cite="[1]",
+    bibliography="[1] Goldsmith, J., Greven, S., and Crainiceanu, C. (2023). "
+    "refund: Regression with Functional Data. R package. "
+    "https://cran.r-project.org/package=refund",
+)
+
+
+def fetch_cd4(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Bunch | Tuple[FDataIrregular, None] | Tuple[DataFrame, None]:
+    """
+    Load the CD4 cell counts dataset. This is an irregular dataset.
+
+    Rows contain one curve per subject.
+
+    The data is obtained from the R package 'refund'.
+    """
+    descr = _cd4_descr
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        raw_dataset = fetch_cran("cd4", "refund")
+    cd4_array = raw_dataset["cd4"]
+
+    grid_points = cd4_array.coords["dim_1"].to_numpy().astype(float)
+    data_matrix = cd4_array.to_numpy().astype(float)
+
+    cd4_grid = FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+    )
+
+    curves = FDataIrregular.from_fdatagrid(
+        cd4_grid,
+        dataset_name="CD4 Cell Counts",
+        argument_names=["months since seroconversion"],
+        coordinate_names=["CD4 cell count"],
+    )
+
+    frame = None
+
+    if as_frame:
+        cd4_df = pd.DataFrame(cd4_array.values)
+        cd4_df.columns = list(cd4_array.coords["dim_1"].values)
+        cd4_df.insert(0, "id", range(len(cd4_df)))  # Add ID for each row
+
+        cd4_df_long = cd4_df.melt(id_vars="id", var_name="time", value_name="cd4_count")
+        cd4_df_long = cd4_df_long.dropna()
+
+        cd4_df_long["time"] = cd4_df_long["time"].astype(float)
+        cd4_df_long = cd4_df_long.sort_values(by=["id", "time"])
+        curves = cd4_df_long.reset_index(drop=True)
+        frame = curves
+
+    if return_X_y:
+        return curves, None
+
+    return Bunch(
+        data=curves,
+        target=None,
+        frame=frame,
+        categories={},
+        feature_names=["cd4"],
+        target_names=[],
+        DESCR=descr,
+    )
+
+if fetch_cd4.__doc__ is not None:  # docstrings can be stripped off
+    fetch_cd4.__doc__ += _cd4_descr_template.format(
+        cite=":footcite:p:`goldsmith+greven+crainiceanu_2023_refund`",
+        bibliography=".. footbibliography::",
+    )
+
+_country_height_descr = """
+    The Country Height dataset is a study of average male heights in 144
+    countries from 1810-1989. This data is truncated to the specified years
+    from the original dataset in the R package brolgar, from CRAN.
+
+    References:
+        https://cran.r-project.org/package=brolgar
+        Joerg Baten and Matthias Blum (2014)
+            "Why are you tall while others are short? Agricultural production
+            and other proximate determinants of global heights",
+            European Review of Economic History, 18, 144-165.
+"""
+
+def fetch_country_height(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Bunch | Tuple[FDataIrregular, NDArrayInt] | Tuple[DataFrame, Series]:
+    """
+    Load the Country Height dataset. This is an irregular dataset.
+
+    The data is obtained from the R package 'brolgar'.
+    """
+    descr = _country_height_descr
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        raw_dataset = fetch_cran("heights", "brolgar")
+    data = raw_dataset["heights"]
+    data = data[(data["year"] >= 1810) & (data["year"] < 1990)]
+
+    curve_name = "country"
+    argument_name = "year"
+    target_name = "continent"
+    coordinate_name = "height_cm"
+
+    curves = FDataIrregular._from_dataframe(
+        data,
+        id_column=curve_name,
+        argument_columns=argument_name,
+        coordinate_columns=coordinate_name,
+        argument_names=[argument_name],
+        coordinate_names=[coordinate_name],
+        dataset_name="Average Male Height by Country",
+        sample_names=data.drop_duplicates(subset=[curve_name])[curve_name],
+    )
+
+    country_targets = data.drop_duplicates(subset="country")
+
+    target_categorical = pd.Categorical(country_targets[target_name])
+    target_codes = target_categorical.codes
+
+    frame = None
+
+    if as_frame:
+        curves = curves.to_grid()
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: target_categorical,
+        })
+
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
+    else:
+        target = target_codes
+
+    if return_X_y:
+        return curves, target
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[argument_name],
+        target_names=target_categorical,
         DESCR=descr,
     )

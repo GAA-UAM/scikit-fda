@@ -59,6 +59,11 @@ docs = [
   "sphinx>=3",
   "sphinx-gallery>=0.19",
   "sphinxcontrib-bibtex",
+  "torch>=2.0", # Generative diffusion examples in the gallery.
+]
+# Optional PyTorch backend, required only by skfda.ml.generative.
+torch = [
+  "torch>=2.0",
 ]
 test = [
   "numpy>=2.2", # Changes in array representation.
@@ -66,6 +71,7 @@ test = [
   "pytest-env",
   "pytest-subtests",
   "scipy>=1.14", # Changes in sparse array representation.
+  "torch>=2.0", # Required by skfda.ml.generative tests.
 ]
 
 [project.urls]
@@ -112,6 +118,7 @@ module = [
   "skdatasets.*",
   "sklearn.*",
   "sphinx_gallery.*",
+  "torch.*",
 ]
 ignore_missing_imports = true
 

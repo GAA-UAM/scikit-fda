@@ -6,13 +6,17 @@ It allows multiple modes and colors, which could
 be set manually or automatically depending on values
 like depth measures.
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Sized, Tuple, TypeVar
+from collections import Counter
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import matplotlib
 import matplotlib.patches
 import numpy as np
+import pandas as pd
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
@@ -24,11 +28,15 @@ from ...misc.validation import validate_domain_range
 from ...representation._functional_data import FData
 from ...representation.irregular import FDataIrregular
 from ...typing._base import DomainRangeLike, GridPointsLike
+from ...typing._numpy import ArrayLike
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _set_labels
 
-K = TypeVar('K', contravariant=True)
-V = TypeVar('V', covariant=True)
+if TYPE_CHECKING:
+    from collections.abc import Sequence, Sized
+
+K = TypeVar("K", contravariant=True)
+V = TypeVar("V", covariant=True)
 
 
 class Indexable(Protocol[K, V]):
@@ -47,12 +55,11 @@ def _get_color_info(
     group_names: Indexable[K, str] | None = None,
     group_colors: Indexable[K, ColorLike] | None = None,
     legend: bool = False,
-    kwargs: Dict[str, Any] | None = None,
-) -> Tuple[
+    kwargs: dict[str, Any] | None = None,
+) -> tuple[
     Sequence[ColorLike] | None,
     Sequence[matplotlib.patches.Patch] | None,
 ]:
-
     if kwargs is None:
         kwargs = {}
 
@@ -73,11 +80,13 @@ def _get_color_info(
                 [group_colors[g] for g in group_unique],
             )
         else:
-            prop_cycle = matplotlib.rcParams['axes.prop_cycle']
-            cycle_colors = prop_cycle.by_key()['color']
+            prop_cycle = matplotlib.rcParams["axes.prop_cycle"]
+            cycle_colors = prop_cycle.by_key()["color"]
 
             group_colors_array = np.take(
-                cycle_colors, np.arange(n_labels), mode='wrap',
+                cycle_colors,
+                np.arange(n_labels),
+                mode="wrap",
             )
 
         sample_colors = list(group_colors_array[group_indexes])
@@ -94,23 +103,26 @@ def _get_color_info(
         if group_names_array is not None:
             patches = [
                 matplotlib.patches.Patch(color=c, label=l)
-                for c, l in zip(group_colors_array, group_names_array)
+                for c, l in zip(
+                    group_colors_array,
+                    group_names_array,
+                    strict=True,
+                )
             ]
 
+    # In this case, each curve has a different color unless specified
+    # otherwise
+
+    elif "color" in kwargs:
+        sample_colors = len(fdata) * [kwargs.get("color")]
+        kwargs.pop("color")
+
+    elif "c" in kwargs:
+        sample_colors = len(fdata) * [kwargs.get("c")]
+        kwargs.pop("c")
+
     else:
-        # In this case, each curve has a different color unless specified
-        # otherwise
-
-        if 'color' in kwargs:
-            sample_colors = len(fdata) * [kwargs.get("color")]
-            kwargs.pop('color')
-
-        elif 'c' in kwargs:
-            sample_colors = len(fdata) * [kwargs.get("c")]
-            kwargs.pop('c')
-
-        else:
-            sample_colors = None
+        sample_colors = None
 
     return sample_colors, patches
 
@@ -173,7 +185,7 @@ class GraphPlot(BasePlot):
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
         group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
-            group is shown with distict colors in the "Greys" colormap.
+            group is shown with distinct colors in the "Greys" colormap.
         group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
@@ -187,6 +199,7 @@ class GraphPlot(BasePlot):
             the matplotlib.pyplot.plot function; if dim_domain is 2,
             keyword arguments to be passed to the
             matplotlib.pyplot.plot_surface function.
+
     Attributes:
         gradient_list: normalization of the values from gradient color_list
             that will be used to determine the intensity of the color
@@ -202,7 +215,7 @@ class GraphPlot(BasePlot):
         axes: Axes | None = None,
         n_rows: int | None = None,
         n_cols: int | None = None,
-        n_points: int | Tuple[int, int] | None = None,
+        n_points: int | tuple[int, int] | None = None,
         domain_range: DomainRangeLike | None = None,
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
@@ -225,13 +238,14 @@ class GraphPlot(BasePlot):
         self.gradient_criteria = gradient_criteria
         if self.gradient_criteria is not None:
             if len(self.gradient_criteria) != fdata.n_samples:
-                raise ValueError(
+                msg = (
                     f"The length of the gradient color list "
                     f"({len(self.gradient_criteria)}) "
                     f"should be the same as the number "
                     f"of samples in fdata "
-                    f"({fdata.n_samples})",
+                    f"({fdata.n_samples})"
                 )
+                raise ValueError(msg)
 
             if min_grad is None:
                 self.min_grad = min(self.gradient_criteria)
@@ -243,13 +257,10 @@ class GraphPlot(BasePlot):
             else:
                 self.max_grad = max_grad
 
-            self.gradient_list: Sequence[float] | None = (
-                [
-                    (grad_color - self.min_grad)
-                    / (self.max_grad - self.min_grad)
-                    for grad_color in self.gradient_criteria
-                ]
-            )
+            self.gradient_list: Sequence[float] | None = [
+                (grad_color - self.min_grad) / (self.max_grad - self.min_grad)
+                for grad_color in self.gradient_criteria
+            ]
         else:
             self.gradient_list = None
 
@@ -293,15 +304,15 @@ class GraphPlot(BasePlot):
         self.patches = patches
 
     @property
-    def dim(self) -> int:
+    def dim(self) -> int:  # noqa: D102
         return self.fdata.dim_domain + 1
 
     @property
-    def n_subplots(self) -> int:
+    def n_subplots(self) -> int:  # noqa: D102
         return self.fdata.dim_codomain
 
     @property
-    def n_samples(self) -> int:
+    def n_samples(self) -> int:  # noqa: D102
         return self.fdata.n_samples
 
     def _plot(
@@ -309,16 +320,14 @@ class GraphPlot(BasePlot):
         fig: Figure,
         axes: Sequence[Axes],
     ) -> None:
-
         self.artists = np.zeros(
             (self.n_samples, self.fdata.dim_codomain),
             dtype=Artist,
         )
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
-
             if self.n_points is None:
                 self.n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
@@ -330,7 +339,6 @@ class GraphPlot(BasePlot):
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
-
                     set_color_dict(self.sample_colors, j, color_dict)
 
                     self.artists[j, i] = axes[i].plot(
@@ -341,18 +349,18 @@ class GraphPlot(BasePlot):
                     )[0]
 
         else:
-
             # Selects the number of points
             if self.n_points is None:
                 n_points_tuple = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
             elif isinstance(self.n_points, int):
                 n_points_tuple = (self.n_points, self.n_points)
-            elif len(self.n_points) != 2:
-                raise ValueError(
+            elif len(self.n_points) != 2:  # noqa: PLR2004
+                msg = (
                     "n_points should be a number or a tuple of "
                     "length 2, and has "
-                    "length {0}.".format(len(self.n_points)),
+                    f"length {len(self.n_points)}."
                 )
+                raise ValueError(msg)
 
             # Axes where will be evaluated
             x = np.linspace(*self.domain_range[0], n_points_tuple[0])
@@ -361,11 +369,10 @@ class GraphPlot(BasePlot):
             # Evaluation of the functional object
             Z = self.fdata((x, y), grid=True)
 
-            X, Y = np.meshgrid(x, y, indexing='ij')
+            X, Y = np.meshgrid(x, y, indexing="ij")
 
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
-
                     set_color_dict(self.sample_colors, h, color_dict)
 
                     self.artists[h, k] = axes[k].plot_surface(
@@ -414,7 +421,7 @@ class ScatterPlot(BasePlot):
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
         group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
-            group is shown with distict colors in the "Greys" colormap.
+            group is shown with distinct colors in the "Greys" colormap.
         group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
@@ -438,7 +445,7 @@ class ScatterPlot(BasePlot):
         n_rows: int | None = None,
         n_cols: int | None = None,
         grid_points: GridPointsLike | None = None,
-        domain_range: Tuple[int, int] | DomainRangeLike | None = None,
+        domain_range: tuple[int, int] | DomainRangeLike | None = None,
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,
@@ -461,7 +468,8 @@ class ScatterPlot(BasePlot):
         else:
             self.grid_points = _to_grid_points(grid_points)
             self.evaluated_points = self.fdata(
-                self.grid_points, grid=True,
+                self.grid_points,
+                grid=True,
             )
 
         self.domain_range = domain_range
@@ -514,13 +522,11 @@ class ScatterPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
-
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
-
                     set_color_dict(self.sample_colors, j, color_dict)
 
                     self.artists[j, i] = axes[i].scatter(
@@ -532,14 +538,12 @@ class ScatterPlot(BasePlot):
                     )
 
         else:
-
             X = self.fdata.grid_points[0]
             Y = self.fdata.grid_points[1]
             X, Y = np.meshgrid(X, Y)
 
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
-
                     set_color_dict(self.sample_colors, h, color_dict)
 
                     self.artists[h, k] = axes[k].scatter(
@@ -588,7 +592,7 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
         group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
-            group is shown with distict colors in the "Greys" colormap.
+            group is shown with distinct colors in the "Greys" colormap.
         group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
@@ -611,7 +615,7 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         axes: Axes | None = None,
         n_rows: int | None = None,
         n_cols: int | None = None,
-        domain_range: Tuple[int, int] | DomainRangeLike | None = None,
+        domain_range: tuple[int, int] | DomainRangeLike | None = None,
         group: Sequence[K] | None = None,
         group_colors: Indexable[K, ColorLike] | None = None,
         group_names: Indexable[K, str] | None = None,
@@ -630,10 +634,12 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
 
         # There may be different points for each function
         self.grid_points = np.split(
-            self.fdata.points, self.fdata.start_indices[1:],
+            self.fdata.points,
+            self.fdata.start_indices[1:],
         )
         self.evaluated_points = np.split(
-            self.fdata.values, self.fdata.start_indices[1:],
+            self.fdata.values,
+            self.fdata.start_indices[1:],
         )
 
         self.domain_range = domain_range
@@ -701,11 +707,10 @@ class LinearPlotIrregular(PlotIrregular):
         artists_shape = (self.n_samples, self.fdata.dim_codomain)
         self.artists = np.zeros(artists_shape, dtype=Artist)
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
             for j in range(self.fdata.n_samples):
-
                 set_color_dict(self.sample_colors, j, color_dict)
 
                 self.artists[j, 0] = axes[0].plot(
@@ -718,7 +723,7 @@ class LinearPlotIrregular(PlotIrregular):
                 )
         else:
             # TODO Implementar para multidimension. Como hacer mesh?
-            raise NotImplementedError()
+            raise NotImplementedError
 
         _set_labels(self.fdata, fig, axes, self.patches)
 
@@ -740,12 +745,10 @@ class ScatterPlotIrregular(PlotIrregular):
         artists_shape = (self.n_samples, self.fdata.dim_codomain)
         self.artists = np.zeros(artists_shape, dtype=Artist)
 
-        color_dict: Dict[str, ColorLike | None] = {}
+        color_dict: dict[str, ColorLike | None] = {}
 
         if self.fdata.dim_domain == 1:
-
             for j in range(self.fdata.n_samples):
-
                 set_color_dict(self.sample_colors, j, color_dict)
 
                 self.artists[j, 0] = axes[0].scatter(
@@ -758,9 +761,8 @@ class ScatterPlotIrregular(PlotIrregular):
                 )
 
         else:
-
             # TODO Implement for multidimensional
-            raise NotImplementedError()
+            raise NotImplementedError
 
         _set_labels(self.fdata, fig, axes, self.patches)
 
@@ -768,7 +770,7 @@ class ScatterPlotIrregular(PlotIrregular):
 def set_color_dict(
     sample_colors: Any,
     ind: int,
-    color_dict: Dict[str, ColorLike | None],
+    color_dict: dict[str, ColorLike | None],
 ) -> None:
     """
     Auxiliary method used to update color_dict.
@@ -778,3 +780,339 @@ def set_color_dict(
     """
     if sample_colors is not None:
         color_dict["color"] = sample_colors[ind]
+
+
+class MixedDataPlot(BasePlot):
+    """
+    Class used to plot a Mixed Data object represented in DataFrames.
+
+    This class visualizes mixed-type datasets where each column of the
+    DataFrame represents a different variable, which can be either functional
+    data (`FData`) or classical numerical data (scalars). Each row
+    is treated as a separate sample.
+
+    Functional variables are plotted using their native `.plot()` method.
+    Vector valued functional data generate multiple subplots, one for each
+    component. Numerical data are shown as scatter plots.
+
+    Supports grouping samples by color using `group`, with optional custom
+    colors (`group_colors`) and labels (`group_names`) for legend display.
+
+    Args:
+        df: DataFrame object that we want to plot.
+        chart: Figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If ``None`` and ``ax`` is also ``None``, the figure is
+            initialized.
+        fig: Figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes: Axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows: Designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols: Designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
+        group: Contains integers from [0 to number of
+            labels) indicating to which group each sample belongs to. Then,
+            the samples with the same label are plotted in the same color.
+            If None, the default value, each sample is plotted in the color
+            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+        group_colors: Colors in which groups are
+            represented, there must be one for each group. If None, each
+            group is shown with distinct colors in the "Greys" colormap.
+        group_names: Name of each of the groups which appear
+            in a legend, there must be one for each one. Defaults to None
+            and the legend is not shown. Implies `legend=True`.
+        legend: If `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
+        flattened: When the codomain dimension (`dim_codomain`) is greater than
+            1, this option controls how the components are displayed.
+                -If `False`, all components are overlaid in the same subplot.
+                -If `True`, each component is plotted separately, side by side
+                in individual subplots.
+            Defaults to `False`.
+
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        df: pd.DataFrame,
+        chart: Figure | Axes | None = None,
+        *,
+        fig: Figure | None = None,
+        axes: Axes | Sequence[Axes] | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
+        group: Sequence[K] | None = None,
+        group_colors: Indexable[K, ColorLike] | None = None,
+        group_names: Indexable[K, str] | None = None,
+        legend: bool = False,
+        flattened: bool = False,
+    ) -> None:
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.df = df
+        self.group = group
+        self.group_colors = group_colors
+        self.group_names = group_names
+        self.legend = legend
+        self.flattened = flattened
+
+        sample_colors, patches = _get_color_info(
+            self.df,
+            self.group,
+            self.group_names,
+            self.group_colors,
+            self.legend,
+        )
+        self.sample_colors = sample_colors
+        self.patches = patches
+
+    @property
+    def n_subplots(self) -> int:
+        """Returns the number of subplots generated."""
+        return self._count_total_plots(self.df)
+
+    def _count_total_plots(self, df: pd.DataFrame) -> int:
+        total_plots = 0
+        for col in df.columns:
+            val = df[col].iloc[0]
+            if isinstance(val, FData):
+                if not self.flattened:
+                    total_plots += 1
+                else:
+                    total_plots += val.dim_codomain
+            else:
+                total_plots += 1
+        return total_plots
+
+    def _plot_fdata(
+        self,
+        data: FData,
+        fig: Figure,
+        axes: Iterator[Axes],
+        col: str,
+    ) -> None:
+        fd_codim = data.dim_codomain
+
+        if fd_codim > 1: # Plot vector valued functions
+            if self.flattened: # Each component ploted side bi side
+                col_axes = [next(axes) for _ in range(fd_codim)]
+                data.plot(
+                    axes=col_axes,
+                    group=self.group,
+                    group_colors=self.group_colors,
+                    group_names=self.group_names,
+                )
+                for j, ax_sub in enumerate(col_axes):
+                    name = (
+                        data.coordinate_names[j]
+                        if (
+                            data.coordinate_names is not None
+                            and data.coordinate_names[j] is not None
+                        )
+                        else f"{j + 1}"
+                    )
+                    ax_sub.set_title(f"{col} - {name}")
+            else: # Components are stacked one on top of each other
+                outer_ax = next(axes)
+                spec = outer_ax.get_subplotspec()
+                if spec is None:
+                    msg = (
+                        "Axes must be created using a"
+                        "subplot for subgridspec to work."
+                    )
+                    raise RuntimeError(msg)
+                gs = spec.subgridspec(fd_codim, 1)
+                sub_axes = [fig.add_subplot(gs[j]) for j in range(fd_codim)]
+                data.plot(
+                    axes=sub_axes,
+                    group=self.group,
+                    group_colors=self.group_colors,
+                    group_names=self.group_names,
+                )
+
+                if data.argument_names and data.argument_names[0]:
+                    x_label = data.argument_names[0]
+
+                # Remove x-label and ticks from all but the last subplot
+                for sub_ax in sub_axes[:-1]:
+                    sub_ax.set_xlabel("")
+                    sub_ax.set_xticklabels([])
+
+                # Set x-label and restore ticks on the last subplot
+                sub_axes[-1].set_xlabel(x_label)
+                sub_axes[-1].tick_params(
+                    axis="x", which="both", labelbottom=True,
+                )
+
+                for j, sub_ax in enumerate(sub_axes):
+                    name = (
+                        data.coordinate_names[j]
+                        if (
+                            data.coordinate_names is not None
+                            and data.coordinate_names[j] is not None
+                        )
+                        else f"{j + 1}"
+                    )
+                    sub_ax.set_title(f"{col} - {name}")
+
+                outer_ax.axis("off")
+        else:
+            ax = next(axes)
+            data.plot(
+                axes=ax,
+                group=self.group,
+                group_colors=self.group_colors,
+                group_names=self.group_names,
+            )
+            ax.set_title(col)
+
+    def _plot_scalar(
+        self,
+        data: ArrayLike,
+        axes: Iterator[Axes],
+        col: str,
+    ) -> None:
+        data_array = np.asarray(data)
+        ax = next(axes)
+
+        if data_array.dtype.kind in {"U", "S", "O"}:
+            counts = Counter(data_array)
+            labels, values = zip(*sorted(counts.items()), strict=False)
+            ax.bar(labels, values, edgecolor="black")
+        else:
+            n_unique = len(np.unique(data_array))
+
+            if n_unique <= 10:  # noqa: PLR2004
+                bins = np.arange(
+                    data_array.min() - 0.5,
+                    data_array.max() + 1.5,
+                )
+                ax.hist(
+                    data_array,
+                    bins=bins.tolist(),
+                    edgecolor="black",
+                    rwidth=0.8,
+                )
+                ax.set_xticks(np.unique(data_array))
+            else:
+                ax.hist(data_array, bins="auto", edgecolor="black")
+
+        ax.set_title(col)
+
+    def _plot(self, fig: Figure, axes: Sequence[Axes]) -> None:
+        axes_iter = iter(axes)
+        for col in self.df.columns:
+            data = self.df[col].values  # noqa: PD011
+            if isinstance(data, FData):
+                self._plot_fdata(data, fig, axes_iter, col)
+            elif isinstance(data[0], np.ndarray) or np.isscalar(data[0]):
+                self._plot_scalar(data, axes_iter, col)
+            else:
+                ax = next(axes_iter)
+                ax.axis("off")
+
+        # Hide extra axes
+        for ax in axes_iter:
+            ax.axis("off")
+
+        if self.patches is not None:
+            fig.legend(handles=self.patches)
+
+
+def plot_mixed_data(  # noqa: PLR0913
+    df: pd.DataFrame,
+    chart: Figure | Axes | None = None,
+    *,
+    fig: Figure | None = None,
+    axes: Axes | Sequence[Axes] | None = None,
+    n_rows: int | None = None,
+    n_cols: int | None = None,
+    group: Sequence[K] | None = None,
+    group_colors: Indexable[K, ColorLike] | None = None,
+    group_names: Indexable[K, str] | None = None,
+    legend: bool = False,
+    flattened: bool = False,
+) -> Figure:
+    """
+    Plot a DataFrame containing numerical and functional (FData) data.
+
+    Visualizes mixed-type datasets where each column of the
+    DataFrame represents a different variable, which can be either functional
+    data (`FData`) or classical numerical data (scalars). Each row
+    is treated as a separate sample.
+
+    Functional variables are plotted using their native `.plot()` method.
+    Vector valued functional data generate multiple subplots, one for each
+    component. Numerical data are shown as scatter plots.
+
+    Supports grouping samples by color using `group`, with optional custom
+    colors (`group_colors`) and labels (`group_names`) for legend display.
+
+    Args:
+        df: pd.DataFrame object that we want to plot.
+        chart: figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If None and ax is also None, the figure is
+            initialized.
+        fig: figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes: axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols: designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
+        group: contains integers from [0 to number of
+            labels) indicating to which group each sample belongs to. Then,
+            the samples with the same label are plotted in the same color.
+            If None, the default value, each sample is plotted in the color
+            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+        group_colors: colors in which groups are
+            represented, there must be one for each group. If None, each
+            group is shown with distinct colors in the "Greys" colormap.
+        group_names: name of each of the groups which appear
+            in a legend, there must be one for each one. Defaults to None
+            and the legend is not shown. Implies `legend=True`.
+        legend: if `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
+        flattened: When the codomain dimension (`dim_codomain`) is greater than
+            1, this option controls how the components are displayed.
+                -If `False`, all components are overlaid in the same subplot.
+                -If `True`, each component is plotted separately, side by side
+                in individual subplots.
+            Defaults to `False`.
+
+    Returns:
+        matplotlib.figure.Figure: The resulting figure object.
+    """
+    plotter = MixedDataPlot(
+        df,
+        chart=chart,
+        fig=fig,
+        axes=axes,
+        n_rows=n_rows,
+        n_cols=n_cols,
+        group=group,
+        group_colors=group_colors,
+        group_names=group_names,
+        legend=legend,
+        flattened=flattened,
+    )
+    return plotter.plot()

@@ -24,7 +24,7 @@ class MissingValuesInterpolationCurves:
         na_probability: float,
     ) -> None:
         """Create the data for the test."""
-        self.rng = np.random.default_rng()
+        self.rng = np.random.default_rng(seed)
         size = (n_samples, n_points)
         na_positions = self.rng.choice(
             [True, False],

@@ -32,7 +32,6 @@ dynamic = ["version"]
 
 dependencies = [
 	"dcor",
-	"fdasrsf>=2.2.0, !=2.5.7",
 	"findiff",
 	"lazy_loader",
 	"matplotlib",
@@ -59,6 +58,9 @@ docs = [
   "sphinx>=3",
   "sphinx-gallery>=0.19",
   "sphinxcontrib-bibtex",
+]
+fdasrsf = [
+  "fdasrsf>=2.2.0, !=2.5.7",
 ]
 test = [
   "numpy>=2.2", # Changes in array representation.
@@ -102,6 +104,7 @@ enable_error_code = "ignore-without-code"
 
 [[tool.mypy.overrides]]
 module = [
+  "asv_runner.*",
   "cartopy.*",
 	"fdasrsf.*",
   "findiff.*",

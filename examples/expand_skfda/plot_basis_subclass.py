@@ -130,6 +130,9 @@ plt.show()
 X_basis.coefficients
 
 # %%
+# Note: A similar FPCA-based basis has been added to the library in more recent
+# versions. This example is kept here for illustration purposes.
+#
 # Lets consider a more complex example.
 # Suppose that we want to create a basis adapted to the data using the
 # principal components.

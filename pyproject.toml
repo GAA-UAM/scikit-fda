@@ -140,6 +140,7 @@ select = [
     "ALL",
 ]
 ignore = [
+  "CPY001",  # No copyright notice
   "D105", # No docstring needed for magic methods
   "D107", # No docstring needed in __init__
 	"D212", # Incompatible with D213, which is our preferred style for multiline docstrings

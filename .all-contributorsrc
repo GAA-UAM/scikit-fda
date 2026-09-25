@@ -633,6 +633,15 @@
         "code",
         "test"
       ]
+    },
+    {
+      "login": "Mirochill",
+      "name": "Miro",
+      "avatar_url": "https://avatars.githubusercontent.com/u/200482516?v=4",
+      "profile": "https://github.com/Mirochill",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

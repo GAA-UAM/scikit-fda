@@ -633,6 +633,15 @@
         "code",
         "test"
       ]
+    },
+    {
+      "login": "emmabc125",
+      "name": "emmabc125",
+      "avatar_url": "https://avatars.githubusercontent.com/u/100229646?v=4",
+      "profile": "https://github.com/emmabc125",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

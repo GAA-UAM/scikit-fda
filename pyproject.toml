@@ -2,7 +2,7 @@
 name = "scikit-fda"
 description = "Functional Data Analysis Python package."
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {file = "LICENSE.txt"}
 keywords = [
 	"functional data",
@@ -20,7 +20,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -65,6 +64,7 @@ test = [
   "pytest",
   "pytest-env",
   "pytest-subtests",
+  "scikit-learn>=1.8.0", # Changes in MinCovDet
   "scipy>=1.14", # Changes in sparse array representation.
 ]
 

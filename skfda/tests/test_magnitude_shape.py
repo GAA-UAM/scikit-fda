@@ -62,11 +62,11 @@ class TestMagnitudeShapePlot(unittest.TestCase):
         )
         np.testing.assert_array_almost_equal(
             msplot.outliers,
-            np.array([  # noqa: WPS317
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 1, 1, 1, 0, 1, 0,
-                0, 0, 0, 0, 1,
+            np.array([
+                False, False, False,  True, False, False, False, False, False,
+                False, False,  True,  True,  True,  True, False,  True, False,
+                False, False, False, False, False, False,  True,  True,  True,
+                False,  True, False, False, False,  True,  True,  True,
             ]),
         )
 

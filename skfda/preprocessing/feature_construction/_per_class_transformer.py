@@ -281,8 +281,12 @@ class PerClassTransformer(
 
         return pd.concat(  # type: ignore[no-any-return]
             [
-                pd.DataFrame({'0': data})  # noqa: WPS441
-                for data in transformed_data
+                pd.DataFrame({class_id: data})  # noqa: WPS441
+                for class_id, data in zip(
+                    self._classes,
+                    transformed_data,
+                    strict=True,
+                )
             ],
             axis=1,
         )

@@ -65,6 +65,7 @@ test = [
   "pytest",
   "pytest-env",
   "pytest-subtests",
+  "scikit-learn>=1.8.0", # Changes in MinCovDet
   "scipy>=1.14", # Changes in sparse array representation.
 ]
 

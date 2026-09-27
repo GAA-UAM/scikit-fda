@@ -81,6 +81,8 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://romaric.site/"><img src="https://avatars.githubusercontent.com/u/159790609?v=4?s=100" width="100px;" alt="rosignol08"/><br /><sub><b>rosignol08</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=rosignol08" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=rosignol08" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/emmabc125"><img src="https://avatars.githubusercontent.com/u/100229646?v=4?s=100" width="100px;" alt="emmabc125"/><br /><sub><b>emmabc125</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/issues?q=author%3Aemmabc125" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Mirochill"><img src="https://avatars.githubusercontent.com/u/200482516?v=4?s=100" width="100px;" alt="Miro"/><br /><sub><b>Miro</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=Mirochill" title="Code">💻</a></td>
+    </tr>
+    <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://sayportfolio.vercel.app/"><img src="https://avatars.githubusercontent.com/u/240962040?v=4?s=100" width="100px;" alt="Sai Asish Y"/><br /><sub><b>Sai Asish Y</b></sub></a><br /><a href="#infra-SAY-5" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
     </tr>
   </tbody>

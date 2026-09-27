@@ -350,6 +350,13 @@ def test_moons_dataset(
         [-0.18339034, -0.04185513],
     ]
 
+    # Make the sign the same for comparisons (only the direction has meaning)
+    factor = np.array([
+        -1 if embedding[0, 0] > 0 else 1,
+        -1 if embedding[0, 1] > 0 else 1,
+    ])
+    embedding *= factor
+
     np.testing.assert_allclose(
         embedding,
         expected_embedding,

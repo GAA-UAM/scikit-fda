@@ -156,6 +156,26 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
 
         np.testing.assert_allclose(distances, 0, atol=12e-3)
 
+    def test_alignment_constant(self) -> None:
+        """
+        Test alignment of a constant function to another.
+
+        In this case the problem is undetermined (any warping would
+        be valid). However, for clarity purposes we would prefer
+        if we use the identity function as a warping in this case.
+
+        """
+        reg = FisherRaoElasticRegistration(
+            template=FDataGrid(np.ones(100)),
+        )
+        reg.fit_transform(FDataGrid(np.zeros(100)))
+
+        np.testing.assert_allclose(
+            reg.warping_.data_matrix[0, ..., 0],
+            reg.warping_.grid_points[0],
+            atol=12e-3,
+        )
+
     def test_set_alignment(self) -> None:
         """Test alignment 3 curves to set with 3 templates."""
         # Should give same result than test_template_alignment
@@ -326,7 +346,11 @@ class TestElasticDistances(unittest.TestCase):
         """Test of phase distance invariance."""
         f = make_multimodal_samples(n_samples=1, random_state=1)
 
-        phase = fisher_rao_phase_distance(f, 2 * f)
+        # Some regularization is needed, otherwise small fluctuations in the
+        # computation (such as the use of a different quadrature) can cause
+        # differences from the identity in the almost-constant parts of the
+        # functions.
+        phase = fisher_rao_phase_distance(f, 2 * f, lam=1e-3)
 
         np.testing.assert_allclose(phase, 0, atol=1e-7)
 

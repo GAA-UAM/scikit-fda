@@ -300,7 +300,9 @@ class AmplitudePhaseDecomposition(
         c_r = float(np.sum(l2_norm(X)**2) / np.sum(l2_norm(y)**2))
 
         mse_amplitude = float(c_r * np.mean(l2_distance(y, y.mean())**2))
-        mse_phase = float(c_r * l2_norm(y_mean)**2 - l2_norm(X_mean)**2)
+        mse_phase = float(
+            c_r * l2_norm(y_mean).item()**2- l2_norm(X_mean).item()**2,
+        )
 
         # Should be equal to np.mean(l2_distance(X, X_mean)**2)
         mse_total = mse_amplitude + mse_phase

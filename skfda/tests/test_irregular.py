@@ -468,7 +468,7 @@ def test_fdatairregular_evaluate_at_own_points(
 
 
 def test_fdatairregular_evaluate_single_point() -> None:
-    """A sample with a single measurement is defined at that point (#616)."""
+    """A sample with a single measurement is constant (#616)."""
     irregular = FDataIrregular(
         start_indices=[0],
         points=[1],
@@ -476,7 +476,7 @@ def test_fdatairregular_evaluate_single_point() -> None:
     )
 
     np.testing.assert_array_equal(irregular(irregular.points), [[[-1]]])
-    np.testing.assert_array_equal(irregular([[0.5], [1]]), [[[np.nan], [-1]]])
+    np.testing.assert_array_equal(irregular([[0.5], [1]]), [[[-1], [-1]]])
 
 
 def test_fdatairregular_evaluate_multidimensional_domain() -> None:
@@ -487,7 +487,7 @@ def test_fdatairregular_evaluate_multidimensional_domain() -> None:
         values=[[-1], [-2]],
     )
     np.testing.assert_array_equal(
-        irregular(irregular.points),
+        irregular([[1.5, 2.5], [3, 3.5]]),
         [[[-1], [-2]]],
     )
 
@@ -509,7 +509,7 @@ def test_fdatairregular_evaluate_samples_do_not_leak() -> None:
 
     np.testing.assert_array_equal(
         irregular([[1], [2]]),
-        [[[-1], [-2]], [[np.nan], [np.nan]]],
+        [[[-1], [-2]], [[-3], [-3]]],
     )
     np.testing.assert_array_equal(
         irregular([[[1.5]], [[3]]], aligned=False),

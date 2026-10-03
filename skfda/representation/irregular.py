@@ -601,14 +601,16 @@ class FDataIrregular(FData):  # noqa: WPS214
         sample = self[sample_idx]
         points = sample.points
         values = sample.values
-        n_eval = len(eval_points)
+
+        if not isinstance(self.interpolation, SplineInterpolation):
+            return self.interpolation(
+                sample.to_grid(),
+                eval_points,
+                aligned=True,
+            )[0]
 
         if len(points) == 1:
-            # Nothing to interpolate: only the measured point is defined.
-            result = np.full((n_eval, self.dim_codomain), np.nan)
-            matches = np.all(np.isclose(eval_points, points[0]), axis=1)
-            result[matches] = values[0]
-            return result
+            return np.repeat(values, len(eval_points), axis=0)
 
         if self.dim_domain == 1:
             # The sample's own points form a grid without holes.
@@ -620,7 +622,10 @@ class FDataIrregular(FData):  # noqa: WPS214
 
         # Scattered points on a multidimensional domain seldom form a grid,
         # so interpolate them directly.
-        method = "nearest" if self._interpolation_order() == 0 else "linear"
+        if self.interpolation.interpolation_order == 0:
+            method = "nearest"
+        else:
+            method = "linear"
         try:
             result = scipy.interpolate.griddata(
                 points,
@@ -629,16 +634,13 @@ class FDataIrregular(FData):  # noqa: WPS214
                 method=method,
             )
         except scipy.spatial.QhullError:
-            # Too few or degenerate points for a triangulation: only the
-            # measured points themselves are defined.
-            result = np.full((n_eval, self.dim_codomain), np.nan)
-            for point, value in zip(points, values):
-                result[np.all(np.isclose(eval_points, point), axis=1)] = value
+            result = scipy.interpolate.griddata(
+                points,
+                values,
+                eval_points,
+                method="nearest",
+            )
         return np.asarray(result, dtype=float)
-
-    def _interpolation_order(self) -> int:
-        order = getattr(self.interpolation, "interpolation_order", 1)
-        return int(order) if isinstance(order, numbers.Integral) else 1
 
     def derivative(
         self: T,

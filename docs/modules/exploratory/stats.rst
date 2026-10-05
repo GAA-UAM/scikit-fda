@@ -19,6 +19,8 @@ measure of the location or central tendency of :term:`functional data`.
    skfda.exploratory.stats.depth_based_median
    skfda.exploratory.stats.geometric_median
    skfda.exploratory.stats.fisher_rao_karcher_mean
+   skfda.exploratory.stats.individual_observation_mean
+   skfda.exploratory.stats.grand_mean
    
 Dispersion
 ----------
@@ -32,4 +34,7 @@ statistics can be used.
    skfda.exploratory.stats.cov
    skfda.exploratory.stats.var
    skfda.exploratory.stats.std
+   skfda.exploratory.stats.root_integrated_sample_variance
+   skfda.exploratory.stats.root_mean_square_l2
+   skfda.exploratory.stats.individual_root_mean_square_l2
 

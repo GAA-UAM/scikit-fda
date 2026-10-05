@@ -660,6 +660,16 @@
       "contributions": [
         "infra"
       ]
+    },
+    {
+      "login": "SajalDevX",
+      "name": "Sajal Kumar Jana",
+      "avatar_url": "https://avatars.githubusercontent.com/u/172371422?v=4",
+      "profile": "https://github.com/SajalDevX",
+      "contributions": [
+        "code",
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7,

@@ -346,9 +346,9 @@ def _inner_product_fdatagrid(
     _matrix: bool = False,
 ) -> NDArrayFloat:
 
-    if not np.array_equal(
-        arg1.grid_points,
-        arg2.grid_points,
+    if len(arg1.grid_points) != len(arg2.grid_points) or not all(
+        np.array_equal(a, b)
+        for a, b in zip(arg1.grid_points, arg2.grid_points, strict=True)
     ):
         raise ValueError("Sample points for both objects must be equal")
 

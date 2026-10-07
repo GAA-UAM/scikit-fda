@@ -1385,9 +1385,16 @@ class FDataGrid(FData):  # noqa: WPS214
     ) -> Any:
 
         for i in inputs:
-            if (
-                isinstance(i, FDataGrid)
-                and not np.array_equal(i.grid_points, self.grid_points)
+            if isinstance(i, FDataGrid) and (
+                len(i.grid_points) != len(self.grid_points)
+                or not all(
+                    np.array_equal(a, b)
+                    for a, b in zip(
+                        i.grid_points,
+                        self.grid_points,
+                        strict=True,
+                    )
+                )
             ):
                 return NotImplemented
 

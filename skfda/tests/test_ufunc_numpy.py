@@ -79,6 +79,17 @@ def test_out_ufunc(monary: Callable[..., Any]) -> None:
     assert fd.equals(fd_monary_build)
 
 
+def test_ufunc_grid_axes_different_lengths() -> None:
+    """Test ufuncs when the grid axes have different lengths."""
+    data_matrix = np.arange(60).reshape(2, 5, 6) + 1
+    grid_points = [np.linspace(0, 1, 5), np.linspace(0, 2, 6)]
+
+    fd = FDataGrid(data_matrix, grid_points)
+    fd2 = FDataGrid(2 * data_matrix, grid_points)
+
+    assert np.sqrt(fd).equals(FDataGrid(np.sqrt(data_matrix), grid_points))
+    assert np.add(fd, fd2).equals(FDataGrid(3 * data_matrix, grid_points))
+
 class TestOperators(unittest.TestCase):
     """Tests for operators."""
 

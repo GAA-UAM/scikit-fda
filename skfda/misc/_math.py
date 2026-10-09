@@ -12,7 +12,7 @@ import multimethod
 import numpy as np
 import scipy.integrate
 
-from .._utils import _same_domain, nquad_vec
+from .._utils import _same_domain, _same_grid_points, nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid
 from ..representation.basis import Basis
 from ..typing._base import DomainRange
@@ -346,10 +346,7 @@ def _inner_product_fdatagrid(
     _matrix: bool = False,
 ) -> NDArrayFloat:
 
-    if len(arg1.grid_points) != len(arg2.grid_points) or not all(
-        np.array_equal(a, b)
-        for a, b in zip(arg1.grid_points, arg2.grid_points, strict=True)
-    ):
+    if not _same_grid_points(arg1.grid_points, arg2.grid_points):
         raise ValueError("Sample points for both objects must be equal")
 
     d1 = arg1.data_matrix

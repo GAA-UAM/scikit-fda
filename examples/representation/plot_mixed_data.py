@@ -22,10 +22,17 @@ visualize this data using `pandas` and scikit-fda's visualization tools.
 
 from skfda import datasets
 
-X, y = datasets.fetch_weather(return_X_y=True, as_frame=True)
-fd = X.iloc[:, 0].values
-fd_temperatures = fd.coordinates[0]
-fd_precipitations = fd.coordinates[1]
+X, y = datasets.fetch_weather(return_X_y=True)
+fd_temperatures = X.coordinates[0]
+fd_precipitations = X.coordinates[1]
+
+argument_names = ("t (day)",)
+
+fd_temperatures.argument_names = argument_names
+fd_temperatures.coordinate_names = ("T(t) (ºC)",)
+
+fd_precipitations.argument_names = argument_names
+fd_precipitations.coordinate_names = ("P(t) (mm.)",)
 
 # %%
 # We visualize the two functional components separately.
@@ -43,55 +50,34 @@ plt.show()
 # first derivative of both temperature and precipitation curves. These
 # derivatives can capture local variation patterns such as rising or falling
 # trends.
-
-fd_1st_temperatures = fd_temperatures.derivative()
-fd_1st_precipitations = fd_precipitations.derivative()
-
-# %%
-# Derivative curves often benefit from smoothing, especially when we plan to
-# use them in downstream tasks like clustering or regression.
-# We use Fourier basis representations with 5 elements for this purpose.
+#
+# We will compute the derivatives over the smoothed curves using a basis
+# expansion. This makes less likely that the noise of the observations is
+# translated to unreliable derivative curves.
+# Given that the data is of periodic nature we use a Fourier basis
+# representation with 5 elements for this purpose.
 
 import skfda
-from skfda.preprocessing.smoothing import BasisSmoother
 
-range_temperatures = (
+time_range = (
     fd_temperatures.grid_points[0][0],
     fd_temperatures.grid_points[0][-1],
 )
-range_precipitations = (
-    fd_precipitations.grid_points[0][0],
-    fd_precipitations.grid_points[0][-1],
-)
 
-basis_temperatures = skfda.representation.basis.FourierBasis(
-    range_temperatures,
-    n_basis=5,
-)
-basis_precipitations = skfda.representation.basis.FourierBasis(
-    range_precipitations,
+basis = skfda.representation.basis.FourierBasis(
+    domain_range=time_range,
     n_basis=5,
 )
 
-smoother_temperatures = BasisSmoother(basis=basis_temperatures)
-smoother_precipitations = BasisSmoother(basis=basis_precipitations)
-
-
-fd_1st_temperatures_smooth = smoother_temperatures.fit_transform(
-    fd_1st_temperatures,
+fd_1st_temperatures_smooth = fd_temperatures.derivative(
+    method=basis,
 )
-fd_1st_precipitations_smooth = smoother_precipitations.fit_transform(
-    fd_1st_precipitations,
+fd_1st_precipitations_smooth = fd_precipitations.derivative(
+    method=basis,
 )
 
-fd_precipitations.argument_names = ("t (day)",)
-fd_1st_precipitations_smooth.argument_names = ("t (day)",)
-fd_1st_temperatures_smooth.argument_names = ("t (day)",)
-
-fd_precipitations.coordinate_names = ("P(t) (mm.)",)
-fd_1st_precipitations_smooth.coordinate_names = ("P'(t) (mm./days)",)
-fd_temperatures.coordinate_names = ("T(t) (ºC)",)
 fd_1st_temperatures_smooth.coordinate_names = ("T'(t) (ºC/days)",)
+fd_1st_precipitations_smooth.coordinate_names = ("P'(t) (mm./days)",)
 
 # %%
 # Let's take a look at the smoothed derivatives.
@@ -111,21 +97,14 @@ plt.show()
 # temperature and its derivative. This type of structure is useful when you
 # want to treat them as a single feature with multiple components.
 
-import numpy as np
+from skfda import concatenate
 
-from skfda.representation.grid import FDataGrid
-
-data_matrix = np.concatenate(
-    [fd_precipitations.data_matrix, fd_1st_precipitations_smooth.data_matrix],
-    axis=2,
-)
-
-fd_vector = FDataGrid(
-    data_matrix=data_matrix,
-    grid_points=fd_temperatures.grid_points,
-    coordinate_names=fd_precipitations.coordinate_names
-    + fd_1st_precipitations_smooth.coordinate_names,
-    argument_names=fd_1st_precipitations_smooth.argument_names,
+fd_vector = concatenate(
+    [
+        fd_precipitations,
+        fd_1st_precipitations_smooth,
+    ],
+    as_coordinates=True,
 )
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 3))
@@ -168,11 +147,10 @@ from skfda.exploratory.visualization.representation import plot_mixed_data
 
 fig, axes = plt.subplots(1, 4, figsize=(28, 7))
 
-plot_mixed_data(mixed_fd, axes=axes)
-fig.suptitle("Canadian Weather", fontsize=24)
-for ax in fig.axes:
-    title = ax.get_title()
-    if title:  # only update if there's a title
-        ax.set_title(title, fontsize=18)
+with plt.rc_context({"axes.titlesize": 18}):
+    plot_mixed_data(mixed_fd, axes=axes)
+    fig.suptitle("Canadian Weather", fontsize=24)
 
 plt.show()
+
+# %%

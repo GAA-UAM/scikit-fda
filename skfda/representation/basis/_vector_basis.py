@@ -6,6 +6,7 @@ from typing import Any, Iterable, Tuple, TypeVar, Union
 import numpy as np
 import scipy.linalg
 
+from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
@@ -103,6 +104,21 @@ class VectorValuedBasis(Basis):
     @property
     def dim_codomain(self) -> int:
         return len(self.basis_list)
+
+    def is_domain_range_fixed(self) -> bool:  # noqa: D102
+        return any(b.is_domain_range_fixed() for b in self.basis_list)
+
+    def copy(self: T, domain_range: DomainRangeLike | None = None) -> T:
+        """Basis copy."""
+        new_copy = super().copy(domain_range=domain_range)
+
+        if domain_range is not None:
+            new_copy._basis_list = tuple(  # noqa: WPS437
+                b.copy(domain_range=new_copy.domain_range)
+                for b in self.basis_list
+            )
+
+        return new_copy
 
     def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))

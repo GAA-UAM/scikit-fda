@@ -7,7 +7,7 @@ import numpy as np
 import sklearn
 from sklearn.model_selection import GridSearchCV
 
-from ...representation import FDataGrid
+from ...representation import FDataBasis, FDataGrid
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ._linear import _LinearSmoother
 
@@ -23,7 +23,12 @@ def _get_input_estimation_and_matrix(
         estimator.fit(X)
     y_est = estimator.transform(X)
 
-    hat_matrix = estimator.hat_matrix_
+    if isinstance(y_est, FDataBasis):
+        y_est = y_est.to_grid(X.grid_points)
+        # Basis output does not require a hat matrix during fitting.
+        hat_matrix = estimator.hat_matrix()
+    else:
+        hat_matrix = estimator.hat_matrix_
 
     return y_est, hat_matrix
 

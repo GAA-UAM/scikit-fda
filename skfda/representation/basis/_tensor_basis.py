@@ -1,12 +1,17 @@
+from __future__ import annotations
+
 import itertools
 import math
 import warnings
-from typing import Any, Iterable, Tuple
+from typing import Any, Iterable, Tuple, TypeVar
 
 import numpy as np
 
+from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
+
+T = TypeVar("T", bound="TensorBasis")
 
 
 class TensorBasis(Basis):
@@ -81,6 +86,21 @@ class TensorBasis(Basis):
     @property
     def basis_list(self) -> Tuple[Basis, ...]:
         return self._basis_list
+
+    def is_domain_range_fixed(self) -> bool:  # noqa: D102
+        return any(b.is_domain_range_fixed() for b in self.basis_list)
+
+    def copy(self: T, domain_range: DomainRangeLike | None = None) -> T:
+        """Basis copy."""
+        new_copy = super().copy(domain_range=domain_range)
+
+        if domain_range is not None:
+            new_copy._basis_list = tuple(  # noqa: WPS437
+                b.copy(domain_range=(dim_range,))
+                for b, dim_range in zip(self.basis_list, new_copy.domain_range)
+            )
+
+        return new_copy
 
     def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
 

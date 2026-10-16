@@ -361,7 +361,7 @@ class StahelDonohoOutlyingness(Outlyingness[NDArrayFloat]):
 
         if dim == 1:
             self._location = np.median(X, axis=0)
-            self._scale = scipy.stats.median_abs_deviation(X, axis=0)
+            self._scale: NDArrayFloat = scipy.stats.median_abs_deviation(X, axis=0)
         else:
             raise NotImplementedError("Only implemented for one dimension")
 
@@ -373,7 +373,14 @@ class StahelDonohoOutlyingness(Outlyingness[NDArrayFloat]):
 
         if dim == 1:
             # Special case, can be computed exactly
-            diff: NDArrayFloat = np.abs(X - self._location) / self._scale
+            diff = np.abs(X - self._location)
+            zero_positions = (diff == 0)
+
+            with np.errstate(invalid="ignore"):
+                diff /= self._scale
+
+            # Remove NaN if division gave 0/0
+            diff[zero_positions] = 0
 
             return diff[..., 0]
 

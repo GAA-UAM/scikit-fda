@@ -191,7 +191,7 @@ class BaseKMeans(
 
             return centroids.copy()
 
-        return self.init.copy()
+        return self.init.copy(data_matrix=self.init.data_matrix.copy())
 
     def _check_params(self) -> None:
         pass
@@ -373,7 +373,9 @@ class BaseKMeans(
         check_fdata_same_dimensions(self.cluster_centers_, X)
 
         membership_matrix = self._create_membership(X.n_samples)
-        centroids = self.cluster_centers_.copy()
+        centroids = self.cluster_centers_.copy(
+            data_matrix=self.cluster_centers_.data_matrix.copy(),
+        )
 
         pairwise_metric = PairwiseMetric(self.metric)
 

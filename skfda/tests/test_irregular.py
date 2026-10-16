@@ -448,3 +448,70 @@ def test_fdatairregular_isna(
             which can be unidimensional or multidimensional.
     """
     assert fdatairregular.isna().shape == (len(fdatairregular),)
+
+
+def test_fdatairregular_evaluate_at_own_points(
+    fdatairregular: FDataIrregular,
+) -> None:
+    """Evaluating each sample at its own points returns its values.
+
+    Args:
+        fdatairregular (FDataIrregular): FDataIrregular object
+            which can be unidimensional or multidimensional.
+    """
+    for sample_idx in range(fdatairregular.n_samples):
+        sample = fdatairregular[sample_idx]
+        np.testing.assert_allclose(
+            sample(sample.points)[0],
+            sample.values,
+        )
+
+
+def test_fdatairregular_evaluate_single_point() -> None:
+    """A sample with a single measurement is constant (#616)."""
+    irregular = FDataIrregular(
+        start_indices=[0],
+        points=[1],
+        values=[-1],
+    )
+
+    np.testing.assert_array_equal(irregular(irregular.points), [[[-1]]])
+    np.testing.assert_array_equal(irregular([[0.5], [1]]), [[[-1], [-1]]])
+
+
+def test_fdatairregular_evaluate_multidimensional_domain() -> None:
+    """Evaluation on a multidimensional domain uses the measured points (#617)."""
+    irregular = FDataIrregular(
+        start_indices=[0],
+        points=[[1, 2], [3, 4]],
+        values=[[-1], [-2]],
+    )
+    np.testing.assert_array_equal(
+        irregular([[1.5, 2.5], [3, 3.5]]),
+        [[[-1], [-2]]],
+    )
+
+    square = FDataIrregular(
+        start_indices=[0],
+        points=[[0, 0], [1, 0], [0, 1], [1, 1]],
+        values=[[0], [1], [1], [2]],
+    )
+    np.testing.assert_allclose(square([[0.5, 0.5]]), [[[1]]])
+
+
+def test_fdatairregular_evaluate_samples_do_not_leak() -> None:
+    """Points measured only in one sample do not turn others into NaN."""
+    irregular = FDataIrregular(
+        start_indices=[0, 2],
+        points=[1, 2, 3],
+        values=[-1, -2, -3],
+    )
+
+    np.testing.assert_array_equal(
+        irregular([[1], [2]]),
+        [[[-1], [-2]], [[-3], [-3]]],
+    )
+    np.testing.assert_array_equal(
+        irregular([[[1.5]], [[3]]], aligned=False),
+        [[[-1.5]], [[-3]]],
+    )

@@ -77,7 +77,10 @@ def _get_color_info(
             cycle_colors = prop_cycle.by_key()['color']
 
             group_colors_array = np.take(
-                cycle_colors, np.arange(n_labels), mode='wrap',
+                cycle_colors,
+                np.arange(n_labels),
+                mode="wrap",
+                axis=0,
             )
 
         sample_colors = list(group_colors_array[group_indexes])

@@ -23,6 +23,9 @@ Example: Fixes #42. See also #123.
 ## Additional information
 
 
+## Disclosure of generative AI usage
+
+
 ## Checklist before requesting a review
 
 - [ ] I have performed a self-review of my code

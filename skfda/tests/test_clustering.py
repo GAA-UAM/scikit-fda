@@ -61,6 +61,45 @@ class TestKMeans(unittest.TestCase):
             ]),
         )
 
+    def test_predict_does_not_modify_centers(self) -> None:
+        """Test that predicting new data does not change the centers."""
+        X = FDataGrid([
+            [0.0, 0.0, 0.0],
+            [0.0, 0.1, 0.0],
+            [5.0, 5.0, 5.0],
+            [5.0, 5.1, 5.0],
+        ])
+
+        kmeans = KMeans[FDataGrid](random_state=0)
+        kmeans.fit(X)
+        centers = kmeans.cluster_centers_.data_matrix.copy()
+
+        kmeans.predict(X + 1)
+
+        np.testing.assert_array_equal(
+            kmeans.cluster_centers_.data_matrix,
+            centers,
+        )
+
+    def test_fit_does_not_modify_init(self) -> None:
+        """Test that fitting does not change the initial centers."""
+        X = FDataGrid([
+            [0.0, 0.0, 0.0],
+            [0.0, 0.1, 0.0],
+            [5.0, 5.0, 5.0],
+            [5.0, 5.1, 5.0],
+        ])
+        init = FDataGrid([
+            [1.0, 1.0, 1.0],
+            [4.0, 4.0, 4.0],
+        ])
+        init_matrix = init.data_matrix.copy()
+
+        kmeans = KMeans[FDataGrid](init=init)
+        kmeans.fit(X)
+
+        np.testing.assert_array_equal(init.data_matrix, init_matrix)
+
 
 class TestFuzzyCMeans(unittest.TestCase):
     """Test the FuzzyCMeans clustering method."""
@@ -124,6 +163,28 @@ class TestFuzzyCMeans(unittest.TestCase):
             true_proba,
             atol=1e-1,
         )
+
+    def test_predict_proba_does_not_modify_centers(self) -> None:
+        """Test that repeated predictions do not change the model."""
+        X = FDataGrid([
+            [0.0, 0.0, 0.0],
+            [0.0, 0.1, 0.0],
+            [5.0, 5.0, 5.0],
+            [5.0, 5.1, 5.0],
+        ])
+
+        fcmeans = FuzzyCMeans[FDataGrid](random_state=0)
+        fcmeans.fit(X)
+        centers = fcmeans.cluster_centers_.data_matrix.copy()
+
+        first_proba = fcmeans.predict_proba(X + 1)
+        second_proba = fcmeans.predict_proba(X + 1)
+
+        np.testing.assert_array_equal(
+            fcmeans.cluster_centers_.data_matrix,
+            centers,
+        )
+        np.testing.assert_allclose(first_proba, second_proba)
 
 
 if __name__ == '__main__':

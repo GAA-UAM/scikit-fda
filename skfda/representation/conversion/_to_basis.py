@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """To basis converter.
 
 This module contains the abstract base class for all FData to FDatabasis
@@ -7,21 +6,24 @@ converters.
 """
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
-from ..._utils._sklearn_adapter import TransformerMixin
+from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation import FData, FDataBasis
-from ...representation.basis import Basis
 
-Input = TypeVar(
-    "Input",
+if TYPE_CHECKING:
+    from ...representation.basis import Basis
+
+Input_contra = TypeVar(
+    "Input_contra",
     bound=FData,
     contravariant=True,
 )
 
 
 class _ToBasisConverter(
-    TransformerMixin[Input, FDataBasis, object],
+    TransformerMixin[Input_contra, FDataBasis, object],
+    BaseEstimator,
 ):
     """To basis converter.
 

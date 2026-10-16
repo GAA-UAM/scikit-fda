@@ -572,12 +572,75 @@ class FDataIrregular(FData):  # noqa: WPS214
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
+        from ..misc.validation import validate_evaluation_points
 
-        return self.interpolation(
-            self.to_grid(),  # TODO Create native interpolation for irregular
+        eval_points = validate_evaluation_points(
             eval_points,
             aligned=aligned,
+            n_samples=self.n_samples,
+            dim_domain=self.dim_domain,
         )
+
+        # Each sample is evaluated on its own points. A common grid would
+        # hold NaN wherever a sample has no measurement, and those NaN leak
+        # into the interpolated values of every sample (see #616 and #617).
+        return np.concatenate([
+            self._evaluate_sample(
+                sample_idx,
+                eval_points if aligned else eval_points[sample_idx],
+            )[np.newaxis]
+            for sample_idx in range(self.n_samples)
+        ])
+
+    def _evaluate_sample(
+        self,
+        sample_idx: int,
+        eval_points: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """Evaluate one sample at points of shape (n_points, dim_domain)."""
+        sample = self[sample_idx]
+        points = sample.points
+        values = sample.values
+
+        if not isinstance(self.interpolation, SplineInterpolation):
+            return self.interpolation(
+                sample.to_grid(),
+                eval_points,
+                aligned=True,
+            )[0]
+
+        if len(points) == 1:
+            return np.repeat(values, len(eval_points), axis=0)
+
+        if self.dim_domain == 1:
+            # The sample's own points form a grid without holes.
+            return self.interpolation(
+                sample.to_grid(),
+                eval_points,
+                aligned=True,
+            )[0]
+
+        # Scattered points on a multidimensional domain seldom form a grid,
+        # so interpolate them directly.
+        if self.interpolation.interpolation_order == 0:
+            method = "nearest"
+        else:
+            method = "linear"
+        try:
+            result = scipy.interpolate.griddata(
+                points,
+                values,
+                eval_points,
+                method=method,
+            )
+        except scipy.spatial.QhullError:
+            result = scipy.interpolate.griddata(
+                points,
+                values,
+                eval_points,
+                method="nearest",
+            )
+        return np.asarray(result, dtype=float)
 
     def derivative(
         self: T,

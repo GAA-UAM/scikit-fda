@@ -11,12 +11,24 @@ _normal_getattr, __dir__, __all__ = lazy.attach(
     ],
     submod_attrs={
         "_basis": ["BasisSmoother"],
+        "_irregular": [
+            "PooledCovarianceSmoother",
+            "PooledMeanSmoother",
+            "local_linear_smooth_covariance_2d",
+            "local_linear_smooth_irregular_nd",
+        ],
         "_kernel_smoothers": ["KernelSmoother"],
     },
 )
 
 if TYPE_CHECKING:
     from ._basis import BasisSmoother as BasisSmoother
+    from ._irregular import (
+        PooledCovarianceSmoother as PooledCovarianceSmoother,
+        PooledMeanSmoother as PooledMeanSmoother,
+        local_linear_smooth_covariance_2d as local_linear_smooth_covariance_2d,
+        local_linear_smooth_irregular_nd as local_linear_smooth_irregular_nd,
+    )
     from ._kernel_smoothers import KernelSmoother as KernelSmoother
 
 __kernel_smoothers__imported__ = False

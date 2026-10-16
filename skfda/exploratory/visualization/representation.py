@@ -488,6 +488,7 @@ class ScatterPlot(BasePlot):
         )
         self.sample_colors = sample_colors
         self.patches = patches
+        self.kwargs = kwargs
 
     @property
     def dim(self) -> int:
@@ -530,6 +531,7 @@ class ScatterPlot(BasePlot):
                         self.grid_points[0],
                         self.evaluated_points[j, ..., i].T,
                         **color_dict,
+                        **self.kwargs,
                         picker=True,
                         pickradius=2,
                     )
@@ -661,6 +663,7 @@ class PlotIrregular(BasePlot):  # noqa: WPS230
         )
         self.sample_colors = sample_colors
         self.patches = patches
+        self.kwargs = kwargs
 
     @property
     def dim(self) -> int:
@@ -755,6 +758,7 @@ class ScatterPlotIrregular(PlotIrregular):
                     self.grid_points[j],
                     self.evaluated_points[j],
                     **color_dict,
+                    **self.kwargs,
                     picker=True,
                     pickradius=2,
                     marker=self.marker,

@@ -21,6 +21,8 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "fetch_ucr",
             "fetch_weather",
             "fetch_bone_density",
+            "fetch_cd4",
+            "fetch_country_height",
         ],
         "_samples_generators": [
             "make_gaussian",
@@ -53,6 +55,9 @@ if TYPE_CHECKING:
         fetch_tecator as fetch_tecator,
         fetch_ucr as fetch_ucr,
         fetch_weather as fetch_weather,
+        fetch_bone_density as fetch_bone_density,
+        fetch_cd4 as fetch_cd4,
+        fetch_country_height as fetch_country_height,
     )
     from ._samples_generators import (
         make_gaussian as make_gaussian,

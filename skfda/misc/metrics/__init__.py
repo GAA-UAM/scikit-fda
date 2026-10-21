@@ -36,6 +36,14 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "TransformationMetric",
             "pairwise_metric_optimization",
         ],
+        "_weighted_lp_distances": [
+            "WeightedLpDistance",
+            "weighted_lp_distance",
+        ],
+        "_weighted_lp_norm": [
+            "WeightedLpNorm",
+            "weighted_lp_norm",
+        ],
     },
 )
 
@@ -68,4 +76,12 @@ if TYPE_CHECKING:
         PairwiseMetric as PairwiseMetric,
         TransformationMetric as TransformationMetric,
         pairwise_metric_optimization as pairwise_metric_optimization,
+    )
+    from ._weighted_lp_distances import (
+        WeightedLpDistance as WeightedLpDistance,
+        weighted_lp_distance as weighted_lp_distance,
+    )
+    from ._weighted_lp_norm import (
+        WeightedLpNorm as WeightedLpNorm,
+        weighted_lp_norm as weighted_lp_norm,
     )

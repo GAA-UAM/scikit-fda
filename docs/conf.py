@@ -388,7 +388,7 @@ warnings.filterwarnings(
 
 # Binder integration
 # Taken from
-# https://stanczakdominik.github.io/posts/simple-binder-usage-with-sphinx-gallery-through-jupytext/
+# https://stanczakdominik.github.io/posts/simple-binder-usage-with-sphinx-gallery-through-jupytext.html
 original_gen_binder_rst = sphinx_gallery.interactive_example.gen_binder_rst
 
 

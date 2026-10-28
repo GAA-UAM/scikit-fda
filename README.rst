@@ -135,7 +135,7 @@ repository fork and creating a pull request to the development branch.
 
 The people involved at some point in the development of the package can be
 found in the `contributors
-file <https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
+page <https://fda.readthedocs.io/en/latest/contributors.html>`_.
 
 License
 =======

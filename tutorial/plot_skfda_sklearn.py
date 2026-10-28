@@ -38,8 +38,8 @@ them to the :term:`functional data analysis` field.
 # We will introduce briefly the main concepts in scikit-learn, and explain how
 # the tools in scikit-fda are related with them. This is not intended as a full
 # explanation of scikit-learn architecture, and the reader is encouraged to
-# look at the `scikit-learn tutorials
-# <https://scikit-learn.org/stable/tutorial/index.html>`_ in order to achieve
+# look at the `scikit-learn getting started guide
+# <https://scikit-learn.org/stable/getting_started.html>`_ in order to achieve
 # a deeper understanding of it.
 
 # %%

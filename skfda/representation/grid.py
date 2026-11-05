@@ -453,11 +453,11 @@ class FDataGrid(FData):  # noqa: WPS214
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(order=2)
             FDataGrid(
-                array([[[ 3.],
-                        [ 1.],
-                        [-1.],
-                        [ 2.],
-                        [ 5.]]]),
+                array([[[ 3.        ],
+                        [-4.        ],
+                        [-1.41666667],
+                        [-3.        ],
+                        [ 5.        ]]]),
                 grid_points=(array([ 0., 1., 2., 3., 4.]),),
                 domain_range=((0.0, 4.0),),
                 ...)

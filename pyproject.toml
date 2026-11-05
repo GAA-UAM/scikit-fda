@@ -60,6 +60,7 @@ docs = [
   "sphinxcontrib-bibtex",
 ]
 test = [
+  "findiff>=0.14", # Changes in derivatives
   "numpy>=2.2", # Changes in array representation.
   "pytest",
   "pytest-env",

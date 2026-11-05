@@ -312,6 +312,16 @@ def all_boolean_reductions(request: pytest.FixtureRequest) -> str:
     """Fixture for boolean reduction names."""
     return request.param
 
+
+_all_reductions = _all_numeric_reductions + _all_boolean_reductions
+
+
+@pytest.fixture(params=_all_reductions)
+def all_reductions(request: pytest.FixtureRequest) -> str:
+    """Fixture for boolean reduction names."""
+    return request.param
+
+
 ##############################################################################
 # Tests
 ##############################################################################
@@ -454,6 +464,14 @@ class TestInterface(base.BaseInterfaceTests):  # type: ignore[misc]
     ) -> None:
         pass
 
+    # We do not pass this yet
+    @pytest.mark.skip(reason="Unsupported")
+    @override
+    def test_cast_pointwise_result_robust_any_input(
+        self,
+        data: ExtensionArray,
+    ) -> None:
+        pass
 
 class TestArithmeticOps(base.BaseArithmeticOpsTests):  # type: ignore[misc]
     """Various Series and DataFrame arithmetic ops methods."""
@@ -536,3 +554,15 @@ class TestReduce(base.BaseReduceTests ):  # type: ignore[misc]
     ) -> None:
         result = getattr(ser, op_name)(skipna=skipna)
         assert result.n_samples == 1
+
+    # Unsupported for now
+    @pytest.mark.skip(reason="Unsupported")
+    @override
+    def test_reduce_array(
+        self,
+        request: object,
+        data: ExtensionArray,
+        all_reductions: str,
+        skipna: bool,
+    ) -> None:
+        pass

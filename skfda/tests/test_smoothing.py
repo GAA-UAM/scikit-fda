@@ -1,6 +1,7 @@
 """Test smoothing methods."""
 import unittest
 from typing import Tuple
+from unittest.mock import patch
 
 import numpy as np
 import sklearn
@@ -209,6 +210,85 @@ class TestSurfaceSmoother(unittest.TestCase):
 
 class TestBasisSmoother(unittest.TestCase):
     """Test Basis Smoother."""
+
+    def test_basis_hat_matrix_computed_for_scoring_only(self) -> None:
+        """Basis fitting avoids the dense matrix needed only for scoring."""
+        t = np.linspace(0, 1, 9)
+        fd = FDataGrid(t**3, t)
+        smoother = smoothing.BasisSmoother(
+            BSplineBasis((0, 1), n_basis=5),
+            return_basis=True,
+        )
+
+        with patch.object(
+            smoother,
+            "hat_matrix",
+            wraps=smoother.hat_matrix,
+        ) as hat_matrix:
+            smoother.fit_transform(fd)
+            hat_matrix.assert_not_called()
+
+            assert np.isfinite(smoother.score(fd, fd))
+            hat_matrix.assert_called_once_with()
+
+    def test_cross_validation_basis_output(self) -> None:
+        """Cross validation is independent of the output representation."""
+        t = np.linspace(0, 1, 9)
+        fd = FDataGrid([t**3, np.cos(2 * np.pi * t)], t)
+        basis = BSplineBasis((0, 1), n_basis=5)
+        scorers = (
+            validation.LinearSmootherLeaveOneOutScorer(),
+            validation.LinearSmootherGeneralizedCVScorer(),
+            validation.LinearSmootherGeneralizedCVScorer(
+                validation.akaike_information_criterion,
+            ),
+        )
+
+        for output_points in (None, np.linspace(0, 1, 17)):
+            grid_smoother = smoothing.BasisSmoother(
+                basis,
+                regularization=L2Regularization(
+                    LinearDifferentialOperator(2),
+                ),
+                output_points=output_points,
+            ).fit(fd)
+            basis_smoother = sklearn.base.clone(grid_smoother)
+            basis_smoother.set_params(return_basis=True)
+            basis_smoother.fit(fd)
+
+            for scorer in scorers:
+                with self.subTest(
+                    output_points=output_points,
+                    scorer=scorer,
+                ):
+                    np.testing.assert_allclose(
+                        scorer(basis_smoother, fd, fd),
+                        scorer(grid_smoother, fd, fd),
+                    )
+
+    def test_smoothing_parameter_search_basis_output(self) -> None:
+        """Parameter search can score and return a basis representation."""
+        t = np.linspace(0, 1, 9)
+        fd = FDataGrid([t**3, np.cos(2 * np.pi * t)], t)
+        smoother = smoothing.BasisSmoother(
+            BSplineBasis((0, 1), n_basis=5),
+            regularization=L2Regularization(LinearDifferentialOperator(2)),
+        )
+        grid_search = validation.SmoothingParameterSearch(
+            smoother,
+            [0.1, 1, 10],
+            error_score="raise",
+        ).fit(fd)
+        basis_search = sklearn.base.clone(grid_search)
+        basis_search.set_params(estimator__return_basis=True)
+        basis_search.fit(fd)
+
+        np.testing.assert_allclose(
+            basis_search.cv_results_["mean_test_score"],
+            grid_search.cv_results_["mean_test_score"],
+        )
+        assert basis_search.best_params_ == grid_search.best_params_
+        assert isinstance(basis_search.transform(fd), skfda.FDataBasis)
 
     def test_cholesky(self) -> None:
         """Test Basis Smoother using BSpline basis and Cholesky method."""

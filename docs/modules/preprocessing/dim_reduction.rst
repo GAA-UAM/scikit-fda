@@ -33,18 +33,22 @@ following:
 Feature extraction
 ------------------
 Other dimensionality reduction methods construct new features from
-existing ones. For example, in functional principal component
-analysis, we project the data samples into a smaller sample of
-functions that preserve most of the original
-variance. Similarly, in functional partial least squares, we project
-the data samples into a smaller sample of functions that preserve most
-of the covariance between the two data blocks.
+existing ones. In functional principal component analysis (FPCA), we
+project the data samples into a smaller set of functions that preserve
+most of the original variance. In functional partial least squares
+(FPLS), we project the data samples into a smaller set of functions
+that preserve most of the covariance between the two data blocks.
+PACE (Principal Analysis by Conditional Expectation) performs FPCA for
+irregularly or sparsely observed functional data, estimating the mean
+and covariance via local linear smoothing and then computing principal
+components by conditional expectation.
 
 .. autosummary::
    :toctree: autosummary
    
    skfda.preprocessing.dim_reduction.FPCA
    skfda.preprocessing.dim_reduction.FPLS
+   skfda.preprocessing.dim_reduction.PACE
 
 Difussion methods
 -----------------

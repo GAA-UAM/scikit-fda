@@ -70,6 +70,32 @@ class InnerProductTest(unittest.TestCase):
             rtol=1e-4,
         )
 
+    def test_several_variables_different_grid_sizes(self) -> None:
+        """Test inner_product when the grid axes have different lengths."""
+        t1 = np.linspace(0, 1, 30)
+        t2 = np.linspace(0, 2, 40)
+        t3 = np.linspace(0, 3, 50)
+
+        x2, y2, z2 = _ndm(t1, t2, t3)
+
+        fd = skfda.FDataGrid(
+            (x2 * y2 * z2)[np.newaxis, ...],
+            grid_points=[t1, t2, t3],
+        )
+
+        res = 8
+
+        np.testing.assert_allclose(
+            skfda.misc.inner_product(fd, fd),
+            res,
+            rtol=1e-4,
+        )
+        np.testing.assert_allclose(
+            skfda.misc.metrics.l2_norm(fd),
+            np.sqrt(res),
+            rtol=1e-4,
+        )
+
     def test_mixed_several_variables(self) -> None:
         """Test inner_product with basis and grid multivariable functions."""
         def f(  # noqa: WPS430

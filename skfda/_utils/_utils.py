@@ -236,6 +236,17 @@ def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
     return np.array_equal(fd.domain_range, fd2.domain_range)
 
 
+def _same_grid_points(
+    grid_points1: GridPoints,
+    grid_points2: GridPoints,
+) -> bool:
+    """Check if two grid points are the same, comparing axis by axis."""
+    return len(grid_points1) == len(grid_points2) and all(
+        np.array_equal(axis1, axis2)
+        for axis1, axis2 in zip(grid_points1, grid_points2, strict=True)
+    )
+
+
 def _one_grid_to_points(
     axes: GridPointsLike,
     *,

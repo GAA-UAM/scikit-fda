@@ -130,7 +130,7 @@ respectively.
 See `Clustering Example <../auto_examples/plot_clustering.html>`_ for detailed
 explanation.
 
-Functional Principal Component Analysis plots
+Functional Principal Component Analysis Plots
 ---------------------------------------------
 In order to show the modes of variation that the principal components represent,
 the following class is implemented:
@@ -142,3 +142,26 @@ the following class is implemented:
 
 See the example :ref:`sphx_glr_auto_examples_preprocessing_plot_fpca.py` for detailed
 explanation.
+
+Mixed Data Plots
+---------------------------------------------
+The MixedDataPlot class is used to visualize datasets that contain both 
+functional and scalar variables. It is particularly useful in exploratory analysis
+of mixed-type data represented as rows in a pandas.DataFrame, where each column may
+represent a scalar or a functional variable.
+
+Functional variables are plotted using their native 
+:func:`~skfda.representation.FData.plot` methods. If the functional data is multivariate
+(i.e., vector-valued), each component is overlaid in the same subplot unless otherwise
+specified. Scalar variables are visualized using standard scatter plots.
+
+The plot also supports grouping samples by category, with options to assign specific
+colors and display legends for better interpretability.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.exploratory.visualization.representation.MixedDataPlot
+
+See the example :ref:`sphx-glr-auto-examples-representation-plot-mixed-data-py` for a
+detailed explanation and usage demonstration.

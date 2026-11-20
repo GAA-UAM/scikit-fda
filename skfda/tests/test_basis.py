@@ -653,6 +653,51 @@ class TestVectorValuedBasis(unittest.TestCase):
             X.coordinates[1].to_basis(basis_dim).coefficients,
         )
 
+    def test_to_basis_adjusts_domain_range(self) -> None:
+        """Test that to_basis uses the data domain if not fixed."""
+        grid_points = np.linspace(0, 10, 50)
+        data_matrix = np.stack(
+            [np.sin(grid_points), np.cos(grid_points)],
+            axis=-1,
+        )[np.newaxis]
+        X = FDataGrid(data_matrix, grid_points)
+
+        basis = skfda.representation.basis.VectorValuedBasis([
+            BSplineBasis(n_basis=12),
+            BSplineBasis(n_basis=12),
+        ])
+        self.assertFalse(basis.is_domain_range_fixed())
+
+        X_basis = X.to_basis(basis)
+
+        basis_dim = BSplineBasis(n_basis=12, domain_range=X.domain_range)
+
+        np.testing.assert_allclose(X_basis.domain_range, X.domain_range)
+        self.assertTrue(X_basis.basis.is_domain_range_fixed())
+
+        for i in range(2):
+            self.assertEqual(X_basis.coordinates[i].basis, basis_dim)
+            np.testing.assert_allclose(
+                X_basis.coordinates[i].coefficients,
+                X.coordinates[i].to_basis(basis_dim).coefficients,
+            )
+
+    def test_copy_domain_range(self) -> None:
+        """Test that the new domain range is used by the inner bases."""
+        basis = skfda.representation.basis.VectorValuedBasis([
+            MonomialBasis(n_basis=3),
+            BSplineBasis(n_basis=5),
+        ])
+
+        new_basis = basis.copy(domain_range=(-2, 3))
+
+        np.testing.assert_allclose(new_basis.domain_range, ((-2, 3),))
+        for basis_dim in new_basis.basis_list:
+            np.testing.assert_allclose(basis_dim.domain_range, ((-2, 3),))
+        np.testing.assert_allclose(basis.domain_range, ((0, 1),))
+        for basis_dim in basis.basis_list:
+            np.testing.assert_allclose(basis_dim.domain_range, ((0, 1),))
+
 
 class TestTensorBasis(unittest.TestCase):
     """Tests for the Tensor basis."""
@@ -760,6 +805,47 @@ class TestTensorBasis(unittest.TestCase):
                     value_gram,
                     value_gram_x * value_gram_y * value_gram_z,
                 )
+
+    def test_to_basis_adjusts_domain_range(self) -> None:
+        """Test that to_basis uses the data domain if not fixed."""
+        grid_points = [np.linspace(0, 10, 20), np.linspace(-1, 1, 15)]
+        x, y = np.meshgrid(*grid_points, indexing='ij')
+        data_matrix = (np.sin(x) * y)[np.newaxis]
+        X = FDataGrid(data_matrix, grid_points)
+
+        basis = skfda.representation.basis.TensorBasis([
+            BSplineBasis(n_basis=6),
+            MonomialBasis(n_basis=3),
+        ])
+        self.assertFalse(basis.is_domain_range_fixed())
+
+        X_basis = X.to_basis(basis)
+
+        basis_fixed = skfda.representation.basis.TensorBasis([
+            BSplineBasis(n_basis=6, domain_range=(0, 10)),
+            MonomialBasis(n_basis=3, domain_range=(-1, 1)),
+        ])
+
+        np.testing.assert_allclose(X_basis.domain_range, X.domain_range)
+        self.assertTrue(X_basis.basis.is_domain_range_fixed())
+        self.assertEqual(X_basis.basis, basis_fixed)
+        np.testing.assert_allclose(
+            X_basis.coefficients,
+            X.to_basis(basis_fixed).coefficients,
+        )
+
+    def test_copy_domain_range(self) -> None:
+        """Test that the new domain range is used by the inner bases."""
+        domain_range = ((0, 2), (-1, 1), (3, 4))
+
+        new_basis = self.basis.copy(domain_range=domain_range)
+
+        np.testing.assert_allclose(new_basis.domain_range, domain_range)
+        for basis_dim, dim_range in zip(new_basis.basis_list, domain_range):
+            np.testing.assert_allclose(basis_dim.domain_range, (dim_range,))
+        np.testing.assert_allclose(self.basis.domain_range, ((0, 1),) * 3)
+        for basis_dim in self.basis.basis_list:
+            np.testing.assert_allclose(basis_dim.domain_range, ((0, 1),))
 
 
 if __name__ == '__main__':

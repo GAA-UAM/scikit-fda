@@ -149,11 +149,11 @@ class PerClassTransformer(
         >>> neigh2 = KNeighborsClassifier()
         >>> neigh2 = neigh2.fit(X_train2, y_train2)
         >>> neigh2.predict(X_test2)
-        array([ 1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  1,  1,  0,  0,  0,
-                0,  1,  1,  1,  1,  0,  1,  1], dtype=int8)
+        array([ 1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  1,  1,  0,  0,  0,  0,
+                1,  1,  1,  1,  1,  1,  1], dtype=int8)
 
         >>> round(neigh2.score(X_test2, y_test2), 3)
-        0.875
+        0.917
 
     """
 

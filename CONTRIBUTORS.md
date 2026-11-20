@@ -1,6 +1,6 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-55-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-58-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 ## Contributors ✨
 
@@ -84,6 +84,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://sayportfolio.vercel.app/"><img src="https://avatars.githubusercontent.com/u/240962040?v=4?s=100" width="100px;" alt="Sai Asish Y"/><br /><sub><b>Sai Asish Y</b></sub></a><br /><a href="#infra-SAY-5" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/SajalDevX"><img src="https://avatars.githubusercontent.com/u/172371422?v=4?s=100" width="100px;" alt="Sajal Kumar Jana"/><br /><sub><b>Sajal Kumar Jana</b></sub></a><br /><a href="https://github.com/GAA-UAM/scikit-fda/commits?author=SajalDevX" title="Code">💻</a> <a href="https://github.com/GAA-UAM/scikit-fda/commits?author=SajalDevX" title="Tests">⚠️</a></td>
     </tr>
   </tbody>
   <tfoot>

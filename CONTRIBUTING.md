@@ -25,3 +25,9 @@ Advanced users can also propose the addition of new pages and examples. In case 
 You can improve this package by adding new functionality, solving pending bugs or implementing accepted feature requests. Please discuss that first to ensure that it will be accepted and to assign that to you and prevent duplicated efforts.
 
 In any case, make sure that you own the rights to the software and are ok with releasing it under a BSD 3-Clause license.
+
+## On the use of Generative AI
+
+You may use generative AI to understand, search, debug or obtain suggestions about the project. However, please do not include any generative AI output directly in the submission. AI output lacks copyright, and thus it cannot be covered by the license of this project. Moreover, out of respect for our maintainers' time, we ask that you only submit work you have written yourself. Reviewing AI output takes resources away from contributors who put genuine effort in their contributions. As a corollary, pull requests created automatically by generative AI will be closed without discussion.
+
+You should disclose any use of generative AI in the pull request description.

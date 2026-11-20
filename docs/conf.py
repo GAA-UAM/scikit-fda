@@ -1,5 +1,5 @@
-#!/usr/bin/env python3  # noqa: D100
-#
+"""scikit-fda documentation build configuration."""
+
 # scikit-fda documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 22 18:46:59 2017.
 #
@@ -22,10 +22,9 @@ import os
 import sys
 import warnings
 from collections.abc import Callable, Mapping
+from importlib import metadata
 from os.path import dirname, relpath
 from typing import Any
-
-import pkg_resources
 
 # Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
 # repository
@@ -62,8 +61,8 @@ rtd_branch = os.environ.get(" READTHEDOCS_GIT_IDENTIFIER", "develop")
 language = "en"
 
 try:
-    release = pkg_resources.get_distribution(project).version
-except pkg_resources.DistributionNotFound:
+    release = metadata.version(project)
+except metadata.PackageNotFoundError:
     print(  # noqa: T201, WPS421
         f"To build the documentation, The distribution information of\n"
         f"{project} has to be available.  Either install the package\n"
@@ -71,7 +70,7 @@ except pkg_resources.DistributionNotFound:
         f"to setup the metadata.  A virtualenv is recommended!\n",
     )
     sys.exit(1)
-del pkg_resources
+del metadata
 
 version = ".".join(release.split(".")[:2])
 

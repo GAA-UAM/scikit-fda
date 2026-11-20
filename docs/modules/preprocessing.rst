@@ -15,6 +15,7 @@ this category deal with this problem.
    preprocessing/registration
    preprocessing/dim_reduction
    preprocessing/feature_construction
+   preprocessing/scaling
 
 Missing data
 ------------
@@ -60,3 +61,22 @@ facilitate the learning process. To construct new features from the curves,
 *feature construction* methods are available.
 :doc:`Here <preprocessing/feature_construction>` you can learn more about the
 feature construction methods available in the library.
+
+Scaling
+-------
+
+In the context of vector-valued functional data and mixed datasets, *scaling*
+and *centering* become essential preprocessing steps before applying further
+analysis. In classical functional data analysis, these operations are not
+typically necessary, as functions are often observed over the same domain and
+measured in the same units. In such cases, distances between functions are
+already meaningful.
+
+However, when working with data that includes multiple functional components
+measured in different units or on different scales, or when combining scalar
+and functional features, it is important to normalize the data to ensure fair
+comparisons. Scaling helps prevent components with larger magnitude from
+dominating the analysis.
+
+:doc:`Here <preprocessing/scaling>` you can learn more about the scaling
+methods available in the library.

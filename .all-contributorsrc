@@ -599,7 +599,8 @@
         "doc",
         "code",
         "test",
-        "infra"
+        "infra",
+        "example"
       ]
     },
     {
